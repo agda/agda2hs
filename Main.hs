@@ -17,6 +17,7 @@ import Agda.Interaction.BasicOps
 import Agda.TypeChecking.Monad
 import Agda.TypeChecking.Pretty
 import Agda.Syntax.Common
+import Agda.Syntax.Literal
 import Agda.Syntax.Internal hiding (sort, set)
 import Agda.Syntax.Position
 import Agda.Syntax.Translation.ConcreteToAbstract
@@ -27,6 +28,7 @@ import Agda.Interaction.CommandLine (withCurrentFile)
 import Agda.Utils.Lens
 import Agda.Utils.Pretty (prettyShow)
 import Agda.Utils.FileName
+import Agda.Utils.List
 
 data Options = Options { }
 
@@ -76,7 +78,58 @@ compile' def =
         hsName = prettyShow x
 
 compileClause :: String -> Clause -> TCM String
-compileClause x c = return $ x ++ " = undefined"
+compileClause x Clause{clauseTel       = tel,
+                       namedClausePats = ps,
+                       clauseBody      = body } =
+  addContext tel $ do
+    ps   <- compilePats ps
+    body <- maybe (return "undefined") (compileTerm 0) body
+    return $ x ++ " " ++ unwords ps ++ " = " ++ body
+
+renderCon :: QName -> [String] -> TCM String
+renderCon c args = do
+  c <- show <$> prettyTCM c
+  return $ renderApp 1 c args
+
+renderApp :: Int -> String -> [String] -> String
+renderApp _ h     []      = h
+renderApp p "_∷_" [x, xs] = paren (p > 0) $ x ++ " : " ++ xs
+renderApp p h [a, b] | Just op <- isInfix h = paren (p > 0) $ a ++ " " ++ op ++ " " ++ b
+renderApp p h     ps      = paren (p > 0) $ h ++ " " ++ unwords ps
+-- TODO: error on weird mixfix operators
+
+isInfix :: String -> Maybe String
+isInfix ('_' : f) = do
+  (op, '_') <- initLast f
+  return op
+isInfix _ = Nothing
+
+compilePats :: NAPs -> TCM [String]
+compilePats ps = mapM (compilePat . namedArg) $ filter visible ps
+
+compilePat :: DeBruijnPattern -> TCM String
+compilePat p@(VarP _ _)  = show <$> prettyTCM p
+compilePat (ConP h _ ps) = do
+  ps <- compilePats ps
+  renderCon (conName h) ps
+
+-- LitP
+compilePat p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
+
+compileTerm :: Int -> Term -> TCM String
+compileTerm p v =
+  case unSpine v of
+    Var x es -> (`app` es) . show =<< prettyTCM (Var x [])
+    Def f es -> (`app` es) . show =<< prettyTCM (Def f [])
+    Con h i es -> (`app` es) . show =<< prettyTCM (Con h i [])
+    Lit (LitNat n) -> return (show n)
+    t -> genericDocError =<< text "bad term:" <?> prettyTCM t
+  where
+    app :: String -> Elims -> TCM String
+    app s es = do
+      let Just args = allApplyElims es
+      args <- mapM (compileTerm 1 . unArg) $ filter visible args
+      return $ renderApp p s args
 
 paren True  s = "(" ++ s ++ ")"
 paren False s = s
@@ -98,6 +151,9 @@ renderPrimType Nat  []  = "Integer"
 renderPrimType List [a] = "[" ++ a ++ "]"
 renderPrimType Unit []  = "()"
 
+renderTypeVar :: String -> TCM String
+renderTypeVar = return    -- TODO: check stuff
+
 compileType :: Builtins -> Int -> Term -> TCM String
 compileType builtins p t = do
   t <- reduce t
@@ -112,7 +168,7 @@ compileType builtins p t = do
              , Just args <- allApplyElims es -> do
       vs <- mapM (compileType builtins 0 . unArg) $ filter visible args
       return $ renderPrimType prim vs
-    t@(Var _ []) -> show <$> prettyTCM t
+    t@(Var _ []) -> renderTypeVar . show =<< prettyTCM t
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
 compileFun :: Range -> String -> Definition -> TCM CompiledDef
