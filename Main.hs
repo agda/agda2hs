@@ -24,6 +24,8 @@ import Agda.Syntax.Translation.ConcreteToAbstract
 import Agda.TheTypeChecker
 import Agda.TypeChecking.Rules.Term (isType_)
 import Agda.TypeChecking.Reduce
+import Agda.TypeChecking.Substitute hiding (sort)
+import Agda.TypeChecking.Telescope
 import Agda.Interaction.CommandLine (withCurrentFile)
 import Agda.Utils.Lens
 import Agda.Utils.Pretty (prettyShow)
@@ -59,6 +61,9 @@ backend = Backend'
   , mayEraseType          = \ _ -> return True
   }
 
+showTCM :: PrettyTCM a => a -> TCM String
+showTCM x = show <$> prettyTCM x
+
 getPreamble :: TCM [(Range, String)]
 getPreamble = reverse . map getCode . fromMaybe [] . Map.lookup pragmaName . iForeignCode <$> curIF
   where getCode (ForeignCode r code) = (r, code ++ "\n")
@@ -72,10 +77,40 @@ compile' :: Definition -> TCM CompiledDef
 compile' def =
   case theDef def of
     Function{} -> compileFun r hsName def
+    Datatype{} -> compileData r hsName def
     _          -> return []
   where x = qnameName $ defName def
         r = nameBindingSite x
         hsName = prettyShow x
+
+compileData :: Range -> String -> Definition -> TCM CompiledDef
+compileData r d def = do
+  case theDef def of
+    Datatype{dataPars = n, dataIxs = 0, dataCons = cs} -> do
+      TelV tel _ <- telViewUpTo n (defType def)
+      addContext tel $ do
+        let params = teleArgs tel :: [Arg Term]
+        pars <- mapM (showTCM . unArg) $ filter visible params
+        cs   <- mapM (compileConstructor params) cs
+        return [(r, "data " ++ d ++ concatMap (" " ++) pars ++ "\n" ++
+                       concat (zipWith (\ bar c -> "  " ++ bar ++ " " ++ c ++ "\n")
+                                       ("=" : repeat "|") cs))]
+
+compileConstructor :: [Arg Term] -> QName -> TCM String
+compileConstructor params c = do
+  ty <- (`piApplyM` params) . defType =<< getConstInfo c
+  TelV tel _ <- telView ty
+  c <- showTCM c
+  args <- compileConstructorArgs tel
+  return $ c ++ concatMap (" " ++) args
+
+compileConstructorArgs :: Telescope -> TCM [String]
+compileConstructorArgs EmptyTel = return []
+compileConstructorArgs (ExtendTel a tel)
+  | visible a, NoAbs _ tel <- reAbs tel = do
+    builtins <- getBuiltins
+    (:) <$> compileType builtins 1 (unEl $ unDom a) <*> compileConstructorArgs tel
+compileConstructorArgs tel = genericDocError =<< text "Bad constructor args:" <?> prettyTCM tel
 
 compileClause :: String -> Clause -> TCM String
 compileClause x Clause{clauseTel       = tel,
@@ -88,7 +123,7 @@ compileClause x Clause{clauseTel       = tel,
 
 renderCon :: QName -> [String] -> TCM String
 renderCon c args = do
-  c <- show <$> prettyTCM c
+  c <- showTCM c
   return $ renderApp 1 c args
 
 renderApp :: Int -> String -> [String] -> String
@@ -108,20 +143,19 @@ compilePats :: NAPs -> TCM [String]
 compilePats ps = mapM (compilePat . namedArg) $ filter visible ps
 
 compilePat :: DeBruijnPattern -> TCM String
-compilePat p@(VarP _ _)  = show <$> prettyTCM p
+compilePat p@(VarP _ _)  = showTCM p
 compilePat (ConP h _ ps) = do
   ps <- compilePats ps
   renderCon (conName h) ps
-
 -- LitP
 compilePat p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
 
 compileTerm :: Int -> Term -> TCM String
 compileTerm p v =
   case unSpine v of
-    Var x es -> (`app` es) . show =<< prettyTCM (Var x [])
-    Def f es -> (`app` es) . show =<< prettyTCM (Def f [])
-    Con h i es -> (`app` es) . show =<< prettyTCM (Con h i [])
+    Var x es -> (`app` es) =<< showTCM (Var x [])
+    Def f es -> (`app` es) =<< showTCM (Def f [])
+    Con h i es -> (`app` es) =<< showTCM (Con h i [])
     Lit (LitNat n) -> return (show n)
     t -> genericDocError =<< text "bad term:" <?> prettyTCM t
   where
@@ -168,7 +202,11 @@ compileType builtins p t = do
              , Just args <- allApplyElims es -> do
       vs <- mapM (compileType builtins 0 . unArg) $ filter visible args
       return $ renderPrimType prim vs
-    t@(Var _ []) -> renderTypeVar . show =<< prettyTCM t
+    Def f es | Just args <- allApplyElims es -> do
+      vs <- mapM (compileType builtins 0 . unArg) $ filter visible args
+      f <- showTCM f
+      return $ renderApp p f vs
+    t@(Var _ []) -> renderTypeVar =<< showTCM t
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
 compileFun :: Range -> String -> Definition -> TCM CompiledDef
