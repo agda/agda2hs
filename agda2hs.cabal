@@ -1,0 +1,30 @@
+name:                agda2hs
+version:             0.1
+license:             BSD3
+license-file:        LICENSE
+author:              Ulf Norell
+maintainer:          ulf.norell@gmail.com
+copyright:           Ulf Norell, 2018
+category:            Language, Compiler
+build-type:          Simple
+extra-source-files:  CHANGELOG.md
+cabal-version:       >=1.10
+synopsis:            Compiling Agda code to readable Haskell.
+description:
+  Allows compiling Agda functions in a subset of Agda to readable Haskell code.
+  The tool is implemented as an Agda backend, which means that `agda2hs` is a
+  fully functional Agda compiler.
+
+source-repository head
+  type:     git
+  location: https://github.com/agda/agda2hs.git
+
+executable agda2hs
+  main-is:             Main.hs
+  build-depends:       base >=4.10 && <4.15,
+                       Agda >=2.5.4 && <2.7,
+                       containers >= 0.6 && < 0.7
+  ghc-options:         -rtsopts -with-rtsopts=-M8G
+  default-language:    Haskell2010
+  default-extensions:  LambdaCase
+
