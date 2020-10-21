@@ -54,3 +54,21 @@ thm : ∀ xs ys → sum (append xs ys) ≡ sum xs + sum ys
 thm []       ys = refl
 thm (x ∷ xs) ys rewrite thm xs ys | assoc x (sum xs) (sum ys) = refl
 
+-- Monoid instance
+
+record Monoid (A : Set) : Set where
+  field mempty  : A
+        mappend : A → A → A
+
+open Monoid {{...}} public
+
+instance
+  MonoidNat : Monoid Nat
+  mempty  {{MonoidNat}}     = 0
+  mappend {{MonoidNat}} i j = i + j
+
+sumMon : ∀{a} → {{Monoid a}} → List a → a
+sumMon []       = mempty
+sumMon (x ∷ xs) = mappend x (sumMon xs)
+
+{-# COMPILE AGDA2HS sumMon #-}

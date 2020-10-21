@@ -194,6 +194,11 @@ compileType builtins p t = do
   case t of
     Pi a b | hidden a -> underAbstraction a b (compileType builtins p . unEl)
              -- Hidden Pi means Haskell forall
+    Pi a b | isInstance a -> do
+               hsA <- compileType builtins 1 (unEl $ unDom a)
+               hsB <- underAbstraction a b (compileType builtins p . unEl)
+               return $ hsA ++ " => " ++ hsB
+             -- instance Pi means Haskell typeclass constraint
     Pi a (NoAbs _ b) | visible a -> do
       hsA <- compileType builtins 1 (unEl $ unDom a)
       hsB <- compileType builtins 0 (unEl b)
