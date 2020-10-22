@@ -9,8 +9,13 @@ variable
   a b : Set
 
 {-# FOREIGN AGDA2HS
-  import Prelude hiding (map, sum)
- #-}
+{-# LANGUAGE LambdaCase #-}
+#-}
+
+{-# FOREIGN AGDA2HS
+import Prelude hiding (map, sum)
+import Data.Monoid
+#-}
 
 data Exp (v : Set) : Set where
   Plus : Exp v → Exp v → Exp v
@@ -32,7 +37,17 @@ sum (x ∷ xs) = x + sum xs
 
 {-# COMPILE AGDA2HS sum #-}
 
-{-# FOREIGN AGDA2HS -- comment #-}
+{-# FOREIGN AGDA2HS
+-- comment
+-- another comment
+bla :: Int -> Int
+bla n = n * 4
+
+{- multi
+   line
+   comment
+-}
+#-}
 
 append : List a → List a → List a
 append []       ys = ys
