@@ -5,6 +5,7 @@ Compiles a subset of Agda to readable Haskell code. See Test.agda for an example
 ### Future work
 
 - Compile lambdas
+- Compile if/then/else
 - Literals in patterns
 - Use some Haskell syntax ADT and a proper pretty printing library
 - Map instance arguments to Haskell type classes (definitions and use)
@@ -14,4 +15,5 @@ Compiles a subset of Agda to readable Haskell code. See Test.agda for an example
 - Strings (compile to `Data.Text`)
 - Compile `case_of_ λ where` to Haskell `case`
 - `with`?
+- Compile equality proofs to QuickCheck properties?
 
