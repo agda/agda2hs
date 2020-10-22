@@ -52,7 +52,7 @@ pragmaName :: String
 pragmaName = "AGDA2HS"
 
 type Env         = ()
-type ModuleEnv   = ()
+type ModuleEnv   = Builtins
 type ModuleRes   = ()
 type CompiledDef = [(Range, [Hs.Decl ()])]
 
@@ -65,7 +65,7 @@ backend = Backend'
   , isEnabled             = \ _ -> True
   , preCompile            = \ _ -> return ()
   , postCompile           = \ _ _ _ -> return ()
-  , preModule             = \ _ _ _ _ -> return (Recompile ())
+  , preModule             = \ _ _ _ _ -> Recompile <$> getBuiltins
   , postModule            = writeModule
   , compileDef            = compile
   , scopeCheckingSuffices = False
@@ -134,30 +134,26 @@ compilePrim Nil  = Hs.Special () (Hs.ListCon ())
 
 -- Compiling things -------------------------------------------------------
 
-compile :: Env -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
-compile _ _ _ def = getUniqueCompilerPragma pragmaName (defName def) >>= \ case
+compile :: Env -> Builtins -> IsMain -> Definition -> TCM CompiledDef
+compile _ builtins _ def = getUniqueCompilerPragma pragmaName (defName def) >>= \ case
   Nothing -> return []
-  Just _  -> compile' def
+  Just _  -> compile' builtins def
 
-compile' :: Definition -> TCM CompiledDef
-compile' def =
+compile' :: Builtins -> Definition -> TCM CompiledDef
+compile' builtins def =
   case theDef def of
-    Function{} -> tag r <$> compileFun def
-    Datatype{} -> tag r <$> compileData def
+    Function{} -> tag <$> compileFun builtins def
+    Datatype{} -> tag <$> compileData builtins def
     _          -> return []
-  where x = qnameName $ defName def
-        r = nameBindingSite x
-        tag r code = [(r, code)]
-        hsName = prettyShow x
+  where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
 
-compileData :: Definition -> TCM [Hs.Decl ()]
-compileData def = do
+compileData :: Builtins -> Definition -> TCM [Hs.Decl ()]
+compileData builtins def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
   case theDef def of
     Datatype{dataPars = n, dataIxs = 0, dataCons = cs} -> do
       TelV tel _ <- telViewUpTo n (defType def)
       addContext tel $ do
-        builtins <- getBuiltins
         let params = teleArgs tel :: [Arg Term]
         pars <- mapM (showTCM . unArg) $ filter visible params
         cs   <- mapM (compileConstructor builtins params) cs
@@ -181,9 +177,8 @@ compileConstructorArgs builtins (ExtendTel a tel)
     (:) <$> compileType builtins (unEl $ unDom a) <*> compileConstructorArgs builtins tel
 compileConstructorArgs _ tel = genericDocError =<< text "Bad constructor args:" <?> prettyTCM tel
 
-compileFun :: Definition -> TCM [Hs.Decl ()]
-compileFun def = do
-  builtins <- getBuiltins
+compileFun :: Builtins -> Definition -> TCM [Hs.Decl ()]
+compileFun builtins def = do
   let x = hsName $ prettyShow $ qnameName $ defName def
   ty <- compileType builtins (unEl $ defType def)
   cs <- mapM (compileClause x) funClauses
