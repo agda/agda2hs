@@ -212,7 +212,7 @@ compileType builtins t = do
     Pi a b | isInstance a -> do
                hsA <- compileType builtins (unEl $ unDom a)
                hsB <- underAbstraction a b (compileType builtins . unEl)
-               return $ Hs.TyFun () hsA hsB
+               return $ Hs.TyForall () Nothing (Just (Hs.CxSingle () (Hs.TypeA () hsA))) hsB
              -- hsB Pi means Haskell typeclass constraint
     Def f es | Just args <- allApplyElims es -> do
       vs <- mapM (compileType builtins . unArg) $ filter visible args
@@ -230,7 +230,7 @@ compileTerm builtins v =
     Var x es   -> (`app` es) . Hs.Var () . Hs.UnQual () . hsName =<< showTCM (Var x [])
     Def f es   -> (`app` es) . Hs.Var () =<< hsQName builtins f
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName builtins (conName h)
-    Lit (LitNat n) -> return $ Hs.Lit () $ Hs.Int () n (show n)
+    Lit (LitNat _ n) -> return $ Hs.Lit () $ Hs.Int () n (show n)
     t -> genericDocError =<< text "bad term:" <?> prettyTCM t
   where
     app :: Hs.Exp () -> Elims -> TCM (Hs.Exp ())
