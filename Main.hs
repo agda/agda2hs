@@ -72,65 +72,10 @@ backend = Backend'
   , mayEraseType          = \ _ -> return True
   }
 
+-- Names ------------------------------------------------------------------
+
 showTCM :: PrettyTCM a => a -> TCM String
 showTCM x = show <$> prettyTCM x
-
-compile :: Env -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
-compile _ _ _ def = getUniqueCompilerPragma pragmaName (defName def) >>= \ case
-  Nothing -> return []
-  Just _  -> compile' def
-
-compile' :: Definition -> TCM CompiledDef
-compile' def =
-  case theDef def of
-    Function{} -> compileFun r hsName def
-    Datatype{} -> compileData r hsName def
-    _          -> return []
-  where x = qnameName $ defName def
-        r = nameBindingSite x
-        hsName = prettyShow x
-
-compileData :: Range -> String -> Definition -> TCM CompiledDef
-compileData r d def = do
-  case theDef def of
-    Datatype{dataPars = n, dataIxs = 0, dataCons = cs} -> do
-      TelV tel _ <- telViewUpTo n (defType def)
-      addContext tel $ do
-        builtins <- getBuiltins
-        let params = teleArgs tel :: [Arg Term]
-        pars <- mapM (showTCM . unArg) $ filter visible params
-        cs   <- mapM (compileConstructor builtins params) cs
-        let hd   = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
-                         (Hs.DHead () (hsName d)) pars
-            code = [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs []]
-        return [(r, code)]
-    _ -> __IMPOSSIBLE__
-
-compileConstructor :: Builtins -> [Arg Term] -> QName -> TCM (Hs.QualConDecl ())
-compileConstructor builtins params c = do
-  ty <- (`piApplyM` params) . defType =<< getConstInfo c
-  TelV tel _ <- telView ty
-  c <- showTCM c
-  args <- compileConstructorArgs builtins tel
-  return $ Hs.QualConDecl () Nothing Nothing $ Hs.ConDecl () (hsName c) args
-
-compileConstructorArgs :: Builtins -> Telescope -> TCM [Hs.Type ()]
-compileConstructorArgs _ EmptyTel = return []
-compileConstructorArgs builtins (ExtendTel a tel)
-  | visible a, NoAbs _ tel <- reAbs tel = do
-    (:) <$> compileType builtins (unEl $ unDom a) <*> compileConstructorArgs builtins tel
-compileConstructorArgs _ tel = genericDocError =<< text "Bad constructor args:" <?> prettyTCM tel
-
-compileClause :: String -> Clause -> TCM (Hs.Match ())
-compileClause x Clause{clauseTel       = tel,
-                       namedClausePats = ps,
-                       clauseBody      = body } =
-  addContext tel $ do
-    builtins <- getBuiltins
-    ps   <- compilePats builtins ps
-    body <- maybe (return $ Hs.Var () $ Hs.UnQual () (hsName "undefined")) (compileTerm builtins) body
-    -- TODO: infix match
-    return $ Hs.Match () (hsName x) ps (Hs.UnGuardedRhs () body) Nothing
 
 isInfix :: String -> Maybe String
 isInfix ('_' : f) = do
@@ -153,60 +98,12 @@ hsQName builtins f
         (_, "")        -> Hs.UnQual () (hsName s)
         (fr, _ : mr) -> Hs.Qual () (Hs.ModuleName () $ reverse mr) (hsName $ reverse fr)
 
-compilePrim :: Prim -> Hs.QName ()
-compilePrim Nat  = Hs.UnQual () (hsName "Integer")
-compilePrim List = Hs.Special () (Hs.ListCon ())
-compilePrim Unit = Hs.Special () (Hs.UnitCon ())
-compilePrim Cons = Hs.Special () (Hs.Cons ())
-compilePrim Nil  = Hs.Special () (Hs.ListCon ())
+isOp :: Hs.QName () -> Bool
+isOp (Hs.UnQual _ Hs.Symbol{}) = True
+isOp (Hs.Special _ Hs.Cons{})  = True
+isOp _                         = False
 
-compilePats :: Builtins -> NAPs -> TCM [Hs.Pat ()]
-compilePats builtins ps = mapM (compilePat builtins . namedArg) $ filter visible ps
-
-compilePat :: Builtins -> DeBruijnPattern -> TCM (Hs.Pat ())
-compilePat builtins p@(VarP _ _)  = Hs.PVar () . hsName <$> showTCM p
-compilePat builtins (ConP h _ ps) = do
-  ps <- compilePats builtins ps
-  c <- hsQName builtins (conName h)
-  return $ pApp c ps
--- TODO: LitP
-compilePat _ p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
-
-pApp :: Hs.QName () -> [Hs.Pat ()] -> Hs.Pat ()
-pApp c@(Hs.UnQual () (Hs.Symbol () _)) [p, q] = Hs.PInfixApp () p c q
-pApp c@(Hs.Special () Hs.Cons{}) [p, q] = Hs.PInfixApp () p c q
-pApp c ps = Hs.PApp () c ps
-
-eApp :: Hs.Exp () -> [Hs.Exp ()] -> Hs.Exp ()
-eApp f (a : b : as) | Just op <- isOp f = foldl (Hs.App ()) (Hs.InfixApp () a op b) as
-  where isOp (Hs.Var _ x) = Hs.QVarOp () <$> isOp' x
-        isOp (Hs.Con _ c) = Hs.QConOp () <$> isOp' c
-        isOp' x@(Hs.UnQual () (Hs.Symbol () _)) = Just x
-        isOp' c@(Hs.Special () Hs.Cons{}) = Just c
-        isOp' _ = Nothing
-eApp f es = foldl (Hs.App ()) f es
-
-tApp :: Hs.Type () -> [Hs.Type ()] -> Hs.Type ()
-tApp (Hs.TyCon () (Hs.Special () Hs.ListCon{})) [a] = Hs.TyList () a
-tApp t vs = foldl (Hs.TyApp ()) t vs
-
-compileTerm :: Builtins -> Term -> TCM (Hs.Exp ())
-compileTerm builtins v =
-  case unSpine v of
-    Var x es   -> (`app` es) . Hs.Var () . Hs.UnQual () . hsName =<< showTCM (Var x [])
-    Def f es   -> (`app` es) . Hs.Var () =<< hsQName builtins f
-    Con h i es -> (`app` es) . Hs.Con () =<< hsQName builtins (conName h)
-    Lit (LitNat n) -> return $ Hs.Lit () $ Hs.Int () n (show n)
-    t -> genericDocError =<< text "bad term:" <?> prettyTCM t
-  where
-    app :: Hs.Exp () -> Elims -> TCM (Hs.Exp ())
-    app hd es = do
-      let Just args = allApplyElims es
-      args <- mapM (compileTerm builtins . unArg) $ filter visible args
-      return $ eApp hd args
-
-paren True  s = "(" ++ s ++ ")"
-paren False s = s
+-- Builtins ---------------------------------------------------------------
 
 data Prim = Nat | List | Unit | Cons | Nil
   deriving (Show, Eq)
@@ -228,6 +125,85 @@ getBuiltins = Map.fromList . concat <$> mapM getB
       Just (Con c _ _) -> return [(conName c, t)]
       Just _           -> __IMPOSSIBLE__
 
+compilePrim :: Prim -> Hs.QName ()
+compilePrim Nat  = Hs.UnQual () (hsName "Integer")
+compilePrim List = Hs.Special () (Hs.ListCon ())
+compilePrim Unit = Hs.Special () (Hs.UnitCon ())
+compilePrim Cons = Hs.Special () (Hs.Cons ())
+compilePrim Nil  = Hs.Special () (Hs.ListCon ())
+
+-- Compiling things -------------------------------------------------------
+
+compile :: Env -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
+compile _ _ _ def = getUniqueCompilerPragma pragmaName (defName def) >>= \ case
+  Nothing -> return []
+  Just _  -> compile' def
+
+compile' :: Definition -> TCM CompiledDef
+compile' def =
+  case theDef def of
+    Function{} -> tag r <$> compileFun def
+    Datatype{} -> tag r <$> compileData def
+    _          -> return []
+  where x = qnameName $ defName def
+        r = nameBindingSite x
+        tag r code = [(r, code)]
+        hsName = prettyShow x
+
+compileData :: Definition -> TCM [Hs.Decl ()]
+compileData def = do
+  let d = hsName $ prettyShow $ qnameName $ defName def
+  case theDef def of
+    Datatype{dataPars = n, dataIxs = 0, dataCons = cs} -> do
+      TelV tel _ <- telViewUpTo n (defType def)
+      addContext tel $ do
+        builtins <- getBuiltins
+        let params = teleArgs tel :: [Arg Term]
+        pars <- mapM (showTCM . unArg) $ filter visible params
+        cs   <- mapM (compileConstructor builtins params) cs
+        let hd   = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
+                         (Hs.DHead () d) pars
+        return [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs []]
+    _ -> __IMPOSSIBLE__
+
+compileConstructor :: Builtins -> [Arg Term] -> QName -> TCM (Hs.QualConDecl ())
+compileConstructor builtins params c = do
+  ty <- (`piApplyM` params) . defType =<< getConstInfo c
+  TelV tel _ <- telView ty
+  c <- showTCM c
+  args <- compileConstructorArgs builtins tel
+  return $ Hs.QualConDecl () Nothing Nothing $ Hs.ConDecl () (hsName c) args
+
+compileConstructorArgs :: Builtins -> Telescope -> TCM [Hs.Type ()]
+compileConstructorArgs _ EmptyTel = return []
+compileConstructorArgs builtins (ExtendTel a tel)
+  | visible a, NoAbs _ tel <- reAbs tel = do
+    (:) <$> compileType builtins (unEl $ unDom a) <*> compileConstructorArgs builtins tel
+compileConstructorArgs _ tel = genericDocError =<< text "Bad constructor args:" <?> prettyTCM tel
+
+compileFun :: Definition -> TCM [Hs.Decl ()]
+compileFun def = do
+  builtins <- getBuiltins
+  let x = hsName $ prettyShow $ qnameName $ defName def
+  ty <- compileType builtins (unEl $ defType def)
+  cs <- mapM (compileClause x) funClauses
+  return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
+  where
+    Function{..} = theDef def
+
+compileClause :: Hs.Name () -> Clause -> TCM (Hs.Match ())
+compileClause x Clause{clauseTel       = tel,
+                       namedClausePats = ps,
+                       clauseBody      = body } =
+  addContext tel $ do
+    builtins <- getBuiltins
+    ps   <- compilePats builtins ps
+    body <- maybe (return $ Hs.Var () $ Hs.UnQual () (hsName "undefined")) (compileTerm builtins) body
+    let rhs = Hs.UnGuardedRhs () body
+    case (x, ps) of
+      (Hs.Symbol{}, p : q : ps) -> return $ Hs.InfixMatch () p x (q : ps) rhs Nothing
+      _                         -> return $ Hs.Match () x ps rhs Nothing
+
 compileType :: Builtins -> Term -> TCM (Hs.Type ())
 compileType builtins t = do
   t <- reduce t
@@ -248,15 +224,50 @@ compileType builtins t = do
       return $ tApp (Hs.TyVar () x) vs
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
-compileFun :: Range -> String -> Definition -> TCM CompiledDef
-compileFun r x def = do
-  builtins <- getBuiltins
-  ty <- compileType builtins (unEl $ defType def)
-  cs <- mapM (compileClause x) funClauses
-  let code = [Hs.TypeSig () [hsName x] ty, Hs.FunBind () cs]
-  return [(r, code)]
+compileTerm :: Builtins -> Term -> TCM (Hs.Exp ())
+compileTerm builtins v =
+  case unSpine v of
+    Var x es   -> (`app` es) . Hs.Var () . Hs.UnQual () . hsName =<< showTCM (Var x [])
+    Def f es   -> (`app` es) . Hs.Var () =<< hsQName builtins f
+    Con h i es -> (`app` es) . Hs.Con () =<< hsQName builtins (conName h)
+    Lit (LitNat n) -> return $ Hs.Lit () $ Hs.Int () n (show n)
+    t -> genericDocError =<< text "bad term:" <?> prettyTCM t
   where
-    Function{..} = theDef def
+    app :: Hs.Exp () -> Elims -> TCM (Hs.Exp ())
+    app hd es = do
+      let Just args = allApplyElims es
+      args <- mapM (compileTerm builtins . unArg) $ filter visible args
+      return $ eApp hd args
+
+compilePats :: Builtins -> NAPs -> TCM [Hs.Pat ()]
+compilePats builtins ps = mapM (compilePat builtins . namedArg) $ filter visible ps
+
+compilePat :: Builtins -> DeBruijnPattern -> TCM (Hs.Pat ())
+compilePat builtins p@(VarP _ _)  = Hs.PVar () . hsName <$> showTCM p
+compilePat builtins (ConP h _ ps) = do
+  ps <- compilePats builtins ps
+  c <- hsQName builtins (conName h)
+  return $ pApp c ps
+-- TODO: LitP
+compilePat _ p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
+
+pApp :: Hs.QName () -> [Hs.Pat ()] -> Hs.Pat ()
+pApp c@(Hs.UnQual () (Hs.Symbol () _)) [p, q] = Hs.PInfixApp () p c q
+pApp c@(Hs.Special () Hs.Cons{}) [p, q] = Hs.PInfixApp () p c q
+pApp c ps = Hs.PApp () c ps
+
+eApp :: Hs.Exp () -> [Hs.Exp ()] -> Hs.Exp ()
+eApp f (a : b : as) | Just op <- getOp f = foldl (Hs.App ()) (Hs.InfixApp () a op b) as
+  where getOp (Hs.Var _ x) | isOp x = Just $ Hs.QVarOp () x
+        getOp (Hs.Con _ c) | isOp c = Just $ Hs.QConOp () c
+        getOp _                     = Nothing
+eApp f es = foldl (Hs.App ()) f es
+
+tApp :: Hs.Type () -> [Hs.Type ()] -> Hs.Type ()
+tApp (Hs.TyCon () (Hs.Special () Hs.ListCon{})) [a] = Hs.TyList () a
+tApp t vs = foldl (Hs.TyApp ()) t vs
+
+-- FOREIGN pragmas --------------------------------------------------------
 
 type Code = (Hs.Module Hs.SrcSpanInfo, [Hs.Comment])
 
@@ -285,10 +296,12 @@ srcSpanToRange (Hs.SrcSpan file l1 c1 l2 c2) =
 srcLocToRange :: Hs.SrcLoc -> Range
 srcLocToRange (Hs.SrcLoc file l c) = srcSpanToRange (Hs.SrcSpan file l c l c)
 
-type Block = (Range, [String])
-
 renderComment (Hs.Comment True  _ s) = "{-" ++ s ++ "-}"
 renderComment (Hs.Comment False _ s) = "--" ++ s
+
+-- Rendering --------------------------------------------------------------
+
+type Block = (Range, [String])
 
 sortRanges :: [(Range, a)] -> [a]
 sortRanges = map snd . sortBy (compare `on` rLine . fst)
@@ -310,6 +323,8 @@ codeBlocks code = [(r, [uncurry Hs.exactPrint $ moveToTop $ noPragmas mcs]) | (r
   where noPragmas (Hs.Module l h _ is ds, cs) = (Hs.Module l h [] is ds, cs)
         nonempty (Hs.Module _ _ _ is ds, cs) = not $ null is && null ds && null cs
 
+-- exactPrint really looks at the line numbers (and we're using the locations from the agda source
+-- to report Haskell parse errors at the right location), so shift everything to start at line 1.
 moveToTop :: Hs.Annotated ast => (ast Hs.SrcSpanInfo, [Hs.Comment]) -> (ast Hs.SrcSpanInfo, [Hs.Comment])
 moveToTop (x, cs) = (subtractLine l <$> x, [ Hs.Comment b (sub l r) str | Hs.Comment b r str <- cs ])
   where l = Hs.startLine (Hs.ann x) - 1
@@ -327,10 +342,10 @@ writeModule _ _ isMain m defs0 = do
   code <- getForeignPragmas
   let defs = concatMap defBlock defs0 ++ codeBlocks code
   unless (null code && null defs) $ liftIO $ do
+    -- The comments makes it hard to generate and pretty print a full module
     putStr $ renderBlocks $ codePragmas code
     putStrLn $ "module " ++ prettyShow m ++ " where\n"
     putStr $ renderBlocks defs
-    -- putStr $ renderBlocks defs
 
 main = runAgda [Backend backend]
 

@@ -13,7 +13,7 @@ variable
 #-}
 
 {-# FOREIGN AGDA2HS
-import Prelude hiding (map, sum)
+import Prelude hiding (map, sum, (++))
 import Data.Monoid
 #-}
 
@@ -49,11 +49,11 @@ bla n = n * 4
 -}
 #-}
 
-append : List a → List a → List a
-append []       ys = ys
-append (x ∷ xs) ys = x ∷ append xs ys
+_++_ : List a → List a → List a
+[]       ++ ys = ys
+(x ∷ xs) ++ ys = x ∷ (xs ++ ys)
 
-{-# COMPILE AGDA2HS append #-}
+{-# COMPILE AGDA2HS _++_ #-}
 
 map : (a → b) → List a → List b
 map f [] = []
@@ -65,7 +65,7 @@ assoc : (a b c : Nat) → a + (b + c) ≡ (a + b) + c
 assoc zero    b c = refl
 assoc (suc a) b c rewrite assoc a b c = refl
 
-thm : ∀ xs ys → sum (append xs ys) ≡ sum xs + sum ys
+thm : ∀ xs ys → sum (xs ++ ys) ≡ sum xs + sum ys
 thm []       ys = refl
 thm (x ∷ xs) ys rewrite thm xs ys | assoc x (sum xs) (sum ys) = refl
 
