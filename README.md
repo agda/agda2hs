@@ -17,3 +17,4 @@ Compiles a subset of Agda to readable Haskell code. See Test.agda for an example
 - `with`?
 - Compile equality proofs to QuickCheck properties?
 - Module export lists (how?)
+- Fixity declarations
