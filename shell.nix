@@ -4,14 +4,18 @@ let
 
   inherit (nixpkgs) pkgs;
 
-  f = { mkDerivation, Agda, base, containers, stdenv }:
+  f = { mkDerivation, Agda, base, containers, haskell-src-exts
+      , stdenv
+      }:
       mkDerivation {
         pname = "agda2hs";
         version = "0.1";
         src = ./.;
         isLibrary = false;
         isExecutable = true;
-        executableHaskellDepends = [ Agda base containers ];
+        executableHaskellDepends = [
+          Agda base containers haskell-src-exts
+        ];
         description = "Compiling Agda code to readable Haskell";
         license = stdenv.lib.licenses.bsd3;
       };

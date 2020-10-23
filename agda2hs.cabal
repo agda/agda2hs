@@ -22,7 +22,7 @@ source-repository head
 executable agda2hs
   main-is:             Main.hs
   build-depends:       base >= 4.10 && < 4.15,
-                       Agda >= 2.5.4 && < 2.7,
+                       Agda >= 2.5.4 && < 2.6.2,
                        containers >= 0.6 && < 0.7,
                        haskell-src-exts >= 1.23 && < 1.25
   default-language:    Haskell2010

@@ -231,6 +231,8 @@ compileTerm builtins v =
     Def f es   -> (`app` es) . Hs.Var () =<< hsQName builtins f
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName builtins (conName h)
     Lit (LitNat _ n) -> return $ Hs.Lit () $ Hs.Int () n (show n)
+    Lam v b | visible v -> hsLambda (absName b) <$> underAbstraction_ b (compileTerm builtins)
+    Lam _ b -> underAbstraction_ b (compileTerm builtins)
     t -> genericDocError =<< text "bad term:" <?> prettyTCM t
   where
     app :: Hs.Exp () -> Elims -> TCM (Hs.Exp ())
@@ -266,6 +268,14 @@ eApp f es = foldl (Hs.App ()) f es
 tApp :: Hs.Type () -> [Hs.Type ()] -> Hs.Type ()
 tApp (Hs.TyCon () (Hs.Special () Hs.ListCon{})) [a] = Hs.TyList () a
 tApp t vs = foldl (Hs.TyApp ()) t vs
+
+hsLambda :: String -> Hs.Exp () -> Hs.Exp ()
+hsLambda x e =
+  case e of
+    Hs.Lambda l ps b -> Hs.Lambda l (p : ps) b
+    _                -> Hs.Lambda () [p] e
+  where
+    p = Hs.PVar () $ hsName x
 
 -- FOREIGN pragmas --------------------------------------------------------
 

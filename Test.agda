@@ -61,6 +61,16 @@ map f (x ∷ xs) = f x ∷ map f xs
 
 {-# COMPILE AGDA2HS map #-}
 
+plus3 : List Nat → List Nat
+plus3 = map (λ n → n + 3)
+
+{-# COMPILE AGDA2HS plus3 #-}
+
+doubleLambda : Nat → Nat → Nat
+doubleLambda = λ a b → a + 2 * b
+
+{-# COMPILE AGDA2HS doubleLambda #-}
+
 assoc : (a b c : Nat) → a + (b + c) ≡ (a + b) + c
 assoc zero    b c = refl
 assoc (suc a) b c rewrite assoc a b c = refl

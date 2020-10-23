@@ -4,11 +4,9 @@ Compiles a subset of Agda to readable Haskell code. See Test.agda for an example
 
 ### Future work
 
-- Compile lambdas
 - Compile if/then/else
 - Literals in patterns
-- Use some Haskell syntax ADT and a proper pretty printing library
-- Map instance arguments to Haskell type classes (definitions and use)
+- Map instance arguments to Haskell type classes (definitions and use) [#3](https://github.com/agda/agda2hs/pull/3)
 - `where` clauses
 - Higher-rank polymorphism
 - More builtin types (`Double`, `Word64`)
