@@ -87,6 +87,8 @@ record Monoid (A : Set) : Set where
 
 open Monoid {{...}} public
 
+{-# COMPILE AGDA2HS Monoid class #-}
+
 instance
   MonoidNat : Monoid Nat
   mempty  {{MonoidNat}}     = 0

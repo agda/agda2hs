@@ -140,18 +140,33 @@ compilePrim Nil  = Hs.Special () (Hs.ListCon ())
 
 -- Compiling things -------------------------------------------------------
 
+data CodeGen = YesCode | NoCode
+
+data ParsedResult
+  = NoPragma
+  | DefaultPragma
+  | ClassPragma CodeGen
+
+processPragma :: QName -> TCM ParsedResult
+processPragma qn = getUniqueCompilerPragma pragmaName qn >>= \case
+  Nothing -> return NoPragma
+  Just (CompilerPragma _ s) | s == "class" -> return $ ClassPragma NoCode
+  _                                        -> return DefaultPragma
+
 compile :: Options -> Builtins -> IsMain -> Definition -> TCM CompiledDef
-compile _ builtins _ def = getUniqueCompilerPragma pragmaName (defName def) >>= \ case
-  Nothing -> return []
-  Just _  -> compile' builtins def
+compile _ builtins _ def = processPragma (defName def) >>= \ case
+  NoPragma -> return []
+  DefaultPragma -> compile' builtins def
+  ClassPragma NoCode -> return []
 
 compile' :: Builtins -> Definition -> TCM CompiledDef
 compile' builtins def =
   case theDef def of
     Function{} -> tag <$> compileFun builtins def
     Datatype{} -> tag <$> compileData builtins def
-    _          -> return []
-  where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
+    _          -> setCurrentRange r $ genericDocError =<< (text "cannot compile: " <+> prettyTCM (defName def))
+  where tag code = [(r, code)]
+        r = nameBindingSite $ qnameName $ defName def
 
 compileData :: Builtins -> Definition -> TCM [Hs.Decl ()]
 compileData builtins def = do
