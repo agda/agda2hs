@@ -10,6 +10,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import System.Console.GetOpt
 import System.Environment
+import System.FilePath
 
 import qualified Language.Haskell.Exts.SrcLoc     as Hs
 import qualified Language.Haskell.Exts.Syntax     as Hs
@@ -25,6 +26,7 @@ import Agda.Interaction.BasicOps
 import Agda.TypeChecking.Monad
 import Agda.TypeChecking.Pretty hiding (pretty)
 import Agda.Syntax.Common
+import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Literal
 import Agda.Syntax.Internal
 import Agda.Syntax.Position
@@ -43,27 +45,30 @@ import Agda.Utils.List
 import Agda.Utils.Impossible
 import Agda.Utils.Maybe.Strict (toLazy, toStrict)
 
-data Options = Options { }
+data Options = Options { outDir :: FilePath }
 
 defaultOptions :: Options
-defaultOptions = Options{}
+defaultOptions = Options{ outDir = "." }
+
+outdirOpt :: Monad m => FilePath -> Options -> m Options
+outdirOpt dir opts = return opts{ outDir = dir }
 
 pragmaName :: String
 pragmaName = "AGDA2HS"
 
-type Env         = ()
 type ModuleEnv   = Builtins
 type ModuleRes   = ()
 type CompiledDef = [(Range, [Hs.Decl ()])]
 
-backend :: Backend' Options Env ModuleEnv ModuleRes CompiledDef
+backend :: Backend' Options Options ModuleEnv ModuleRes CompiledDef
 backend = Backend'
   { backendName           = "agda2hs"
   , backendVersion        = Just "0.1"
   , options               = defaultOptions
-  , commandLineFlags      = []
+  , commandLineFlags      = [ Option ['o'] ["out-dir"] (ReqArg outdirOpt "DIR")
+                              "Write Haskell code to DIR. Default: ." ]
   , isEnabled             = \ _ -> True
-  , preCompile            = \ _ -> return ()
+  , preCompile            = return
   , postCompile           = \ _ _ _ -> return ()
   , preModule             = \ _ _ _ _ -> Recompile <$> getBuiltins
   , postModule            = writeModule
@@ -134,7 +139,7 @@ compilePrim Nil  = Hs.Special () (Hs.ListCon ())
 
 -- Compiling things -------------------------------------------------------
 
-compile :: Env -> Builtins -> IsMain -> Definition -> TCM CompiledDef
+compile :: Options -> Builtins -> IsMain -> Definition -> TCM CompiledDef
 compile _ builtins _ def = getUniqueCompilerPragma pragmaName (defName def) >>= \ case
   Nothing -> return []
   Just _  -> compile' builtins def
@@ -326,7 +331,9 @@ codePragmas code = [ (r, map pp ps) | (r, (Hs.Module _ _ ps _ _, _)) <- code ]
 codeBlocks :: [(Range, Code)] -> [Block]
 codeBlocks code = [(r, [uncurry Hs.exactPrint $ moveToTop $ noPragmas mcs]) | (r, mcs) <- code, nonempty mcs]
   where noPragmas (Hs.Module l h _ is ds, cs) = (Hs.Module l h [] is ds, cs)
+        noPragmas m                           = m
         nonempty (Hs.Module _ _ _ is ds, cs) = not $ null is && null ds && null cs
+        nonempty _                           = True
 
 -- exactPrint really looks at the line numbers (and we're using the locations from the agda source
 -- to report Haskell parse errors at the right location), so shift everything to start at line 1.
@@ -342,15 +349,23 @@ moveToTop (x, cs) = (subtractLine l <$> x, [ Hs.Comment b (sub l r) str | Hs.Com
 pp :: Hs.Pretty a => a -> String
 pp = Hs.prettyPrintWithMode Hs.defaultMode{ Hs.spacing = False }
 
-writeModule :: Env -> ModuleEnv -> IsMain -> ModuleName -> [CompiledDef] -> TCM ModuleRes
-writeModule _ _ isMain m defs0 = do
+moduleFileName :: Options -> ModuleName -> FilePath
+moduleFileName opts name =
+  outDir opts </> C.moduleNameToFileName (toTopLevelModuleName name) "hs"
+
+writeModule :: Options -> ModuleEnv -> IsMain -> ModuleName -> [CompiledDef] -> TCM ModuleRes
+writeModule opts _ isMain m defs0 = do
   code <- getForeignPragmas
   let defs = concatMap defBlock defs0 ++ codeBlocks code
-  unless (null code && null defs) $ liftIO $ do
+  unless (null code && null defs) $ do
     -- The comments makes it hard to generate and pretty print a full module
-    putStr $ renderBlocks $ codePragmas code
-    putStrLn $ "module " ++ prettyShow m ++ " where\n"
-    putStr $ renderBlocks defs
+    let hsFile = moduleFileName opts m
+        output = concat
+                 [ renderBlocks $ codePragmas code
+                 , "module " ++ prettyShow m ++ " where\n\n"
+                 , renderBlocks defs ]
+    reportSLn "" 1 $ "Writing " ++ hsFile ++ "\n"
+    liftIO $ writeFile hsFile output
 
 main = runAgda [Backend backend]
 
