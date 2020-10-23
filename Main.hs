@@ -249,7 +249,16 @@ compileTerm :: Builtins -> Term -> TCM (Hs.Exp ())
 compileTerm builtins v =
   case unSpine v of
     Var x es   -> (`app` es) . Hs.Var () . Hs.UnQual () . hsName =<< showTCM (Var x [])
-    Def f es   -> (`app` es) . Hs.Var () =<< hsQName builtins f
+    -- v currently we assume all record projections are instance
+    -- args that need attention
+    Def f es -> isProjection f >>= \ case
+      Just _ -> do
+        -- v not sure why this fails to strip the name
+        --f <- hsQName builtins (qualify_ (qnameName f))
+        -- here's a horrible way to strip the module prefix off the name
+        let uf = Hs.UnQual () (hsName (show (nameConcrete (qnameName f))))
+        (`appStrip` es) (Hs.Var () uf)
+      Nothing -> (`app` es) . Hs.Var () =<< hsQName builtins f
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName builtins (conName h)
     Lit (LitNat _ n) -> return $ Hs.Lit () $ Hs.Int () n (show n)
     Lam v b | visible v -> hsLambda (absName b) <$> underAbstraction_ b (compileTerm builtins)
@@ -260,6 +269,14 @@ compileTerm builtins v =
     app hd es = do
       let Just args = allApplyElims es
       args <- mapM (compileTerm builtins . unArg) $ filter visible args
+      return $ eApp hd args
+
+    -- `appStrip` is used when we have a record projection and we want to
+    -- drop the first visible arg (the record)
+    appStrip :: Hs.Exp () -> Elims -> TCM (Hs.Exp ())
+    appStrip hd es = do
+      let Just args = allApplyElims es
+      args <- mapM (compileTerm builtins . unArg) $ tail $ filter visible args
       return $ eApp hd args
 
 compilePats :: Builtins -> NAPs -> TCM [Hs.Pat ()]

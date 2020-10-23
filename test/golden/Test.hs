@@ -42,3 +42,7 @@ plus3 = map (\ n -> n + 3)
 doubleLambda :: Integer -> Integer -> Integer
 doubleLambda = \ a b -> a + 2 * b
 
+sumMon :: Monoid a => [a] -> a
+sumMon [] = mempty
+sumMon (x : xs) = mappend x (sumMon xs)
+
