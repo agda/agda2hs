@@ -11,6 +11,7 @@ import qualified Data.Map as Map
 import System.Console.GetOpt
 import System.Environment
 import System.FilePath
+import System.Directory
 
 import qualified Language.Haskell.Exts.SrcLoc     as Hs
 import qualified Language.Haskell.Exts.Syntax     as Hs
@@ -34,7 +35,7 @@ import Agda.Syntax.Translation.ConcreteToAbstract
 import Agda.TheTypeChecker
 import Agda.TypeChecking.Rules.Term (isType_)
 import Agda.TypeChecking.Reduce
-import Agda.TypeChecking.Substitute hiding (sort)
+import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
 import Agda.Interaction.CommandLine (withCurrentFile)
 import Agda.Utils.Lens
@@ -230,7 +231,7 @@ compileTerm builtins v =
     Var x es   -> (`app` es) . Hs.Var () . Hs.UnQual () . hsName =<< showTCM (Var x [])
     Def f es   -> (`app` es) . Hs.Var () =<< hsQName builtins f
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName builtins (conName h)
-    Lit (LitNat n) -> return $ Hs.Lit () $ Hs.Int () n (show n)
+    Lit (LitNat _ n) -> return $ Hs.Lit () $ Hs.Int () n (show n)
     Lam v b | visible v -> hsLambda (absName b) <$> underAbstraction_ b (compileTerm builtins)
     Lam _ b -> underAbstraction_ b (compileTerm builtins)
     t -> genericDocError =<< text "bad term:" <?> prettyTCM t
@@ -358,6 +359,9 @@ moduleSetup _ _ _ _ = do
   setScope . iInsideScope =<< curIF
   Recompile <$> getBuiltins
 
+ensureDirectory :: FilePath -> IO ()
+ensureDirectory = createDirectoryIfMissing True . takeDirectory
+
 writeModule :: Options -> ModuleEnv -> IsMain -> ModuleName -> [CompiledDef] -> TCM ModuleRes
 writeModule opts _ isMain m defs0 = do
   code <- getForeignPragmas
@@ -370,6 +374,7 @@ writeModule opts _ isMain m defs0 = do
                  , "module " ++ prettyShow m ++ " where\n\n"
                  , renderBlocks defs ]
     reportSLn "" 1 $ "Writing " ++ hsFile
+    liftIO $ ensureDirectory hsFile
     liftIO $ writeFile hsFile output
 
 main = runAgda [Backend backend]
