@@ -70,7 +70,7 @@ backend = Backend'
   , isEnabled             = \ _ -> True
   , preCompile            = return
   , postCompile           = \ _ _ _ -> return ()
-  , preModule             = \ _ _ _ _ -> Recompile <$> getBuiltins
+  , preModule             = moduleSetup
   , postModule            = writeModule
   , compileDef            = compile
   , scopeCheckingSuffices = False
@@ -353,6 +353,11 @@ moduleFileName :: Options -> ModuleName -> FilePath
 moduleFileName opts name =
   outDir opts </> C.moduleNameToFileName (toTopLevelModuleName name) "hs"
 
+moduleSetup :: Options -> IsMain -> ModuleName -> FilePath -> TCM (Recompile ModuleEnv ModuleRes)
+moduleSetup _ _ _ _ = do
+  setScope . iInsideScope =<< curIF
+  Recompile <$> getBuiltins
+
 writeModule :: Options -> ModuleEnv -> IsMain -> ModuleName -> [CompiledDef] -> TCM ModuleRes
 writeModule opts _ isMain m defs0 = do
   code <- getForeignPragmas
@@ -364,7 +369,7 @@ writeModule opts _ isMain m defs0 = do
                  [ renderBlocks $ codePragmas code
                  , "module " ++ prettyShow m ++ " where\n\n"
                  , renderBlocks defs ]
-    reportSLn "" 1 $ "Writing " ++ hsFile ++ "\n"
+    reportSLn "" 1 $ "Writing " ++ hsFile
     liftIO $ writeFile hsFile output
 
 main = runAgda [Backend backend]
