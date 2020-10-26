@@ -1,10 +1,8 @@
 
-AGDA2HS=$(shell cabal -v0 exec -- which -- agda2hs)
-
 .PHONY : test install
 
 install :
-	cabal install
+	cabal new-install --overwrite-policy=always
 
 test :
-	@AGDA2HS=$(AGDA2HS) make -C test
+	@make -C test
