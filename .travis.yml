@@ -1,0 +1,19 @@
+sudo: true
+language: haskell
+cabal: 3.0
+ghc:
+  - "8.6.4"
+
+cache:
+  directories:
+  - "$HOME/.cabal/store"
+
+install:
+  - ghc --version
+  - cabal --version
+  - cabal new-update
+  - travis_wait 60 make install
+
+script:
+  - export PATH=$PATH:$HOME/.cabal/bin
+  - make test
