@@ -1,3 +1,4 @@
 dist
 dist-newstyle
 test/build
+test/agda2hs
