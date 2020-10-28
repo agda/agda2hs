@@ -4,6 +4,7 @@ module Test where
 
 import Prelude hiding (map, sum, (++))
 import Data.Monoid
+import Data.Word
 
 data Exp v = Plus (Exp v) (Exp v)
            | Int Integer
@@ -27,6 +28,40 @@ bla n = n * 4
    line
    comment
 -}
+
+ex_float :: Double
+ex_float = 0.0
+
+primFloatPlus :: Double -> Double -> Double
+primFloatPlus = (+) :: Double -> Double -> Double
+
+sumF :: [Double] -> Double
+sumF [] = 0.0
+sumF (x : xs) = primFloatPlus x (sumF xs)
+
+primWord64FromNat :: Integer -> Data.Word.Word64
+primWord64FromNat = fromIntegral
+
+primWord64ToNat :: Data.Word.Word64 -> Integer
+primWord64ToNat = fromIntegral
+
+ex_word :: Data.Word.Word64
+ex_word = primWord64FromNat 0
+
+ex_nat :: Integer
+ex_nat = primWord64ToNat ex_word
+
+primCharToNat :: Char -> Integer
+primCharToNat = (fromIntegral . fromEnum :: Char -> Integer)
+
+primNatToChar :: Integer -> Char
+primNatToChar = (toEnum . fromIntegral :: Integer -> Char)
+
+ex_char :: Char
+ex_char = 'a'
+
+toN :: Char -> Integer
+toN = primCharToNat
 
 (++) :: [a] -> [a] -> [a]
 [] ++ ys = ys
