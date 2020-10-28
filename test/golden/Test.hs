@@ -4,6 +4,7 @@ module Test where
 
 import Prelude hiding (map, sum, (++))
 import Data.Monoid
+import Data.Word
 
 data Exp v = Plus (Exp v) (Exp v)
            | Int Integer
@@ -27,6 +28,18 @@ bla n = n * 4
    line
    comment
 -}
+
+ex_float :: Double
+ex_float = 0.0
+
+ex_word :: Word64
+ex_word = fromInteger 0
+
+ex_char :: Char
+ex_char = 'a'
+
+d :: Char
+d = toEnum 100
 
 (++) :: [a] -> [a] -> [a]
 [] ++ ys = ys
