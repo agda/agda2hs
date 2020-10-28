@@ -15,6 +15,7 @@ import System.Directory
 
 import qualified Language.Haskell.Exts.SrcLoc     as Hs
 import qualified Language.Haskell.Exts.Syntax     as Hs
+import qualified Language.Haskell.Exts.Build      as Hs
 import qualified Language.Haskell.Exts.Pretty     as Hs
 import qualified Language.Haskell.Exts.Parser     as Hs
 import qualified Language.Haskell.Exts.ExactPrint as Hs
@@ -111,20 +112,24 @@ isOp _                         = False
 
 -- Builtins ---------------------------------------------------------------
 
-data Prim = Nat | List | Unit | Cons | Nil
+data Prim = Unit
+          | Nat | Float | Word64
+          | Char
+          | List | Cons | Nil
   deriving (Show, Eq)
 
 type Builtins = Map QName Prim
 
 getBuiltins :: TCM Builtins
 getBuiltins = Map.fromList . concat <$> mapM getB
-                [ (builtinNat,  Nat)
-                , (builtinList, List)
-                , (builtinUnit, Unit)
-                , (builtinCons, Cons)
-                , (builtinNil,  Nil)
-                ]
+  [ builtinUnit |-> Unit
+  , builtinNat |-> Nat, builtinFloat |-> Float
+  , builtinWord64 |-> Word64
+  , builtinChar |-> Char
+  , builtinList |-> List , builtinCons |-> Cons , builtinNil |-> Nil
+  ]
   where
+    (|->) = (,)
     getB (b, t) = getBuiltin' b >>= \ case
       Nothing          -> return []
       Just (Def q _)   -> return [(q, t)]
@@ -132,18 +137,25 @@ getBuiltins = Map.fromList . concat <$> mapM getB
       Just _           -> __IMPOSSIBLE__
 
 compilePrim :: Prim -> Hs.QName ()
-compilePrim Nat  = Hs.UnQual () (hsName "Integer")
-compilePrim List = Hs.Special () (Hs.ListCon ())
-compilePrim Unit = Hs.Special () (Hs.UnitCon ())
-compilePrim Cons = Hs.Special () (Hs.Cons ())
-compilePrim Nil  = Hs.Special () (Hs.ListCon ())
+compilePrim = \case
+  Unit   -> special Hs.UnitCon
+  Nat    -> unqual "Integer"
+  Float  -> unqual "Double"
+  Word64 -> unqual "Word64"
+  Char   -> unqual "Char"
+  List   -> special Hs.ListCon
+  Cons   -> special Hs.Cons
+  Nil    -> special Hs.ListCon
+  where
+    unqual n  = Hs.UnQual () $ hsName n
+    special c = Hs.Special () $ c ()
 
 -- Compiling things -------------------------------------------------------
 
 compile :: Options -> Builtins -> IsMain -> Definition -> TCM CompiledDef
 compile _ builtins _ def = getUniqueCompilerPragma pragmaName (defName def) >>= \ case
-  Nothing -> return []
   Just _  -> compile' builtins def
+  Nothing -> return []
 
 compile' :: Builtins -> Definition -> TCM CompiledDef
 compile' builtins def =
@@ -231,7 +243,10 @@ compileTerm builtins v =
     Var x es   -> (`app` es) . Hs.Var () . Hs.UnQual () . hsName =<< showTCM (Var x [])
     Def f es   -> (`app` es) . Hs.Var () =<< hsQName builtins f
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName builtins (conName h)
-    Lit (LitNat _ n) -> return $ Hs.Lit () $ Hs.Int () n (show n)
+    Lit (LitNat _ n) -> return $ Hs.intE n
+    Lit (LitFloat _ d) -> return $ Hs.Lit () $ Hs.Frac () (toRational d) (show d)
+    Lit (LitWord64 _ w) -> return $ Hs.Lit () $ Hs.PrimWord () (fromIntegral w) (show w)
+    Lit (LitChar _ c) -> return $ Hs.charE c
     Lam v b | visible v -> hsLambda (absName b) <$> underAbstraction_ b (compileTerm builtins)
     Lam _ b -> underAbstraction_ b (compileTerm builtins)
     t -> genericDocError =<< text "bad term:" <?> prettyTCM t
@@ -378,4 +393,3 @@ writeModule opts _ isMain m defs0 = do
     liftIO $ writeFile hsFile output
 
 main = runAgda [Backend backend]
-
