@@ -1,14 +1,6 @@
 module _ where
 
-open import Agda.Builtin.List
-open import Agda.Builtin.Nat
-open import Agda.Builtin.Float
-open import Agda.Builtin.Word
-open import Agda.Builtin.Char
-open import Agda.Builtin.Equality
-
-variable
-  a b : Set
+open import Prelude
 
 -- ** Foreign HS code
 
@@ -78,9 +70,9 @@ ex_char = 'a'
 postulate
   toEnum : Nat → Char
 
-d : Char
-d = toEnum 100
-{-# COMPILE AGDA2HS d #-}
+char_d : Char
+char_d = toEnum 100
+{-# COMPILE AGDA2HS char_d #-}
 
 -- ** Polymorphic functions
 
@@ -113,3 +105,37 @@ assoc (suc a) b c rewrite assoc a b c = refl
 thm : ∀ xs ys → sum (xs ++ ys) ≡ sum xs + sum ys
 thm []       ys = refl
 thm (x ∷ xs) ys rewrite thm xs ys | assoc x (sum xs) (sum ys) = refl
+
+-- ** Booleans
+
+ex_bool : Bool
+ex_bool = true
+{-# COMPILE AGDA2HS ex_bool #-}
+
+ex_if : Nat
+ex_if = if true then 1 else 0
+{-# COMPILE AGDA2HS ex_if #-}
+
+if_over : Nat
+if_over = (if true then (λ x → x) else (λ x → x + 1)) 0
+{-# COMPILE AGDA2HS if_over #-}
+
+if_partial₁ : List Nat → List Nat
+if_partial₁ = map (if true then 1 else_)
+{-# COMPILE AGDA2HS if_partial₁ #-}
+
+if_partial₂ : List Nat → List (Nat → Nat)
+if_partial₂ = map (if true then_else_)
+{-# COMPILE AGDA2HS if_partial₂ #-}
+
+if_partial₃ : List Bool → List (Nat → Nat → Nat)
+if_partial₃ = map if_then_else_
+{-# COMPILE AGDA2HS if_partial₃ #-}
+
+if_partial₄ : List Bool → List (Nat → Nat)
+if_partial₄ = map (if_then 1 else_)
+{-# COMPILE AGDA2HS if_partial₄ #-}
+
+if_partial₅ : Bool → Nat → List Nat → List Nat
+if_partial₅ b f = map (if b then f else_)
+{-# COMPILE AGDA2HS if_partial₅ #-}

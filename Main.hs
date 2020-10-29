@@ -110,12 +110,16 @@ isOp (Hs.UnQual _ Hs.Symbol{}) = True
 isOp (Hs.Special _ Hs.Cons{})  = True
 isOp _                         = False
 
+freshString :: String -> TCM String
+freshString s = freshName_ s >>= showTCM
+
 -- Builtins ---------------------------------------------------------------
 
 data Prim = Unit
           | Nat | Float | Word64
           | Char
           | List | Cons | Nil
+          | Bool | True_ | False_
   deriving (Show, Eq)
 
 type Builtins = Map QName Prim
@@ -125,6 +129,7 @@ getBuiltins = Map.fromList . concat <$> mapM getB
   [ builtinUnit |-> Unit
   , builtinNat |-> Nat, builtinFloat |-> Float
   , builtinWord64 |-> Word64
+  , builtinBool |-> Bool, builtinTrue |-> True_, builtinFalse |-> False_
   , builtinChar |-> Char
   , builtinList |-> List , builtinCons |-> Cons , builtinNil |-> Nil
   ]
@@ -142,6 +147,9 @@ compilePrim = \case
   Nat    -> unqual "Integer"
   Float  -> unqual "Double"
   Word64 -> unqual "Word64"
+  Bool   -> unqual "Bool"
+  True_  -> unqual "True"
+  False_ -> unqual "False"
   Char   -> unqual "Char"
   List   -> special Hs.ListCon
   Cons   -> special Hs.Cons
@@ -241,7 +249,9 @@ compileTerm :: Builtins -> Term -> TCM (Hs.Exp ())
 compileTerm builtins v =
   case unSpine v of
     Var x es   -> (`app` es) . Hs.Var () . Hs.UnQual () . hsName =<< showTCM (Var x [])
-    Def f es   -> (`app` es) . Hs.Var () =<< hsQName builtins f
+    Def f es
+      | show (qnameName f) == "if_then_else_" -> ite es
+      | otherwise -> (`app` es) . Hs.Var () =<< hsQName builtins f
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName builtins (conName h)
     Lit (LitNat _ n) -> return $ Hs.intE n
     Lit (LitFloat _ d) -> return $ Hs.Lit () $ Hs.Frac () (toRational d) (show d)
@@ -251,11 +261,23 @@ compileTerm builtins v =
     Lam _ b -> underAbstraction_ b (compileTerm builtins)
     t -> genericDocError =<< text "bad term:" <?> prettyTCM t
   where
-    app :: Hs.Exp () -> Elims -> TCM (Hs.Exp ())
-    app hd es = do
+    compileArgs :: Elims -> TCM [Hs.Exp ()]
+    compileArgs es = do
       let Just args = allApplyElims es
-      args <- mapM (compileTerm builtins . unArg) $ filter visible args
-      return $ eApp hd args
+      mapM (compileTerm builtins . unArg) $ filter visible args
+
+    app :: Hs.Exp () -> Elims -> TCM (Hs.Exp ())
+    app hd es = eApp <$> pure hd <*> compileArgs es
+
+    ite :: Elims -> TCM (Hs.Exp ())
+    ite es = compileArgs es >>= \case
+      -- fully applied
+      (b : t : f : es') -> return $ Hs.If () b t f `eApp` es'
+      -- partially applied -> eta-expand
+      es' -> do
+        xs <- fmap Hs.name . drop (length es') <$> mapM freshString ["b", "t", "f"]
+        let [b, t, f] = es' ++ map Hs.var xs
+        return $ Hs.lamE (Hs.pvar <$> xs) $ Hs.If () b t f
 
 compilePats :: Builtins -> NAPs -> TCM [Hs.Pat ()]
 compilePats builtins ps = mapM (compilePat builtins . namedArg) $ filter visible ps
