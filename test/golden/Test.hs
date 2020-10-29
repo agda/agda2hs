@@ -38,8 +38,8 @@ ex_word = fromInteger 0
 ex_char :: Char
 ex_char = 'a'
 
-d :: Char
-d = toEnum 100
+char_d :: Char
+char_d = toEnum 100
 
 (++) :: [a] -> [a] -> [a]
 [] ++ ys = ys
@@ -54,4 +54,28 @@ plus3 = map (\ n -> n + 3)
 
 doubleLambda :: Integer -> Integer -> Integer
 doubleLambda = \ a b -> a + 2 * b
+
+ex_bool :: Bool
+ex_bool = True
+
+ex_if :: Integer
+ex_if = if True then 1 else 0
+
+if_over :: Integer
+if_over = (if True then \ x -> x else \ x -> x + 1) 0
+
+if_partial₁ :: [Integer] -> [Integer]
+if_partial₁ = map (\ f -> if True then 1 else f)
+
+if_partial₂ :: [Integer] -> [Integer -> Integer]
+if_partial₂ = map (\ t f -> if True then t else f)
+
+if_partial₃ :: [Bool] -> [Integer -> Integer -> Integer]
+if_partial₃ = map (\ b t f -> if b then t else f)
+
+if_partial₄ :: [Bool] -> [Integer -> Integer]
+if_partial₄ = map (\ section f -> if section then 1 else f)
+
+if_partial₅ :: Bool -> Integer -> [Integer] -> [Integer]
+if_partial₅ b f = map (\ f₁ -> if b then f else f₁)
 
