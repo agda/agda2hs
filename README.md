@@ -1,6 +1,8 @@
 ## agda2hs
 
-Compiles a subset of Agda to readable Haskell code. See Test.agda for an example.
+Compiles a subset of Agda to readable Haskell code. Use case: writing your Haskell code in Agda and have `agda2hs` translate it to Haskell, to let you prove properties about it.
+
+See test/Test.agda for an example.
 
 ### Future work
 
