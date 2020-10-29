@@ -7,7 +7,7 @@ default :
 	@echo == Running ghc ==
 	@(cd build; ghc -fno-code AllTests.hs)
 	@echo == Comparing output ==
-	@diff -r -x '*.hi' -x '*.o' build golden
+	@diff -r build golden
 
 golden :
 	@cp -r build/* golden
