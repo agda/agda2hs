@@ -81,13 +81,13 @@ thm (x ∷ xs) ys rewrite thm xs ys | assoc x (sum xs) (sum ys) = refl
 
 -- Monoid instance
 
-record Monoid (A : Set) : Set where
-  field mempty  : A
-        mappend : A → A → A
+record Monoid (a : Set) : Set where
+  field mempty  : a
+        mappend : a → a → a
 
 open Monoid {{...}} public
 
-{-# COMPILE AGDA2HS Monoid class #-}
+{-# COMPILE AGDA2HS Monoid #-}
 
 instance
   MonoidNat : Monoid Nat

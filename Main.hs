@@ -147,10 +147,16 @@ data ParsedResult
   | DefaultPragma
   | ClassPragma CodeGen
 
+classes :: [String]
+classes = ["Show"]
+
 processPragma :: QName -> TCM ParsedResult
 processPragma qn = getUniqueCompilerPragma pragmaName qn >>= \case
   Nothing -> return NoPragma
-  Just (CompilerPragma _ s) | s == "class" -> return $ ClassPragma NoCode
+  Just (CompilerPragma _ s) | s == "class" && s `elem` classes ->
+    return $ ClassPragma NoCode
+  Just (CompilerPragma _ s) | s == "class" ->
+    return $ ClassPragma YesCode
   _                                        -> return DefaultPragma
 
 compile :: Options -> Builtins -> IsMain -> Definition -> TCM CompiledDef
@@ -164,9 +170,24 @@ compile' builtins def =
   case theDef def of
     Function{} -> tag <$> compileFun builtins def
     Datatype{} -> tag <$> compileData builtins def
+    Record{}   -> tag <$> compileRecord builtins def
     _          -> setCurrentRange r $ genericDocError =<< (text "cannot compile: " <+> prettyTCM (defName def))
   where tag code = [(r, code)]
         r = nameBindingSite $ qnameName $ defName def
+
+compileRecord :: Builtins -> Definition -> TCM [Hs.Decl ()]
+compileRecord builtins def = do
+  let r = hsName $ prettyShow $ qnameName $ defName def
+  TelV tel _ <- telViewUpTo (recPars (theDef def)) (defType def)
+--  let tel = recTel (theDef def)
+  let params = teleArgs tel :: [Arg Term]
+  pars <- mapM (showTCM . unArg) $ filter visible params
+  let hd = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
+                 (Hs.DHead () r) pars
+  let blah :: QName -> Hs.Decl ()
+      blah f = Hs.TypeSig () [(hsName (show (nameConcrete (qnameName f))))] (Hs.TyStar ())
+  let x = map (Hs.ClsDecl () . blah . unDom) $ recFields (theDef def)
+  return [Hs.ClassDecl () Nothing hd [] (Just x)]
 
 compileData :: Builtins -> Definition -> TCM [Hs.Decl ()]
 compileData builtins def = do
