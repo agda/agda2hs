@@ -20,6 +20,7 @@ source-repository head
 
 executable agda2hs
   main-is:             Main.hs
+  other-modules:       HsUtils
   build-depends:       base >= 4.10 && < 4.15,
                        Agda >= 2.6 && < 2.6.2,
                        containers >= 0.6 && < 0.7,

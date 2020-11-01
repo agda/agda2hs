@@ -2,9 +2,13 @@
 
 module Test where
 
+import Data.Word (Word64)
 import Prelude hiding (map, sum, (++))
 import Data.Monoid
-import Data.Word
+-- import Data.Word
+
+-- import Data.Word (Word64)
+import qualified Data.Word as Word64
 
 data Exp v = Plus (Exp v) (Exp v)
            | Int Integer
