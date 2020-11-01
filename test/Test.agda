@@ -13,7 +13,10 @@ open import Prelude
 {-# FOREIGN AGDA2HS
 import Prelude hiding (map, sum, (++))
 import Data.Monoid
-import Data.Word
+-- import Data.Word
+
+-- import Data.Word (Word64)
+import qualified Data.Word as Word64
 #-}
 
 -- ** Datatypes & functions

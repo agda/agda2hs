@@ -28,7 +28,7 @@ import Agda.Compiler.Common
 import Agda.Interaction.BasicOps
 import Agda.TypeChecking.Monad
 import Agda.TypeChecking.Pretty hiding (pretty)
-import Agda.Syntax.Common
+import Agda.Syntax.Common hiding (Ranged)
 import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Literal
 import Agda.Syntax.Internal
@@ -52,8 +52,13 @@ import Agda.Utils.Impossible
 import Agda.Utils.Maybe.Strict (toLazy, toStrict)
 import Agda.Utils.Size
 
+import HsUtils
+
+
 data Options = Options { optOutDir     :: FilePath,
                          optExtensions :: [Hs.Extension] }
+
+data Options = Options { outDir :: FilePath }
 
 defaultOptions :: Options
 defaultOptions = Options{ optOutDir = ".", optExtensions = [] }
@@ -67,9 +72,10 @@ extensionOpt ext opts = return opts{ optExtensions = Hs.parseExtension ext : opt
 pragmaName :: String
 pragmaName = "AGDA2HS"
 
+type Ranged a    = (Range, a)
 type ModuleEnv   = Builtins
 type ModuleRes   = ()
-type CompiledDef = [(Range, [Hs.Decl ()])]
+type CompiledDef = [Ranged [Hs.Decl ()]]
 
 backend :: Backend' Options Options ModuleEnv ModuleRes CompiledDef
 backend = Backend'
@@ -91,21 +97,10 @@ backend = Backend'
   , mayEraseType          = \ _ -> return True
   }
 
--- Names ------------------------------------------------------------------
+-- Helpers ---------------------------------------------------------------
 
 showTCM :: PrettyTCM a => a -> TCM String
 showTCM x = show <$> prettyTCM x
-
-isInfix :: String -> Maybe String
-isInfix ('_' : f) = do
-  (op, '_') <- initLast f
-  return op
-isInfix _ = Nothing
-
-hsName :: String -> Hs.Name ()
-hsName x
-  | Just op <- isInfix x = Hs.Symbol () op
-  | otherwise            = Hs.Ident () x
 
 hsQName :: Builtins -> QName -> TCM (Hs.QName ())
 hsQName builtins f
@@ -116,11 +111,6 @@ hsQName builtins f
       case break (== '.') $ reverse s of
         (_, "")        -> Hs.UnQual () (hsName s)
         (fr, _ : mr) -> Hs.Qual () (Hs.ModuleName () $ reverse mr) (hsName $ reverse fr)
-
-isOp :: Hs.QName () -> Bool
-isOp (Hs.UnQual _ Hs.Symbol{}) = True
-isOp (Hs.Special _ Hs.Cons{})  = True
-isOp _                         = False
 
 freshString :: String -> TCM String
 freshString s = freshName_ s >>= showTCM
@@ -333,30 +323,6 @@ compilePat builtins (ConP h _ ps) = do
 -- TODO: LitP
 compilePat _ p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
 
-pApp :: Hs.QName () -> [Hs.Pat ()] -> Hs.Pat ()
-pApp c@(Hs.UnQual () (Hs.Symbol () _)) [p, q] = Hs.PInfixApp () p c q
-pApp c@(Hs.Special () Hs.Cons{}) [p, q] = Hs.PInfixApp () p c q
-pApp c ps = Hs.PApp () c ps
-
-eApp :: Hs.Exp () -> [Hs.Exp ()] -> Hs.Exp ()
-eApp f (a : b : as) | Just op <- getOp f = foldl (Hs.App ()) (Hs.InfixApp () a op b) as
-  where getOp (Hs.Var _ x) | isOp x = Just $ Hs.QVarOp () x
-        getOp (Hs.Con _ c) | isOp c = Just $ Hs.QConOp () c
-        getOp _                     = Nothing
-eApp f es = foldl (Hs.App ()) f es
-
-tApp :: Hs.Type () -> [Hs.Type ()] -> Hs.Type ()
-tApp (Hs.TyCon () (Hs.Special () Hs.ListCon{})) [a] = Hs.TyList () a
-tApp t vs = foldl (Hs.TyApp ()) t vs
-
-hsLambda :: String -> Hs.Exp () -> Hs.Exp ()
-hsLambda x e =
-  case e of
-    Hs.Lambda l ps b -> Hs.Lambda l (p : ps) b
-    _                -> Hs.Lambda () [p] e
-  where
-    p = Hs.PVar () $ hsName x
-
 -- FOREIGN pragmas --------------------------------------------------------
 
 type Code = (Hs.Module Hs.SrcSpanInfo, [Hs.Comment])
@@ -385,22 +351,11 @@ getForeignPragmas exts = do
             Hs.ParseFailed loc msg -> setCurrentRange (srcLocToRange loc) $ genericError msg
             Hs.ParseOk m           -> ((r, m) :) <$> getCode (exts ++ languagePragmas m) pragmas
 
-srcSpanToRange :: Hs.SrcSpan -> Range
-srcSpanToRange (Hs.SrcSpan file l1 c1 l2 c2) =
-  intervalToRange (toStrict $ Just $ mkAbsolute file) $ Interval (pos l1 c1) (pos l2 c2)
-  where pos l c = Pn () 0 (fromIntegral l) (fromIntegral c)
-
-srcLocToRange :: Hs.SrcLoc -> Range
-srcLocToRange (Hs.SrcLoc file l c) = srcSpanToRange (Hs.SrcSpan file l c l c)
-
-renderComment (Hs.Comment True  _ s) = "{-" ++ s ++ "-}"
-renderComment (Hs.Comment False _ s) = "--" ++ s
-
 -- Rendering --------------------------------------------------------------
 
-type Block = (Range, [String])
+type Block = Ranged [String]
 
-sortRanges :: [(Range, a)] -> [a]
+sortRanges :: [Ranged a] -> [a]
 sortRanges = map snd . sortBy (compare `on` rLine . fst)
 
 rLine :: Range -> Int
@@ -412,29 +367,69 @@ renderBlocks = unlines . map unlines . sortRanges . filter (not . null . snd)
 defBlock :: CompiledDef -> [Block]
 defBlock def = [ (r, map pp ds) | (r, ds) <- def ]
 
-codePragmas :: [(Range, Code)] -> [Block]
+codePragmas :: [Ranged Code] -> [Block]
 codePragmas code = [ (r, map pp ps) | (r, (Hs.Module _ _ ps _ _, _)) <- code ]
 
-codeBlocks :: [(Range, Code)] -> [Block]
+codeBlocks :: [Ranged Code] -> [Block]
 codeBlocks code = [(r, [uncurry Hs.exactPrint $ moveToTop $ noPragmas mcs]) | (r, mcs) <- code, nonempty mcs]
   where noPragmas (Hs.Module l h _ is ds, cs) = (Hs.Module l h [] is ds, cs)
         noPragmas m                           = m
         nonempty (Hs.Module _ _ _ is ds, cs) = not $ null is && null ds && null cs
         nonempty _                           = True
 
--- exactPrint really looks at the line numbers (and we're using the locations from the agda source
--- to report Haskell parse errors at the right location), so shift everything to start at line 1.
-moveToTop :: Hs.Annotated ast => (ast Hs.SrcSpanInfo, [Hs.Comment]) -> (ast Hs.SrcSpanInfo, [Hs.Comment])
-moveToTop (x, cs) = (subtractLine l <$> x, [ Hs.Comment b (sub l r) str | Hs.Comment b r str <- cs ])
-  where l = Hs.startLine (Hs.ann x) - 1
-        subtractLine :: Int -> Hs.SrcSpanInfo -> Hs.SrcSpanInfo
-        subtractLine l (Hs.SrcSpanInfo s ss) = Hs.SrcSpanInfo (sub l s) (map (sub l) ss)
+-- Checking imports -------------------------------------------------------
 
-        sub :: Int -> Hs.SrcSpan -> Hs.SrcSpan
-        sub l (Hs.SrcSpan f l0 c0 l1 c1) = Hs.SrcSpan f (l0 - l) c0 (l1 - l) c1
+imports :: [Ranged Code] -> [Hs.ImportDecl Hs.SrcSpanInfo]
+imports modules = concat [imps | (_, (Hs.Module _ _ _ imps _, _)) <- modules]
 
-pp :: Hs.Pretty a => a -> String
-pp = Hs.prettyPrintWithMode Hs.defaultMode{ Hs.spacing = False }
+addImports :: [Hs.ImportDecl Hs.SrcSpanInfo] -> [CompiledDef] -> TCM [Hs.ImportDecl ()]
+addImports is defs = do
+  return [importWord64 | not (null defs || any isImportWord64 is)] 
+  where
+    importWord64 :: Hs.ImportDecl ()
+    importWord64 = Hs.ImportDecl ()
+      (Hs.ModuleName () "Data.Word") False False False Nothing Nothing
+      (Just $ Hs.ImportSpecList () False [Hs.IVar () $ Hs.name "Word64"]) 
+
+    isImportWord64 :: Hs.ImportDecl Hs.SrcSpanInfo -> Bool
+    isImportWord64 = \case
+      Hs.ImportDecl _ (Hs.ModuleName _ "Data.Word") False _ _ _ _ specs ->
+        case specs of 
+          Just (Hs.ImportSpecList _ hiding specs) ->
+            not hiding && "Word64" `elem` concatMap getExplicitImports specs
+          Nothing -> True
+      _ -> False
+
+checkImports :: [Hs.ImportDecl Hs.SrcSpanInfo] -> TCM ()
+checkImports is = do
+  forM_ is $ \i ->
+    case checkImport i of
+      Just loc -> setCurrentRange loc $
+        genericDocError =<< text "Not allowed to import builtin type Word64"
+      Nothing  -> return ()
+
+checkImport :: Hs.ImportDecl Hs.SrcSpanInfo -> Maybe Range
+checkImport i
+  | Just (Hs.ImportSpecList _ False specs) <- Hs.importSpecs i
+  , pp (Hs.importModule i) /= "Data.Word"
+  = listToMaybe $ mapMaybe checkImportSpec specs
+  | otherwise
+  = Nothing
+  where
+    checkImportSpec :: Hs.ImportSpec Hs.SrcSpanInfo -> Maybe Range
+    checkImportSpec = \case
+      Hs.IVar loc n | check n -> ret loc
+      Hs.IAbs loc _ n | check n -> ret loc
+      Hs.IThingAll loc n | check n -> ret loc
+      Hs.IThingWith loc n ns
+        | check n -> ret loc
+        | Just loc' <- listToMaybe $ map cloc $ filter (check . cname) ns -> ret loc' 
+      _ -> Nothing
+      where
+        check = (== "Word64") . pp
+        ret = Just . srcSpanInfoToRange
+
+-- Generating the files -------------------------------------------------------
 
 moduleFileName :: Options -> ModuleName -> FilePath
 moduleFileName opts name =
@@ -452,12 +447,18 @@ writeModule :: Options -> ModuleEnv -> IsMain -> ModuleName -> [CompiledDef] -> 
 writeModule opts _ isMain m defs0 = do
   code <- getForeignPragmas (optExtensions opts)
   let defs = concatMap defBlock defs0 ++ codeBlocks code
+  let imps = imports code
   unless (null code && null defs) $ do
+    -- Check user-supplied imports
+    checkImports imps
+    -- Add automatic imports for builtin types (if any)
+    autoImports <- unlines . map pp <$> addImports imps defs0
     -- The comments makes it hard to generate and pretty print a full module
     let hsFile = moduleFileName opts m
         output = concat
                  [ renderBlocks $ codePragmas code
                  , "module " ++ prettyShow m ++ " where\n\n"
+                 , autoImports
                  , renderBlocks defs ]
     reportSLn "" 1 $ "Writing " ++ hsFile
     liftIO $ ensureDirectory hsFile
