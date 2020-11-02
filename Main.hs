@@ -19,6 +19,7 @@ import qualified Language.Haskell.Exts.Build      as Hs
 import qualified Language.Haskell.Exts.Pretty     as Hs
 import qualified Language.Haskell.Exts.Parser     as Hs
 import qualified Language.Haskell.Exts.ExactPrint as Hs
+import qualified Language.Haskell.Exts.Extension  as Hs
 import qualified Language.Haskell.Exts.Comments   as Hs
 
 import Agda.Main (runAgda)
@@ -47,13 +48,17 @@ import Agda.Utils.List
 import Agda.Utils.Impossible
 import Agda.Utils.Maybe.Strict (toLazy, toStrict)
 
-data Options = Options { outDir :: FilePath }
+data Options = Options { optOutDir     :: FilePath,
+                         optExtensions :: [Hs.Extension] }
 
 defaultOptions :: Options
-defaultOptions = Options{ outDir = "." }
+defaultOptions = Options{ optOutDir = ".", optExtensions = [] }
 
 outdirOpt :: Monad m => FilePath -> Options -> m Options
-outdirOpt dir opts = return opts{ outDir = dir }
+outdirOpt dir opts = return opts{ optOutDir = dir }
+
+extensionOpt :: Monad m => String -> Options -> m Options
+extensionOpt ext opts = return opts{ optExtensions = Hs.parseExtension ext : optExtensions opts }
 
 pragmaName :: String
 pragmaName = "AGDA2HS"
@@ -68,7 +73,10 @@ backend = Backend'
   , backendVersion        = Just "0.1"
   , options               = defaultOptions
   , commandLineFlags      = [ Option ['o'] ["out-dir"] (ReqArg outdirOpt "DIR")
-                              "Write Haskell code to DIR. Default: ." ]
+                              "Write Haskell code to DIR. Default: ."
+                            , Option ['X'] [] (ReqArg extensionOpt "EXTENSION")
+                              "Enable Haskell language EXTENSION. Affects parsing of Haskell code in FOREIGN blocks."
+                            ]
   , isEnabled             = \ _ -> True
   , preCompile            = return
   , postCompile           = \ _ _ _ -> return ()
@@ -319,22 +327,29 @@ hsLambda x e =
 
 type Code = (Hs.Module Hs.SrcSpanInfo, [Hs.Comment])
 
-getForeignPragmas :: TCM [(Range, Code)]
-getForeignPragmas = do
+languagePragmas :: Code -> [Hs.Extension]
+languagePragmas (Hs.Module _ _ ps _ _, _) =
+  [ Hs.parseExtension s | Hs.LanguagePragma _ ss <- ps, Hs.Ident _ s <- ss ]
+languagePragmas _ = []
+
+getForeignPragmas :: [Hs.Extension] -> TCM [(Range, Code)]
+getForeignPragmas exts = do
   pragmas <- fromMaybe [] . Map.lookup pragmaName . iForeignCode <$> curIF
-  reverse <$> mapM getCode pragmas
+  getCode exts $ reverse pragmas
   where
-    getCode :: ForeignCode -> TCM (Range, Code)
-    getCode (ForeignCode r code) = do
+    getCode :: [Hs.Extension] -> [ForeignCode] -> TCM [(Range, Code)]
+    getCode _ [] = return []
+    getCode exts (ForeignCode r code : pragmas) = do
           let Just file = fmap filePath $ toLazy $ rangeFile r
               pmode = Hs.defaultParseMode { Hs.parseFilename     = file,
-                                            Hs.ignoreLinePragmas = False }
+                                            Hs.ignoreLinePragmas = False,
+                                            Hs.extensions        = exts }
               line = case posLine <$> rStart r of
                        Just l  -> "{-# LINE " ++ show l ++ show file ++ " #-}\n"
                        Nothing -> ""
           case Hs.parseWithComments pmode (line ++ code) of
-            Hs.ParseOk m           -> return (r, m)
             Hs.ParseFailed loc msg -> setCurrentRange (srcLocToRange loc) $ genericError msg
+            Hs.ParseOk m           -> ((r, m) :) <$> getCode (exts ++ languagePragmas m) pragmas
 
 srcSpanToRange :: Hs.SrcSpan -> Range
 srcSpanToRange (Hs.SrcSpan file l1 c1 l2 c2) =
@@ -389,7 +404,7 @@ pp = Hs.prettyPrintWithMode Hs.defaultMode{ Hs.spacing = False }
 
 moduleFileName :: Options -> ModuleName -> FilePath
 moduleFileName opts name =
-  outDir opts </> C.moduleNameToFileName (toTopLevelModuleName name) "hs"
+  optOutDir opts </> C.moduleNameToFileName (toTopLevelModuleName name) "hs"
 
 moduleSetup :: Options -> IsMain -> ModuleName -> FilePath -> TCM (Recompile ModuleEnv ModuleRes)
 moduleSetup _ _ _ _ = do
@@ -401,7 +416,7 @@ ensureDirectory = createDirectoryIfMissing True . takeDirectory
 
 writeModule :: Options -> ModuleEnv -> IsMain -> ModuleName -> [CompiledDef] -> TCM ModuleRes
 writeModule opts _ isMain m defs0 = do
-  code <- getForeignPragmas
+  code <- getForeignPragmas (optExtensions opts)
   let defs = concatMap defBlock defs0 ++ codeBlocks code
   unless (null code && null defs) $ do
     -- The comments makes it hard to generate and pretty print a full module
