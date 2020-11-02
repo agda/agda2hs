@@ -34,6 +34,9 @@ import Agda.Syntax.Literal
 import Agda.Syntax.Internal
 import Agda.Syntax.Position
 import Agda.Syntax.Translation.ConcreteToAbstract
+import Agda.Syntax.Translation.AbstractToConcrete
+import Agda.Syntax.Scope.Base
+import Agda.Syntax.Scope.Monad
 import Agda.TheTypeChecker
 import Agda.TypeChecking.Rules.Term (isType_)
 import Agda.TypeChecking.Reduce
@@ -47,6 +50,7 @@ import Agda.Utils.FileName
 import Agda.Utils.List
 import Agda.Utils.Impossible
 import Agda.Utils.Maybe.Strict (toLazy, toStrict)
+import Agda.Utils.Size
 
 data Options = Options { optOutDir     :: FilePath,
                          optExtensions :: [Hs.Extension] }
@@ -224,7 +228,11 @@ compileClause :: Hs.Name () -> Clause -> TCM (Hs.Match ())
 compileClause x Clause{clauseTel       = tel,
                        namedClausePats = ps,
                        clauseBody      = body } =
-  addContext tel $ do
+  addContext (KeepNames tel) $ localScope $ do
+    -- Only bind user-written variables
+    let bind (d, i) | getOrigin d == UserWritten = bindVar i
+                    | otherwise                  = return ()
+    mapM_ bind $ zip (telToList tel) $ reverse [0..size tel - 1]
     builtins <- getBuiltins
     ps   <- compilePats builtins ps
     body <- maybe (return $ Hs.Var () $ Hs.UnQual () (hsName "undefined")) (compileTerm builtins) body
@@ -233,11 +241,26 @@ compileClause x Clause{clauseTel       = tel,
       (Hs.Symbol{}, p : q : ps) -> return $ Hs.InfixMatch () p x (q : ps) rhs Nothing
       _                         -> return $ Hs.Match () x ps rhs Nothing
 
+-- When going under a binder we need to update the scope as well as the context in order to get
+-- correct printing of variable names (Issue #14).
+
+bindVar :: Int -> TCM ()
+bindVar i = do
+  x <- nameOfBV i
+  bindVariable LambdaBound (nameConcrete x) x
+
+underAbstr :: Subst t a => Dom Type -> Abs a -> (a -> TCM b) -> TCM b
+underAbstr a b ret = underAbstraction' KeepNames a b $ \ body ->
+  localScope $ bindVar 0 >> ret body
+
+underAbstr_ :: Subst t a => Abs a -> (a -> TCM b) -> TCM b
+underAbstr_ = underAbstr __DUMMY_DOM__
+
 compileType :: Builtins -> Term -> TCM (Hs.Type ())
 compileType builtins t = do
   t <- reduce t
   case t of
-    Pi a b | hidden a -> underAbstraction a b (compileType builtins . unEl)
+    Pi a b | hidden a -> underAbstr a b (compileType builtins . unEl)
              -- Hidden Pi means Haskell forall
     Pi a (NoAbs _ b) | visible a -> do
       hsA <- compileType builtins (unEl $ unDom a)
@@ -256,7 +279,11 @@ compileType builtins t = do
 compileTerm :: Builtins -> Term -> TCM (Hs.Exp ())
 compileTerm builtins v =
   case unSpine v of
-    Var x es   -> (`app` es) . Hs.Var () . Hs.UnQual () . hsName =<< showTCM (Var x [])
+    Var x es   -> do
+      cxt <- getContext
+      reportSDoc "agda2hs.compile" 10 $ text "context:" <+> fsep
+        [ prettyTCM (Var i []) | i <- reverse [0..length cxt - 1] ]
+      (`app` es) . Hs.Var () . Hs.UnQual () . hsName =<< showTCM (Var x [])
     Def f es
       | show (qnameName f) == "if_then_else_" -> ite es
       | otherwise -> (`app` es) . Hs.Var () =<< hsQName builtins f
@@ -265,7 +292,14 @@ compileTerm builtins v =
     Lit (LitFloat _ d) -> return $ Hs.Lit () $ Hs.Frac () (toRational d) (show d)
     Lit (LitWord64 _ w) -> return $ Hs.Lit () $ Hs.PrimWord () (fromIntegral w) (show w)
     Lit (LitChar _ c) -> return $ Hs.charE c
-    Lam v b | visible v -> hsLambda (absName b) <$> underAbstraction_ b (compileTerm builtins)
+    Lam v b | visible v, getOrigin v == UserWritten -> do
+      hsLambda (absName b) <$> underAbstr_ b (compileTerm builtins)
+    Lam v b | visible v ->
+      -- System-inserted lambda, no need to preserve the name.
+      -- TODO: most likely a section, so should really reconstruct that.
+      underAbstraction_ b $ \ body -> do
+        x <- showTCM (Var 0 [])
+        hsLambda x <$> compileTerm builtins body
     Lam _ b -> underAbstraction_ b (compileTerm builtins)
     t -> genericDocError =<< text "bad term:" <?> prettyTCM t
   where
