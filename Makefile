@@ -4,7 +4,8 @@ install :
 	cabal new-install --overwrite-policy=always
 
 repl :
-	cabal new-repl # e.g. `:set args -itest -otest/build test/AllTests.agda ... main ... :r ... main`
+	(echo ":set args -itest -otest/build test/AllTests.agda" && cat) | cabal new-repl
+	# then `... main ... :r ... main`
 
 test :
 	cabal new-install --overwrite-policy=always --installdir=test --install-method=copy
