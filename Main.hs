@@ -58,8 +58,6 @@ import HsUtils
 data Options = Options { optOutDir     :: FilePath,
                          optExtensions :: [Hs.Extension] }
 
-data Options = Options { outDir :: FilePath }
-
 defaultOptions :: Options
 defaultOptions = Options{ optOutDir = ".", optExtensions = [] }
 
@@ -384,7 +382,7 @@ imports modules = concat [imps | (_, (Hs.Module _ _ _ imps _, _)) <- modules]
 
 addImports :: [Hs.ImportDecl Hs.SrcSpanInfo] -> [CompiledDef] -> TCM [Hs.ImportDecl ()]
 addImports is defs = do
-  return [importWord64 | not (null defs || any isImportWord64 is)] 
+  return [importWord64 | usesWord64 defs && not (any isImportWord64 is)]
   where
     importWord64 :: Hs.ImportDecl ()
     importWord64 = Hs.ImportDecl ()
