@@ -11,4 +11,4 @@ test :
 	make -C test
 
 golden :
-	make -C golden
+	make -C test golden
