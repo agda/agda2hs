@@ -1,8 +1,7 @@
 
 module Issue14 where
 
-open import Agda.Builtin.Nat
-open import Prelude
+open import Haskell.Prelude
 
 -- Wrong name for shadowed lambda
 constid : a → b → b
