@@ -53,6 +53,9 @@ map :: (a -> b) -> [a] -> [b]
 map f [] = []
 map f (x : xs) = f x : map f xs
 
+mapTest :: [Integer] -> [Integer]
+mapTest = map (id . (+) 5)
+
 plus3 :: [Integer] -> [Integer]
 plus3 = map (\ n -> n + 3)
 
