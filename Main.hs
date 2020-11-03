@@ -179,27 +179,33 @@ compile' builtins def =
 compileRecord :: Builtins -> Definition -> TCM [Hs.Decl ()]
 compileRecord builtins def = do
   let r = hsName $ prettyShow $ qnameName $ defName def
-  fieldTypes <- getRecordFieldTypes (defName def)
-  let fieldTypesList = telToList fieldTypes
-  let (params,flds) = splitAt (recPars (theDef def)) fieldTypesList 
-  let fieldNames = map unDom $ recFields (theDef def) -- getRecordTypeFields (defName def)
-      bleh :: [Dom (ArgName,Type)] -> TCM [Hs.ClassDecl ()]
-      bleh (dat : dats) = do
-        let (n,ty) = unDom dat
-        rf <- compileRecField builtins n ty
-        rfs <- bleh dats
-        return (rf : rfs)
-      bleh [] = return []
-  y <- bleh flds
-  let hd = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
-                 (Hs.DHead () r) (map (fst . unDom) params)
+  TelV tel _ <- telViewUpTo (recPars (theDef def)) (defType def)
+  hd <- addContext tel $ do
+    let params = teleArgs tel :: [Arg Term]
+    pars <- mapM (showTCM . unArg) $ filter visible params
+    return $ foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
+                   (Hs.DHead () r)
+                   pars
+  let help :: Int -> [QName] -> Telescope -> TCM [Hs.ClassDecl ()]
+      help i ns tel = case (ns,splitTelescopeAt i tel) of
+        (_     ,(_   ,EmptyTel      )) -> return []
+        ((n:ns),(tel',ExtendTel ty _)) -> do 
+          ty  <- compileRecField builtins tel' n (unDom ty)
+          tys <- help (i+1) ns tel
+          return (ty:tys)
+  telBig <- getRecordFieldTypes (defName def)
+  let fieldNames = map unDom $ recFields (theDef def)
+  y <- help (recPars (theDef def)) fieldNames telBig
   return [Hs.ClassDecl () Nothing hd [] (Just y)]
 
-compileRecField :: Builtins -> ArgName -> Type -> TCM (Hs.ClassDecl ())
-compileRecField builtins n ty = do
+compileRecField :: Builtins
+                -> Telescope
+                -> QName
+                -> Type
+                -> TCM (Hs.ClassDecl ())
+compileRecField builtins tel n ty = addContext tel $ do
   hty <- compileType builtins (unEl ty)
-  n <- showTCM n
-  return $ Hs.ClsDecl () (Hs.TypeSig () [hsName n] hty)
+  return $ Hs.ClsDecl () (Hs.TypeSig () [hsName $ prettyShow $ qnameName n] hty)
   
 compileData :: Builtins -> Definition -> TCM [Hs.Decl ()]
 compileData builtins def = do
