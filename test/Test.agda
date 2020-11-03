@@ -1,6 +1,8 @@
 module _ where
 
-open import Prelude
+open import Haskell.Prelude
+open import Agda.Builtin.Word
+open import Agda.Builtin.Equality
 
 -- ** Foreign HS code
 
