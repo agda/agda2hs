@@ -12,7 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest]   # macOS-latest, windows-latest
         cabal: ["3.4"]
         ghc:
           - "8.6.5"
@@ -23,6 +23,7 @@ jobs:
     - uses: actions/checkout@v2
       if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
 
+    # Takes care of ghc and cabal. See https://github.com/actions/setup-haskell.
     - uses: actions/setup-haskell@v1
       id: setup-haskell-cabal
       name: Setup Haskell
@@ -30,19 +31,24 @@ jobs:
         ghc-version: ${{ matrix.ghc }}
         cabal-version: ${{ matrix.cabal }}
 
+    # Generate a cabal.project.freeze file with all dependencies. We use the
+    # hash of this as the cache key, so when a dependency changes we upload a
+    # new cache.
     - name: Freeze
-      run: |
-        cabal freeze
+      run: cabal freeze
 
+    # Cache the contents of ~/.cabal/store to avoid rebuilding dependencies for
+    # every build. `restore-keys` makes it use the latest cache even if the
+    # fingerprint doesn't match, so we don't need to start from scratch every
+    # time a dependency changes.
     - uses: actions/cache@v2
       name: Cache ~/.cabal/store
       with:
-        path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
-        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.ghc }}-
+        path:         ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
+        key:          ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+        restore-keys: ${{ runner.os }}-${{ matrix.ghc }}-
 
+    # The actual job.
     - name: Test
-      run: |
-        make test
+      run: make test
 
