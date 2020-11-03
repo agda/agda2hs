@@ -37,6 +37,7 @@ import Agda.TypeChecking.Rules.Term (isType_)
 import Agda.TypeChecking.Reduce
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
+import Agda.TypeChecking.Records
 import Agda.Interaction.CommandLine (withCurrentFile)
 import Agda.Utils.Lens
 import Agda.Utils.Pretty (prettyShow)
@@ -178,17 +179,28 @@ compile' builtins def =
 compileRecord :: Builtins -> Definition -> TCM [Hs.Decl ()]
 compileRecord builtins def = do
   let r = hsName $ prettyShow $ qnameName $ defName def
-  TelV tel _ <- telViewUpTo (recPars (theDef def)) (defType def)
---  let tel = recTel (theDef def)
-  let params = teleArgs tel :: [Arg Term]
-  pars <- mapM (showTCM . unArg) $ filter visible params
+  fieldTypes <- getRecordFieldTypes (defName def)
+  let fieldTypesList = telToList fieldTypes
+  let (params,flds) = splitAt (recPars (theDef def)) fieldTypesList 
+  let fieldNames = map unDom $ recFields (theDef def) -- getRecordTypeFields (defName def)
+      bleh :: [Dom (ArgName,Type)] -> TCM [Hs.ClassDecl ()]
+      bleh (dat : dats) = do
+        let (n,ty) = unDom dat
+        rf <- compileRecField builtins n ty
+        rfs <- bleh dats
+        return (rf : rfs)
+      bleh [] = return []
+  y <- bleh flds
   let hd = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
-                 (Hs.DHead () r) pars
-  let blah :: QName -> Hs.Decl ()
-      blah f = Hs.TypeSig () [(hsName (show (nameConcrete (qnameName f))))] (Hs.TyStar ())
-  let x = map (Hs.ClsDecl () . blah . unDom) $ recFields (theDef def)
-  return [Hs.ClassDecl () Nothing hd [] (Just x)]
+                 (Hs.DHead () r) (map (fst . unDom) params)
+  return [Hs.ClassDecl () Nothing hd [] (Just y)]
 
+compileRecField :: Builtins -> ArgName -> Type -> TCM (Hs.ClassDecl ())
+compileRecField builtins n ty = do
+  hty <- compileType builtins (unEl ty)
+  n <- showTCM n
+  return $ Hs.ClsDecl () (Hs.TypeSig () [hsName n] hty)
+  
 compileData :: Builtins -> Definition -> TCM [Hs.Decl ()]
 compileData builtins def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
@@ -264,6 +276,7 @@ compileType builtins t = do
       vs <- mapM (compileType builtins . unArg) $ filter visible args
       x  <- hsName <$> showTCM (Var x [])
       return $ tApp (Hs.TyVar () x) vs
+    Sort s -> return (Hs.TyStar ())
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
 compileTerm :: Builtins -> Term -> TCM (Hs.Exp ())
