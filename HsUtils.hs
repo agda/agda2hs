@@ -52,11 +52,14 @@ pApp c@(UnQual () (Symbol () _)) [p, q] = PInfixApp () p c q
 pApp c@(Special () Cons{}) [p, q] = PInfixApp () p c q
 pApp c ps = PApp () c ps
 
+getOp :: Exp () -> Maybe (QOp ())
+getOp (Var _ x) | isOp x = Just $ QVarOp () x
+getOp (Con _ c) | isOp c = Just $ QConOp () c
+getOp _                  = Nothing
+
 eApp :: Exp () -> [Exp ()] -> Exp ()
 eApp f (a : b : as) | Just op <- getOp f = foldl (App ()) (InfixApp () a op b) as
-  where getOp (Var _ x) | isOp x = Just $ QVarOp () x
-        getOp (Con _ c) | isOp c = Just $ QConOp () c
-        getOp _                  = Nothing
+eApp f [a]          | Just op <- getOp f = LeftSection () a op
 eApp f es = foldl (App ()) f es
 
 tApp :: Type () -> [Type ()] -> Type ()
@@ -72,7 +75,7 @@ hsLambda x e =
     p = PVar () $ hsName x
 
 getExplicitImports :: ImportSpec l -> [String]
-getExplicitImports = map pp . \case 
+getExplicitImports = map pp . \case
   IVar _ n -> [n]
   IAbs _ _ n -> [n]
   IThingAll _ n -> [n]
