@@ -91,6 +91,10 @@ map f [] = []
 map f (x ∷ xs) = f x ∷ map f xs
 {-# COMPILE AGDA2HS map #-}
 
+mapTest : List Nat → List Nat
+mapTest = map (id ∘ _+_ 5)
+{-# COMPILE AGDA2HS mapTest #-}
+
 -- ** Lambdas
 
 plus3 : List Nat → List Nat

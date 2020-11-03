@@ -181,6 +181,7 @@ isSpecialName = show >>> \ case
     "Agda.Builtin.Unit.⊤"          -> special Hs.UnitCon
     "Agda.Builtin.Unit.tt"         -> special Hs.UnitCon
     "Haskell.Prelude.Tuple.[]"     -> special Hs.UnitCon
+    "Haskell.Prelude._∘_"          -> unqual "_._"
     _ -> Nothing
   where
     unqual n  = Just $ Hs.UnQual () $ hsName n

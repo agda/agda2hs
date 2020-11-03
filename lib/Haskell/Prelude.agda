@@ -1,4 +1,4 @@
-
+{-# OPTIONS --no-auto-inline #-}
 module Haskell.Prelude where
 
 open import Agda.Builtin.Unit  public
@@ -12,6 +12,18 @@ open import Agda.Builtin.Char  public
 
 variable
   a b c d e f g h i j k l m n o p q r s t u v w x y z : Set
+
+-- Functions --
+
+id : a → a
+id x = x
+
+infixr 9 _∘_
+_∘_ : (b → c) → (a → b) → a → c
+(f ∘ g) x = f (g x)
+
+flip : (a → b → c) → b → a → c
+flip f x y = f y x
 
 -- Tuples --
 
