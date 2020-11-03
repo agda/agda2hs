@@ -329,13 +329,9 @@ compileType t = do
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
 compileTerm :: Term -> TCM (Hs.Exp ())
-compileTerm v =
+compileTerm v = do
   case unSpine v of
-    Var x es   -> do
-      cxt <- getContext
-      reportSDoc "agda2hs.compile" 10 $ text "context:" <+> fsep
-        [ prettyTCM (Var i []) | i <- reverse [0..length cxt - 1] ]
-      (`app` es) . Hs.Var () . Hs.UnQual () . hsName =<< showTCM (Var x [])
+    Var x es   -> (`app` es) . Hs.Var () . Hs.UnQual () . hsName =<< showTCM (Var x [])
     Def f es
       | Just semantics <- isSpecialTerm f -> semantics f es
       | otherwise -> (`app` es) . Hs.Var () =<< hsQName f
@@ -350,10 +346,14 @@ compileTerm v =
       hsLambda (absName b) <$> underAbstr_ b compileTerm
     Lam v b | visible v ->
       -- System-inserted lambda, no need to preserve the name.
-      -- TODO: most likely a section, so should really reconstruct that.
       underAbstraction_ b $ \ body -> do
         x <- showTCM (Var 0 [])
-        hsLambda x <$> compileTerm body
+        let hsx = Hs.Var () $ Hs.UnQual () (hsName x)
+        body <- compileTerm body
+        return $ case body of
+          Hs.InfixApp _ a op b
+            | a == hsx -> Hs.RightSection () op b -- System-inserted visible lambdas can only come from sections
+          _            -> hsLambda x body         -- so we know x is not free in b.
     Lam _ b -> underAbstraction_ b compileTerm
     t -> genericDocError =<< text "bad term:" <?> prettyTCM t
   where
