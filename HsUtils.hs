@@ -1,5 +1,8 @@
 module HsUtils where
 
+import Data.Data
+import Data.Generics.Schemes (listify)
+
 import Language.Haskell.Exts.SrcLoc
 import Language.Haskell.Exts.Syntax
 import Language.Haskell.Exts.Comments
@@ -93,3 +96,12 @@ srcLocToRange (SrcLoc file l c) = srcSpanToRange (SrcSpan file l c l c)
 
 srcSpanInfoToRange :: SrcSpanInfo -> Range
 srcSpanInfoToRange = srcSpanToRange . srcInfoSpan
+
+allUsedTypes :: Data a => a -> [Type ()]
+allUsedTypes = listify (const True)
+
+usedTypesOf :: Data a => String -> a -> [Type ()]
+usedTypesOf s = listify $ (== s) . pp
+
+usesWord64 :: Data a => a -> Bool
+usesWord64 = not . null . usedTypesOf "Word64"
