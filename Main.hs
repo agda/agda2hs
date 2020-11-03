@@ -229,7 +229,7 @@ tuplePat cons i ps = do
 
 -- Compiling things -------------------------------------------------------
 
-compile :: Options -> () -> IsMain -> Definition -> TCM CompiledDef
+compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
 compile _ _ _ def = getUniqueCompilerPragma pragmaName (defName def) >>= \ case
   Just _  -> compile' def
   Nothing -> return []
