@@ -329,7 +329,7 @@ compileType t = do
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
 compileTerm :: Term -> TCM (Hs.Exp ())
-compileTerm v = do
+compileTerm v =
   case unSpine v of
     Var x es   -> (`app` es) . Hs.Var () . Hs.UnQual () . hsName =<< showTCM (Var x [])
     Def f es
