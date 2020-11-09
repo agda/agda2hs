@@ -4,6 +4,7 @@ import Control.Arrow ((>>>))
 import Control.Monad
 import Control.Monad.Fail (MonadFail)
 import Control.Monad.IO.Class
+import Data.Generics (mkT, everywhere)
 import Data.Function
 import Data.List
 import Data.Maybe
@@ -33,6 +34,7 @@ import Agda.Syntax.Common hiding (Ranged)
 import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Literal
 import Agda.Syntax.Internal
+import Agda.Syntax.Internal.Pattern (patternsToElims)
 import Agda.Syntax.Position
 import Agda.Syntax.Translation.ConcreteToAbstract
 import Agda.Syntax.Translation.AbstractToConcrete
@@ -238,6 +240,7 @@ compile _ _ _ def = getUniqueCompilerPragma pragmaName (defName def) >>= \ case
 compile' :: Definition -> TCM CompiledDef
 compile' def =
   case theDef def of
+    Axiom      -> tag <$> compilePostulate def
     Function{} -> tag <$> compileFun def
     Datatype{} -> tag <$> compileData def
     _          -> return []
@@ -273,32 +276,70 @@ compileConstructorArgs (ExtendTel a tel)
     (:) <$> compileType (unEl $ unDom a) <*> compileConstructorArgs tel
 compileConstructorArgs tel = genericDocError =<< text "Bad constructor args:" <?> prettyTCM tel
 
-compileFun :: Definition -> TCM [Hs.Decl ()]
-compileFun def = do
+compilePostulate :: Definition -> TCM [Hs.Decl ()]
+compilePostulate def = do
   let n = qnameName (defName def)
       x = hsName $ prettyShow n
   setCurrentRange (nameBindingSite n) $ do
     ty <- compileType (unEl $ defType def)
-    cs <- mapM (compileClause x) funClauses
+    let body = hsError $ "postulate: " ++ pp ty
+    return [ Hs.TypeSig () [x] ty
+           , Hs.FunBind () [Hs.Match () x [] (Hs.UnGuardedRhs () body) Nothing] ]
+  where
+    Axiom = theDef def
+
+type LocalDecls = [(QName, Definition)]
+
+groupDecls :: LocalDecls -> [(Definition, LocalDecls)]
+groupDecls [] = []
+groupDecls ((q, d) : defs) =
+  let getLvl (QName (MName xs) _) = length xs
+      (children, defs') = span ((> getLvl q) . getLvl . fst) defs
+  in (d, children) : groupDecls defs'
+
+compileFun :: Definition -> TCM [Hs.Decl ()]
+compileFun d = do
+  let findLocals = fromMaybe [] . fmap snd . find ((defName d ==) . defName . fst)
+  locals <- findLocals . groupDecls . sortDefs <$> curDefs
+  compileFun' locals d
+
+compileFun' :: LocalDecls -> Definition -> TCM [Hs.Decl ()]
+compileFun' locals def@(Defn {..}) = do
+  let n = qnameName defName
+      x = hsName $ prettyShow n
+  setCurrentRange (nameBindingSite n) $ do
+    ty <- compileType (unEl defType)
+    cs <- mapM (compileClause locals defName x) funClauses
     return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
   where
-    Function{..} = theDef def
+    Function{..} = theDef
 
-compileClause :: Hs.Name () -> Clause -> TCM (Hs.Match ())
-compileClause x Clause{clauseTel       = tel,
-                       namedClausePats = ps,
-                       clauseBody      = body } =
+compileClause :: LocalDecls -> QName -> Hs.Name () -> Clause -> TCM (Hs.Match ())
+compileClause locals qn x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBody = body} =
   addContext (KeepNames tel) $ localScope $ do
-    -- Only bind user-written variables
+    -- Compile patterns, only bind user-written variables
     let bind (d, i) | getOrigin d == UserWritten = bindVar i
                     | otherwise                  = return ()
     mapM_ bind $ zip (telToList tel) $ reverse [0..size tel - 1]
-    ps   <- compilePats ps
-    body <- maybe (return $ Hs.Var () $ Hs.UnQual () (hsName "undefined")) compileTerm body
-    let rhs = Hs.UnGuardedRhs () body
+    ps <- compilePats ps'
+
+    -- Compile rhs and its @where@ clauses, making sure that:
+    --   * inner modules get instantiated
+    --   * references to inner modules get un-qualifiyed (and instantiated)
+    let elims = patternsToElims ps'
+        children = groupDecls $ map (fmap (`applyE` elims)) locals
+        shrinkLocalDefs t | Def q es <- t, q `elem` map fst locals
+                          = Def (qualify_ $ qnameName q) (drop (length elims) es)
+                          | otherwise = t
+        (body', children') = everywhere (mkT shrinkLocalDefs) (body, children)
+    body' <- fromMaybe hsUndefined <$> mapM compileTerm body'
+    whereDecls <- concat <$> mapM (\(d, ds) -> compileFun' ds d) children'
+    let rhs = Hs.UnGuardedRhs () body'
+        whereBinds | null whereDecls = Nothing
+                   | otherwise       = Just $ Hs.BDecls () whereDecls
     case (x, ps) of
-      (Hs.Symbol{}, p : q : ps) -> return $ Hs.InfixMatch () p x (q : ps) rhs Nothing
-      _                         -> return $ Hs.Match () x ps rhs Nothing
+      (Hs.Symbol{}, p : q : ps) -> return $ Hs.InfixMatch () p x (q : ps) rhs whereBinds
+      _                         -> return $ Hs.Match () x ps rhs whereBinds
 
 -- When going under a binder we need to update the scope as well as the context in order to get
 -- correct printing of variable names (Issue #14).
