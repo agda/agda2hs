@@ -1,0 +1,2 @@
+test/Fail/TupleTerm.agda:6,1-10
+Tuple value x ∷ xs does not have a known size.
