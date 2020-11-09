@@ -13,10 +13,16 @@ See `test/Test.agda` for an example.
 
 ### Future work
 
+
+- [x] Compile lambdas [#5](https://github.com/agda/agda2hs/pull/5)
+- [x] Sections [#21](https://github.com/agda/agda2hs/pull/21)
+- [x] Compile if/then/else [#13](https://github.com/agda/agda2hs/pull/13)
 - [ ] Literals in patterns
+- [x] Use some Haskell syntax ADT and a proper pretty printing library [#4](https://github.com/agda/agda2hs/pull/4)
 - [ ] Map instance arguments to Haskell type classes (definitions and use) [#3](https://github.com/agda/agda2hs/pull/3)
-- [ ] `where` clauses
+- [x] `where` clauses [#23](https://github.com/agda/agda2hs/pull/23)
 - [ ] Higher-rank polymorphism
+- [x] More builtin types (Double, Word64) [#12](https://github.com/agda/agda2hs/pull/12)
 - [ ] Strings (compile to `Data.Text`)
 - [ ] Compile `case_of_ λ where` to Haskell `case`
 - [ ] `with`?

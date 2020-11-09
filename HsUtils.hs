@@ -5,6 +5,7 @@ import Data.Generics.Schemes (listify)
 
 import Language.Haskell.Exts.SrcLoc
 import Language.Haskell.Exts.Syntax
+import Language.Haskell.Exts.Build
 import Language.Haskell.Exts.Comments
 import Language.Haskell.Exts.Pretty
 
@@ -73,6 +74,12 @@ hsLambda x e =
     _             -> Lambda () [p] e
   where
     p = PVar () $ hsName x
+
+hsUndefined :: Exp ()
+hsUndefined = Var () $ UnQual () (hsName "undefined")
+
+hsError :: String -> Exp ()
+hsError s = Var () (UnQual () $ hsName "error") `eApp` [strE s]
 
 getExplicitImports :: ImportSpec l -> [String]
 getExplicitImports = map pp . \case
