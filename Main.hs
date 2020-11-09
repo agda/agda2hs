@@ -275,10 +275,12 @@ compileConstructorArgs tel = genericDocError =<< text "Bad constructor args:" <?
 
 compileFun :: Definition -> TCM [Hs.Decl ()]
 compileFun def = do
-  let x = hsName $ prettyShow $ qnameName $ defName def
-  ty <- compileType (unEl $ defType def)
-  cs <- mapM (compileClause x) funClauses
-  return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
+  let n = qnameName (defName def)
+      x = hsName $ prettyShow n
+  setCurrentRange (nameBindingSite n) $ do
+    ty <- compileType (unEl $ defType def)
+    cs <- mapM (compileClause x) funClauses
+    return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
   where
     Function{..} = theDef def
 
