@@ -355,7 +355,7 @@ compileType t = do
   case t of
     Pi a b | hidden a -> underAbstr a b (compileType . unEl)
              -- Hidden Pi means Haskell forall
-    Pi a (NoAbs _ b) | visible a -> do
+    Pi a b | NoAbs _ b <- reAbs b, visible a -> do
       hsA <- compileType (unEl $ unDom a)
       hsB <- compileType (unEl b)
       return $ Hs.TyFun () hsA hsB
