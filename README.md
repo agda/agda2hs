@@ -2,12 +2,14 @@
 
 ## agda2hs
 
-Compiles a subset of Agda to readable Haskell code.
-Use case: writing your code in Agda rather than in Haskell,
-to verify some of its properties.
-The run `agda2hs` to translate it to Haskell.
+The goal of this project is *not* to translate Agda code to Haskell.
+Rather it is to carve out a common sublanguage between Agda and Haskell,
+with a straightforward translation from the Agda side to the Haskell side.
+This lets you write your program in the Agda fragment, using full Agda
+to prove properties about it, and then translate it to nice looking readable
+Haskell code that you can show your Haskell colleagues without shame.
 
-See test/Test.agda for an example.
+See `test/Test.agda` for an example.
 
 ### Future work
 
