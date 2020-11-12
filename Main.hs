@@ -4,7 +4,7 @@ import Control.Arrow ((>>>))
 import Control.Monad
 import Control.Monad.Fail (MonadFail)
 import Control.Monad.IO.Class
-import Data.Generics (mkT, everywhere)
+import Data.Generics (mkT, everywhere, listify, extT, everything, mkQ)
 import Data.Function
 import Data.List
 import Data.Maybe
@@ -34,7 +34,6 @@ import Agda.Syntax.Common hiding (Ranged)
 import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Literal
 import Agda.Syntax.Internal
-import Agda.Syntax.Internal.Pattern (patternsToElims)
 import Agda.Syntax.Position
 import Agda.Syntax.Translation.ConcreteToAbstract
 import Agda.Syntax.Translation.AbstractToConcrete
@@ -148,6 +147,19 @@ underAbstr a b ret = underAbstraction' KeepNames a b $ \ body ->
 
 underAbstr_ :: Subst t a => Abs a -> (a -> TCM b) -> TCM b
 underAbstr_ = underAbstr __DUMMY_DOM__
+
+applyNoBodies :: Definition -> [Arg Term] -> Definition
+applyNoBodies d args = revert $ d `apply` args
+  where
+    bodies0 :: [(QName, [(Int, Maybe Term)])]
+    bodies0 = everything (++) ([] `mkQ` go) d
+      where go (Defn {defName = q, theDef = Function {funClauses = cls}}) =
+              [(q, map (fmap clauseBody) (zip [0..] cls))]
+
+    revert :: Definition -> Definition
+    revert d@(Defn {defName = q, theDef = f@(Function {funClauses = cls})})
+      = d {theDef = f {funClauses = map (\(i, c) -> c {clauseBody = get i}) (zip [0..] cls)}}
+      where get i = fromMaybe __IMPOSSIBLE__ $ join $ lookup i <$> lookup q bodies0
 
 -- Builtins ---------------------------------------------------------------
 
@@ -290,31 +302,26 @@ compilePostulate def = do
 
 type LocalDecls = [(QName, Definition)]
 
-groupDecls :: LocalDecls -> [(Definition, LocalDecls)]
-groupDecls [] = []
-groupDecls ((q, d) : defs) =
-  let getLvl (QName (MName xs) _) = length xs
-      (children, defs') = span ((> getLvl q) . getLvl . fst) defs
-  in (d, children) : groupDecls defs'
-
 compileFun :: Definition -> TCM [Hs.Decl ()]
 compileFun d = do
-  let findLocals = fromMaybe [] . fmap snd . find ((defName d ==) . defName . fst)
-  locals <- findLocals . groupDecls . sortDefs <$> curDefs
-  compileFun' locals d
+  locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
+          . dropWhile ((<= defName d) . fst)
+          . sortDefs <$> curDefs
+  compileFun' d locals
 
-compileFun' :: LocalDecls -> Definition -> TCM [Hs.Decl ()]
-compileFun' locals def@(Defn {..}) = do
+compileFun' :: Definition -> LocalDecls -> TCM [Hs.Decl ()]
+compileFun' (Defn {..}) locals = do
   let n = qnameName defName
       x = hsName $ prettyShow n
+      go = foldM $ \(ds, ms) -> compileClause ds defName x >=> return . fmap (ms `snoc`)
   setCurrentRange (nameBindingSite n) $ do
     ty <- compileType (unEl defType)
-    cs <- mapM (compileClause locals defName x) funClauses
+    cs <- snd <$> go (locals, []) funClauses
     return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
   where
     Function{..} = theDef
 
-compileClause :: LocalDecls -> QName -> Hs.Name () -> Clause -> TCM (Hs.Match ())
+compileClause :: LocalDecls -> QName -> Hs.Name () -> Clause -> TCM (LocalDecls, Hs.Match ())
 compileClause locals qn x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBody = body} =
   addContext (KeepNames tel) $ localScope $ do
     -- Compile patterns, only bind user-written variables
@@ -326,20 +333,41 @@ compileClause locals qn x c@Clause{clauseTel = tel, namedClausePats = ps', claus
     -- Compile rhs and its @where@ clauses, making sure that:
     --   * inner modules get instantiated
     --   * references to inner modules get un-qualifiyed (and instantiated)
-    let elims = patternsToElims ps'
-        children = groupDecls $ map (fmap (`applyE` elims)) locals
-        shrinkLocalDefs t | Def q es <- t, q `elem` map fst locals
-                          = Def (qualify_ $ qnameName q) (drop (length elims) es)
+    let localUses = nub $ listify (`elem` map fst locals) body
+        belongs q@(QName m _) (QName m0 _) =
+          ((show m0 ++ "._") `isPrefixOf` show m) && (q `notElem` localUses)
+        splitDecls :: LocalDecls -> ([(Definition, LocalDecls)], LocalDecls)
+        splitDecls ds@((q,child):rest)
+          | q `elem` localUses
+          , (grandchildren, outer) <- span ((`belongs` q) . fst) rest
+          , (groups, rest') <- splitDecls outer
+          = ((child, grandchildren) : groups, rest')
+          | otherwise = ([], ds)
+        splitDecls [] = ([], [])
+        (children, locals') = splitDecls locals
+
+        args   = teleArgs tel
+        argLen = length args
+
+        -- 1. apply current telescope to inner definitions
+        children' = everywhere (mkT (`applyNoBodies` args)) children
+
+        -- 2. shrink calls to inner modules (unqualify + partially apply module parameters)
+        shrinkLocalDefs t | Def q es <- t, q `elem` concatMap (\(d,ds) -> defName d : map fst ds) children
+                          = Def (qualify_ $ qnameName q) (drop argLen es)
                           | otherwise = t
-        (body', children') = everywhere (mkT shrinkLocalDefs) (body, children)
+        (body', children'') = everywhere (mkT shrinkLocalDefs) (body, children')
+
     body' <- fromMaybe hsUndefined <$> mapM compileTerm body'
-    whereDecls <- concat <$> mapM (\(d, ds) -> compileFun' ds d) children'
+    whereDecls <- concat <$> mapM (uncurry compileFun') children''
+
     let rhs = Hs.UnGuardedRhs () body'
         whereBinds | null whereDecls = Nothing
                    | otherwise       = Just $ Hs.BDecls () whereDecls
-    case (x, ps) of
-      (Hs.Symbol{}, p : q : ps) -> return $ Hs.InfixMatch () p x (q : ps) rhs whereBinds
-      _                         -> return $ Hs.Match () x ps rhs whereBinds
+        match = case (x, ps) of
+          (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
+          _                         -> Hs.Match () x ps rhs whereBinds
+    return (locals', match)
 
 -- When going under a binder we need to update the scope as well as the context in order to get
 -- correct printing of variable names (Issue #14).

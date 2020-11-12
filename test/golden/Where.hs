@@ -29,7 +29,57 @@ ex3 n b = mult num + bool2nat b
 ex4 :: Bool -> Integer
 ex4 b = mult 42
   where mult :: Integer -> Integer
-        mult n = bump 5 (bool2nat b)
+        mult n = bump n (bool2nat b)
+          where bump :: Integer -> Integer -> Integer
+                bump x y = x * y + n - bool2nat b
+
+ex4' :: Bool -> Integer
+ex4' b = mult (bool2nat b)
+  where mult :: Integer -> Integer
+        mult n = bump n (bool2nat b)
+          where bump :: Integer -> Integer -> Integer
+                bump x y = go (x * y) (n - bool2nat b)
+                  where go :: Integer -> Integer -> Integer
+                        go z w = z + x + w + y + n + bool2nat b
+
+ex5 :: [Integer] -> Integer
+ex5 [] = zro
+  where zro :: Integer
+        zro = 0
+ex5 (n : ns) = mult num + 1
+  where num :: Integer
+        num = 42 + ex5 ns
+        mult :: Integer -> Integer
+        mult = (* n)
+
+ex6 :: [Integer] -> Bool -> Integer
+ex6 [] b = zro
+  where zro :: Integer
+        zro = 0
+ex6 (n : ns) b = mult (num : 1 : [])
+  where mult :: [Integer] -> Integer
+        mult [] = bump 5 (bool2nat b)
           where bump :: Integer -> Integer -> Integer
                 bump x y = x * y + n
+        mult (m : ms) = bump n m
+          where bump :: Integer -> Integer -> Integer
+                bump x y = x * y + m - n
+        num :: Integer
+        num = 42 + ex6 ns True
+
+ex7 :: Integer -> Integer
+ex7 n₀ = go₁ n₀
+  where go₁ :: Integer -> Integer
+        go₁ n₁ = go₂ (n₀ + n₁)
+          where go₂ :: Integer -> Integer
+                go₂ n₂ = n₀ + n₁ + n₂
+
+ex7' :: Integer -> Integer
+ex7' n₀ = go₁ n₀
+  where go₁ :: Integer -> Integer
+        go₁ n₁ = go₂ (n₀ + n₁)
+          where go₂ :: Integer -> Integer
+                go₂ n₂ = go₃ (n₀ + n₁ + n₂)
+                  where go₃ :: Integer -> Integer
+                        go₃ n₃ = n₀ + n₁ + n₂ + n₃
 
