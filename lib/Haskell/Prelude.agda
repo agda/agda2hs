@@ -11,7 +11,8 @@ open import Agda.Builtin.Char  public
 -- Type variables --
 
 variable
-  a b c d e f g h i j k l m n o p q r s t u v w x y z : Set
+  a b c d e s t : Set
+  f m           : Set → Set
 
 -- Functions --
 
