@@ -33,20 +33,24 @@ data Tuple : List Set → Set where
   []  : Tuple []
   _∷_ : ∀ {as} → a → Tuple as → Tuple (a ∷ as)
 
-⟨_×_⟩ : (a b : Set) → Set
-⟨ a × b ⟩ = Tuple (a ∷ b ∷ [])
+infix 3 _×_ _×_×_
 
-⟨_×_×_⟩ : (a b c : Set) → Set
-⟨ a × b × c ⟩ = Tuple (a ∷ b ∷ c ∷ [])
+_×_ : (a b : Set) → Set
+a × b = Tuple (a ∷ b ∷ [])
 
-pattern ⟨_,_⟩   x y   = x Tuple.∷ y Tuple.∷ []
-pattern ⟨_,_,_⟩ x y z = x Tuple.∷ y Tuple.∷ z Tuple.∷ []
+_×_×_ : (a b c : Set) → Set
+a × b × c = Tuple (a ∷ b ∷ c ∷ [])
 
-uncurry : (a → b → c) → ⟨ a × b ⟩ → c
-uncurry f ⟨ x , y ⟩ = f x y
+infix 0 _,_ _,_,_
 
-curry : (⟨ a × b ⟩ → c) → a → b → c
-curry f x y = f ⟨ x , y ⟩
+pattern _,_   x y   = x Tuple.∷ y Tuple.∷ []
+pattern _,_,_ x y z = x Tuple.∷ y Tuple.∷ z Tuple.∷ []
+
+uncurry : (a → b → c) → a × b → c
+uncurry f (x , y) = f x y
+
+curry : (a × b → c) → a → b → c
+curry f x y = f (x , y)
 
 -- Booleans --
 
