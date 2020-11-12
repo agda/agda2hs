@@ -83,3 +83,10 @@ ex7' n₀ = go₁ n₀
                   where go₃ :: Integer -> Integer
                         go₃ n₃ = n₀ + n₁ + n₂ + n₃
 
+ex8 :: Integer
+ex8 = n₂
+  where n₁ :: Integer
+        n₁ = 1
+        n₂ :: Integer
+        n₂ = n₁ + 1
+

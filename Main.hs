@@ -151,15 +151,14 @@ underAbstr_ = underAbstr __DUMMY_DOM__
 applyNoBodies :: Definition -> [Arg Term] -> Definition
 applyNoBodies d args = revert $ d `apply` args
   where
-    bodies0 :: [(QName, [(Int, Maybe Term)])]
-    bodies0 = everything (++) ([] `mkQ` go) d
-      where go (Defn {defName = q, theDef = Function {funClauses = cls}}) =
-              [(q, map (fmap clauseBody) (zip [0..] cls))]
+    bodies :: [Maybe Term]
+    bodies = map clauseBody $ funClauses $ theDef d
+
+    setBody cl b = cl { clauseBody = b }
 
     revert :: Definition -> Definition
-    revert d@(Defn {defName = q, theDef = f@(Function {funClauses = cls})})
-      = d {theDef = f {funClauses = map (\(i, c) -> c {clauseBody = get i}) (zip [0..] cls)}}
-      where get i = fromMaybe __IMPOSSIBLE__ $ join $ lookup i <$> lookup q bodies0
+    revert d@(Defn {theDef = f@(Function {funClauses = cls})}) =
+      d {theDef = f {funClauses = zipWith setBody cls bodies}}
 
 -- Builtins ---------------------------------------------------------------
 
@@ -297,8 +296,6 @@ compilePostulate def = do
     let body = hsError $ "postulate: " ++ pp ty
     return [ Hs.TypeSig () [x] ty
            , Hs.FunBind () [Hs.Match () x [] (Hs.UnGuardedRhs () body) Nothing] ]
-  where
-    Axiom = theDef def
 
 type LocalDecls = [(QName, Definition)]
 
@@ -338,7 +335,7 @@ compileClause locals qn x c@Clause{clauseTel = tel, namedClausePats = ps', claus
           ((show m0 ++ "._") `isPrefixOf` show m) && (q `notElem` localUses)
         splitDecls :: LocalDecls -> ([(Definition, LocalDecls)], LocalDecls)
         splitDecls ds@((q,child):rest)
-          | q `elem` localUses
+          | any ((`elem` localUses) . fst) ds
           , (grandchildren, outer) <- span ((`belongs` q) . fst) rest
           , (groups, rest') <- splitDecls outer
           = ((child, grandchildren) : groups, rest')
@@ -353,7 +350,8 @@ compileClause locals qn x c@Clause{clauseTel = tel, namedClausePats = ps', claus
         children' = everywhere (mkT (`applyNoBodies` args)) children
 
         -- 2. shrink calls to inner modules (unqualify + partially apply module parameters)
-        shrinkLocalDefs t | Def q es <- t, q `elem` concatMap (\(d,ds) -> defName d : map fst ds) children
+        localNames = concatMap (\(d,ds) -> defName d : map fst ds) children
+        shrinkLocalDefs t | Def q es <- t, q `elem` localNames
                           = Def (qualify_ $ qnameName q) (drop argLen es)
                           | otherwise = t
         (body', children'') = everywhere (mkT shrinkLocalDefs) (body, children')

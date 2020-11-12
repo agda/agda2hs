@@ -109,6 +109,12 @@ ex7' n₀ = go₁ n₀
             go₃ : Nat → Nat
             go₃ n₃ = n₀ + n₁ + n₂ + n₃
 
+ex8 : Nat
+ex8 = n₂
+  where
+    n₁ = 1
+    n₂ = n₁ + 1
+
 {-# COMPILE AGDA2HS bool2nat #-}
 {-# COMPILE AGDA2HS ex1 #-}
 {-# COMPILE AGDA2HS ex2 #-}
@@ -119,3 +125,4 @@ ex7' n₀ = go₁ n₀
 {-# COMPILE AGDA2HS ex6 #-}
 {-# COMPILE AGDA2HS ex7 #-}
 {-# COMPILE AGDA2HS ex7' #-}
+{-# COMPILE AGDA2HS ex8 #-}
