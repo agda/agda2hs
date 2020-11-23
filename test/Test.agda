@@ -13,7 +13,7 @@ open import Agda.Builtin.Equality
 
 -- imports
 {-# FOREIGN AGDA2HS
-import Prelude hiding (map, sum, (++))
+import Prelude hiding (sum)
 import Data.Monoid
 -- import Data.Word
 
@@ -81,15 +81,15 @@ char_d = toEnum 100
 
 -- ** Polymorphic functions
 
-_++_ : List a → List a → List a
-[]       ++ ys = ys
-(x ∷ xs) ++ ys = x ∷ (xs ++ ys)
-{-# COMPILE AGDA2HS _++_ #-}
+_+++_ : List a → List a → List a
+[]       +++ ys = ys
+(x ∷ xs) +++ ys = x ∷ (xs +++ ys)
+{-# COMPILE AGDA2HS _+++_ #-}
 
-map : (a → b) → List a → List b
-map f [] = []
-map f (x ∷ xs) = f x ∷ map f xs
-{-# COMPILE AGDA2HS map #-}
+listMap : (a → b) → List a → List b
+listMap f [] = []
+listMap f (x ∷ xs) = f x ∷ listMap f xs
+{-# COMPILE AGDA2HS listMap #-}
 
 mapTest : List Nat → List Nat
 mapTest = map (id ∘ _+_ 5)
