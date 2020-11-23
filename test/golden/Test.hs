@@ -3,7 +3,7 @@
 module Test where
 
 import Data.Word (Word64)
-import Prelude hiding (map, sum, (++))
+import Prelude hiding (sum)
 import Data.Monoid
 -- import Data.Word
 
@@ -45,13 +45,13 @@ ex_char = 'a'
 char_d :: Char
 char_d = toEnum 100
 
-(++) :: [a] -> [a] -> [a]
-[] ++ ys = ys
-(x : xs) ++ ys = x : xs ++ ys
+(+++) :: [a] -> [a] -> [a]
+[] +++ ys = ys
+(x : xs) +++ ys = x : xs +++ ys
 
-map :: (a -> b) -> [a] -> [b]
-map f [] = []
-map f (x : xs) = f x : map f xs
+listMap :: (a -> b) -> [a] -> [b]
+listMap f [] = []
+listMap f (x : xs) = f x : listMap f xs
 
 mapTest :: [Integer] -> [Integer]
 mapTest = map (id . (5 +))
