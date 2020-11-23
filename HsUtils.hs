@@ -25,12 +25,17 @@ isInfix _ = Nothing
 hsName :: String -> Name ()
 hsName x
   | Just op <- isInfix x = Symbol () op
-  | otherwise            = Ident () x
+  | otherwise            = Ident () (map underscore x)
+  where
+    -- Agda uses underscores for operators, which means that you can't have both mapM and mapM_
+    -- without getting ambiguities. To work around this we translate subscript '-' to underscore.
+    underscore '₋' = '_'
+    underscore c   = c
 
 isOp :: QName () -> Bool
 isOp (UnQual _ Symbol{}) = True
 isOp (Special _ Cons{})  = True
-isOp _                         = False
+isOp _                   = False
 
 -- Utilities for building Haskell constructs
 
