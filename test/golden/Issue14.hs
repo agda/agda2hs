@@ -1,11 +1,13 @@
 module Issue14 where
 
+import Numeric.Natural (Natural)
+
 constid :: a -> b -> b
 constid x = \ x -> x
 
-sectionTest₁ :: Integer -> Integer -> Integer
+sectionTest₁ :: Natural -> Natural -> Natural
 sectionTest₁ n = (+ n)
 
-sectionTest₂ :: Integer -> Integer -> Integer
+sectionTest₂ :: Natural -> Natural -> Natural
 sectionTest₂ section = (+ section)
 

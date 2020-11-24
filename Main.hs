@@ -186,7 +186,8 @@ isSpecialType = show >>> \ case
 
 isSpecialName :: QName -> Maybe (Hs.QName ())
 isSpecialName = show >>> \ case
-    "Agda.Builtin.Nat.Nat"         -> unqual "Integer"
+    "Agda.Builtin.Nat.Nat"         -> unqual "Natural"
+    "Agda.Builtin.Int.Int"         -> unqual "Integer"
     "Agda.Builtin.Float.Float"     -> unqual "Double"
     "Agda.Builtin.Bool.Bool.false" -> unqual "False"
     "Agda.Builtin.Bool.Bool.true"  -> unqual "True"
@@ -585,7 +586,8 @@ imports :: [Ranged Code] -> [Hs.ImportDecl Hs.SrcSpanInfo]
 imports modules = concat [imps | (_, (Hs.Module _ _ _ imps _, _)) <- modules]
 
 autoImports :: [(String, String)]
-autoImports = [("Word64", "Data.Word")]
+autoImports = [("Word64",  "Data.Word"),
+               ("Natural", "Numeric.Natural")]
 
 addImports :: [Hs.ImportDecl Hs.SrcSpanInfo] -> [CompiledDef] -> TCM [Hs.ImportDecl ()]
 addImports is defs = do
@@ -659,7 +661,9 @@ writeModule opts _ isMain m defs0 = do
     -- Check user-supplied imports
     checkImports imps
     -- Add automatic imports for builtin types (if any)
-    autoImports <- unlines . map pp <$> addImports imps defs0
+    let unlines' [] = []
+        unlines' ss = unlines ss ++ "\n"
+    autoImports <- unlines' . map pp <$> addImports imps defs0
     -- The comments makes it hard to generate and pretty print a full module
     let hsFile = moduleFileName opts m
         output = concat
