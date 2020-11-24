@@ -1,6 +1,7 @@
 module _ where
 
 open import Haskell.Prelude
+open import Agda.Builtin.Nat
 open import Agda.Builtin.Word
 open import Agda.Builtin.Nat
 open import Agda.Builtin.Equality
@@ -53,7 +54,7 @@ bla n = n * 4
 
 -- ** Extra builtins
 
-ex_float : Float
+ex_float : Double
 ex_float = 0.0
 {-# COMPILE AGDA2HS ex_float #-}
 

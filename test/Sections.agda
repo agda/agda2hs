@@ -2,6 +2,7 @@
 module Sections where
 
 open import Haskell.Prelude
+open import Agda.Builtin.Nat
 
 test₁ : Nat → Nat
 test₁ = 5 +_
