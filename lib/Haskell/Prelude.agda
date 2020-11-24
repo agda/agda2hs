@@ -10,6 +10,14 @@ open import Agda.Builtin.Char         public
 open import Agda.Builtin.FromString   public
 import Agda.Builtin.String as Str
 open import Agda.Builtin.Strict
+open import Agda.Builtin.FromNat      public using (fromNat)
+open import Agda.Builtin.FromNeg      public using (fromNeg)
+
+import Haskell.Prim
+open Haskell.Prim
+open Haskell.Prim public using (if_then_else_; iNumberNat)
+
+open import Haskell.Prim.Integer public
 
 -- Problematic features
 --  - [Partial]:  Could pass implicit/instance arguments to prove totality.
@@ -148,11 +156,6 @@ private
 
 --------------------------------------------------
 -- Booleans
-
-infix -2 if_then_else_
-if_then_else_ : Bool → a → a → a
-if true  then t else f = t
-if false then t else f = f
 
 infixr 3 _&&_
 _&&_ : Bool → Bool → Bool

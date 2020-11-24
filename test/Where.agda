@@ -10,6 +10,7 @@ postulate
 ex1 : Nat
 ex1 = mult num + bool2nat true
   where
+    num : Nat
     num = 42
 
     mult : Nat → Nat
@@ -19,6 +20,7 @@ ex1 = mult num + bool2nat true
 ex2 : Nat
 ex2 = mult num + bool2nat true
   where
+    num : Nat
     num = 42
 
     mult : Nat → Nat
@@ -61,6 +63,7 @@ ex4' b = mult (bool2nat b)
 ex5 : List Nat → Nat
 ex5 [] = zro
   where
+    zro : Nat
     zro = 0
 ex5 (n ∷ ns) = mult num + 1
   where
@@ -73,6 +76,7 @@ ex5 (n ∷ ns) = mult num + 1
 ex6 : List Nat → Bool → Nat
 ex6 [] b = zro
   where
+    zro : Nat
     zro = 0
 ex6 (n ∷ ns) b = mult (num ∷ 1 ∷ [])
   where
@@ -112,6 +116,7 @@ ex7' n₀ = go₁ n₀
 ex8 : Nat
 ex8 = n₂
   where
+    n₁ : Nat
     n₁ = 1
     n₂ = n₁ + 1
 

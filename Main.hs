@@ -161,12 +161,15 @@ applyNoBodies d args = revert $ d `apply` args
     revert :: Definition -> Definition
     revert d@(Defn {theDef = f@(Function {funClauses = cls})}) =
       d {theDef = f {funClauses = zipWith setBody cls bodies}}
+    revert _ = __IMPOSSIBLE__
 
 -- Builtins ---------------------------------------------------------------
 
 isSpecialTerm :: QName -> Maybe (QName -> Elims -> TCM (Hs.Exp ()))
 isSpecialTerm = show >>> \ case
-  "Haskell.Prelude.if_then_else_" -> Just ifThenElse
+  "Haskell.Prim.if_then_else_"            -> Just ifThenElse
+  "Agda.Builtin.FromNat.Number.fromNat"   -> Just fromNat
+  "Agda.Builtin.FromNeg.Negative.fromNeg" -> Just fromNeg
   _ -> Nothing
 
 isSpecialCon :: QName -> Maybe (ConHead -> ConInfo -> Elims -> TCM (Hs.Exp ()))
@@ -212,6 +215,19 @@ ifThenElse _ es = compileArgs es >>= \case
     xs <- fmap Hs.name . drop (length es') <$> mapM freshString ["b", "t", "f"]
     let [b, t, f] = es' ++ map Hs.var xs
     return $ Hs.lamE (Hs.pvar <$> xs) $ Hs.If () b t f
+
+fromNat :: QName -> Elims -> TCM (Hs.Exp ())
+fromNat _ es = compileArgs es <&> \ case
+  _ : n@Hs.Lit{} : es' -> n `eApp` es'
+  es'                  -> Hs.Var () (Hs.UnQual () $ hsName "fromIntegral") `eApp` drop 1 es'
+
+fromNeg :: QName -> Elims -> TCM (Hs.Exp ())
+fromNeg _ es = compileArgs es <&> \ case
+  _ : n@Hs.Lit{} : es' -> Hs.NegApp () n `eApp` es'
+  es'                  -> (hsV "negate" `o` hsV "fromIntegral") `eApp` drop 1 es'
+  where
+    hsV = Hs.Var () . Hs.UnQual () . hsName
+    f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ Hs.UnQual () $ hsName "_._") g
 
 tupleType :: QName -> Elims -> TCM (Hs.Type ())
 tupleType _ es | Just [as] <- allApplyElims es = do
