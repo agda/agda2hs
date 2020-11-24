@@ -13,12 +13,12 @@ import Data.Monoid
 import qualified Data.Word as Word64
 
 data Exp v = Plus (Exp v) (Exp v)
-           | Int Natural
+           | Lit Natural
            | Var v
 
 eval :: (a -> Natural) -> Exp a -> Natural
 eval env (Plus a b) = eval env a + eval env b
-eval env (Int n) = n
+eval env (Lit n) = n
 eval env (Var x) = env x
 
 sum :: [Natural] -> Natural
