@@ -2,6 +2,7 @@
 module Where where
 
 open import Haskell.Prelude
+open import Agda.Builtin.Nat
 
 postulate
   bool2nat : Bool → Nat
