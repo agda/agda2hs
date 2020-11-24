@@ -61,8 +61,8 @@ ex_float = 0.0
 {-# COMPILE AGDA2HS ex_float #-}
 
 postulate
-  toInteger : Word64 → Nat
-  fromInteger : Nat → Word64
+  toInteger : Word64 → Integer
+  fromInteger : Integer → Word64
 
 ex_word : Word64
 ex_word = fromInteger 0
