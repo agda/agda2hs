@@ -1,17 +1,19 @@
 module Sections where
 
-test₁ :: Integer -> Integer
+import Numeric.Natural (Natural)
+
+test₁ :: Natural -> Natural
 test₁ = (5 +)
 
-test₂ :: Integer -> Integer
+test₂ :: Natural -> Natural
 test₂ = (+ 5)
 
-test₃ :: Integer -> Integer
+test₃ :: Natural -> Natural
 test₃ = (5 +)
 
-test₄ :: Integer -> Integer
+test₄ :: Natural -> Natural
 test₄ = \ x -> x + 5
 
-test₅ :: Integer -> Integer
+test₅ :: Natural -> Natural
 test₅ = (5 +)
 
