@@ -1,0 +1,6 @@
+test/Fail/BadBuiltinImport.agda:5,22-28
+Bad import of builtin type
+  Word64 from module RandomModule (expected Data.Word)
+  Word64 from module AlsoNotRight (expected Data.Word)
+  Word64 from module AsConstructor (expected Data.Word)
+Note: imports of builtin types are inserted automatically if omitted.

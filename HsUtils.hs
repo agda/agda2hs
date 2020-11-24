@@ -118,5 +118,5 @@ allUsedTypes = listify (const True)
 usedTypesOf :: Data a => String -> a -> [Type ()]
 usedTypesOf s = listify $ (== s) . pp
 
-usesWord64 :: Data a => a -> Bool
-usesWord64 = not . null . usedTypesOf "Word64"
+uses :: Data a => String -> a -> Bool
+uses ty = not . null . usedTypesOf ty
