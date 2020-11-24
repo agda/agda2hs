@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Applicative
 import Control.Arrow ((>>>))
 import Control.Monad
 import Control.Monad.Fail (MonadFail)
@@ -583,52 +584,57 @@ codeBlocks code = [(r, [uncurry Hs.exactPrint $ moveToTop $ noPragmas mcs]) | (r
 imports :: [Ranged Code] -> [Hs.ImportDecl Hs.SrcSpanInfo]
 imports modules = concat [imps | (_, (Hs.Module _ _ _ imps _, _)) <- modules]
 
+autoImports :: [(String, String)]
+autoImports = [("Word64", "Data.Word")]
+
 addImports :: [Hs.ImportDecl Hs.SrcSpanInfo] -> [CompiledDef] -> TCM [Hs.ImportDecl ()]
 addImports is defs = do
-  return [importWord64 | usesWord64 defs && not (any isImportWord64 is)]
+  return [ doImport ty imp | (ty, imp) <- autoImports,
+                             uses ty defs && not (any (isImport ty imp) is)]
   where
-    importWord64 :: Hs.ImportDecl ()
-    importWord64 = Hs.ImportDecl ()
-      (Hs.ModuleName () "Data.Word") False False False Nothing Nothing
-      (Just $ Hs.ImportSpecList () False [Hs.IVar () $ Hs.name "Word64"])
+    doImport :: String -> String -> Hs.ImportDecl ()
+    doImport ty imp = Hs.ImportDecl ()
+      (Hs.ModuleName () imp) False False False Nothing Nothing
+      (Just $ Hs.ImportSpecList () False [Hs.IVar () $ Hs.name ty])
 
-    isImportWord64 :: Hs.ImportDecl Hs.SrcSpanInfo -> Bool
-    isImportWord64 = \case
-      Hs.ImportDecl _ (Hs.ModuleName _ "Data.Word") False _ _ _ _ specs ->
+    isImport :: String -> String -> Hs.ImportDecl Hs.SrcSpanInfo -> Bool
+    isImport ty imp = \case
+      Hs.ImportDecl _ (Hs.ModuleName _ m) False _ _ _ _ specs | m == imp ->
         case specs of
           Just (Hs.ImportSpecList _ hiding specs) ->
-            not hiding && "Word64" `elem` concatMap getExplicitImports specs
+            not hiding && ty `elem` concatMap getExplicitImports specs
           Nothing -> True
       _ -> False
 
 checkImports :: [Hs.ImportDecl Hs.SrcSpanInfo] -> TCM ()
 checkImports is = do
-  forM_ is $ \i ->
-    case checkImport i of
-      Just loc -> setCurrentRange loc $
-        genericDocError =<< text "Not allowed to import builtin type Word64"
-      Nothing  -> return ()
+  case concatMap checkImport is of
+    []  -> return ()
+    bad@((r, _, _):_) -> setCurrentRange r $
+      genericDocError =<< vcat
+        [ text "Bad import of builtin type"
+        , nest 2 $ vcat [ text $ ty ++ " from module " ++ m ++ " (expected " ++ okm ++ ")"
+                        | (_, m, ty) <- bad, let Just okm = lookup ty autoImports ]
+        , text "Note: imports of builtin types are inserted automatically if omitted."
+        ]
 
-checkImport :: Hs.ImportDecl Hs.SrcSpanInfo -> Maybe Range
+checkImport :: Hs.ImportDecl Hs.SrcSpanInfo -> [(Range, String, String)]
 checkImport i
-  | Just (Hs.ImportSpecList _ False specs) <- Hs.importSpecs i
-  , pp (Hs.importModule i) /= "Data.Word"
-  = listToMaybe $ mapMaybe checkImportSpec specs
-  | otherwise
-  = Nothing
+  | Just (Hs.ImportSpecList _ False specs) <- Hs.importSpecs i =
+    [ (r, mname, ty) | (r, ty) <- concatMap (checkImportSpec mname) specs ]
+  | otherwise = []
   where
-    checkImportSpec :: Hs.ImportSpec Hs.SrcSpanInfo -> Maybe Range
-    checkImportSpec = \case
-      Hs.IVar loc n | check n -> ret loc
-      Hs.IAbs loc _ n | check n -> ret loc
-      Hs.IThingAll loc n | check n -> ret loc
-      Hs.IThingWith loc n ns
-        | check n -> ret loc
-        | Just loc' <- listToMaybe $ map cloc $ filter (check . cname) ns -> ret loc'
-      _ -> Nothing
+    mname = pp (Hs.importModule i)
+    checkImportSpec :: String -> Hs.ImportSpec Hs.SrcSpanInfo -> [(Range, String)]
+    checkImportSpec mname = \case
+      Hs.IVar       loc   n    -> check loc n
+      Hs.IAbs       loc _ n    -> check loc n
+      Hs.IThingAll  loc   n    -> check loc n
+      Hs.IThingWith loc   n ns -> concat $ check loc n : map check' ns
       where
-        check = (== "Word64") . pp
-        ret = Just . srcSpanInfoToRange
+        check' cn = check (cloc cn) (cname cn)
+        check loc n = [(srcSpanInfoToRange loc, s) | let s = pp n, badImp s]
+        badImp s = maybe False (/= mname) $ lookup s autoImports
 
 -- Generating the files -------------------------------------------------------
 
