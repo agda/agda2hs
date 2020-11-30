@@ -2,6 +2,7 @@ module _ where
 
 open import Haskell.Prelude
 open import Agda.Builtin.Word
+open import Agda.Builtin.Nat
 open import Agda.Builtin.Equality
 
 -- ** Foreign HS code
@@ -15,10 +16,6 @@ open import Agda.Builtin.Equality
 {-# FOREIGN AGDA2HS
 import Prelude hiding (sum)
 import Data.Monoid
--- import Data.Word
-
--- import Data.Word (Word64)
-import qualified Data.Word as Word64
 #-}
 
 -- ** Datatypes & functions
@@ -61,10 +58,10 @@ ex_float = 0.0
 {-# COMPILE AGDA2HS ex_float #-}
 
 postulate
-  toInteger : Word64 → Integer
-  fromInteger : Integer → Word64
+  toInteger : Word → Integer
+  fromInteger : Integer → Word
 
-ex_word : Word64
+ex_word : Word
 ex_word = fromInteger 0
 {-# COMPILE AGDA2HS ex_word #-}
 

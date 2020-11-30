@@ -191,6 +191,7 @@ isSpecialName :: QName -> Maybe (Hs.QName ())
 isSpecialName = show >>> \ case
     "Agda.Builtin.Nat.Nat"         -> unqual "Natural"
     "Agda.Builtin.Int.Int"         -> unqual "Integer"
+    "Agda.Builtin.Word.Word64"     -> unqual "Word"
     "Agda.Builtin.Float.Float"     -> unqual "Double"
     "Agda.Builtin.Bool.Bool.false" -> unqual "False"
     "Agda.Builtin.Bool.Bool.true"  -> unqual "True"
@@ -602,8 +603,7 @@ imports :: [Ranged Code] -> [Hs.ImportDecl Hs.SrcSpanInfo]
 imports modules = concat [imps | (_, (Hs.Module _ _ _ imps _, _)) <- modules]
 
 autoImports :: [(String, String)]
-autoImports = [("Word64",  "Data.Word"),
-               ("Natural", "Numeric.Natural")]
+autoImports = [("Natural", "Numeric.Natural")]
 
 addImports :: [Hs.ImportDecl Hs.SrcSpanInfo] -> [CompiledDef] -> TCM [Hs.ImportDecl ()]
 addImports is defs = do
