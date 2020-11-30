@@ -74,6 +74,10 @@ intToInteger : Int64 → Integer
 intToInteger a = if isNegativeInt a then negsuc (unsafeIntToNat (negateInt a) - 1)
                                     else pos (unsafeIntToNat a)
 
+integerToInt : Integer → Int64
+integerToInt (pos    n) = int64 (n2w n)
+integerToInt (negsuc n) = negateInt (int64 (n2w (suc n)))
+
 private
   ltPosInt : Int64 → Int64 → Bool
   ltPosInt (int64 a) (int64 b) = ltWord a b

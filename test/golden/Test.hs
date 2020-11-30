@@ -4,7 +4,6 @@ module Test where
 
 import Numeric.Natural (Natural)
 
-import Prelude hiding (sum)
 import Data.Monoid
 
 data Exp v = Plus (Exp v) (Exp v)
@@ -16,9 +15,15 @@ eval env (Plus a b) = eval env a + eval env b
 eval env (Lit n) = n
 eval env (Var x) = env x
 
-sum :: [Natural] -> Natural
-sum [] = 0
-sum (x : xs) = x + sum xs
+listSum :: [Int] -> Int
+listSum [] = 0
+listSum (x : xs) = x + sum xs
+
+monoSum :: [Integer] -> Integer
+monoSum xs = sum xs
+
+polySum :: Num a => [a] -> a
+polySum xs = sum xs
 
 -- comment
 -- another comment
