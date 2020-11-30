@@ -2,15 +2,10 @@
 
 module Test where
 
-import Data.Word (Word64)
 import Numeric.Natural (Natural)
 
 import Prelude hiding (sum)
 import Data.Monoid
--- import Data.Word
-
--- import Data.Word (Word64)
-import qualified Data.Word as Word64
 
 data Exp v = Plus (Exp v) (Exp v)
            | Lit Natural
@@ -38,7 +33,7 @@ bla n = n * 4
 ex_float :: Double
 ex_float = 0.0
 
-ex_word :: Word64
+ex_word :: Word
 ex_word = fromInteger 0
 
 ex_char :: Char
