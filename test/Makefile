@@ -6,7 +6,7 @@ ROOT=$(shell cd ..; pwd)/
 default : clean alltests fail compare
 
 clean :
-	@rm -f build/*
+	@rm -rf build/*
 
 alltests :
 	@echo == Compiling tests ==
