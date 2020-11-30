@@ -1,7 +1,7 @@
 {-# OPTIONS --no-auto-inline #-}
 module Where where
 
-open import Haskell.Prelude
+open import Haskell.Prelude hiding (_+_; _*_; _-_)
 open import Agda.Builtin.Nat
 
 postulate

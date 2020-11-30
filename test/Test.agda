@@ -1,9 +1,6 @@
 module _ where
 
 open import Haskell.Prelude
-open import Agda.Builtin.Nat
-open import Agda.Builtin.Word
-open import Agda.Builtin.Nat
 open import Agda.Builtin.Equality
 
 -- ** Foreign HS code
@@ -15,7 +12,6 @@ open import Agda.Builtin.Equality
 
 -- imports
 {-# FOREIGN AGDA2HS
-import Prelude hiding (sum)
 import Data.Monoid
 #-}
 
@@ -35,10 +31,18 @@ eval env (Var x) = env x
 
 -- ** Natural numbers
 
-sum : List Nat → Nat
-sum []       = 0
-sum (x ∷ xs) = x + sum xs
-{-# COMPILE AGDA2HS sum #-}
+listSum : List Int → Int
+listSum []       = 0
+listSum (x ∷ xs) = x + sum xs
+{-# COMPILE AGDA2HS listSum #-}
+
+monoSum : List Integer → Integer
+monoSum xs = sum xs
+{-# COMPILE AGDA2HS monoSum #-}
+
+polySum : ⦃ iNum : Num a ⦄ → List a → a
+polySum xs = sum xs
+{-# COMPILE AGDA2HS polySum #-}
 
 {-# FOREIGN AGDA2HS
 -- comment
@@ -60,7 +64,6 @@ ex_float = 0.0
 
 postulate
   toInteger : Word → Integer
-  fromInteger : Integer → Word
 
 ex_word : Word
 ex_word = fromInteger 0
@@ -71,7 +74,7 @@ ex_char = 'a'
 {-# COMPILE AGDA2HS ex_char #-}
 
 postulate
-  toEnum : Nat → Char
+  toEnum : Int → Char
 
 char_d : Char
 char_d = toEnum 100
@@ -109,7 +112,7 @@ assoc : (a b c : Nat) → a + (b + c) ≡ (a + b) + c
 assoc zero    b c = refl
 assoc (suc a) b c rewrite assoc a b c = refl
 
-thm : ∀ xs ys → sum (xs ++ ys) ≡ sum xs + sum ys
+thm : (xs ys : List Nat) → sum (xs ++ ys) ≡ sum xs + sum ys
 thm []       ys = refl
 thm (x ∷ xs) ys rewrite thm xs ys | assoc x (sum xs) (sum ys) = refl
 

@@ -2,7 +2,7 @@
 module Haskell.Prelude where
 
 open import Agda.Builtin.Unit         public
-open import Agda.Builtin.Nat as Nat   public hiding (_==_; _<_)
+open import Agda.Builtin.Nat as Nat   public hiding (_==_; _<_; _+_; _*_; _-_)
 open import Agda.Builtin.List         public
 open import Agda.Builtin.Bool         public
 open import Agda.Builtin.Float        public renaming (Float to Double)
@@ -10,13 +10,14 @@ open import Agda.Builtin.Char         public
 open import Agda.Builtin.FromString   public
 import Agda.Builtin.String as Str
 open import Agda.Builtin.Strict
-open import Agda.Builtin.FromNat      public using (fromNat)
-open import Agda.Builtin.FromNeg      public using (fromNeg)
+open import Agda.Builtin.FromNat      public using (Number; fromNat)
+open import Agda.Builtin.FromNeg      public using (Negative; fromNeg)
 open import Agda.Builtin.Word         public renaming (Word64 to Word)
 open import Agda.Builtin.Equality     public
+open import Agda.Builtin.Int using (pos; negsuc)
 
 open import Haskell.Prim
-open Haskell.Prim public using (if_then_else_; iNumberNat; IsTrue; itsTrue; All; allNil; allCons)
+open Haskell.Prim public using (TypeError; ⊥; if_then_else_; iNumberNat; IsTrue; IsFalse; All; allNil; allCons)
 
 open import Haskell.Prim.Integer
 open Haskell.Prim.Integer public using (Integer; iNumberInteger; iNegativeInteger; isNegativeInteger; IsNonNegativeInteger)
@@ -24,11 +25,13 @@ open Haskell.Prim.Integer public using (Integer; iNumberInteger; iNegativeIntege
 open import Haskell.Prim.Int renaming (Int64 to Int)
 open Haskell.Prim.Int public using (iNumberInt; iNegativeInt; isNegativeInt; IsNonNegativeInt) renaming (Int64 to Int)
 
+open import Haskell.Prim.Double
+open Haskell.Prim.Double public using (iNumberDouble; iNegativeDouble)
+
 open import Haskell.Prim.Word
 
 -- Problematic features
 --  - [Partial]:  Could pass implicit/instance arguments to prove totality.
---  - [Int]:      Agda doesn't have Int64. What to do?
 --  - [Float]:    Or Float (Agda floats are Doubles)
 --  - [Infinite]: Define colists and map to Haskell lists?
 
@@ -38,10 +41,9 @@ open import Haskell.Prim.Word
 --          enumFromTo, enumFromThenTo),      [Int, Partial]
 --     Bounded(minBound, maxBound),
 --
---     Int, Integer, Float        [Int, Float]
---     Rational, Word,            [Int]
+--     Float        [Int, Float]
+--     Rational
 --
---     Num((+), (-), (*), negate, abs, signum, fromInteger),
 --     Real(toRational),
 --     Integral(quot, rem, div, mod, quotRem, divMod, toInteger),
 --     Fractional((/), recip, fromRational),
@@ -56,14 +58,12 @@ open import Haskell.Prim.Word
 --     fromIntegral, realToFrac,
 --
 --     foldr1, foldl1, maximum, minimum      [Partial]
---     length                                [Int]
---     product, sum
 --
 --     until, error, errorWithoutStackTrace, undefined    [Partial]
 --
 --     head, last, tail, init, (!!)    [Partial]
 --     iterate, repeat, cycle          [Infinite]
---     take, drop, splitAt             [Int]
+--     take, drop, splitAt             [Int, Partial]
 --
 --     ShowS, Show(showsPrec, showList, show),
 --     shows, showChar, showString, showParen,
@@ -429,6 +429,9 @@ instance
   iEqWord : Eq Word64
   iEqWord ._==_ = eqWord
 
+  iEqDouble : Eq Double
+  iEqDouble ._==_ = primFloatNumericalEquality
+
   iEqBool : Eq Bool
   iEqBool ._==_ false false = true
   iEqBool ._==_ true  true  = true
@@ -515,6 +518,9 @@ instance
   iOrdWord : Ord Word64
   iOrdWord .compare = compareFromLt ltWord
 
+  iOrdDouble : Ord Double
+  iOrdDouble .compare = compareFromLt primFloatNumericalLess
+
   iOrdBool : Ord Bool
   iOrdBool .compare false true  = LT
   iOrdBool .compare true  false = GT
@@ -552,6 +558,107 @@ instance
   iOrdOrdering .compare EQ GT = LT
   iOrdOrdering .compare GT EQ = GT
   iOrdOrdering .compare GT GT = EQ
+
+--------------------------------------------------
+-- Num
+
+record Num (a : Set) : Set₁ where
+  infixl 6 _+_ _-_
+  infixl 7 _*_
+  field
+    MinusOK       : a → a → Set
+    NegateOK      : a → Set
+    FromIntegerOK : Integer → Set
+    _+_           : a → a → a
+    _-_           : (x y : a) → ⦃ MinusOK x y ⦄ → a
+    _*_           : a → a → a
+    negate        : (x : a) → ⦃ NegateOK x ⦄ → a
+    abs           : a → a
+    signum        : a → a
+    fromInteger   : (n : Integer) → ⦃ FromIntegerOK n ⦄ → a
+    overlap ⦃ number ⦄  : Number a
+    overlap ⦃ numZero ⦄ : number .Number.Constraint 0
+    overlap ⦃ numOne ⦄  : number .Number.Constraint 1
+
+open Num ⦃ ... ⦄ public hiding (FromIntegerOK; number)
+
+instance
+  iNumNat : Num Nat
+  iNumNat .MinusOK n m      = IsFalse (n Nat.< m)
+  iNumNat .NegateOK 0       = ⊤
+  iNumNat .NegateOK (suc _) = ⊥
+  iNumNat .Num.FromIntegerOK (negsuc _) = ⊥
+  iNumNat .Num.FromIntegerOK (pos _) = ⊤
+  iNumNat ._+_ n m = n Nat.+ m
+  iNumNat ._-_ n m = n Nat.- m
+  iNumNat ._*_ n m = n Nat.* m
+  iNumNat .negate n = n
+  iNumNat .abs    n = n
+  iNumNat .signum 0       = 0
+  iNumNat .signum (suc n) = 1
+  iNumNat .fromInteger (pos n) = n
+  iNumNat .fromInteger (negsuc _) ⦃ () ⦄
+
+  iNumInt : Num Int
+  iNumInt .MinusOK _ _         = ⊤
+  iNumInt .NegateOK _          = ⊤
+  iNumInt .Num.FromIntegerOK _ = ⊤
+  iNumInt ._+_ x y             = addInt x y
+  iNumInt ._-_ x y             = subInt x y
+  iNumInt ._*_ x y             = mulInt x y
+  iNumInt .negate x            = negateInt x
+  iNumInt .abs x               = absInt x
+  iNumInt .signum x            = signInt x
+  iNumInt .fromInteger n       = integerToInt n
+
+  iNumInteger : Num Integer
+  iNumInteger .MinusOK _ _ = ⊤
+  iNumInteger .NegateOK _          = ⊤
+  iNumInteger .Num.FromIntegerOK _ = ⊤
+  iNumInteger ._+_ x y             = addInteger x y
+  iNumInteger ._-_ x y             = subInteger x y
+  iNumInteger ._*_ x y             = mulInteger x y
+  iNumInteger .negate x            = negateInteger x
+  iNumInteger .abs x               = absInteger x
+  iNumInteger .signum x            = signInteger x
+  iNumInteger .fromInteger n       = n
+
+  iNumWord : Num Word
+  iNumWord .MinusOK _ _         = ⊤
+  iNumWord .NegateOK _          = ⊤
+  iNumWord .Num.FromIntegerOK _ = ⊤
+  iNumWord ._+_ x y             = addWord x y
+  iNumWord ._-_ x y             = subWord x y
+  iNumWord ._*_ x y             = mulWord x y
+  iNumWord .negate x            = negateWord x
+  iNumWord .abs x               = x
+  iNumWord .signum x            = if x == 0 then 0 else 1
+  iNumWord .fromInteger n       = integerToWord n
+
+  iNumDouble : Num Double
+  iNumDouble .MinusOK _ _         = ⊤
+  iNumDouble .NegateOK _          = ⊤
+  iNumDouble .Num.FromIntegerOK _ = ⊤
+  iNumDouble ._+_ x y             = primFloatPlus x y
+  iNumDouble ._-_ x y             = primFloatMinus x y
+  iNumDouble ._*_ x y             = primFloatTimes x y
+  iNumDouble .negate x            = primFloatMinus 0.0 x
+  iNumDouble .abs x               = if x < 0.0 then primFloatMinus 0.0 x else x
+  iNumDouble .signum x            = case compare x 0.0 of λ where
+                                      LT → -1.0
+                                      EQ → x
+                                      GT → 1.0
+  iNumDouble .fromInteger (pos    n) = fromNat n
+  iNumDouble .fromInteger (negsuc n) = fromNeg (suc n)
+
+private
+  MonoidSum : ⦃ iNum : Num a ⦄ → Monoid a
+  MonoidSum .mempty      = 0
+  MonoidSum .super ._<>_ = _+_
+
+  MonoidProduct : ⦃ iNum : Num a ⦄ → Monoid a
+  MonoidProduct .mempty      = 1
+  MonoidProduct .super ._<>_ = _*_
 
 
 --------------------------------------------------
@@ -597,6 +704,14 @@ record Foldable (t : Set → Set) : Set₁ where
   toList : t a → List a
   toList = foldr _∷_ []
 
+  sum : ⦃ iNum : Num a ⦄ → t a → a
+  sum = foldMap ⦃ MonoidSum ⦄ id
+
+  product : ⦃ iNum : Num a ⦄ → t a → a
+  product = foldMap ⦃ MonoidProduct ⦄ id
+
+  length : t a → Int
+  length = foldMap ⦃ MonoidSum ⦄ (const 1)
 
 open Foldable ⦃ ... ⦄ public
 
@@ -756,10 +871,6 @@ private
 instance
   iShowTuple : ∀ {as} → ⦃ All Show as ⦄ → Show (Tuple as)
   iShowTuple = makeShowsPrec λ _ → showParen true ∘ showTuple
-
-
---------------------------------------------------
--- Num
 
 
 --------------------------------------------------

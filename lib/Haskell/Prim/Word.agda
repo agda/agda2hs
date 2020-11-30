@@ -8,12 +8,14 @@ open import Agda.Builtin.Char
 open import Agda.Builtin.String
 open import Agda.Builtin.FromNat
 open import Agda.Builtin.Unit
+open import Agda.Builtin.Int using (pos; negsuc)
 
 import Agda.Builtin.Word renaming (primWord64ToNat to w2n; primWord64FromNat to n2w)
 open Agda.Builtin.Word
 open Agda.Builtin.Word public using (Word64)
 
 open import Haskell.Prim
+open import Haskell.Prim.Integer
 
 
 --------------------------------------------------
@@ -52,3 +54,7 @@ ltWord a b = w2n a < w2n b
 
 showWord : Word64 → List Char
 showWord a = primStringToList (primShowNat (w2n a))
+
+integerToWord : Integer → Word64
+integerToWord (pos n)    = n2w n
+integerToWord (negsuc n) = negateWord (n2w (suc n))
