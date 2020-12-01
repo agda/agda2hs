@@ -106,6 +106,14 @@ doubleLambda : Nat → Nat → Nat
 doubleLambda = λ a b → a + 2 * b
 {-# COMPILE AGDA2HS doubleLambda #-}
 
+second : (b → c) → a × b → a × c
+second f (x , y) = x , f y
+{-# COMPILE AGDA2HS second #-}
+
+doubleTake : (n m : Int) → ⦃ IsNonNegativeInt n ⦄ → ⦃ IsNonNegativeInt m ⦄ → List a → List a × List a
+doubleTake n m = second (take m) ∘ splitAt n
+{-# COMPILE AGDA2HS doubleTake #-}
+
 -- ** Proofs
 
 assoc : (a b c : Nat) → a + (b + c) ≡ (a + b) + c
