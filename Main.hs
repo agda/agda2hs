@@ -347,7 +347,7 @@ compileRecord def = do
   let help :: Int -> [QName] -> Telescope -> TCM [Hs.ClassDecl ()]
       help i ns tel = case (ns,splitTelescopeAt i tel) of
         (_     ,(_   ,EmptyTel      )) -> return []
-        ((n:ns),(tel',ExtendTel ty _)) -> do 
+        ((n:ns),(tel',ExtendTel ty _)) -> do
           ty  <- compileRecField tel' n (unDom ty)
           tys <- help (i+1) ns tel
           return (ty:tys)
@@ -363,7 +363,7 @@ compileRecField :: Telescope
 compileRecField tel n ty = addContext tel $ do
   hty <- compileType (unEl ty)
   return $ Hs.ClsDecl () (Hs.TypeSig () [hsName $ prettyShow $ qnameName n] hty)
-  
+
 compileData :: Definition -> TCM [Hs.Decl ()]
 compileData def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
@@ -510,6 +510,18 @@ compileType t = do
     Sort s -> return (Hs.TyStar ())
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
+-- Exploits the fact that the name of the record type and the name of the record module are the
+-- same, including the unique name ids.
+isRecordFunction :: QName -> TCM Bool
+isRecordFunction q
+  | null $ mnameToList m = return False
+  | otherwise            =
+    getConstInfo' (mnameToQName m) <&> \ case
+      Right Defn{theDef = Record{}} -> True
+      _                             -> False
+  where
+    m = qnameModule q
+
 compileTerm :: Term -> TCM (Hs.Exp ())
 compileTerm v =
   case unSpine v of
@@ -518,14 +530,16 @@ compileTerm v =
     -- args that need attention
     Def f es
       | Just semantics <- isSpecialTerm f -> semantics f es
-      | otherwise -> isProjection f >>= \ case
-          Just _ -> do
-            -- v not sure why this fails to strip the name
-            --f <- hsQName builtins (qualify_ (qnameName f))
-            -- here's a horrible way to strip the module prefix off the name
-            let uf = Hs.UnQual () (hsName (show (nameConcrete (qnameName f))))
-            (`appStrip` es) (Hs.Var () uf)
-          Nothing -> (`app` es) . Hs.Var () =<< hsQName f
+      | otherwise -> isRecordFunction f >>= \ case
+      -- v currently we assume all record projections are instance
+      -- args that need attention
+        True -> do
+          -- v not sure why this fails to strip the name
+          --f <- hsQName builtins (qualify_ (qnameName f))
+          -- here's a horrible way to strip the module prefix off the name
+          let uf = Hs.UnQual () (hsName (show (nameConcrete (qnameName f))))
+          (`appStrip` es) (Hs.Var () uf)
+        False -> (`app` es) . Hs.Var () =<< hsQName f
     Con h ConORec es -> return $ Hs.Var () $ Hs.UnQual () (hsName (show "wibble"))
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
