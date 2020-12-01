@@ -64,6 +64,12 @@ plus3 = map (\ n -> n + 3)
 doubleLambda :: Natural -> Natural -> Natural
 doubleLambda = \ a b -> a + 2 * b
 
+second :: (b -> c) -> (a, b) -> (a, c)
+second f (x, y) = (x, f y)
+
+doubleTake :: Int -> Int -> [a] -> ([a], [a])
+doubleTake n m = second (take m) . splitAt n
+
 class MonoidX a where
         memptyX :: a
         mappendX :: a -> a -> a

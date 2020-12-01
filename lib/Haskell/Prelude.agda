@@ -63,7 +63,6 @@ open import Haskell.Prim.Word
 --
 --     head, last, tail, init, (!!)    [Partial]
 --     iterate, repeat, cycle          [Infinite]
---     take, drop, splitAt             [Int, Partial]
 --
 --     ShowS, Show(showsPrec, showList, show),
 --     shows, showChar, showString, showParen,
@@ -777,6 +776,30 @@ reverse = foldl (flip _∷_) []
 lookup : ⦃ Eq a ⦄ → a → List (a × b) → Maybe b
 lookup x []              = Nothing
 lookup x ((x₁ , y) ∷ xs) = if x == x₁ then Just y else lookup x xs
+
+takeNat : Nat → List a → List a
+takeNat n       [] = []
+takeNat zero    xs = []
+takeNat (suc n) (x ∷ xs) = x ∷ takeNat n xs
+
+take : (n : Int) → ⦃ IsNonNegativeInt n ⦄ → List a → List a
+take n xs = takeNat (intToNat n) xs
+
+dropNat : Nat → List a → List a
+dropNat n       [] = []
+dropNat zero    xs = xs
+dropNat (suc n) (_ ∷ xs) = dropNat n xs
+
+drop : (n : Int) → ⦃ IsNonNegativeInt n ⦄ → List a → List a
+drop n xs = dropNat (intToNat n) xs
+
+splitAtNat : (n : Nat) → List a → List a × List a
+splitAtNat _       []       = [] , []
+splitAtNat 0       xs       = [] , xs
+splitAtNat (suc n) (x ∷ xs) = first (x ∷_) (splitAtNat n xs)
+
+splitAt : (n : Int) → ⦃ IsNonNegativeInt n ⦄ → List a → List a × List a
+splitAt n xs = splitAtNat (intToNat n) xs
 
 
 --------------------------------------------------
