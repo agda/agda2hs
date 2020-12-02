@@ -1,0 +1,3 @@
+name: agda2hs-test
+depend:
+include: . ../lib

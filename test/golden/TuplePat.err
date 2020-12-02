@@ -1,0 +1,4 @@
+test/Fail/TuplePat.agda:6,1-5
+Tuple pattern
+  (_∷_ .(a) .(b ∷ c ∷ []) x xs)
+does not have a known size.

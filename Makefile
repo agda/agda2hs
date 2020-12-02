@@ -1,10 +1,14 @@
-
-AGDA2HS=$(shell cabal -v0 exec -- which -- agda2hs)
-
-.PHONY : test install
+.PHONY : test install repl
 
 install :
-	cabal install
+	cabal new-install --overwrite-policy=always
+
+repl :
+	cabal new-repl # e.g. `:set args -itest -otest/build test/AllTests.agda ... main ... :r ... main`
 
 test :
-	@AGDA2HS=$(AGDA2HS) make -C test
+	cabal new-install --overwrite-policy=always --installdir=test --install-method=copy
+	make -C test
+
+golden :
+	make -C test golden

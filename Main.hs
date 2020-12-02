@@ -1,8 +1,10 @@
 module Main where
 
+import Control.Arrow ((>>>))
 import Control.Monad
 import Control.Monad.Fail (MonadFail)
 import Control.Monad.IO.Class
+import Data.Generics (mkT, everywhere, listify, extT, everything, mkQ)
 import Data.Function
 import Data.List
 import Data.Maybe
@@ -15,9 +17,11 @@ import System.Directory
 
 import qualified Language.Haskell.Exts.SrcLoc     as Hs
 import qualified Language.Haskell.Exts.Syntax     as Hs
+import qualified Language.Haskell.Exts.Build      as Hs
 import qualified Language.Haskell.Exts.Pretty     as Hs
 import qualified Language.Haskell.Exts.Parser     as Hs
 import qualified Language.Haskell.Exts.ExactPrint as Hs
+import qualified Language.Haskell.Exts.Extension  as Hs
 import qualified Language.Haskell.Exts.Comments   as Hs
 
 import Agda.Main (runAgda)
@@ -26,19 +30,21 @@ import Agda.Compiler.Common
 import Agda.Interaction.BasicOps
 import Agda.TypeChecking.Monad
 import Agda.TypeChecking.Pretty hiding (pretty)
-import Agda.Syntax.Common
+import Agda.Syntax.Common hiding (Ranged)
 import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Literal
 import Agda.Syntax.Internal
 import Agda.Syntax.Position
 import Agda.Syntax.Translation.ConcreteToAbstract
+import Agda.Syntax.Translation.AbstractToConcrete
+import Agda.Syntax.Scope.Base
+import Agda.Syntax.Scope.Monad
 import Agda.TheTypeChecker
 import Agda.TypeChecking.Rules.Term (isType_)
 import Agda.TypeChecking.Reduce
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
 import Agda.TypeChecking.Records
-import Agda.Interaction.CommandLine (withCurrentFile)
 import Agda.Utils.Lens
 import Agda.Utils.Pretty (prettyShow)
 import qualified Agda.Utils.Pretty as P
@@ -46,21 +52,30 @@ import Agda.Utils.FileName
 import Agda.Utils.List
 import Agda.Utils.Impossible
 import Agda.Utils.Maybe.Strict (toLazy, toStrict)
+import Agda.Utils.Size
 
-data Options = Options { outDir :: FilePath }
+import HsUtils
+
+
+data Options = Options { optOutDir     :: FilePath,
+                         optExtensions :: [Hs.Extension] }
 
 defaultOptions :: Options
-defaultOptions = Options{ outDir = "." }
+defaultOptions = Options{ optOutDir = ".", optExtensions = [] }
 
 outdirOpt :: Monad m => FilePath -> Options -> m Options
-outdirOpt dir opts = return opts{ outDir = dir }
+outdirOpt dir opts = return opts{ optOutDir = dir }
+
+extensionOpt :: Monad m => String -> Options -> m Options
+extensionOpt ext opts = return opts{ optExtensions = Hs.parseExtension ext : optExtensions opts }
 
 pragmaName :: String
 pragmaName = "AGDA2HS"
 
-type ModuleEnv   = Builtins
+type Ranged a    = (Range, a)
+type ModuleEnv   = ()
 type ModuleRes   = ()
-type CompiledDef = [(Range, [Hs.Decl ()])]
+type CompiledDef = [Ranged [Hs.Decl ()]]
 
 backend :: Backend' Options Options ModuleEnv ModuleRes CompiledDef
 backend = Backend'
@@ -68,7 +83,10 @@ backend = Backend'
   , backendVersion        = Just "0.1"
   , options               = defaultOptions
   , commandLineFlags      = [ Option ['o'] ["out-dir"] (ReqArg outdirOpt "DIR")
-                              "Write Haskell code to DIR. Default: ." ]
+                              "Write Haskell code to DIR. Default: ."
+                            , Option ['X'] [] (ReqArg extensionOpt "EXTENSION")
+                              "Enable Haskell language EXTENSION. Affects parsing of Haskell code in FOREIGN blocks."
+                            ]
   , isEnabled             = \ _ -> True
   , preCompile            = return
   , postCompile           = \ _ _ _ -> return ()
@@ -79,25 +97,14 @@ backend = Backend'
   , mayEraseType          = \ _ -> return True
   }
 
--- Names ------------------------------------------------------------------
+-- Helpers ---------------------------------------------------------------
 
 showTCM :: PrettyTCM a => a -> TCM String
 showTCM x = show <$> prettyTCM x
 
-isInfix :: String -> Maybe String
-isInfix ('_' : f) = do
-  (op, '_') <- initLast f
-  return op
-isInfix _ = Nothing
-
-hsName :: String -> Hs.Name ()
-hsName x
-  | Just op <- isInfix x = Hs.Symbol () op
-  | otherwise            = Hs.Ident () x
-
-hsQName :: Builtins -> QName -> TCM (Hs.QName ())
-hsQName builtins f
-  | Just p <- Map.lookup f builtins = return $ compilePrim p
+hsQName :: QName -> TCM (Hs.QName ())
+hsQName f
+  | Just x <- isSpecialName f = return x
   | otherwise = do
     s <- showTCM f
     return $
@@ -105,39 +112,135 @@ hsQName builtins f
         (_, "")        -> Hs.UnQual () (hsName s)
         (fr, _ : mr) -> Hs.Qual () (Hs.ModuleName () $ reverse mr) (hsName $ reverse fr)
 
-isOp :: Hs.QName () -> Bool
-isOp (Hs.UnQual _ Hs.Symbol{}) = True
-isOp (Hs.Special _ Hs.Cons{})  = True
-isOp _                         = False
+freshString :: String -> TCM String
+freshString s = freshName_ s >>= showTCM
+
+(~~) :: QName -> String -> Bool
+q ~~ s = show q == s
+
+makeList :: Doc -> Term -> TCM [Term]
+makeList = makeList' "Agda.Builtin.List.List.[]" "Agda.Builtin.List.List._∷_"
+
+makeList' :: String -> String -> Doc -> Term -> TCM [Term]
+makeList' nil cons err v = do
+  v <- reduce v
+  case v of
+    Con c _ es
+      | []      <- vis es, conName c ~~ nil  -> return []
+      | [x, xs] <- vis es, conName c ~~ cons -> (x :) <$> makeList' nil cons err xs
+    _ -> genericDocError err
+  where
+    vis es = [ unArg a | Apply a <- es, visible a ]
+
+makeListP' :: String -> String -> Doc -> DeBruijnPattern -> TCM [DeBruijnPattern]
+makeListP' nil cons err p = do
+  case p of
+    ConP c _ ps
+      | []      <- vis ps, conName c ~~ nil  -> return []
+      | [x, xs] <- vis ps, conName c ~~ cons -> (x :) <$> makeListP' nil cons err xs
+    _ -> genericDocError err
+  where
+    vis ps = [ namedArg p | p <- ps, visible p ]
+
+underAbstr :: Subst t a => Dom Type -> Abs a -> (a -> TCM b) -> TCM b
+underAbstr a b ret = underAbstraction' KeepNames a b $ \ body ->
+  localScope $ bindVar 0 >> ret body
+
+underAbstr_ :: Subst t a => Abs a -> (a -> TCM b) -> TCM b
+underAbstr_ = underAbstr __DUMMY_DOM__
+
+applyNoBodies :: Definition -> [Arg Term] -> Definition
+applyNoBodies d args = revert $ d `apply` args
+  where
+    bodies :: [Maybe Term]
+    bodies = map clauseBody $ funClauses $ theDef d
+
+    setBody cl b = cl { clauseBody = b }
+
+    revert :: Definition -> Definition
+    revert d@(Defn {theDef = f@(Function {funClauses = cls})}) =
+      d {theDef = f {funClauses = zipWith setBody cls bodies}}
 
 -- Builtins ---------------------------------------------------------------
 
-data Prim = Nat | List | Unit | Cons | Nil
-  deriving (Show, Eq)
+isSpecialTerm :: QName -> Maybe (QName -> Elims -> TCM (Hs.Exp ()))
+isSpecialTerm = show >>> \ case
+  "Haskell.Prelude.if_then_else_" -> Just ifThenElse
+  _ -> Nothing
 
-type Builtins = Map QName Prim
+isSpecialCon :: QName -> Maybe (ConHead -> ConInfo -> Elims -> TCM (Hs.Exp ()))
+isSpecialCon = show >>> \ case
+  "Haskell.Prelude.Tuple._∷_" -> Just tupleTerm
+  _ -> Nothing
 
-getBuiltins :: TCM Builtins
-getBuiltins = Map.fromList . concat <$> mapM getB
-                [ (builtinNat,  Nat)
-                , (builtinList, List)
-                , (builtinUnit, Unit)
-                , (builtinCons, Cons)
-                , (builtinNil,  Nil)
-                ]
+isSpecialPat :: QName -> Maybe (ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> TCM (Hs.Pat ()))
+isSpecialPat = show >>> \ case
+  "Haskell.Prelude.Tuple._∷_" -> Just tuplePat
+  _ -> Nothing
+
+isSpecialType :: QName -> Maybe (QName -> Elims -> TCM (Hs.Type ()))
+isSpecialType = show >>> \ case
+  "Haskell.Prelude.Tuple" -> Just tupleType
+  _ -> Nothing
+
+isSpecialName :: QName -> Maybe (Hs.QName ())
+isSpecialName = show >>> \ case
+    "Agda.Builtin.Nat.Nat"         -> unqual "Integer"
+    "Agda.Builtin.Float.Float"     -> unqual "Double"
+    "Agda.Builtin.Bool.Bool.false" -> unqual "False"
+    "Agda.Builtin.Bool.Bool.true"  -> unqual "True"
+    "Agda.Builtin.List.List"       -> special Hs.ListCon
+    "Agda.Builtin.List.List._∷_"   -> special Hs.Cons
+    "Agda.Builtin.List.List.[]"    -> special Hs.ListCon
+    "Agda.Builtin.Unit.⊤"          -> special Hs.UnitCon
+    "Agda.Builtin.Unit.tt"         -> special Hs.UnitCon
+    "Haskell.Prelude.Tuple.[]"     -> special Hs.UnitCon
+    "Haskell.Prelude._∘_"          -> unqual "_._"
+    _ -> Nothing
   where
-    getB (b, t) = getBuiltin' b >>= \ case
-      Nothing          -> return []
-      Just (Def q _)   -> return [(q, t)]
-      Just (Con c _ _) -> return [(conName c, t)]
-      Just _           -> __IMPOSSIBLE__
+    unqual n  = Just $ Hs.UnQual () $ hsName n
+    special c = Just $ Hs.Special () $ c ()
 
-compilePrim :: Prim -> Hs.QName ()
-compilePrim Nat  = Hs.UnQual () (hsName "Integer")
-compilePrim List = Hs.Special () (Hs.ListCon ())
-compilePrim Unit = Hs.Special () (Hs.UnitCon ())
-compilePrim Cons = Hs.Special () (Hs.Cons ())
-compilePrim Nil  = Hs.Special () (Hs.ListCon ())
+ifThenElse :: QName -> Elims -> TCM (Hs.Exp ())
+ifThenElse _ es = compileArgs es >>= \case
+  -- fully applied
+  (b : t : f : es') -> return $ Hs.If () b t f `eApp` es'
+  -- partially applied -> eta-expand
+  es' -> do
+    xs <- fmap Hs.name . drop (length es') <$> mapM freshString ["b", "t", "f"]
+    let [b, t, f] = es' ++ map Hs.var xs
+    return $ Hs.lamE (Hs.pvar <$> xs) $ Hs.If () b t f
+
+tupleType :: QName -> Elims -> TCM (Hs.Type ())
+tupleType _ es | Just [as] <- allApplyElims es = do
+  err <- sep [ text "Argument"
+             , nest 2 $ prettyTCM as
+             , text "to Tuple is not a concrete list" ]
+  xs <- makeList err (unArg as)
+  ts <- mapM compileType xs
+  return $ Hs.TyTuple () Hs.Boxed ts
+tupleType _ es =
+  genericDocError =<< text "Bad tuple arguments: " <?> prettyTCM es
+
+tupleTerm :: ConHead -> ConInfo -> Elims -> TCM (Hs.Exp ())
+tupleTerm cons i es = do
+  let v = Con cons i es
+  err <- sep [ text "Tuple value"
+             , nest 2 $ prettyTCM v
+             , text "does not have a known size." ]
+  xs <- makeList' "Haskell.Prelude.Tuple.[]" "Haskell.Prelude.Tuple._∷_" err v
+  ts <- mapM compileTerm xs
+  return $ Hs.Tuple () Hs.Boxed ts
+
+tuplePat :: ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> TCM (Hs.Pat ())
+tuplePat cons i ps = do
+  let p = ConP cons i ps
+  err <- sep [ text "Tuple pattern"
+             , nest 2 $ prettyTCM p
+             , text "does not have a known size." ]
+  xs <- makeListP' "Haskell.Prelude.Tuple.[]" "Haskell.Prelude.Tuple._∷_" err p
+  qs <- mapM compilePat xs
+  return $ Hs.PTuple () Hs.Boxed qs
 
 -- Compiling things -------------------------------------------------------
 
@@ -160,24 +263,24 @@ processPragma qn = getUniqueCompilerPragma pragmaName qn >>= \case
     return $ ClassPragma YesCode
   _                                        -> return DefaultPragma
 
-compile :: Options -> Builtins -> IsMain -> Definition -> TCM CompiledDef
-compile _ builtins _ def = processPragma (defName def) >>= \ case
+compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
+compile _ _ _ def = processPragma (defName def) >>= \ case
   NoPragma -> return []
-  DefaultPragma -> compile' builtins def
+  DefaultPragma -> compile' def
   ClassPragma NoCode -> return []
 
-compile' :: Builtins -> Definition -> TCM CompiledDef
-compile' builtins def =
+compile' :: Definition -> TCM CompiledDef
+compile' def =
   case theDef def of
-    Function{} -> tag <$> compileFun builtins def
-    Datatype{} -> tag <$> compileData builtins def
-    Record{}   -> tag <$> compileRecord builtins def
-    _          -> setCurrentRange r $ genericDocError =<< (text "cannot compile: " <+> prettyTCM (defName def))
-  where tag code = [(r, code)]
-        r = nameBindingSite $ qnameName $ defName def
+    Axiom      -> tag <$> compilePostulate def
+    Function{} -> tag <$> compileFun def
+    Datatype{} -> tag <$> compileData def
+    Record{}   -> tag <$> compileRecord def
+    _          -> return []
+  where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
 
-compileRecord :: Builtins -> Definition -> TCM [Hs.Decl ()]
-compileRecord builtins def = do
+compileRecord :: Definition -> TCM [Hs.Decl ()]
+compileRecord def = do
   let r = hsName $ prettyShow $ qnameName $ defName def
   TelV tel _ <- telViewUpTo (recPars (theDef def)) (defType def)
   hd <- addContext tel $ do
@@ -190,7 +293,7 @@ compileRecord builtins def = do
       help i ns tel = case (ns,splitTelescopeAt i tel) of
         (_     ,(_   ,EmptyTel      )) -> return []
         ((n:ns),(tel',ExtendTel ty _)) -> do 
-          ty  <- compileRecField builtins tel' n (unDom ty)
+          ty  <- compileRecField tel' n (unDom ty)
           tys <- help (i+1) ns tel
           return (ty:tys)
   telBig <- getRecordFieldTypes (defName def)
@@ -198,17 +301,16 @@ compileRecord builtins def = do
   y <- help (recPars (theDef def)) fieldNames telBig
   return [Hs.ClassDecl () Nothing hd [] (Just y)]
 
-compileRecField :: Builtins
-                -> Telescope
+compileRecField :: Telescope
                 -> QName
                 -> Type
                 -> TCM (Hs.ClassDecl ())
-compileRecField builtins tel n ty = addContext tel $ do
-  hty <- compileType builtins (unEl ty)
+compileRecField tel n ty = addContext tel $ do
+  hty <- compileType (unEl ty)
   return $ Hs.ClsDecl () (Hs.TypeSig () [hsName $ prettyShow $ qnameName n] hty)
   
-compileData :: Builtins -> Definition -> TCM [Hs.Decl ()]
-compileData builtins def = do
+compileData :: Definition -> TCM [Hs.Decl ()]
+compileData def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
   case theDef def of
     Datatype{dataPars = n, dataIxs = 0, dataCons = cs} -> do
@@ -216,182 +318,245 @@ compileData builtins def = do
       addContext tel $ do
         let params = teleArgs tel :: [Arg Term]
         pars <- mapM (showTCM . unArg) $ filter visible params
-        cs   <- mapM (compileConstructor builtins params) cs
+        cs   <- mapM (compileConstructor params) cs
         let hd   = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
                          (Hs.DHead () d) pars
         return [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs []]
     _ -> __IMPOSSIBLE__
 
-compileConstructor :: Builtins -> [Arg Term] -> QName -> TCM (Hs.QualConDecl ())
-compileConstructor builtins params c = do
+compileConstructor :: [Arg Term] -> QName -> TCM (Hs.QualConDecl ())
+compileConstructor params c = do
   ty <- (`piApplyM` params) . defType =<< getConstInfo c
   TelV tel _ <- telView ty
   c <- showTCM c
-  args <- compileConstructorArgs builtins tel
+  args <- compileConstructorArgs tel
   return $ Hs.QualConDecl () Nothing Nothing $ Hs.ConDecl () (hsName c) args
 
-compileConstructorArgs :: Builtins -> Telescope -> TCM [Hs.Type ()]
-compileConstructorArgs _ EmptyTel = return []
-compileConstructorArgs builtins (ExtendTel a tel)
+compileConstructorArgs :: Telescope -> TCM [Hs.Type ()]
+compileConstructorArgs EmptyTel = return []
+compileConstructorArgs (ExtendTel a tel)
   | visible a, NoAbs _ tel <- reAbs tel = do
-    (:) <$> compileType builtins (unEl $ unDom a) <*> compileConstructorArgs builtins tel
-compileConstructorArgs _ tel = genericDocError =<< text "Bad constructor args:" <?> prettyTCM tel
+    (:) <$> compileType (unEl $ unDom a) <*> compileConstructorArgs tel
+compileConstructorArgs tel = genericDocError =<< text "Bad constructor args:" <?> prettyTCM tel
 
-compileFun :: Builtins -> Definition -> TCM [Hs.Decl ()]
-compileFun builtins def = do
-  let x = hsName $ prettyShow $ qnameName $ defName def
-  ty <- compileType builtins (unEl $ defType def)
-  cs <- mapM (compileClause x) funClauses
-  return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
+compilePostulate :: Definition -> TCM [Hs.Decl ()]
+compilePostulate def = do
+  let n = qnameName (defName def)
+      x = hsName $ prettyShow n
+  setCurrentRange (nameBindingSite n) $ do
+    ty <- compileType (unEl $ defType def)
+    let body = hsError $ "postulate: " ++ pp ty
+    return [ Hs.TypeSig () [x] ty
+           , Hs.FunBind () [Hs.Match () x [] (Hs.UnGuardedRhs () body) Nothing] ]
+
+type LocalDecls = [(QName, Definition)]
+
+compileFun :: Definition -> TCM [Hs.Decl ()]
+compileFun d = do
+  locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
+          . dropWhile ((<= defName d) . fst)
+          . sortDefs <$> curDefs
+  compileFun' d locals
+
+compileFun' :: Definition -> LocalDecls -> TCM [Hs.Decl ()]
+compileFun' (Defn {..}) locals = do
+  let n = qnameName defName
+      x = hsName $ prettyShow n
+      go = foldM $ \(ds, ms) -> compileClause ds defName x >=> return . fmap (ms `snoc`)
+  setCurrentRange (nameBindingSite n) $ do
+    ty <- compileType (unEl defType)
+    cs <- snd <$> go (locals, []) funClauses
+    return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
   where
-    Function{..} = theDef def
+    Function{..} = theDef
 
-compileClause :: Hs.Name () -> Clause -> TCM (Hs.Match ())
-compileClause x Clause{clauseTel       = tel,
-                       namedClausePats = ps,
-                       clauseBody      = body } =
-  addContext tel $ do
-    builtins <- getBuiltins
-    ps   <- compilePats builtins ps
-    body <- maybe (return $ Hs.Var () $ Hs.UnQual () (hsName "undefined")) (compileTerm builtins) body
-    let rhs = Hs.UnGuardedRhs () body
-    case (x, ps) of
-      (Hs.Symbol{}, p : q : ps) -> return $ Hs.InfixMatch () p x (q : ps) rhs Nothing
-      _                         -> return $ Hs.Match () x ps rhs Nothing
+compileClause :: LocalDecls -> QName -> Hs.Name () -> Clause -> TCM (LocalDecls, Hs.Match ())
+compileClause locals qn x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBody = body} =
+  addContext (KeepNames tel) $ localScope $ do
+    -- Compile patterns, only bind user-written variables
+    let bind (d, i) | getOrigin d == UserWritten = bindVar i
+                    | otherwise                  = return ()
+    mapM_ bind $ zip (telToList tel) $ reverse [0..size tel - 1]
+    ps <- compilePats ps'
 
-compileType :: Builtins -> Term -> TCM (Hs.Type ())
-compileType builtins t = do
+    -- Compile rhs and its @where@ clauses, making sure that:
+    --   * inner modules get instantiated
+    --   * references to inner modules get un-qualifiyed (and instantiated)
+    let localUses = nub $ listify (`elem` map fst locals) body
+        belongs q@(QName m _) (QName m0 _) =
+          ((show m0 ++ "._") `isPrefixOf` show m) && (q `notElem` localUses)
+        splitDecls :: LocalDecls -> ([(Definition, LocalDecls)], LocalDecls)
+        splitDecls ds@((q,child):rest)
+          | any ((`elem` localUses) . fst) ds
+          , (grandchildren, outer) <- span ((`belongs` q) . fst) rest
+          , (groups, rest') <- splitDecls outer
+          = ((child, grandchildren) : groups, rest')
+          | otherwise = ([], ds)
+        splitDecls [] = ([], [])
+        (children, locals') = splitDecls locals
+
+        args   = teleArgs tel
+        argLen = length args
+
+        -- 1. apply current telescope to inner definitions
+        children' = everywhere (mkT (`applyNoBodies` args)) children
+
+        -- 2. shrink calls to inner modules (unqualify + partially apply module parameters)
+        localNames = concatMap (\(d,ds) -> defName d : map fst ds) children
+        shrinkLocalDefs t | Def q es <- t, q `elem` localNames
+                          = Def (qualify_ $ qnameName q) (drop argLen es)
+                          | otherwise = t
+        (body', children'') = everywhere (mkT shrinkLocalDefs) (body, children')
+
+    body' <- fromMaybe hsUndefined <$> mapM compileTerm body'
+    whereDecls <- concat <$> mapM (uncurry compileFun') children''
+
+    let rhs = Hs.UnGuardedRhs () body'
+        whereBinds | null whereDecls = Nothing
+                   | otherwise       = Just $ Hs.BDecls () whereDecls
+        match = case (x, ps) of
+          (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
+          _                         -> Hs.Match () x ps rhs whereBinds
+    return (locals', match)
+
+-- When going under a binder we need to update the scope as well as the context in order to get
+-- correct printing of variable names (Issue #14).
+
+bindVar :: Int -> TCM ()
+bindVar i = do
+  x <- nameOfBV i
+  bindVariable LambdaBound (nameConcrete x) x
+
+compileType :: Term -> TCM (Hs.Type ())
+compileType t = do
   t <- reduce t
   case t of
-    Pi a b | hidden a -> underAbstraction a b (compileType builtins . unEl)
+    Pi a b | hidden a -> underAbstr a b (compileType . unEl)
              -- Hidden Pi means Haskell forall
-    Pi a (NoAbs _ b) | visible a -> do
-      hsA <- compileType builtins (unEl $ unDom a)
-      hsB <- compileType builtins (unEl b)
+    Pi a b | NoAbs _ b <- reAbs b, visible a -> do
+      hsA <- compileType (unEl $ unDom a)
+      hsB <- compileType (unEl b)
       return $ Hs.TyFun () hsA hsB
     Pi a b | isInstance a -> do
-               hsA <- compileType builtins (unEl $ unDom a)
-               hsB <- underAbstraction a b (compileType builtins . unEl)
+               hsA <- compileType (unEl $ unDom a)
+               hsB <- underAbstraction a b (compileType . unEl)
                return $ Hs.TyForall () Nothing (Just (Hs.CxSingle () (Hs.TypeA () hsA))) hsB
              -- hsB Pi means Haskell typeclass constraint
-    Def f es | Just args <- allApplyElims es -> do
-      vs <- mapM (compileType builtins . unArg) $ filter visible args
-      f <- hsQName builtins f
-      return $ tApp (Hs.TyCon () f) vs
+    Def f es
+      | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics f es
+      | Just args <- allApplyElims es -> do
+        vs <- mapM (compileType . unArg) $ filter visible args
+        f <- hsQName f
+        return $ tApp (Hs.TyCon () f) vs
     Var x es | Just args <- allApplyElims es -> do
-      vs <- mapM (compileType builtins . unArg) $ filter visible args
+      vs <- mapM (compileType . unArg) $ filter visible args
       x  <- hsName <$> showTCM (Var x [])
       return $ tApp (Hs.TyVar () x) vs
     Sort s -> return (Hs.TyStar ())
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
-compileTerm :: Builtins -> Term -> TCM (Hs.Exp ())
-compileTerm builtins v =
+compileTerm :: Term -> TCM (Hs.Exp ())
+compileTerm v =
   case unSpine v of
     Var x es   -> (`app` es) . Hs.Var () . Hs.UnQual () . hsName =<< showTCM (Var x [])
     -- v currently we assume all record projections are instance
     -- args that need attention
-    Def f es -> isProjection f >>= \ case
-      Just _ -> do
-        -- v not sure why this fails to strip the name
-        --f <- hsQName builtins (qualify_ (qnameName f))
-        -- here's a horrible way to strip the module prefix off the name
-        let uf = Hs.UnQual () (hsName (show (nameConcrete (qnameName f))))
-        (`appStrip` es) (Hs.Var () uf)
-      Nothing -> (`app` es) . Hs.Var () =<< hsQName builtins f
-    Con h i es -> (`app` es) . Hs.Con () =<< hsQName builtins (conName h)
-    Lit (LitNat _ n) -> return $ Hs.Lit () $ Hs.Int () n (show n)
-    Lam v b | visible v -> hsLambda (absName b) <$> underAbstraction_ b (compileTerm builtins)
-    Lam _ b -> underAbstraction_ b (compileTerm builtins)
+    Def f es
+      | Just semantics <- isSpecialTerm f -> semantics f es
+      | otherwise -> isProjection f >>= \ case
+          Just _ -> do
+            -- v not sure why this fails to strip the name
+            --f <- hsQName builtins (qualify_ (qnameName f))
+            -- here's a horrible way to strip the module prefix off the name
+            let uf = Hs.UnQual () (hsName (show (nameConcrete (qnameName f))))
+            (`appStrip` es) (Hs.Var () uf)
+          Nothing -> (`app` es) . Hs.Var () =<< hsQName f
+    Con h i es
+      | Just semantics <- isSpecialCon (conName h) -> semantics h i es
+    Con h i es -> (`app` es) . Hs.Con () =<< hsQName (conName h)
+    Lit (LitNat _ n) -> return $ Hs.intE n
+    Lit (LitFloat _ d) -> return $ Hs.Lit () $ Hs.Frac () (toRational d) (show d)
+    Lit (LitWord64 _ w) -> return $ Hs.Lit () $ Hs.PrimWord () (fromIntegral w) (show w)
+    Lit (LitChar _ c) -> return $ Hs.charE c
+    Lam v b | visible v, getOrigin v == UserWritten -> do
+      hsLambda (absName b) <$> underAbstr_ b compileTerm
+    Lam v b | visible v ->
+      -- System-inserted lambda, no need to preserve the name.
+      underAbstraction_ b $ \ body -> do
+        x <- showTCM (Var 0 [])
+        let hsx = Hs.Var () $ Hs.UnQual () (hsName x)
+        body <- compileTerm body
+        return $ case body of
+          Hs.InfixApp _ a op b
+            | a == hsx -> Hs.RightSection () op b -- System-inserted visible lambdas can only come from sections
+          _            -> hsLambda x body         -- so we know x is not free in b.
     t -> genericDocError =<< text "bad term:" <?> prettyTCM t
   where
     app :: Hs.Exp () -> Elims -> TCM (Hs.Exp ())
-    app hd es = do
-      let Just args = allApplyElims es
-      args <- mapM (compileTerm builtins . unArg) $ filter visible args
-      return $ eApp hd args
+    app hd es = eApp <$> pure hd <*> compileArgs es
 
     -- `appStrip` is used when we have a record projection and we want to
     -- drop the first visible arg (the record)
     appStrip :: Hs.Exp () -> Elims -> TCM (Hs.Exp ())
     appStrip hd es = do
       let Just args = allApplyElims es
-      args <- mapM (compileTerm builtins . unArg) $ tail $ filter visible args
+      args <- mapM (compileTerm . unArg) $ tail $ filter visible args
       return $ eApp hd args
 
-compilePats :: Builtins -> NAPs -> TCM [Hs.Pat ()]
-compilePats builtins ps = mapM (compilePat builtins . namedArg) $ filter visible ps
 
-compilePat :: Builtins -> DeBruijnPattern -> TCM (Hs.Pat ())
-compilePat builtins p@(VarP _ _)  = Hs.PVar () . hsName <$> showTCM p
-compilePat builtins (ConP h _ ps) = do
-  ps <- compilePats builtins ps
-  c <- hsQName builtins (conName h)
+
+compilePats :: NAPs -> TCM [Hs.Pat ()]
+compilePats ps = mapM (compilePat . namedArg) $ filter visible ps
+
+compilePat :: DeBruijnPattern -> TCM (Hs.Pat ())
+compilePat p@(VarP _ _)  = Hs.PVar () . hsName <$> showTCM p
+compilePat (ConP h i ps)
+  | Just semantics <- isSpecialPat (conName h) = setCurrentRange h $ semantics h i ps
+compilePat (ConP h _ ps) = do
+  ps <- compilePats ps
+  c <- hsQName (conName h)
   return $ pApp c ps
 -- TODO: LitP
-compilePat _ p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
+compilePat p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
 
-pApp :: Hs.QName () -> [Hs.Pat ()] -> Hs.Pat ()
-pApp c@(Hs.UnQual () (Hs.Symbol () _)) [p, q] = Hs.PInfixApp () p c q
-pApp c@(Hs.Special () Hs.Cons{}) [p, q] = Hs.PInfixApp () p c q
-pApp c ps = Hs.PApp () c ps
-
-eApp :: Hs.Exp () -> [Hs.Exp ()] -> Hs.Exp ()
-eApp f (a : b : as) | Just op <- getOp f = foldl (Hs.App ()) (Hs.InfixApp () a op b) as
-  where getOp (Hs.Var _ x) | isOp x = Just $ Hs.QVarOp () x
-        getOp (Hs.Con _ c) | isOp c = Just $ Hs.QConOp () c
-        getOp _                     = Nothing
-eApp f es = foldl (Hs.App ()) f es
-
-tApp :: Hs.Type () -> [Hs.Type ()] -> Hs.Type ()
-tApp (Hs.TyCon () (Hs.Special () Hs.ListCon{})) [a] = Hs.TyList () a
-tApp t vs = foldl (Hs.TyApp ()) t vs
-
-hsLambda :: String -> Hs.Exp () -> Hs.Exp ()
-hsLambda x e =
-  case e of
-    Hs.Lambda l ps b -> Hs.Lambda l (p : ps) b
-    _                -> Hs.Lambda () [p] e
-  where
-    p = Hs.PVar () $ hsName x
+compileArgs :: Elims -> TCM [Hs.Exp ()]
+compileArgs es = do
+  let Just args = allApplyElims es
+  mapM (compileTerm . unArg) $ filter visible args
 
 -- FOREIGN pragmas --------------------------------------------------------
 
 type Code = (Hs.Module Hs.SrcSpanInfo, [Hs.Comment])
 
-getForeignPragmas :: TCM [(Range, Code)]
-getForeignPragmas = do
+languagePragmas :: Code -> [Hs.Extension]
+languagePragmas (Hs.Module _ _ ps _ _, _) =
+  [ Hs.parseExtension s | Hs.LanguagePragma _ ss <- ps, Hs.Ident _ s <- ss ]
+languagePragmas _ = []
+
+getForeignPragmas :: [Hs.Extension] -> TCM [(Range, Code)]
+getForeignPragmas exts = do
   pragmas <- fromMaybe [] . Map.lookup pragmaName . iForeignCode <$> curIF
-  reverse <$> mapM getCode pragmas
+  getCode exts $ reverse pragmas
   where
-    getCode :: ForeignCode -> TCM (Range, Code)
-    getCode (ForeignCode r code) = do
+    getCode :: [Hs.Extension] -> [ForeignCode] -> TCM [(Range, Code)]
+    getCode _ [] = return []
+    getCode exts (ForeignCode r code : pragmas) = do
           let Just file = fmap filePath $ toLazy $ rangeFile r
               pmode = Hs.defaultParseMode { Hs.parseFilename     = file,
-                                            Hs.ignoreLinePragmas = False }
+                                            Hs.ignoreLinePragmas = False,
+                                            Hs.extensions        = exts }
               line = case posLine <$> rStart r of
                        Just l  -> "{-# LINE " ++ show l ++ show file ++ " #-}\n"
                        Nothing -> ""
           case Hs.parseWithComments pmode (line ++ code) of
-            Hs.ParseOk m           -> return (r, m)
             Hs.ParseFailed loc msg -> setCurrentRange (srcLocToRange loc) $ genericError msg
-
-srcSpanToRange :: Hs.SrcSpan -> Range
-srcSpanToRange (Hs.SrcSpan file l1 c1 l2 c2) =
-  intervalToRange (toStrict $ Just $ mkAbsolute file) $ Interval (pos l1 c1) (pos l2 c2)
-  where pos l c = Pn () 0 (fromIntegral l) (fromIntegral c)
-
-srcLocToRange :: Hs.SrcLoc -> Range
-srcLocToRange (Hs.SrcLoc file l c) = srcSpanToRange (Hs.SrcSpan file l c l c)
-
-renderComment (Hs.Comment True  _ s) = "{-" ++ s ++ "-}"
-renderComment (Hs.Comment False _ s) = "--" ++ s
+            Hs.ParseOk m           -> ((r, m) :) <$> getCode (exts ++ languagePragmas m) pragmas
 
 -- Rendering --------------------------------------------------------------
 
-type Block = (Range, [String])
+type Block = Ranged [String]
 
-sortRanges :: [(Range, a)] -> [a]
+sortRanges :: [Ranged a] -> [a]
 sortRanges = map snd . sortBy (compare `on` rLine . fst)
 
 rLine :: Range -> Int
@@ -403,56 +568,101 @@ renderBlocks = unlines . map unlines . sortRanges . filter (not . null . snd)
 defBlock :: CompiledDef -> [Block]
 defBlock def = [ (r, map pp ds) | (r, ds) <- def ]
 
-codePragmas :: [(Range, Code)] -> [Block]
+codePragmas :: [Ranged Code] -> [Block]
 codePragmas code = [ (r, map pp ps) | (r, (Hs.Module _ _ ps _ _, _)) <- code ]
 
-codeBlocks :: [(Range, Code)] -> [Block]
+codeBlocks :: [Ranged Code] -> [Block]
 codeBlocks code = [(r, [uncurry Hs.exactPrint $ moveToTop $ noPragmas mcs]) | (r, mcs) <- code, nonempty mcs]
   where noPragmas (Hs.Module l h _ is ds, cs) = (Hs.Module l h [] is ds, cs)
         noPragmas m                           = m
         nonempty (Hs.Module _ _ _ is ds, cs) = not $ null is && null ds && null cs
         nonempty _                           = True
 
--- exactPrint really looks at the line numbers (and we're using the locations from the agda source
--- to report Haskell parse errors at the right location), so shift everything to start at line 1.
-moveToTop :: Hs.Annotated ast => (ast Hs.SrcSpanInfo, [Hs.Comment]) -> (ast Hs.SrcSpanInfo, [Hs.Comment])
-moveToTop (x, cs) = (subtractLine l <$> x, [ Hs.Comment b (sub l r) str | Hs.Comment b r str <- cs ])
-  where l = Hs.startLine (Hs.ann x) - 1
-        subtractLine :: Int -> Hs.SrcSpanInfo -> Hs.SrcSpanInfo
-        subtractLine l (Hs.SrcSpanInfo s ss) = Hs.SrcSpanInfo (sub l s) (map (sub l) ss)
+-- Checking imports -------------------------------------------------------
 
-        sub :: Int -> Hs.SrcSpan -> Hs.SrcSpan
-        sub l (Hs.SrcSpan f l0 c0 l1 c1) = Hs.SrcSpan f (l0 - l) c0 (l1 - l) c1
+imports :: [Ranged Code] -> [Hs.ImportDecl Hs.SrcSpanInfo]
+imports modules = concat [imps | (_, (Hs.Module _ _ _ imps _, _)) <- modules]
 
-pp :: Hs.Pretty a => a -> String
-pp = Hs.prettyPrintWithMode Hs.defaultMode{ Hs.spacing = False }
+addImports :: [Hs.ImportDecl Hs.SrcSpanInfo] -> [CompiledDef] -> TCM [Hs.ImportDecl ()]
+addImports is defs = do
+  return [importWord64 | usesWord64 defs && not (any isImportWord64 is)]
+  where
+    importWord64 :: Hs.ImportDecl ()
+    importWord64 = Hs.ImportDecl ()
+      (Hs.ModuleName () "Data.Word") False False False Nothing Nothing
+      (Just $ Hs.ImportSpecList () False [Hs.IVar () $ Hs.name "Word64"])
+
+    isImportWord64 :: Hs.ImportDecl Hs.SrcSpanInfo -> Bool
+    isImportWord64 = \case
+      Hs.ImportDecl _ (Hs.ModuleName _ "Data.Word") False _ _ _ _ specs ->
+        case specs of
+          Just (Hs.ImportSpecList _ hiding specs) ->
+            not hiding && "Word64" `elem` concatMap getExplicitImports specs
+          Nothing -> True
+      _ -> False
+
+checkImports :: [Hs.ImportDecl Hs.SrcSpanInfo] -> TCM ()
+checkImports is = do
+  forM_ is $ \i ->
+    case checkImport i of
+      Just loc -> setCurrentRange loc $
+        genericDocError =<< text "Not allowed to import builtin type Word64"
+      Nothing  -> return ()
+
+checkImport :: Hs.ImportDecl Hs.SrcSpanInfo -> Maybe Range
+checkImport i
+  | Just (Hs.ImportSpecList _ False specs) <- Hs.importSpecs i
+  , pp (Hs.importModule i) /= "Data.Word"
+  = listToMaybe $ mapMaybe checkImportSpec specs
+  | otherwise
+  = Nothing
+  where
+    checkImportSpec :: Hs.ImportSpec Hs.SrcSpanInfo -> Maybe Range
+    checkImportSpec = \case
+      Hs.IVar loc n | check n -> ret loc
+      Hs.IAbs loc _ n | check n -> ret loc
+      Hs.IThingAll loc n | check n -> ret loc
+      Hs.IThingWith loc n ns
+        | check n -> ret loc
+        | Just loc' <- listToMaybe $ map cloc $ filter (check . cname) ns -> ret loc'
+      _ -> Nothing
+      where
+        check = (== "Word64") . pp
+        ret = Just . srcSpanInfoToRange
+
+-- Generating the files -------------------------------------------------------
 
 moduleFileName :: Options -> ModuleName -> FilePath
 moduleFileName opts name =
-  outDir opts </> C.moduleNameToFileName (toTopLevelModuleName name) "hs"
+  optOutDir opts </> C.moduleNameToFileName (toTopLevelModuleName name) "hs"
 
 moduleSetup :: Options -> IsMain -> ModuleName -> FilePath -> TCM (Recompile ModuleEnv ModuleRes)
 moduleSetup _ _ _ _ = do
   setScope . iInsideScope =<< curIF
-  Recompile <$> getBuiltins
+  return $ Recompile ()
 
 ensureDirectory :: FilePath -> IO ()
 ensureDirectory = createDirectoryIfMissing True . takeDirectory
 
 writeModule :: Options -> ModuleEnv -> IsMain -> ModuleName -> [CompiledDef] -> TCM ModuleRes
 writeModule opts _ isMain m defs0 = do
-  code <- getForeignPragmas
+  code <- getForeignPragmas (optExtensions opts)
   let defs = concatMap defBlock defs0 ++ codeBlocks code
+  let imps = imports code
   unless (null code && null defs) $ do
+    -- Check user-supplied imports
+    checkImports imps
+    -- Add automatic imports for builtin types (if any)
+    autoImports <- unlines . map pp <$> addImports imps defs0
     -- The comments makes it hard to generate and pretty print a full module
     let hsFile = moduleFileName opts m
         output = concat
                  [ renderBlocks $ codePragmas code
                  , "module " ++ prettyShow m ++ " where\n\n"
+                 , autoImports
                  , renderBlocks defs ]
     reportSLn "" 1 $ "Writing " ++ hsFile
     liftIO $ ensureDirectory hsFile
     liftIO $ writeFile hsFile output
 
 main = runAgda [Backend backend]
-
