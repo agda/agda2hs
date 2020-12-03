@@ -44,6 +44,7 @@ import Agda.TypeChecking.Rules.Term (isType_)
 import Agda.TypeChecking.Reduce
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
+import Agda.TypeChecking.Records
 import Agda.Utils.Lens
 import Agda.Utils.Pretty (prettyShow)
 import qualified Agda.Utils.Pretty as P
@@ -243,10 +244,30 @@ tuplePat cons i ps = do
 
 -- Compiling things -------------------------------------------------------
 
+data CodeGen = YesCode | NoCode
+
+data ParsedResult
+  = NoPragma
+  | DefaultPragma
+  | ClassPragma CodeGen
+
+classes :: [String]
+classes = ["Show"]
+
+processPragma :: QName -> TCM ParsedResult
+processPragma qn = getUniqueCompilerPragma pragmaName qn >>= \case
+  Nothing -> return NoPragma
+  Just (CompilerPragma _ s) | s == "class" && s `elem` classes ->
+    return $ ClassPragma NoCode
+  Just (CompilerPragma _ s) | s == "class" ->
+    return $ ClassPragma YesCode
+  _                                        -> return DefaultPragma
+
 compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
-compile _ _ _ def = getUniqueCompilerPragma pragmaName (defName def) >>= \ case
-  Just _  -> compile' def
-  Nothing -> return []
+compile _ _ _ def = processPragma (defName def) >>= \ case
+  NoPragma -> return []
+  DefaultPragma -> compile' def
+  ClassPragma NoCode -> return []
 
 compile' :: Definition -> TCM CompiledDef
 compile' def =
@@ -254,9 +275,40 @@ compile' def =
     Axiom      -> tag <$> compilePostulate def
     Function{} -> tag <$> compileFun def
     Datatype{} -> tag <$> compileData def
+    Record{}   -> tag <$> compileRecord def
     _          -> return []
   where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
 
+compileRecord :: Definition -> TCM [Hs.Decl ()]
+compileRecord def = do
+  let r = hsName $ prettyShow $ qnameName $ defName def
+  TelV tel _ <- telViewUpTo (recPars (theDef def)) (defType def)
+  hd <- addContext tel $ do
+    let params = teleArgs tel :: [Arg Term]
+    pars <- mapM (showTCM . unArg) $ filter visible params
+    return $ foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
+                   (Hs.DHead () r)
+                   pars
+  let help :: Int -> [QName] -> Telescope -> TCM [Hs.ClassDecl ()]
+      help i ns tel = case (ns,splitTelescopeAt i tel) of
+        (_     ,(_   ,EmptyTel      )) -> return []
+        ((n:ns),(tel',ExtendTel ty _)) -> do 
+          ty  <- compileRecField tel' n (unDom ty)
+          tys <- help (i+1) ns tel
+          return (ty:tys)
+  telBig <- getRecordFieldTypes (defName def)
+  let fieldNames = map unDom $ recFields (theDef def)
+  y <- help (recPars (theDef def)) fieldNames telBig
+  return [Hs.ClassDecl () Nothing hd [] (Just y)]
+
+compileRecField :: Telescope
+                -> QName
+                -> Type
+                -> TCM (Hs.ClassDecl ())
+compileRecField tel n ty = addContext tel $ do
+  hty <- compileType (unEl ty)
+  return $ Hs.ClsDecl () (Hs.TypeSig () [hsName $ prettyShow $ qnameName n] hty)
+  
 compileData :: Definition -> TCM [Hs.Decl ()]
 compileData def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
@@ -385,6 +437,11 @@ compileType t = do
       hsA <- compileType (unEl $ unDom a)
       hsB <- compileType (unEl b)
       return $ Hs.TyFun () hsA hsB
+    Pi a b | isInstance a -> do
+               hsA <- compileType (unEl $ unDom a)
+               hsB <- underAbstraction a b (compileType . unEl)
+               return $ Hs.TyForall () Nothing (Just (Hs.CxSingle () (Hs.TypeA () hsA))) hsB
+             -- hsB Pi means Haskell typeclass constraint
     Def f es
       | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics f es
       | Just args <- allApplyElims es -> do
@@ -395,15 +452,25 @@ compileType t = do
       vs <- mapM (compileType . unArg) $ filter visible args
       x  <- hsName <$> showTCM (Var x [])
       return $ tApp (Hs.TyVar () x) vs
+    Sort s -> return (Hs.TyStar ())
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
 compileTerm :: Term -> TCM (Hs.Exp ())
 compileTerm v =
   case unSpine v of
     Var x es   -> (`app` es) . Hs.Var () . Hs.UnQual () . hsName =<< showTCM (Var x [])
+    -- v currently we assume all record projections are instance
+    -- args that need attention
     Def f es
       | Just semantics <- isSpecialTerm f -> semantics f es
-      | otherwise -> (`app` es) . Hs.Var () =<< hsQName f
+      | otherwise -> isProjection f >>= \ case
+          Just _ -> do
+            -- v not sure why this fails to strip the name
+            --f <- hsQName builtins (qualify_ (qnameName f))
+            -- here's a horrible way to strip the module prefix off the name
+            let uf = Hs.UnQual () (hsName (show (nameConcrete (qnameName f))))
+            (`appStrip` es) (Hs.Var () uf)
+          Nothing -> (`app` es) . Hs.Var () =<< hsQName f
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName (conName h)
@@ -423,16 +490,20 @@ compileTerm v =
           Hs.InfixApp _ a op b
             | a == hsx -> Hs.RightSection () op b -- System-inserted visible lambdas can only come from sections
           _            -> hsLambda x body         -- so we know x is not free in b.
-    Lam _ b -> underAbstraction_ b compileTerm
     t -> genericDocError =<< text "bad term:" <?> prettyTCM t
   where
     app :: Hs.Exp () -> Elims -> TCM (Hs.Exp ())
     app hd es = eApp <$> pure hd <*> compileArgs es
 
-compileArgs :: Elims -> TCM [Hs.Exp ()]
-compileArgs es = do
-  let Just args = allApplyElims es
-  mapM (compileTerm . unArg) $ filter visible args
+    -- `appStrip` is used when we have a record projection and we want to
+    -- drop the first visible arg (the record)
+    appStrip :: Hs.Exp () -> Elims -> TCM (Hs.Exp ())
+    appStrip hd es = do
+      let Just args = allApplyElims es
+      args <- mapM (compileTerm . unArg) $ tail $ filter visible args
+      return $ eApp hd args
+
+
 
 compilePats :: NAPs -> TCM [Hs.Pat ()]
 compilePats ps = mapM (compilePat . namedArg) $ filter visible ps
@@ -447,6 +518,11 @@ compilePat (ConP h _ ps) = do
   return $ pApp c ps
 -- TODO: LitP
 compilePat p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
+
+compileArgs :: Elims -> TCM [Hs.Exp ()]
+compileArgs es = do
+  let Just args = allApplyElims es
+  mapM (compileTerm . unArg) $ filter visible args
 
 -- FOREIGN pragmas --------------------------------------------------------
 

@@ -115,6 +115,34 @@ thm : ∀ xs ys → sum (xs ++ ys) ≡ sum xs + sum ys
 thm []       ys = refl
 thm (x ∷ xs) ys rewrite thm xs ys | assoc x (sum xs) (sum ys) = refl
 
+-- (custom) Monoid instance
+
+record MonoidX (a : Set) : Set where
+  field memptyX  : a
+        mappendX : a → a → a
+
+open MonoidX {{...}} public
+
+{-# COMPILE AGDA2HS MonoidX #-}
+
+instance
+  MonoidNat : MonoidX Nat
+  memptyX  {{MonoidNat}}     = 0
+  mappendX {{MonoidNat}} i j = i + j
+
+-- instances cannot be compiled yet
+
+sumMonX : ∀{a} → {{MonoidX a}} → List a → a
+sumMonX []       = memptyX
+sumMonX (x ∷ xs) = mappendX x (sumMonX xs)
+{-# COMPILE AGDA2HS sumMonX #-}
+
+sumMon : ∀{a} → {{Monoid a}} → List a → a
+sumMon []       = mempty
+sumMon (x ∷ xs) = x <> sumMon xs
+{-# COMPILE AGDA2HS sumMon #-}
+
+
 -- ** Booleans
 
 ex_bool : Bool

@@ -62,6 +62,18 @@ plus3 = map (\ n -> n + 3)
 doubleLambda :: Integer -> Integer -> Integer
 doubleLambda = \ a b -> a + 2 * b
 
+class MonoidX a where
+        memptyX :: a
+        mappendX :: a -> a -> a
+
+sumMonX :: MonoidX a => [a] -> a
+sumMonX [] = memptyX
+sumMonX (x : xs) = mappendX x (sumMonX xs)
+
+sumMon :: Monoid a => [a] -> a
+sumMon [] = mempty
+sumMon (x : xs) = x <> sumMon xs
+
 ex_bool :: Bool
 ex_bool = True
 
