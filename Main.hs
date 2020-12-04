@@ -269,10 +269,12 @@ data ParsedResult
   = NoPragma
   | DefaultPragma
   | ClassPragma CodeGen
-
+  | InstancePragma
 classes :: [String]
 classes = ["Show"]
 
+-- "class" is not being used usefully, any record with a pragma is
+-- considered a typeclass
 processPragma :: QName -> TCM ParsedResult
 processPragma qn = getUniqueCompilerPragma pragmaName qn >>= \case
   Nothing -> return NoPragma
@@ -280,6 +282,9 @@ processPragma qn = getUniqueCompilerPragma pragmaName qn >>= \case
     return $ ClassPragma NoCode
   Just (CompilerPragma _ s) | s == "class" ->
     return $ ClassPragma YesCode
+  Just (CompilerPragma _ s) | s == "instance" ->
+    return $ InstancePragma
+
   _                                        -> return DefaultPragma
 
 compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
@@ -287,6 +292,7 @@ compile _ _ _ def = processPragma (defName def) >>= \ case
   NoPragma -> return []
   DefaultPragma -> compile' def
   ClassPragma NoCode -> return []
+  InstancePragma -> compileInstance def
 
 compile' :: Definition -> TCM CompiledDef
 compile' def =
@@ -297,6 +303,23 @@ compile' def =
     Record{}   -> tag <$> compileRecord def
     _          -> return []
   where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
+
+compileInstance :: Definition -> TCM CompiledDef
+compileInstance def = tag <$> compileInstance' def
+  where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
+
+compileInstance' :: Definition -> TCM [Hs.Decl ()]
+compileInstance' def = do
+  ih <- compileInstHead . unEl . defType $ def
+  return $
+    [Hs.InstDecl () Nothing (Hs.IRule () Nothing Nothing ih) Nothing]
+
+compileInstHead :: Term -> TCM (Hs.InstHead ())
+compileInstHead ty = case unSpine $ ty of
+       Def f es | Just args <- allApplyElims es -> do
+         vs <- mapM (compileType . unArg) $ filter visible args
+         f <- hsQName f
+         return $ foldl (Hs.IHApp ()) (Hs.IHCon () f) vs
 
 compileRecord :: Definition -> TCM [Hs.Decl ()]
 compileRecord def = do
@@ -490,6 +513,7 @@ compileTerm v =
             let uf = Hs.UnQual () (hsName (show (nameConcrete (qnameName f))))
             (`appStrip` es) (Hs.Var () uf)
           Nothing -> (`app` es) . Hs.Var () =<< hsQName f
+    Con h ConORec es -> return $ Hs.Var () $ Hs.UnQual () (hsName (show "wibble"))
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName (conName h)

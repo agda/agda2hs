@@ -127,6 +127,8 @@ instance
   memptyX  {{MonoidNat}}     = 0
   mappendX {{MonoidNat}} i j = i + j
 
+{-# COMPILE AGDA2HS MonoidNat instance #-}
+
 -- instances cannot be compiled yet
 
 sumMonX : ∀{a} → {{MonoidX a}} → List a → a
