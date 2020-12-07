@@ -130,7 +130,7 @@ instance
   memptyX  {{MonoidNat}}     = 0
   mappendX {{MonoidNat}} i j = i + j
 
-{-# COMPILE AGDA2HS MonoidNat instance #-}
+{-# COMPILE AGDA2HS MonoidNat #-}
 
 -- instances cannot be compiled yet
 
