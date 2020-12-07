@@ -11,6 +11,8 @@ import Data.List
 import Data.Maybe
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Data.Set (Set)
+import qualified Data.Set as Set
 import System.Console.GetOpt
 import System.Environment
 import System.FilePath
@@ -41,6 +43,7 @@ import Agda.Syntax.Translation.AbstractToConcrete
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad
 import Agda.TheTypeChecker
+import Agda.TypeChecking.Free
 import Agda.TypeChecking.Rules.Term (isType_)
 import Agda.TypeChecking.Reduce
 import Agda.TypeChecking.Substitute
@@ -53,6 +56,7 @@ import Agda.Utils.FileName
 import Agda.Utils.List
 import Agda.Utils.Impossible
 import Agda.Utils.Maybe.Strict (toLazy, toStrict)
+import Agda.Utils.Monad
 import Agda.Utils.Size
 
 import HsUtils
@@ -289,6 +293,7 @@ compile _ _ _ def = processPragma (defName def) >>= \ case
   NoPragma -> return []
   DefaultPragma -> compile' def
   ClassPragma NoCode -> return []
+  ClassPragma YesCode -> return []
 
 compile' :: Definition -> TCM CompiledDef
 compile' def =
@@ -351,6 +356,7 @@ compileRecord def = do
           ty  <- compileRecField tel' n (unDom ty)
           tys <- help (i+1) ns tel
           return (ty:tys)
+        (_, _) -> __IMPOSSIBLE__
   telBig <- getRecordFieldTypes (defName def)
   let fieldNames = map unDom $ recFields (theDef def)
   y <- help (recPars (theDef def)) fieldNames telBig
@@ -482,21 +488,34 @@ bindVar i = do
   x <- nameOfBV i
   bindVariable LambdaBound (nameConcrete x) x
 
+isErasedInstance :: Term -> Bool
+isErasedInstance (Def q _) = show q == "Haskell.Prim.⌊_⌋"
+isErasedInstance _         = False
+
+-- | Instance arguments that depend on visible arguments (i.e. arguments that appear in the Haskell
+--   code) should not be turned into type class constraints. These are proof objects that only exist
+--   on the Agda side.
+dependsOnVisibleVar :: Free t => t -> TCM Bool
+dependsOnVisibleVar t = do
+  vis <- Set.fromList . map fst . filter (visible . snd) . zip [0..] <$> getContext
+  return $ any (`Set.member` vis) $ (freeVars t :: [Int])
+
 compileType :: Term -> TCM (Hs.Type ())
 compileType t = do
   t <- reduce t
   case t of
-    Pi a b | hidden a -> underAbstr a b (compileType . unEl)
-             -- Hidden Pi means Haskell forall
-    Pi a b | NoAbs _ b <- reAbs b, visible a -> do
-      hsA <- compileType (unEl $ unDom a)
-      hsB <- compileType (unEl b)
-      return $ Hs.TyFun () hsA hsB
-    Pi a b | isInstance a -> do
-               hsA <- compileType (unEl $ unDom a)
-               hsB <- underAbstraction a b (compileType . unEl)
-               return $ Hs.TyForall () Nothing (Just (Hs.CxSingle () (Hs.TypeA () hsA))) hsB
-             -- hsB Pi means Haskell typeclass constraint
+    Pi a b
+      | hidden a -> dropPi -- Hidden Pi means Haskell forall, which we leave implicit
+      | visible a -> do
+          hsA <- compileType (unEl $ unDom a)
+          hsB <- underAbstraction a b $ compileType . unEl
+          return $ Hs.TyFun () hsA hsB
+      | isInstance a -> ifM (dependsOnVisibleVar a) dropPi $ do
+          hsA <- compileType (unEl $ unDom a)
+          hsB <- underAbstraction a b (compileType . unEl)
+          return $ Hs.TyForall () Nothing (Just (Hs.CxSingle () (Hs.TypeA () hsA))) hsB
+      | otherwise -> dropPi
+      where dropPi = underAbstr a b (compileType . unEl)
     Def f es
       | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics f es
       | Just args <- allApplyElims es -> do
