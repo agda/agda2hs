@@ -92,3 +92,15 @@ ltInteger (negsuc n) (negsuc m) = m < n
 
 showInteger : Integer → List Char
 showInteger n = primStringToList (primShowInteger n)
+
+--------------------------------------------------
+-- Constraints
+
+isNegativeInteger : Integer → Bool
+isNegativeInteger (pos _)    = false
+isNegativeInteger (negsuc _) = true
+
+IsNonNegativeInteger : Integer → Set
+IsNonNegativeInteger (pos _)      = ⊤
+IsNonNegativeInteger n@(negsuc _) =
+  TypeError (primStringAppend (primShowInteger n) (" is negative"))

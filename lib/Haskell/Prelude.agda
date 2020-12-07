@@ -13,15 +13,16 @@ open import Agda.Builtin.Strict
 open import Agda.Builtin.FromNat      public using (fromNat)
 open import Agda.Builtin.FromNeg      public using (fromNeg)
 open import Agda.Builtin.Word         public renaming (Word64 to Word)
+open import Agda.Builtin.Equality     public
 
 open import Haskell.Prim
 open Haskell.Prim public using (if_then_else_; iNumberNat; IsTrue; itsTrue; All; allNil; allCons)
 
 open import Haskell.Prim.Integer
-open Haskell.Prim.Integer public using (Integer; iNumberInteger; iNegativeInteger)
+open Haskell.Prim.Integer public using (Integer; iNumberInteger; iNegativeInteger; isNegativeInteger; IsNonNegativeInteger)
 
 open import Haskell.Prim.Int renaming (Int64 to Int)
-open Haskell.Prim.Int public using (iNumberInt; iNegativeInt) renaming (Int64 to Int)
+open Haskell.Prim.Int public using (iNumberInt; iNegativeInt; isNegativeInt; IsNonNegativeInt) renaming (Int64 to Int)
 
 open import Haskell.Prim.Word
 
