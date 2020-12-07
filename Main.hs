@@ -269,7 +269,7 @@ data ParsedResult
   = NoPragma
   | DefaultPragma
   | ClassPragma CodeGen
-  | InstancePragma
+
 classes :: [String]
 classes = ["Show"]
 
@@ -282,9 +282,6 @@ processPragma qn = getUniqueCompilerPragma pragmaName qn >>= \case
     return $ ClassPragma NoCode
   Just (CompilerPragma _ s) | s == "class" ->
     return $ ClassPragma YesCode
-  Just (CompilerPragma _ s) | s == "instance" ->
-    return $ InstancePragma
-
   _                                        -> return DefaultPragma
 
 compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
@@ -292,34 +289,50 @@ compile _ _ _ def = processPragma (defName def) >>= \ case
   NoPragma -> return []
   DefaultPragma -> compile' def
   ClassPragma NoCode -> return []
-  InstancePragma -> compileInstance def
 
 compile' :: Definition -> TCM CompiledDef
 compile' def =
-  case theDef def of
-    Axiom      -> tag <$> compilePostulate def
-    Function{} -> tag <$> compileFun def
-    Datatype{} -> tag <$> compileData def
-    Record{}   -> tag <$> compileRecord def
-    _          -> return []
+  case (defInstance def , theDef def) of
+    (Just _ , _         ) -> tag <$> compileInstance def
+    (_      , Axiom     ) -> tag <$> compilePostulate def
+    (_      , Function{}) -> tag <$> compileFun def
+    (_      , Datatype{}) -> tag <$> compileData def
+    (_      , Record{}  ) -> tag <$> compileRecord def
+    _                     -> return []
   where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
 
-compileInstance :: Definition -> TCM CompiledDef
-compileInstance def = tag <$> compileInstance' def
-  where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
-
-compileInstance' :: Definition -> TCM [Hs.Decl ()]
-compileInstance' def = do
+compileInstance :: Definition -> TCM [Hs.Decl ()]
+compileInstance def = do
   ih <- compileInstHead . unEl . defType $ def
+  locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
+          . dropWhile ((<= defName def) . fst)
+          . sortDefs <$> curDefs
+  ds <- mapM (compileInstanceClause locals) funClauses
   return $
-    [Hs.InstDecl () Nothing (Hs.IRule () Nothing Nothing ih) Nothing]
+    [Hs.InstDecl () Nothing (Hs.IRule () Nothing Nothing ih) (Just ds)]
+  where Function{..} = theDef def
 
+-- would be better to generate the whole InstDecl as the context also
+-- needs to come from the type...
 compileInstHead :: Term -> TCM (Hs.InstHead ())
 compileInstHead ty = case unSpine $ ty of
+       -- only works with a completely concrete instance
        Def f es | Just args <- allApplyElims es -> do
          vs <- mapM (compileType . unArg) $ filter visible args
          f <- hsQName f
          return $ foldl (Hs.IHApp ()) (Hs.IHCon () f) vs
+
+
+compileInstanceClause :: LocalDecls -> Clause -> TCM (Hs.InstDecl ())
+compileInstanceClause ls c = do
+  let (p : ps) = namedClausePats c
+      c' = c {namedClausePats = ps}
+      ProjP _ q = namedArg p
+      uf = hsName (show (nameConcrete (qnameName q)))
+  -- abuse compileClause: Assume first pattern is a record projection
+  -- which we use as the function name.
+  (_ , x) <- compileClause ls uf c'
+  return $ Hs.InsDecl () (Hs.FunBind () [x])
 
 compileRecord :: Definition -> TCM [Hs.Decl ()]
 compileRecord def = do
@@ -404,7 +417,7 @@ compileFun' :: Definition -> LocalDecls -> TCM [Hs.Decl ()]
 compileFun' (Defn {..}) locals = do
   let n = qnameName defName
       x = hsName $ prettyShow n
-      go = foldM $ \(ds, ms) -> compileClause ds defName x >=> return . fmap (ms `snoc`)
+      go = foldM $ \(ds, ms) -> compileClause ds x >=> return . fmap (ms `snoc`)
   setCurrentRange (nameBindingSite n) $ do
     ty <- compileType (unEl defType)
     cs <- snd <$> go (locals, []) funClauses
@@ -412,8 +425,8 @@ compileFun' (Defn {..}) locals = do
   where
     Function{..} = theDef
 
-compileClause :: LocalDecls -> QName -> Hs.Name () -> Clause -> TCM (LocalDecls, Hs.Match ())
-compileClause locals qn x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBody = body} =
+compileClause :: LocalDecls -> Hs.Name () -> Clause -> TCM (LocalDecls, Hs.Match ())
+compileClause locals x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBody = body} =
   addContext (KeepNames tel) $ localScope $ do
     -- Compile patterns, only bind user-written variables
     let bind (d, i) | getOrigin d == UserWritten = bindVar i
@@ -560,6 +573,9 @@ compilePat (ConP h _ ps) = do
   c <- hsQName (conName h)
   return $ pApp c ps
 -- TODO: LitP
+compilePat (ProjP _ q) = do
+  let x = hsName $ prettyShow q
+  return $ Hs.PVar () x
 compilePat p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
 
 compileArgs :: Elims -> TCM [Hs.Exp ()]
