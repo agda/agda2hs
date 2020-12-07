@@ -141,6 +141,19 @@ sumMon []       = mempty
 sumMon (x ∷ xs) = x <> sumMon xs
 {-# COMPILE AGDA2HS sumMon #-}
 
+data NonEmpty {a : Set} : List a → Set where
+  instance
+    itsNonEmpty : ∀ {x xs} → NonEmpty (x ∷ xs)
+
+-- Instance argument proof obligation that should not turn into a class constraint
+hd : (xs : List a) → ⦃ NonEmpty xs ⦄ → a
+hd [] ⦃ () ⦄
+hd (x ∷ _) = x
+{-# COMPILE AGDA2HS hd #-}
+
+five : Int
+five = hd (5 ∷ 3 ∷ [])
+{-# COMPILE AGDA2HS five #-}
 
 -- ** Booleans
 

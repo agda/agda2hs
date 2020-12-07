@@ -75,6 +75,13 @@ sumMon :: Monoid a => [a] -> a
 sumMon [] = mempty
 sumMon (x : xs) = x <> sumMon xs
 
+hd :: [a] -> a
+hd [] = undefined
+hd (x₁ : xs) = x₁
+
+five :: Int
+five = hd (5 : 3 : [])
+
 ex_bool :: Bool
 ex_bool = True
 

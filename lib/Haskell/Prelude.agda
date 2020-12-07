@@ -15,7 +15,7 @@ open import Agda.Builtin.FromNeg      public using (fromNeg)
 open import Agda.Builtin.Word         public renaming (Word64 to Word)
 
 open import Haskell.Prim
-open Haskell.Prim public using (if_then_else_; iNumberNat)
+open Haskell.Prim public using (if_then_else_; iNumberNat; IsTrue; itsTrue)
 
 open import Haskell.Prim.Integer
 open Haskell.Prim.Integer public using (Integer; iNumberInteger; iNegativeInteger)
