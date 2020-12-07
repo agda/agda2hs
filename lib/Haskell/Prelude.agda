@@ -2,14 +2,28 @@
 module Haskell.Prelude where
 
 open import Agda.Builtin.Unit         public
+open import Agda.Builtin.Nat as Nat   public hiding (_==_; _<_)
 open import Agda.Builtin.List         public
-open import Agda.Builtin.Nat   as Nat public hiding (_==_; _<_)
 open import Agda.Builtin.Bool         public
 open import Agda.Builtin.Float        public
 open import Agda.Builtin.Char         public
 open import Agda.Builtin.FromString   public
 import Agda.Builtin.String as Str
 open import Agda.Builtin.Strict
+open import Agda.Builtin.FromNat      public using (fromNat)
+open import Agda.Builtin.FromNeg      public using (fromNeg)
+open import Agda.Builtin.Word         public renaming (Word64 to Word)
+
+open import Haskell.Prim
+open Haskell.Prim public using (if_then_else_; iNumberNat)
+
+open import Haskell.Prim.Integer
+open Haskell.Prim.Integer public using (Integer; iNumberInteger; iNegativeInteger)
+
+open import Haskell.Prim.Int renaming (Int64 to Int)
+open Haskell.Prim.Int public using (iNumberInt; iNegativeInt) renaming (Int64 to Int)
+
+open import Haskell.Prim.Word
 
 -- Problematic features
 --  - [Partial]:  Could pass implicit/instance arguments to prove totality.
@@ -148,11 +162,6 @@ private
 
 --------------------------------------------------
 -- Booleans
-
-infix -2 if_then_else_
-if_then_else_ : Bool → a → a → a
-if true  then t else f = t
-if false then t else f = f
 
 infixr 3 _&&_
 _&&_ : Bool → Bool → Bool
@@ -410,6 +419,15 @@ instance
   iEqNat : Eq Nat
   iEqNat ._==_ = Nat._==_
 
+  iEqInteger : Eq Integer
+  iEqInteger ._==_ = eqInteger
+
+  iEqInt : Eq Int
+  iEqInt ._==_ = eqInt
+
+  iEqWord : Eq Word64
+  iEqWord ._==_ = eqWord
+
   iEqBool : Eq Bool
   iEqBool ._==_ false false = true
   iEqBool ._==_ true  true  = true
@@ -478,11 +496,22 @@ record Ord (a : Set) : Set where
 
 open Ord ⦃ ... ⦄ public
 
+private
+  compareFromLt : ⦃ Eq a ⦄ → (a → a → Bool) → a → a → Ordering
+  compareFromLt _<_ x y = if x < y then LT else if x == y then EQ else GT
+
 instance
   iOrdNat : Ord Nat
-  iOrdNat .compare n m = if      n Nat.< m then LT
-                         else if n == m    then EQ
-                                           else GT
+  iOrdNat .compare = compareFromLt Nat._<_
+
+  iOrdInteger : Ord Integer
+  iOrdInteger .compare = compareFromLt ltInteger
+
+  iOrdInt : Ord Int
+  iOrdInt .compare = compareFromLt ltInt
+
+  iOrdWord : Ord Word64
+  iOrdWord .compare = compareFromLt ltWord
 
   iOrdBool : Ord Bool
   iOrdBool .compare false true  = LT

@@ -1,0 +1,6 @@
+test/Fail/BadBuiltinImport.agda:5,22-29
+Bad import of builtin type
+  Natural from module RandomModule (expected Numeric.Natural)
+  Natural from module AlsoNotRight (expected Numeric.Natural)
+  Natural from module AsConstructor (expected Numeric.Natural)
+Note: imports of builtin types are inserted automatically if omitted.

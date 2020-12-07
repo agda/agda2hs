@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Applicative
 import Control.Arrow ((>>>))
 import Control.Monad
 import Control.Monad.Fail (MonadFail)
@@ -160,12 +161,15 @@ applyNoBodies d args = revert $ d `apply` args
     revert :: Definition -> Definition
     revert d@(Defn {theDef = f@(Function {funClauses = cls})}) =
       d {theDef = f {funClauses = zipWith setBody cls bodies}}
+    revert _ = __IMPOSSIBLE__
 
 -- Builtins ---------------------------------------------------------------
 
 isSpecialTerm :: QName -> Maybe (QName -> Elims -> TCM (Hs.Exp ()))
 isSpecialTerm = show >>> \ case
-  "Haskell.Prelude.if_then_else_" -> Just ifThenElse
+  "Haskell.Prim.if_then_else_"            -> Just ifThenElse
+  "Agda.Builtin.FromNat.Number.fromNat"   -> Just fromNat
+  "Agda.Builtin.FromNeg.Negative.fromNeg" -> Just fromNeg
   _ -> Nothing
 
 isSpecialCon :: QName -> Maybe (ConHead -> ConInfo -> Elims -> TCM (Hs.Exp ()))
@@ -185,7 +189,9 @@ isSpecialType = show >>> \ case
 
 isSpecialName :: QName -> Maybe (Hs.QName ())
 isSpecialName = show >>> \ case
-    "Agda.Builtin.Nat.Nat"         -> unqual "Integer"
+    "Agda.Builtin.Nat.Nat"         -> unqual "Natural"
+    "Agda.Builtin.Int.Int"         -> unqual "Integer"
+    "Agda.Builtin.Word.Word64"     -> unqual "Word"
     "Agda.Builtin.Float.Float"     -> unqual "Double"
     "Agda.Builtin.Bool.Bool.false" -> unqual "False"
     "Agda.Builtin.Bool.Bool.true"  -> unqual "True"
@@ -210,6 +216,19 @@ ifThenElse _ es = compileArgs es >>= \case
     xs <- fmap Hs.name . drop (length es') <$> mapM freshString ["b", "t", "f"]
     let [b, t, f] = es' ++ map Hs.var xs
     return $ Hs.lamE (Hs.pvar <$> xs) $ Hs.If () b t f
+
+fromNat :: QName -> Elims -> TCM (Hs.Exp ())
+fromNat _ es = compileArgs es <&> \ case
+  _ : n@Hs.Lit{} : es' -> n `eApp` es'
+  es'                  -> Hs.Var () (Hs.UnQual () $ hsName "fromIntegral") `eApp` drop 1 es'
+
+fromNeg :: QName -> Elims -> TCM (Hs.Exp ())
+fromNeg _ es = compileArgs es <&> \ case
+  _ : n@Hs.Lit{} : es' -> Hs.NegApp () n `eApp` es'
+  es'                  -> (hsV "negate" `o` hsV "fromIntegral") `eApp` drop 1 es'
+  where
+    hsV = Hs.Var () . Hs.UnQual () . hsName
+    f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ Hs.UnQual () $ hsName "_._") g
 
 tupleType :: QName -> Elims -> TCM (Hs.Type ())
 tupleType _ es | Just [as] <- allApplyElims es = do
@@ -623,52 +642,57 @@ codeBlocks code = [(r, [uncurry Hs.exactPrint $ moveToTop $ noPragmas mcs]) | (r
 imports :: [Ranged Code] -> [Hs.ImportDecl Hs.SrcSpanInfo]
 imports modules = concat [imps | (_, (Hs.Module _ _ _ imps _, _)) <- modules]
 
+autoImports :: [(String, String)]
+autoImports = [("Natural", "Numeric.Natural")]
+
 addImports :: [Hs.ImportDecl Hs.SrcSpanInfo] -> [CompiledDef] -> TCM [Hs.ImportDecl ()]
 addImports is defs = do
-  return [importWord64 | usesWord64 defs && not (any isImportWord64 is)]
+  return [ doImport ty imp | (ty, imp) <- autoImports,
+                             uses ty defs && not (any (isImport ty imp) is)]
   where
-    importWord64 :: Hs.ImportDecl ()
-    importWord64 = Hs.ImportDecl ()
-      (Hs.ModuleName () "Data.Word") False False False Nothing Nothing
-      (Just $ Hs.ImportSpecList () False [Hs.IVar () $ Hs.name "Word64"])
+    doImport :: String -> String -> Hs.ImportDecl ()
+    doImport ty imp = Hs.ImportDecl ()
+      (Hs.ModuleName () imp) False False False Nothing Nothing
+      (Just $ Hs.ImportSpecList () False [Hs.IVar () $ Hs.name ty])
 
-    isImportWord64 :: Hs.ImportDecl Hs.SrcSpanInfo -> Bool
-    isImportWord64 = \case
-      Hs.ImportDecl _ (Hs.ModuleName _ "Data.Word") False _ _ _ _ specs ->
+    isImport :: String -> String -> Hs.ImportDecl Hs.SrcSpanInfo -> Bool
+    isImport ty imp = \case
+      Hs.ImportDecl _ (Hs.ModuleName _ m) False _ _ _ _ specs | m == imp ->
         case specs of
           Just (Hs.ImportSpecList _ hiding specs) ->
-            not hiding && "Word64" `elem` concatMap getExplicitImports specs
+            not hiding && ty `elem` concatMap getExplicitImports specs
           Nothing -> True
       _ -> False
 
 checkImports :: [Hs.ImportDecl Hs.SrcSpanInfo] -> TCM ()
 checkImports is = do
-  forM_ is $ \i ->
-    case checkImport i of
-      Just loc -> setCurrentRange loc $
-        genericDocError =<< text "Not allowed to import builtin type Word64"
-      Nothing  -> return ()
+  case concatMap checkImport is of
+    []  -> return ()
+    bad@((r, _, _):_) -> setCurrentRange r $
+      genericDocError =<< vcat
+        [ text "Bad import of builtin type"
+        , nest 2 $ vcat [ text $ ty ++ " from module " ++ m ++ " (expected " ++ okm ++ ")"
+                        | (_, m, ty) <- bad, let Just okm = lookup ty autoImports ]
+        , text "Note: imports of builtin types are inserted automatically if omitted."
+        ]
 
-checkImport :: Hs.ImportDecl Hs.SrcSpanInfo -> Maybe Range
+checkImport :: Hs.ImportDecl Hs.SrcSpanInfo -> [(Range, String, String)]
 checkImport i
-  | Just (Hs.ImportSpecList _ False specs) <- Hs.importSpecs i
-  , pp (Hs.importModule i) /= "Data.Word"
-  = listToMaybe $ mapMaybe checkImportSpec specs
-  | otherwise
-  = Nothing
+  | Just (Hs.ImportSpecList _ False specs) <- Hs.importSpecs i =
+    [ (r, mname, ty) | (r, ty) <- concatMap (checkImportSpec mname) specs ]
+  | otherwise = []
   where
-    checkImportSpec :: Hs.ImportSpec Hs.SrcSpanInfo -> Maybe Range
-    checkImportSpec = \case
-      Hs.IVar loc n | check n -> ret loc
-      Hs.IAbs loc _ n | check n -> ret loc
-      Hs.IThingAll loc n | check n -> ret loc
-      Hs.IThingWith loc n ns
-        | check n -> ret loc
-        | Just loc' <- listToMaybe $ map cloc $ filter (check . cname) ns -> ret loc'
-      _ -> Nothing
+    mname = pp (Hs.importModule i)
+    checkImportSpec :: String -> Hs.ImportSpec Hs.SrcSpanInfo -> [(Range, String)]
+    checkImportSpec mname = \case
+      Hs.IVar       loc   n    -> check loc n
+      Hs.IAbs       loc _ n    -> check loc n
+      Hs.IThingAll  loc   n    -> check loc n
+      Hs.IThingWith loc   n ns -> concat $ check loc n : map check' ns
       where
-        check = (== "Word64") . pp
-        ret = Just . srcSpanInfoToRange
+        check' cn = check (cloc cn) (cname cn)
+        check loc n = [(srcSpanInfoToRange loc, s) | let s = pp n, badImp s]
+        badImp s = maybe False (/= mname) $ lookup s autoImports
 
 -- Generating the files -------------------------------------------------------
 
@@ -693,7 +717,9 @@ writeModule opts _ isMain m defs0 = do
     -- Check user-supplied imports
     checkImports imps
     -- Add automatic imports for builtin types (if any)
-    autoImports <- unlines . map pp <$> addImports imps defs0
+    let unlines' [] = []
+        unlines' ss = unlines ss ++ "\n"
+    autoImports <- unlines' . map pp <$> addImports imps defs0
     -- The comments makes it hard to generate and pretty print a full module
     let hsFile = moduleFileName opts m
         output = concat

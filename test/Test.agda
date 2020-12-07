@@ -2,6 +2,7 @@ module _ where
 
 open import Haskell.Prelude
 open import Agda.Builtin.Word
+open import Agda.Builtin.Nat
 open import Agda.Builtin.Equality
 
 -- ** Foreign HS code
@@ -15,23 +16,19 @@ open import Agda.Builtin.Equality
 {-# FOREIGN AGDA2HS
 import Prelude hiding (sum)
 import Data.Monoid
--- import Data.Word
-
--- import Data.Word (Word64)
-import qualified Data.Word as Word64
 #-}
 
 -- ** Datatypes & functions
 
 data Exp (v : Set) : Set where
   Plus : Exp v → Exp v → Exp v
-  Int : Nat → Exp v
+  Lit : Nat → Exp v
   Var : v → Exp v
 {-# COMPILE AGDA2HS Exp #-}
 
 eval : (a → Nat) → Exp a → Nat
 eval env (Plus a b) = eval env a + eval env b
-eval env (Int n) = n
+eval env (Lit n) = n
 eval env (Var x) = env x
 {-# COMPILE AGDA2HS eval #-}
 
@@ -61,10 +58,10 @@ ex_float = 0.0
 {-# COMPILE AGDA2HS ex_float #-}
 
 postulate
-  toInteger : Word64 → Nat
-  fromInteger : Nat → Word64
+  toInteger : Word → Integer
+  fromInteger : Integer → Word
 
-ex_word : Word64
+ex_word : Word
 ex_word = fromInteger 0
 {-# COMPILE AGDA2HS ex_word #-}
 

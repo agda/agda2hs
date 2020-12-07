@@ -2,24 +2,21 @@
 
 module Test where
 
-import Data.Word (Word64)
+import Numeric.Natural (Natural)
+
 import Prelude hiding (sum)
 import Data.Monoid
--- import Data.Word
-
--- import Data.Word (Word64)
-import qualified Data.Word as Word64
 
 data Exp v = Plus (Exp v) (Exp v)
-           | Int Integer
+           | Lit Natural
            | Var v
 
-eval :: (a -> Integer) -> Exp a -> Integer
+eval :: (a -> Natural) -> Exp a -> Natural
 eval env (Plus a b) = eval env a + eval env b
-eval env (Int n) = n
+eval env (Lit n) = n
 eval env (Var x) = env x
 
-sum :: [Integer] -> Integer
+sum :: [Natural] -> Natural
 sum [] = 0
 sum (x : xs) = x + sum xs
 
@@ -36,7 +33,7 @@ bla n = n * 4
 ex_float :: Double
 ex_float = 0.0
 
-ex_word :: Word64
+ex_word :: Word
 ex_word = fromInteger 0
 
 ex_char :: Char
@@ -53,13 +50,13 @@ listMap :: (a -> b) -> [a] -> [b]
 listMap f [] = []
 listMap f (x : xs) = f x : listMap f xs
 
-mapTest :: [Integer] -> [Integer]
+mapTest :: [Natural] -> [Natural]
 mapTest = map (id . (5 +))
 
-plus3 :: [Integer] -> [Integer]
+plus3 :: [Natural] -> [Natural]
 plus3 = map (\ n -> n + 3)
 
-doubleLambda :: Integer -> Integer -> Integer
+doubleLambda :: Natural -> Natural -> Natural
 doubleLambda = \ a b -> a + 2 * b
 
 class MonoidX a where
@@ -81,24 +78,24 @@ sumMon (x : xs) = x <> sumMon xs
 ex_bool :: Bool
 ex_bool = True
 
-ex_if :: Integer
+ex_if :: Natural
 ex_if = if True then 1 else 0
 
-if_over :: Integer
+if_over :: Natural
 if_over = (if True then \ x -> x else \ x -> x + 1) 0
 
-if_partial₁ :: [Integer] -> [Integer]
+if_partial₁ :: [Natural] -> [Natural]
 if_partial₁ = map (\ f -> if True then 1 else f)
 
-if_partial₂ :: [Integer] -> [Integer -> Integer]
+if_partial₂ :: [Natural] -> [Natural -> Natural]
 if_partial₂ = map (\ t f -> if True then t else f)
 
-if_partial₃ :: [Bool] -> [Integer -> Integer -> Integer]
+if_partial₃ :: [Bool] -> [Natural -> Natural -> Natural]
 if_partial₃ = map (\ b t f -> if b then t else f)
 
-if_partial₄ :: [Bool] -> [Integer -> Integer]
+if_partial₄ :: [Bool] -> [Natural -> Natural]
 if_partial₄ = map (\ section f -> if section then 1 else f)
 
-if_partial₅ :: Bool -> Integer -> [Integer] -> [Integer]
+if_partial₅ :: Bool -> Natural -> [Natural] -> [Natural]
 if_partial₅ b f = map (\ f₁ -> if b then f else f₁)
 
