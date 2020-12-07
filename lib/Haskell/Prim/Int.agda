@@ -9,10 +9,12 @@ open import Agda.Builtin.Word renaming (primWord64ToNat to w2n; primWord64FromNa
 open import Agda.Builtin.Bool
 open import Agda.Builtin.List
 open import Agda.Builtin.Char
+open import Agda.Builtin.String
 open import Agda.Builtin.FromNat
 open import Agda.Builtin.FromNeg
 open import Agda.Builtin.Unit
 open import Agda.Builtin.Int using (pos; negsuc)
+open import Agda.Builtin.Equality
 
 open import Haskell.Prim
 open import Haskell.Prim.Word
@@ -29,8 +31,8 @@ private
   intToWord : Int64 → Word64
   intToWord (int64 a) = a
 
-  intToNat : Int64 → Nat
-  intToNat a = w2n (intToWord a)
+  unsafeIntToNat : Int64 → Nat
+  unsafeIntToNat a = w2n (intToWord a)
 
 
 --------------------------------------------------
@@ -59,9 +61,8 @@ instance
 --------------------------------------------------
 -- Arithmetic
 
-private
-  isNegative : Int64 → Bool
-  isNegative (int64 w) = maxInt < w2n w
+isNegativeInt : Int64 → Bool
+isNegativeInt (int64 w) = maxInt < w2n w
 
 eqInt : Int64 → Int64 → Bool
 eqInt (int64 a) (int64 b) = w2n a == w2n b
@@ -70,14 +71,15 @@ negateInt : Int64 → Int64
 negateInt (int64 a) = int64 (n2w (2⁶⁴ - w2n a))
 
 intToInteger : Int64 → Integer
-intToInteger a = if isNegative a then negsuc (intToNat (negateInt a) - 1) else pos (intToNat a)
+intToInteger a = if isNegativeInt a then negsuc (unsafeIntToNat (negateInt a) - 1)
+                                    else pos (unsafeIntToNat a)
 
 private
   ltPosInt : Int64 → Int64 → Bool
   ltPosInt (int64 a) (int64 b) = ltWord a b
 
 ltInt : Int64 → Int64 → Bool
-ltInt a b with isNegative a | isNegative b
+ltInt a b with isNegativeInt a | isNegativeInt b
 ... | true  | false = true
 ... | false | true  = false
 ... | true  | true  = ltPosInt (negateInt b) (negateInt a)
@@ -92,12 +94,24 @@ subInt a b = addInt a (negateInt b)
 mulInt : Int64 → Int64 → Int64
 mulInt (int64 a) (int64 b) = int64 (mulWord a b)
 
+absInt : Int64 → Int64
+absInt a = if isNegativeInt a then negateInt a else a
+
+signInt : Int64 → Int64
+signInt a = if      isNegativeInt a then -1
+            else if eqInt a 0       then 0 else 1
+
 showInt : Int64 → List Char
 showInt a = showInteger (intToInteger a)
 
-absInt : Int64 → Int64
-absInt a = if isNegative a then negateInt a else a
 
-signInt : Int64 → Int64
-signInt a = if      isNegative a then -1
-            else if eqInt a 0    then 0 else 1
+--------------------------------------------------
+-- Constraints
+
+IsNonNegativeInt : Int64 → Set
+IsNonNegativeInt a@(int64 _) =
+  if isNegativeInt a then TypeError (primStringAppend (primStringFromList (showInt a)) " is negative")
+                     else ⊤
+
+intToNat : (a : Int64) → ⦃ IsNonNegativeInt a ⦄ → Nat
+intToNat a = unsafeIntToNat a
