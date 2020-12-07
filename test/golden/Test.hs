@@ -63,7 +63,7 @@ class MonoidX a where
         memptyX :: a
         mappendX :: a -> a -> a
 
-instance MonoidX Integer where
+instance MonoidX Natural where
         memptyX = 0
         mappendX i j = i + j
 
