@@ -476,29 +476,44 @@ instance
 record Ord (a : Set) : Set where
   field
     compare : a → a → Ordering
+    _<_  : a → a → Bool
+    _>_  : a → a → Bool
+    _>=_ : a → a → Bool
+    _<=_ : a → a → Bool
+    max  : a → a → a
+    min  : a → a → a
     overlap ⦃ super ⦄ : Eq a
 
   infix 4 _<_ _>_ _<=_ _>=_
 
-  _<_ : a → a → Bool
-  x < y = compare x y == LT
-
-  _<=_ : a → a → Bool
-  x <= y = compare x y /= GT
-
-  _>_ : a → a → Bool
-  x > y = compare x y == GT
-
-  _>=_ : a → a → Bool
-  x >= y = compare x y /= LT
-
-  max : a → a → a
-  max x y = if x >= y then x else y
-
-  min : a → a → a
-  min x y = if x <= y then x else y
-
 open Ord ⦃ ... ⦄ public
+
+ordFromCompare : ⦃ Eq a ⦄ → (a → a → Ordering) → Ord a
+ordFromCompare cmp .compare = cmp
+ordFromCompare cmp ._<_  x y = cmp x y == LT
+ordFromCompare cmp ._>_  x y = cmp x y == GT
+ordFromCompare cmp ._<=_ x y = cmp x y /= GT
+ordFromCompare cmp ._>=_ x y = cmp x y /= LT
+ordFromCompare cmp .max  x y = if cmp x y == LT then y else x
+ordFromCompare cmp .min  x y = if cmp x y == GT then y else x
+
+ordFromLessThan : ⦃ Eq a ⦄ → (a → a → Bool) → Ord a
+ordFromLessThan _<_ .compare x y = if x < y then LT else if x == y then EQ else GT
+ordFromLessThan _<_ ._<_  x y = x < y
+ordFromLessThan _<_ ._>_  x y = y < x
+ordFromLessThan _<_ ._<=_ x y = x < y || x == y
+ordFromLessThan _<_ ._>=_ x y = y < x || x == y
+ordFromLessThan _<_ .max  x y = if x < y then y else x
+ordFromLessThan _<_ .min  x y = if y < x then y else x
+
+ordFromLessEq : ⦃ Eq a ⦄ → (a → a → Bool) → Ord a
+ordFromLessEq _<=_ .compare x y = if x == y then EQ else if x <= y then LT else GT
+ordFromLessEq _<=_ ._<_  x y = x <= y && not (x == y)
+ordFromLessEq _<=_ ._>_  x y = y <= x && not (x == y)
+ordFromLessEq _<=_ ._<=_ x y = x <= y
+ordFromLessEq _<=_ ._>=_ x y = y <= x
+ordFromLessEq _<=_ .max  x y = if y <= x then x else y
+ordFromLessEq _<=_ .min  x y = if x <= y then x else y
 
 private
   compareFromLt : ⦃ Eq a ⦄ → (a → a → Bool) → a → a → Ordering
@@ -506,57 +521,66 @@ private
 
 instance
   iOrdNat : Ord Nat
-  iOrdNat .compare = compareFromLt Nat._<_
+  iOrdNat = ordFromLessThan Nat._<_
 
   iOrdInteger : Ord Integer
-  iOrdInteger .compare = compareFromLt ltInteger
+  iOrdInteger = ordFromLessThan ltInteger
 
   iOrdInt : Ord Int
-  iOrdInt .compare = compareFromLt ltInt
+  iOrdInt = ordFromLessThan ltInt
 
   iOrdWord : Ord Word64
-  iOrdWord .compare = compareFromLt ltWord
+  iOrdWord = ordFromLessThan ltWord
 
   iOrdDouble : Ord Double
-  iOrdDouble .compare = compareFromLt primFloatNumericalLess
+  iOrdDouble = ordFromLessThan primFloatNumericalLess
 
   iOrdBool : Ord Bool
-  iOrdBool .compare false true  = LT
-  iOrdBool .compare true  false = GT
-  iOrdBool .compare _     _     = EQ
+  iOrdBool = ordFromCompare λ where
+    false true  → LT
+    true  false → GT
+    _     _     → EQ
 
   iOrdTuple₀ : Ord (Tuple [])
-  iOrdTuple₀ .compare _ _ = EQ
+  iOrdTuple₀ = ordFromCompare λ _ _ → EQ
 
   iOrdTuple : ∀ {as} → ⦃ Ord a ⦄ → ⦃ Ord (Tuple as) ⦄ → Ord (Tuple (a ∷ as))
-  iOrdTuple .compare (x ∷ xs) (y ∷ ys) = compare x y <> compare xs ys
+  iOrdTuple = ordFromCompare λ where (x ∷ xs) (y ∷ ys) → compare x y <> compare xs ys
 
+compareList : ⦃ Ord a ⦄ → List a → List a → Ordering
+compareList []       []       = EQ
+compareList []       (_ ∷ _)  = LT
+compareList (_ ∷ _)  []       = GT
+compareList (x ∷ xs) (y ∷ ys) = compare x y <> compareList xs ys
+
+instance
   iOrdList : ⦃ Ord a ⦄ → Ord (List a)
-  iOrdList .compare []       []       = EQ
-  iOrdList .compare []       (_ ∷ _)  = LT
-  iOrdList .compare (_ ∷ _)  []       = GT
-  iOrdList .compare (x ∷ xs) (y ∷ ys) = compare x y <> compare xs ys
+  iOrdList = ordFromCompare compareList
 
   iOrdMaybe : ⦃ Ord a ⦄ → Ord (Maybe a)
-  iOrdMaybe .compare Nothing  Nothing  = EQ
-  iOrdMaybe .compare Nothing  (Just _) = LT
-  iOrdMaybe .compare (Just _) Nothing  = GT
-  iOrdMaybe .compare (Just x) (Just y) = compare x y
+  iOrdMaybe = ordFromCompare λ where
+    Nothing  Nothing  → EQ
+    Nothing  (Just _) → LT
+    (Just _) Nothing  → GT
+    (Just x) (Just y) → compare x y
 
   iOrdEither : ⦃ Ord a ⦄ → ⦃ Ord b ⦄ → Ord (Either a b)
-  iOrdEither .compare (Left  x) (Left  y) = compare x y
-  iOrdEither .compare (Left  _) (Right _) = LT
-  iOrdEither .compare (Right _) (Left  _) = GT
-  iOrdEither .compare (Right x) (Right y) = compare x y
+  iOrdEither = ordFromCompare λ where
+    (Left  x) (Left  y) → compare x y
+    (Left  _) (Right _) → LT
+    (Right _) (Left  _) → GT
+    (Right x) (Right y) → compare x y
 
   iOrdOrdering : Ord Ordering
-  iOrdOrdering .compare LT LT = EQ
-  iOrdOrdering .compare LT _  = LT
-  iOrdOrdering .compare _  LT = GT
-  iOrdOrdering .compare EQ EQ = EQ
-  iOrdOrdering .compare EQ GT = LT
-  iOrdOrdering .compare GT EQ = GT
-  iOrdOrdering .compare GT GT = EQ
+  iOrdOrdering = ordFromCompare λ where
+    LT LT → EQ
+    LT _  → LT
+    _  LT → GT
+    EQ EQ → EQ
+    EQ GT → LT
+    GT EQ → GT
+    GT GT → EQ
+
 
 --------------------------------------------------
 -- Num
