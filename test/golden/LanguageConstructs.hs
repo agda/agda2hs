@@ -7,6 +7,6 @@ exactlyTwo :: [a] -> Maybe (a, a)
 exactlyTwo [x, y] = Just (x, y)
 exactlyTwo _ = Nothing
 
-ifThenElse :: Int -> [Char]
+ifThenElse :: Int -> String
 ifThenElse n = if n >= 10 then "big" else "small"
 
