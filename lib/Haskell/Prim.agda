@@ -54,4 +54,7 @@ data IsTrue : Bool → Set where
 data IsFalse : Bool → Set where
   instance itsFalse : IsFalse false
 
+data NonEmpty {a : Set} : List a → Set where
+  instance itsNonEmpty : ∀ {x xs} → NonEmpty (x ∷ xs)
+
 data TypeError (err : String) : Set where

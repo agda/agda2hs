@@ -17,7 +17,7 @@ open import Agda.Builtin.Equality     public
 open import Agda.Builtin.Int using (pos; negsuc)
 
 open import Haskell.Prim
-open Haskell.Prim public using (TypeError; ⊥; if_then_else_; iNumberNat; IsTrue; IsFalse; All; allNil; allCons)
+open Haskell.Prim public using (TypeError; ⊥; if_then_else_; iNumberNat; IsTrue; IsFalse; All; allNil; allCons; NonEmpty)
 
 open import Haskell.Prim.Integer
 open Haskell.Prim.Integer public using (Integer; iNumberInteger; iNegativeInteger; isNegativeInteger; IsNonNegativeInteger)
@@ -38,10 +38,10 @@ open import Haskell.Prim.Word
 -- Missing from the Haskell Prelude:
 --
 --     Enum(succ, pred, toEnum, fromEnum, enumFrom, enumFromThen,
---          enumFromTo, enumFromThenTo),      [Int, Partial]
+--          enumFromTo, enumFromThenTo),      [Partial]
 --     Bounded(minBound, maxBound),
 --
---     Float        [Int, Float]
+--     Float        [Float]
 --     Rational
 --
 --     Real(toRational),
@@ -61,11 +61,7 @@ open import Haskell.Prim.Word
 --
 --     until, error, errorWithoutStackTrace, undefined    [Partial]
 --
---     head, last, tail, init, (!!)    [Partial]
 --     iterate, repeat, cycle          [Infinite]
---
---     ShowS, Show(showsPrec, showList, show),
---     shows, showChar, showString, showParen,
 --
 --     ReadS, Read(readsPrec, readList),
 --     reads, readParen, read, lex,
@@ -801,6 +797,19 @@ lookup : ⦃ Eq a ⦄ → a → List (a × b) → Maybe b
 lookup x []              = Nothing
 lookup x ((x₁ , y) ∷ xs) = if x == x₁ then Just y else lookup x xs
 
+lengthNat : List a → Nat
+lengthNat []       = 0
+lengthNat (_ ∷ xs) = 1 + lengthNat xs
+
+infixl 9 _!!_ _!!ᴺ_
+
+_!!ᴺ_ : (xs : List a) (n : Nat) → ⦃ IsTrue (n < lengthNat xs) ⦄ → a
+(x ∷ xs) !!ᴺ zero  = x
+(x ∷ xs) !!ᴺ suc n = xs !!ᴺ n
+
+_!!_ : (xs : List a) (n : Int) ⦃ nn : IsNonNegativeInt n ⦄ → ⦃ IsTrue (intToNat n < lengthNat xs) ⦄ → a
+xs !! n = xs !!ᴺ intToNat n
+
 takeNat : Nat → List a → List a
 takeNat n       [] = []
 takeNat zero    xs = []
@@ -825,6 +834,19 @@ splitAtNat (suc n) (x ∷ xs) = first (x ∷_) (splitAtNat n xs)
 splitAt : (n : Int) → ⦃ IsNonNegativeInt n ⦄ → List a → List a × List a
 splitAt n xs = splitAtNat (intToNat n) xs
 
+head : (xs : List a) → ⦃ NonEmpty xs ⦄ → a
+head (x ∷ _) = x
+
+tail : (xs : List a) → ⦃ NonEmpty xs ⦄ → List a
+tail (_ ∷ xs) = xs
+
+last : (xs : List a) → ⦃ NonEmpty xs ⦄ → a
+last (x ∷ [])         = x
+last (_ ∷ xs@(_ ∷ _)) = last xs
+
+init : (xs : List a) → ⦃ NonEmpty xs ⦄ → List a
+init (x ∷ [])         = []
+init (x ∷ xs@(_ ∷ _)) = x ∷ init xs
 
 --------------------------------------------------
 -- Show

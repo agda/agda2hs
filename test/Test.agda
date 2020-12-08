@@ -120,6 +120,10 @@ doubleTake : (n m : Int) → ⦃ IsNonNegativeInt n ⦄ → ⦃ IsNonNegativeInt
 doubleTake n m = second (take m) ∘ splitAt n
 {-# COMPILE AGDA2HS doubleTake #-}
 
+initLast : (xs : List a) → ⦃ NonEmpty xs ⦄ → List a × a
+initLast xs = init xs , last xs
+{-# COMPILE AGDA2HS initLast #-}
+
 -- ** Proofs
 
 assoc : (a b c : Nat) → a + (b + c) ≡ (a + b) + c
@@ -158,10 +162,6 @@ sumMon : ∀{a} → {{Monoid a}} → List a → a
 sumMon []       = mempty
 sumMon (x ∷ xs) = x <> sumMon xs
 {-# COMPILE AGDA2HS sumMon #-}
-
-data NonEmpty {a : Set} : List a → Set where
-  instance
-    itsNonEmpty : ∀ {x xs} → NonEmpty (x ∷ xs)
 
 -- Instance argument proof obligation that should not turn into a class constraint
 hd : (xs : List a) → ⦃ NonEmpty xs ⦄ → a

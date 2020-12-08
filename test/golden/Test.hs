@@ -73,6 +73,9 @@ second f (x, y) = (x, f y)
 doubleTake :: Int -> Int -> [a] -> ([a], [a])
 doubleTake n m = second (take m) . splitAt n
 
+initLast :: [a] -> ([a], a)
+initLast xs = (init xs, last xs)
+
 class MonoidX a where
         memptyX :: a
         mappendX :: a -> a -> a
