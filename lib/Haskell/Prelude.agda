@@ -19,6 +19,8 @@ open import Agda.Builtin.Int using (pos; negsuc)
 open import Haskell.Prim
 open Haskell.Prim public using (TypeError; ⊥; if_then_else_; iNumberNat; IsTrue; IsFalse; All; allNil; allCons; NonEmpty)
 
+open import Haskell.Prim.Absurd
+
 open import Haskell.Prim.Integer
 open Haskell.Prim.Integer public using (Integer; iNumberInteger; iNegativeInteger; isNegativeInteger; IsNonNegativeInteger)
 
@@ -59,7 +61,7 @@ open import Haskell.Prim.Word
 --
 --     foldr1, foldl1, maximum, minimum      [Partial]
 --
---     until, error, errorWithoutStackTrace, undefined    [Partial]
+--     until [Partial]
 --
 --     iterate, repeat, cycle          [Infinite]
 --
@@ -77,6 +79,17 @@ open import Haskell.Prim.Word
 variable
   a b c d e : Set
   f m s t   : Set → Set
+
+
+--------------------------------------------------
+-- String
+
+String = List Char
+
+instance
+  iIsStringString : IsString String
+  iIsStringString .IsString.Constraint _ = ⊤
+  iIsStringString .fromString s = Str.primStringToList s
 
 
 --------------------------------------------------
@@ -111,6 +124,16 @@ case x of f = f x
 
 asTypeOf : a → a → a
 asTypeOf x _ = x
+
+undefined : {@(tactic absurd) i : ⊥} → a
+undefined {i = ()}
+
+error : {@(tactic absurd) i : ⊥} → String → a
+error {i = ()} err
+
+errorWithoutStackTrace : {@(tactic absurd) i : ⊥} → String → a
+errorWithoutStackTrace {i = ()} err
+
 
 --------------------------------------------------
 -- Tuples
@@ -289,16 +312,6 @@ either f g (Right y) = g y
 
 data Ordering : Set where
   LT EQ GT : Ordering
-
---------------------------------------------------
--- String
-
-String = List Char
-
-instance
-  iIsStringString : IsString String
-  iIsStringString .IsString.Constraint _ = ⊤
-  iIsStringString .fromString s = Str.primStringToList s
 
 --------------------------------------------------
 -- Semigroup

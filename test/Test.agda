@@ -165,7 +165,7 @@ sumMon (x ∷ xs) = x <> sumMon xs
 
 -- Instance argument proof obligation that should not turn into a class constraint
 hd : (xs : List a) → ⦃ NonEmpty xs ⦄ → a
-hd [] ⦃ () ⦄
+hd []      = error "hd: empty list"
 hd (x ∷ _) = x
 {-# COMPILE AGDA2HS hd #-}
 

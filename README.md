@@ -23,7 +23,7 @@ See `test/Test.agda` for an example.
 - [x] `where` clauses [#23](https://github.com/agda/agda2hs/pull/23)
 - [ ] Higher-rank polymorphism
 - [x] More builtin types (Double, Word64) [#12](https://github.com/agda/agda2hs/pull/12)
-- [ ] Strings (compile to `Data.Text`)
+- [x] Strings
 - [ ] Compile `case_of_ λ where` to Haskell `case`
 - [ ] `with`?
 - [ ] Compile equality proofs to QuickCheck properties?
