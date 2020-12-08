@@ -38,6 +38,14 @@ instance
 
 
 --------------------------------------------------
+-- Lists
+
+lengthNat : List a → Nat
+lengthNat []       = 0
+lengthNat (_ ∷ xs) = 1 + lengthNat xs
+
+
+--------------------------------------------------
 -- Proof things
 
 data ⊥ : Set where
