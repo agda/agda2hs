@@ -87,7 +87,7 @@ sumMon [] = mempty
 sumMon (x : xs) = x <> sumMon xs
 
 hd :: [a] -> a
-hd [] = undefined
+hd [] = error "hd: impossible"
 hd (x₁ : xs) = x₁
 
 five :: Int

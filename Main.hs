@@ -469,7 +469,7 @@ compileClause locals x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBo
                           | otherwise = t
         (body', children'') = everywhere (mkT shrinkLocalDefs) (body, children')
 
-    body' <- fromMaybe hsUndefined <$> mapM compileTerm body'
+    body' <- fromMaybe (hsError $ pp x ++ ": impossible") <$> mapM compileTerm body'
     whereDecls <- concat <$> mapM (uncurry compileFun') children''
 
     let rhs = Hs.UnGuardedRhs () body'
