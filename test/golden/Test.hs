@@ -93,7 +93,7 @@ sumMon [] = mempty
 sumMon (x : xs) = x <> sumMon xs
 
 hd :: [a] -> a
-hd [] = error "hd: impossible"
+hd [] = error "hd: empty list"
 hd (x : _) = x
 
 five :: Int
