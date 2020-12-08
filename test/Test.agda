@@ -106,6 +106,12 @@ doubleLambda : Nat → Nat → Nat
 doubleLambda = λ a b → a + 2 * b
 {-# COMPILE AGDA2HS doubleLambda #-}
 
+cnst : a → b → a
+cnst = λ x _ → x
+{-# COMPILE AGDA2HS cnst #-}
+
+-- ** Constraints
+
 second : (b → c) → a × b → a × c
 second f (x , y) = x , f y
 {-# COMPILE AGDA2HS second #-}
