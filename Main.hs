@@ -192,6 +192,8 @@ isSpecialPat = show >>> \ case
 isSpecialType :: QName -> Maybe (QName -> Elims -> TCM (Hs.Type ()))
 isSpecialType = show >>> \ case
   "Haskell.Prelude.Tuple" -> Just tupleType
+  "Haskell.Prelude._×_"   -> Just tupleType'
+  "Haskell.Prelude._×_×_" -> Just tupleType'
   _ -> Nothing
 
 isSpecialName :: QName -> Maybe (Hs.QName ())
@@ -241,6 +243,11 @@ fromString :: QName -> Elims -> TCM (Hs.Exp ())
 fromString _ es = compileArgs es <&> \ case
   _ : s@Hs.Lit{} : es' -> s `eApp` es'
   es'                  -> Hs.Var () (Hs.UnQual () $ hsName "fromString") `eApp` drop 1 es'
+
+tupleType' :: QName -> Elims -> TCM (Hs.Type ())
+tupleType' q es = do
+  Def tup es' <- reduce (Def q es)
+  tupleType tup es'
 
 tupleType :: QName -> Elims -> TCM (Hs.Type ())
 tupleType _ es | Just [as] <- allApplyElims es = do
@@ -518,7 +525,6 @@ dependsOnVisibleVar t = do
 
 compileType :: Term -> TCM (Hs.Type ())
 compileType t = do
-  t <- reduce t
   case t of
     Pi a b
       | hidden a -> dropPi -- Hidden Pi means Haskell forall, which we leave implicit
