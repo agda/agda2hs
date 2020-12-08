@@ -64,6 +64,9 @@ plus3 = map (\ n -> n + 3)
 doubleLambda :: Natural -> Natural -> Natural
 doubleLambda = \ a b -> a + 2 * b
 
+cnst :: a -> b -> a
+cnst = \ x _ -> x
+
 second :: (b -> c) -> (a, b) -> (a, c)
 second f (x, y) = (x, f y)
 

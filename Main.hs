@@ -148,8 +148,10 @@ makeListP' nil cons err p = do
     vis ps = [ namedArg p | p <- ps, visible p ]
 
 underAbstr :: Subst t a => Dom Type -> Abs a -> (a -> TCM b) -> TCM b
-underAbstr a b ret = underAbstraction' KeepNames a b $ \ body ->
-  localScope $ bindVar 0 >> ret body
+underAbstr a b ret
+  | absName b == "_" = underAbstraction' KeepNames a b ret
+  | otherwise        = underAbstraction' KeepNames a b $ \ body ->
+                         localScope $ bindVar 0 >> ret body
 
 underAbstr_ :: Subst t a => Abs a -> (a -> TCM b) -> TCM b
 underAbstr_ = underAbstr __DUMMY_DOM__
