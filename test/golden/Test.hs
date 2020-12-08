@@ -97,7 +97,7 @@ hd [] = error "hd: empty list"
 hd (x : _) = x
 
 five :: Int
-five = hd (5 : 3 : [])
+five = hd [5, 3]
 
 ex_bool :: Bool
 ex_bool = True

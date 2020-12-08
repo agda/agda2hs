@@ -2,6 +2,7 @@
 module AllTests where
 
 import Issue14
+import LanguageConstructs
 import Numbers
 import Pragmas
 import Sections
@@ -11,6 +12,7 @@ import Where
 
 {-# FOREIGN AGDA2HS
 import Issue14
+import LanguageConstructs
 import Numbers
 import Pragmas
 import Sections

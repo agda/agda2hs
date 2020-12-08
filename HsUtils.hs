@@ -53,10 +53,21 @@ moveToTop (x, cs) = (subtractLine l <$> x, [ Comment b (sub l r) str | Comment b
         sub :: Int -> SrcSpan -> SrcSpan
         sub l (SrcSpan f l0 c0 l1 c1) = SrcSpan f (l0 - l) c0 (l1 - l) c1
 
+getList :: Exp () -> Maybe [Exp ()]
+getList (Con _ (Special _ ListCon{})) = Just []
+getList (List _ es)                   = Just es
+getList _                             = Nothing
+
+getListP :: Pat () -> Maybe [Pat ()]
+getListP (PApp _ (Special _ ListCon{}) []) = Just []
+getListP (PList _ es)                      = Just es
+getListP _                                 = Nothing
+
 pApp :: QName () -> [Pat ()] -> Pat ()
-pApp c@(UnQual () (Symbol () _)) [p, q] = PInfixApp () p c q
-pApp c@(Special () Cons{}) [p, q] = PInfixApp () p c q
-pApp c ps = PApp () c ps
+pApp c@(UnQual () (Symbol () _)) [p, q]                = PInfixApp () p c q
+pApp (Special _ Cons{}) [p, q] | Just ps <- getListP q = PList () (p : ps)
+pApp c@(Special () Cons{}) [p, q]                      = PInfixApp () p c q
+pApp c ps                                              = PApp () c ps
 
 getOp :: Exp () -> Maybe (QOp ())
 getOp (Var _ x) | isOp x = Just $ QVarOp () x
@@ -64,6 +75,8 @@ getOp (Con _ c) | isOp c = Just $ QConOp () c
 getOp _                  = Nothing
 
 eApp :: Exp () -> [Exp ()] -> Exp ()
+eApp f [a, b] | Just (QConOp () (Special _ Cons{})) <- getOp f,
+                Just as <- getList b = List () (a : as)
 eApp f (a : b : as) | Just op <- getOp f = foldl (App ()) (InfixApp () a op b) as
 eApp f [a]          | Just op <- getOp f = LeftSection () a op
 eApp f es = foldl (App ()) f es

@@ -58,7 +58,7 @@ ex6 :: [Natural] -> Bool -> Natural
 ex6 [] b = zro
   where zro :: Natural
         zro = 0
-ex6 (n : ns) b = mult (num : 1 : [])
+ex6 (n : ns) b = mult [num, 1]
   where mult :: [Natural] -> Natural
         mult [] = bump 5 (bool2nat b)
           where bump :: Natural -> Natural -> Natural
