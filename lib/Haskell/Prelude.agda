@@ -17,7 +17,9 @@ open import Agda.Builtin.Equality     public
 open import Agda.Builtin.Int using (pos; negsuc)
 
 open import Haskell.Prim
-open Haskell.Prim public using (TypeError; ⊥; if_then_else_; iNumberNat; IsTrue; IsFalse; All; allNil; allCons; NonEmpty)
+open Haskell.Prim public using ( TypeError; ⊥; if_then_else_; iNumberNat;
+                                 IsTrue; IsFalse; All; allNil; allCons; NonEmpty;
+                                 lengthNat )
 
 open import Haskell.Prim.Absurd
 
@@ -809,10 +811,6 @@ reverse = foldl (flip _∷_) []
 lookup : ⦃ Eq a ⦄ → a → List (a × b) → Maybe b
 lookup x []              = Nothing
 lookup x ((x₁ , y) ∷ xs) = if x == x₁ then Just y else lookup x xs
-
-lengthNat : List a → Nat
-lengthNat []       = 0
-lengthNat (_ ∷ xs) = 1 + lengthNat xs
 
 infixl 9 _!!_ _!!ᴺ_
 

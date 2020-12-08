@@ -7,6 +7,8 @@ open import Agda.Builtin.Unit
 open import Agda.Builtin.Reflection renaming (bindTC to _>>=_; absurd to absurdP)
 open import Agda.Builtin.Equality
 
+open import Haskell.Prim
+
 private
 
   pattern vArg x = arg (arg-info visible relevant) x
@@ -24,11 +26,7 @@ private
   tryRefute 0       _    = typeError (strErr "No variable of empty type found in the context" ∷ [])
   tryRefute (suc n) hole = catchTC (unify hole (refute n)) (tryRefute n hole)
 
-  len : List a → Nat
-  len []       = 0
-  len (_ ∷ xs) = suc (len xs)
-
 absurd : Term → TC ⊤
 absurd hole = do
   Γ ← getContext
-  tryRefute (len Γ) hole
+  tryRefute (lengthNat Γ) hole
