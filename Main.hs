@@ -123,27 +123,27 @@ freshString s = freshName_ s >>= showTCM
 (~~) :: QName -> String -> Bool
 q ~~ s = show q == s
 
-makeList :: Doc -> Term -> TCM [Term]
+makeList :: TCM Doc -> Term -> TCM [Term]
 makeList = makeList' "Agda.Builtin.List.List.[]" "Agda.Builtin.List.List._∷_"
 
-makeList' :: String -> String -> Doc -> Term -> TCM [Term]
+makeList' :: String -> String -> TCM Doc -> Term -> TCM [Term]
 makeList' nil cons err v = do
   v <- reduce v
   case v of
     Con c _ es
       | []      <- vis es, conName c ~~ nil  -> return []
       | [x, xs] <- vis es, conName c ~~ cons -> (x :) <$> makeList' nil cons err xs
-    _ -> genericDocError err
+    _ -> genericDocError =<< err
   where
     vis es = [ unArg a | Apply a <- es, visible a ]
 
-makeListP' :: String -> String -> Doc -> DeBruijnPattern -> TCM [DeBruijnPattern]
+makeListP' :: String -> String -> TCM Doc -> DeBruijnPattern -> TCM [DeBruijnPattern]
 makeListP' nil cons err p = do
   case p of
     ConP c _ ps
       | []      <- vis ps, conName c ~~ nil  -> return []
       | [x, xs] <- vis ps, conName c ~~ cons -> (x :) <$> makeListP' nil cons err xs
-    _ -> genericDocError err
+    _ -> genericDocError =<< err
   where
     vis ps = [ namedArg p | p <- ps, visible p ]
 
@@ -236,9 +236,9 @@ fromNeg _ es = compileArgs es <&> \ case
 
 tupleType :: QName -> Elims -> TCM (Hs.Type ())
 tupleType _ es | Just [as] <- allApplyElims es = do
-  err <- sep [ text "Argument"
-             , nest 2 $ prettyTCM as
-             , text "to Tuple is not a concrete list" ]
+  let err = sep [ text "Argument"
+                , nest 2 $ prettyTCM as
+                , text "to Tuple is not a concrete list" ]
   xs <- makeList err (unArg as)
   ts <- mapM compileType xs
   return $ Hs.TyTuple () Hs.Boxed ts
@@ -247,10 +247,10 @@ tupleType _ es =
 
 tupleTerm :: ConHead -> ConInfo -> Elims -> TCM (Hs.Exp ())
 tupleTerm cons i es = do
-  let v = Con cons i es
-  err <- sep [ text "Tuple value"
-             , nest 2 $ prettyTCM v
-             , text "does not have a known size." ]
+  let v   = Con cons i es
+      err = sep [ text "Tuple value"
+                , nest 2 $ prettyTCM v
+                , text "does not have a known size." ]
   xs <- makeList' "Haskell.Prelude.Tuple.[]" "Haskell.Prelude.Tuple._∷_" err v
   ts <- mapM compileTerm xs
   return $ Hs.Tuple () Hs.Boxed ts
@@ -258,9 +258,9 @@ tupleTerm cons i es = do
 tuplePat :: ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> TCM (Hs.Pat ())
 tuplePat cons i ps = do
   let p = ConP cons i ps
-  err <- sep [ text "Tuple pattern"
-             , nest 2 $ prettyTCM p
-             , text "does not have a known size." ]
+      err = sep [ text "Tuple pattern"
+                , nest 2 $ prettyTCM p
+                , text "does not have a known size." ]
   xs <- makeListP' "Haskell.Prelude.Tuple.[]" "Haskell.Prelude.Tuple._∷_" err p
   qs <- mapM compilePat xs
   return $ Hs.PTuple () Hs.Boxed qs
@@ -326,6 +326,7 @@ compileInstHead ty = case unSpine $ ty of
          vs <- mapM (compileType . unArg) $ filter visible args
          f <- hsQName f
          return $ foldl (Hs.IHApp ()) (Hs.IHCon () f) vs
+       _ -> __IMPOSSIBLE__
 
 
 compileInstanceClause :: LocalDecls -> Clause -> TCM (Hs.InstDecl ())
@@ -432,12 +433,9 @@ compileFun' (Defn {..}) locals = do
     Function{..} = theDef
 
 compileClause :: LocalDecls -> Hs.Name () -> Clause -> TCM (LocalDecls, Hs.Match ())
-compileClause locals x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBody = body} =
+compileClause locals x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBody = body} = do
   addContext (KeepNames tel) $ localScope $ do
-    -- Compile patterns, only bind user-written variables
-    let bind (d, i) | getOrigin d == UserWritten = bindVar i
-                    | otherwise                  = return ()
-    mapM_ bind $ zip (telToList tel) $ reverse [0..size tel - 1]
+    scopeBindPatternVariables ps'
     ps <- compilePats ps'
 
     -- Compile rhs and its @where@ clauses, making sure that:
@@ -483,14 +481,24 @@ compileClause locals x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBo
 -- When going under a binder we need to update the scope as well as the context in order to get
 -- correct printing of variable names (Issue #14).
 
+scopeBindPatternVariables :: NAPs -> TCM ()
+scopeBindPatternVariables = mapM_ (scopeBind . namedArg)
+  where
+    scopeBind :: DeBruijnPattern -> TCM ()
+    scopeBind = \ case
+      VarP o i | PatOVar x <- patOrigin o -> bindVariable LambdaBound (nameConcrete x) x
+               | otherwise                -> return ()
+      ConP _ _ ps -> scopeBindPatternVariables ps
+      DotP{}      -> return ()
+      LitP{}      -> return ()
+      ProjP{}     -> return ()
+      IApplyP{}   -> return ()
+      DefP{}      -> return ()
+
 bindVar :: Int -> TCM ()
 bindVar i = do
   x <- nameOfBV i
   bindVariable LambdaBound (nameConcrete x) x
-
-isErasedInstance :: Term -> Bool
-isErasedInstance (Def q _) = show q == "Haskell.Prim.⌊_⌋"
-isErasedInstance _         = False
 
 -- | Instance arguments that depend on visible arguments (i.e. arguments that appear in the Haskell
 --   code) should not be turned into type class constraints. These are proof objects that only exist
