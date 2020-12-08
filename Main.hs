@@ -173,9 +173,10 @@ applyNoBodies d args = revert $ d `apply` args
 
 isSpecialTerm :: QName -> Maybe (QName -> Elims -> TCM (Hs.Exp ()))
 isSpecialTerm = show >>> \ case
-  "Haskell.Prim.if_then_else_"            -> Just ifThenElse
-  "Agda.Builtin.FromNat.Number.fromNat"   -> Just fromNat
-  "Agda.Builtin.FromNeg.Negative.fromNeg" -> Just fromNeg
+  "Haskell.Prim.if_then_else_"                  -> Just ifThenElse
+  "Agda.Builtin.FromNat.Number.fromNat"         -> Just fromNat
+  "Agda.Builtin.FromNeg.Negative.fromNeg"       -> Just fromNeg
+  "Agda.Builtin.FromString.IsString.fromString" -> Just fromString
   _ -> Nothing
 
 isSpecialCon :: QName -> Maybe (ConHead -> ConInfo -> Elims -> TCM (Hs.Exp ()))
@@ -235,6 +236,11 @@ fromNeg _ es = compileArgs es <&> \ case
   where
     hsV = Hs.Var () . Hs.UnQual () . hsName
     f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ Hs.UnQual () $ hsName "_._") g
+
+fromString :: QName -> Elims -> TCM (Hs.Exp ())
+fromString _ es = compileArgs es <&> \ case
+  _ : s@Hs.Lit{} : es' -> s `eApp` es'
+  es'                  -> Hs.Var () (Hs.UnQual () $ hsName "fromString") `eApp` drop 1 es'
 
 tupleType :: QName -> Elims -> TCM (Hs.Type ())
 tupleType _ es | Just [as] <- allApplyElims es = do
@@ -573,10 +579,11 @@ compileTerm v =
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName (conName h)
-    Lit (LitNat _ n) -> return $ Hs.intE n
-    Lit (LitFloat _ d) -> return $ Hs.Lit () $ Hs.Frac () (toRational d) (show d)
+    Lit (LitNat _ n)    -> return $ Hs.intE n
+    Lit (LitFloat _ d)  -> return $ Hs.Lit () $ Hs.Frac () (toRational d) (show d)
     Lit (LitWord64 _ w) -> return $ Hs.Lit () $ Hs.PrimWord () (fromIntegral w) (show w)
-    Lit (LitChar _ c) -> return $ Hs.charE c
+    Lit (LitChar _ c)   -> return $ Hs.charE c
+    Lit (LitString _ s) -> return $ Hs.Lit () $ Hs.String () s s
     Lam v b | visible v, getOrigin v == UserWritten -> do
       hsLambda (absName b) <$> underAbstr_ b compileTerm
     Lam v b | visible v ->
