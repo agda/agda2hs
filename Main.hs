@@ -606,7 +606,9 @@ compilePats :: NAPs -> TCM [Hs.Pat ()]
 compilePats ps = mapM (compilePat . namedArg) $ filter visible ps
 
 compilePat :: DeBruijnPattern -> TCM (Hs.Pat ())
-compilePat p@(VarP _ _)  = Hs.PVar () . hsName <$> showTCM p
+compilePat p@(VarP o _)
+  | PatOWild <- patOrigin o = return $ Hs.PWildCard ()
+  | otherwise               = Hs.PVar () . hsName <$> showTCM p
 compilePat (ConP h i ps)
   | Just semantics <- isSpecialPat (conName h) = setCurrentRange h $ semantics h i ps
 compilePat (ConP h _ ps) = do

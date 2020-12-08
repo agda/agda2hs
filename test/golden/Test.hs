@@ -88,7 +88,7 @@ sumMon (x : xs) = x <> sumMon xs
 
 hd :: [a] -> a
 hd [] = error "hd: impossible"
-hd (x : xs) = x
+hd (x : _) = x
 
 five :: Int
 five = hd (5 : 3 : [])
