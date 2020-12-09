@@ -340,9 +340,10 @@ compileInstRule cs ty = case unSpine  $ ty of
       Hs.IRule () Nothing (ctx cs) $ foldl (Hs.IHApp ()) (Hs.IHCon () f) (map pars vs)
     where ctx [] = Nothing
           ctx cs = Just (Hs.CxTuple () cs)
-          -- put parens around anything except a var
+          -- put parens around anything except a var or a constant
           pars :: Hs.Type () -> Hs.Type ()
-          pars t@(Hs.TyVar () x) = t
+          pars t@(Hs.TyVar () _) = t
+          pars t@(Hs.TyCon () _) = t
           pars t = Hs.TyParen () t
   Pi a b
       | hidden a -> dropPi -- Hidden Pi means Haskell forall, which we leave implicit
@@ -353,55 +354,22 @@ compileInstRule cs ty = case unSpine  $ ty of
     where dropPi = underAbstr a b (compileInstRule cs . unEl)
   _ -> __IMPOSSIBLE__
 
-
-{-
-notes:
-
-I want to spot a Pi, drop implicit stuff as before and anything else
-should be an instance and go in the context, otherwise it should be
-impossible I guess...
-
--}
-{-
-   Pi a b
-      | hidden a -> dropPi -- Hidden Pi means Haskell forall, which we leave implicit
-      | visible a -> do
-          hsA <- compileType (unEl $ unDom a)
-          hsB <- underAbstraction a b $ compileType . unEl
-          return $ Hs.TyFun () hsA hsB
-      | isInstance a -> ifM (dependsOnVisibleVar a) dropPi $ do
-          hsA <- compileType (unEl $ unDom a)
-          hsB <- underAbstraction a b (compileType . unEl)
-          return $ Hs.TyForall () Nothing (Just (Hs.CxSingle () (Hs.TypeA () hsA))) hsB
-      | otherwise -> dropPi
-      where dropPi = underAbstr a b (compileType . unEl)
--}
-
--- would be better to generate the whole InstDecl as the context also
--- needs to come from the type...
-compileInstHead :: Term -> TCM (Hs.InstHead ())
-compileInstHead ty = case unSpine $ ty of
-       -- only works with a completely concrete instance
-       Def f es | Just args <- allApplyElims es -> do
-         vs <- mapM (compileType . unArg) $ filter visible args
-         f <- hsQName f
-         return $ foldl (Hs.IHApp ()) (Hs.IHCon () f) vs  
-       _ -> __IMPOSSIBLE__
-
-compileInstanceClause :: LocalDecls -> Clause -> TCM (Hs.InstDecl ())
-compileInstanceClause _ _ = return $ Hs.InsDecl () (Hs.FunBind () [])
-{-
 compileInstanceClause :: LocalDecls -> Clause -> TCM (Hs.InstDecl ())
 compileInstanceClause ls c = do
-  let (p : ps) = namedClausePats c
+  -- abuse compileClause:
+  -- 1. drop any patterns before record projection to suppress the instance arg
+  -- 2. use record proj. as function name
+  -- 3. process remaing patterns as usual
+  let (p : ps) = dropWhile (not . isProjP . namedArg) (namedClausePats c)
       c' = c {namedClausePats = ps}
       ProjP _ q = namedArg p
       uf = hsName (show (nameConcrete (qnameName q)))
-  -- abuse compileClause: Assume first pattern is a record projection
-  -- which we use as the function name.
   (_ , x) <- compileClause ls uf c'
   return $ Hs.InsDecl () (Hs.FunBind () [x])
--}
+    where isProjP :: DeBruijnPattern -> Bool
+          isProjP (ProjP _ _) = True
+          isProjP _           = False
+
 compileRecord :: Definition -> TCM [Hs.Decl ()]
 compileRecord def = do
   let r = hsName $ prettyShow $ qnameName $ defName def

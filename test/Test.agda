@@ -158,6 +158,8 @@ instance
   memptyX  {{MonoidFunNat}}     _ = memptyX
   mappendX {{MonoidFunNat}} f g x = mappendX (f x) (g x) 
 
+{-# COMPILE AGDA2HS MonoidFunNat #-}
+
 instance
   MonoidFun : {a b : Set} → {{MonoidX b}} → MonoidX (a → b)
   memptyX  {{MonoidFun}}     _ = memptyX
