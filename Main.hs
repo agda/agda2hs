@@ -323,14 +323,59 @@ compile' def =
 
 compileInstance :: Definition -> TCM [Hs.Decl ()]
 compileInstance def = do
-  ih <- compileInstHead . unEl . defType $ def
+  ir <- compileInstRule [] (unEl . defType $ def)
   locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
           . dropWhile ((<= defName def) . fst)
           . sortDefs <$> curDefs
   ds <- mapM (compileInstanceClause locals) funClauses
-  return $
-    [Hs.InstDecl () Nothing (Hs.IRule () Nothing Nothing ih) (Just ds)]
+  return $ [Hs.InstDecl () Nothing ir (Just ds)]
   where Function{..} = theDef def
+
+compileInstRule :: [Hs.Asst ()] -> Term -> TCM (Hs.InstRule ())
+compileInstRule cs ty = case unSpine  $ ty of
+  Def f es | Just args <- allApplyElims es -> do
+    vs <- mapM (compileType . unArg) $ filter visible args
+    f <- hsQName f
+    return $
+      Hs.IRule () Nothing (ctx cs) $ foldl (Hs.IHApp ()) (Hs.IHCon () f) (map pars vs)
+    where ctx [] = Nothing
+          ctx cs = Just (Hs.CxTuple () cs)
+          -- put parens around anything except a var
+          pars :: Hs.Type () -> Hs.Type ()
+          pars t@(Hs.TyVar () x) = t
+          pars t = Hs.TyParen () t
+  Pi a b
+      | hidden a -> dropPi -- Hidden Pi means Haskell forall, which we leave implicit
+      | isInstance a -> ifM (dependsOnVisibleVar a) dropPi $ do
+          hsA <- compileType (unEl $ unDom a)
+          hsB <- underAbstraction a b (compileInstRule (cs ++ [Hs.TypeA () hsA]) . unEl)
+          return hsB
+    where dropPi = underAbstr a b (compileInstRule cs . unEl)
+  _ -> __IMPOSSIBLE__
+
+
+{-
+notes:
+
+I want to spot a Pi, drop implicit stuff as before and anything else
+should be an instance and go in the context, otherwise it should be
+impossible I guess...
+
+-}
+{-
+   Pi a b
+      | hidden a -> dropPi -- Hidden Pi means Haskell forall, which we leave implicit
+      | visible a -> do
+          hsA <- compileType (unEl $ unDom a)
+          hsB <- underAbstraction a b $ compileType . unEl
+          return $ Hs.TyFun () hsA hsB
+      | isInstance a -> ifM (dependsOnVisibleVar a) dropPi $ do
+          hsA <- compileType (unEl $ unDom a)
+          hsB <- underAbstraction a b (compileType . unEl)
+          return $ Hs.TyForall () Nothing (Just (Hs.CxSingle () (Hs.TypeA () hsA))) hsB
+      | otherwise -> dropPi
+      where dropPi = underAbstr a b (compileType . unEl)
+-}
 
 -- would be better to generate the whole InstDecl as the context also
 -- needs to come from the type...
@@ -340,10 +385,12 @@ compileInstHead ty = case unSpine $ ty of
        Def f es | Just args <- allApplyElims es -> do
          vs <- mapM (compileType . unArg) $ filter visible args
          f <- hsQName f
-         return $ foldl (Hs.IHApp ()) (Hs.IHCon () f) vs
+         return $ foldl (Hs.IHApp ()) (Hs.IHCon () f) vs  
        _ -> __IMPOSSIBLE__
 
-
+compileInstanceClause :: LocalDecls -> Clause -> TCM (Hs.InstDecl ())
+compileInstanceClause _ _ = return $ Hs.InsDecl () (Hs.FunBind () [])
+{-
 compileInstanceClause :: LocalDecls -> Clause -> TCM (Hs.InstDecl ())
 compileInstanceClause ls c = do
   let (p : ps) = namedClausePats c
@@ -354,7 +401,7 @@ compileInstanceClause ls c = do
   -- which we use as the function name.
   (_ , x) <- compileClause ls uf c'
   return $ Hs.InsDecl () (Hs.FunBind () [x])
-
+-}
 compileRecord :: Definition -> TCM [Hs.Decl ()]
 compileRecord def = do
   let r = hsName $ prettyShow $ qnameName $ defName def
