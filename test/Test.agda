@@ -8,6 +8,7 @@ open import Agda.Builtin.Equality
 -- language extensions
 {-# FOREIGN AGDA2HS
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleInstances #-}
 #-}
 
 -- imports
@@ -151,7 +152,19 @@ instance
 
 {-# COMPILE AGDA2HS MonoidNat #-}
 
--- instances cannot be compiled yet
+
+instance
+  MonoidFunNat : {a : Set} → MonoidX (a → Nat)
+  memptyX  {{MonoidFunNat}}     _ = memptyX
+  mappendX {{MonoidFunNat}} f g x = mappendX (f x) (g x) 
+
+{-# COMPILE AGDA2HS MonoidFunNat #-}
+
+instance
+  MonoidFun : {a b : Set} → {{MonoidX b}} → MonoidX (a → b)
+  memptyX  {{MonoidFun}}     _ = memptyX
+  mappendX {{MonoidFun}} f g x = mappendX (f x) (g x) 
+{-# COMPILE AGDA2HS MonoidFun #-}
 
 sumMonX : ∀{a} → {{MonoidX a}} → List a → a
 sumMonX []       = memptyX

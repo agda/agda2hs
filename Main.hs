@@ -323,35 +323,47 @@ compile' def =
 
 compileInstance :: Definition -> TCM [Hs.Decl ()]
 compileInstance def = do
-  ih <- compileInstHead . unEl . defType $ def
+  ir <- compileInstRule [] (unEl . defType $ def)
   locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
           . dropWhile ((<= defName def) . fst)
           . sortDefs <$> curDefs
   ds <- mapM (compileInstanceClause locals) funClauses
-  return $
-    [Hs.InstDecl () Nothing (Hs.IRule () Nothing Nothing ih) (Just ds)]
+  return $ [Hs.InstDecl () Nothing ir (Just ds)]
   where Function{..} = theDef def
 
--- would be better to generate the whole InstDecl as the context also
--- needs to come from the type...
-compileInstHead :: Term -> TCM (Hs.InstHead ())
-compileInstHead ty = case unSpine $ ty of
-       -- only works with a completely concrete instance
-       Def f es | Just args <- allApplyElims es -> do
-         vs <- mapM (compileType . unArg) $ filter visible args
-         f <- hsQName f
-         return $ foldl (Hs.IHApp ()) (Hs.IHCon () f) vs
-       _ -> __IMPOSSIBLE__
-
+compileInstRule :: [Hs.Asst ()] -> Term -> TCM (Hs.InstRule ())
+compileInstRule cs ty = case unSpine  $ ty of
+  Def f es | Just args <- allApplyElims es -> do
+    vs <- mapM (compileType . unArg) $ filter visible args
+    f <- hsQName f
+    return $
+      Hs.IRule () Nothing (ctx cs) $ foldl (Hs.IHApp ()) (Hs.IHCon () f) (map pars vs)
+    where ctx [] = Nothing
+          ctx cs = Just (Hs.CxTuple () cs)
+          -- put parens around anything except a var or a constant
+          pars :: Hs.Type () -> Hs.Type ()
+          pars t@(Hs.TyVar () _) = t
+          pars t@(Hs.TyCon () _) = t
+          pars t = Hs.TyParen () t
+  Pi a b
+      | hidden a -> dropPi -- Hidden Pi means Haskell forall, which we leave implicit
+      | isInstance a -> ifM (dependsOnVisibleVar a) dropPi $ do
+          hsA <- compileType (unEl $ unDom a)
+          hsB <- underAbstraction a b (compileInstRule (cs ++ [Hs.TypeA () hsA]) . unEl)
+          return hsB
+    where dropPi = underAbstr a b (compileInstRule cs . unEl)
+  _ -> __IMPOSSIBLE__
 
 compileInstanceClause :: LocalDecls -> Clause -> TCM (Hs.InstDecl ())
 compileInstanceClause ls c = do
-  let (p : ps) = namedClausePats c
+  -- abuse compileClause:
+  -- 1. drop any patterns before record projection to suppress the instance arg
+  -- 2. use record proj. as function name
+  -- 3. process remaing patterns as usual
+  let (p : ps) = dropWhile (isNothing . isProjP) (namedClausePats c)
       c' = c {namedClausePats = ps}
       ProjP _ q = namedArg p
       uf = hsName (show (nameConcrete (qnameName q)))
-  -- abuse compileClause: Assume first pattern is a record projection
-  -- which we use as the function name.
   (_ , x) <- compileClause ls uf c'
   return $ Hs.InsDecl () (Hs.FunBind () [x])
 

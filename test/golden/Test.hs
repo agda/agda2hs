@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Test where
 
@@ -83,6 +84,14 @@ class MonoidX a where
 instance MonoidX Natural where
         memptyX = 0
         mappendX i j = i + j
+
+instance MonoidX (a -> Natural) where
+        memptyX _ = memptyX
+        mappendX f g x = mappendX (f x) (g x)
+
+instance (MonoidX b) => MonoidX (a -> b) where
+        memptyX _ = memptyX
+        mappendX f g x = mappendX (f x) (g x)
 
 sumMonX :: MonoidX a => [a] -> a
 sumMonX [] = memptyX
