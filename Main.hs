@@ -360,15 +360,12 @@ compileInstanceClause ls c = do
   -- 1. drop any patterns before record projection to suppress the instance arg
   -- 2. use record proj. as function name
   -- 3. process remaing patterns as usual
-  let (p : ps) = dropWhile (not . isProjP . namedArg) (namedClausePats c)
+  let (p : ps) = dropWhile (isNothing . isProjP) (namedClausePats c)
       c' = c {namedClausePats = ps}
       ProjP _ q = namedArg p
       uf = hsName (show (nameConcrete (qnameName q)))
   (_ , x) <- compileClause ls uf c'
   return $ Hs.InsDecl () (Hs.FunBind () [x])
-    where isProjP :: DeBruijnPattern -> Bool
-          isProjP (ProjP _ _) = True
-          isProjP _           = False
 
 compileRecord :: Definition -> TCM [Hs.Decl ()]
 compileRecord def = do
