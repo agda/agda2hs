@@ -3,6 +3,8 @@ module LanguageConstructs where
 
 open import Haskell.Prelude
 
+{-# FOREIGN AGDA2HS {-# LANGUAGE LambdaCase #-} #-}
+
 --------------------------------------------------
 -- Lists
 
@@ -22,3 +24,37 @@ exactlyTwo _            = Nothing
 ifThenElse : Int → String
 ifThenElse n = if n >= 10 then "big" else "small"
 {-# COMPILE AGDA2HS ifThenElse #-}
+
+
+--------------------------------------------------
+-- Case
+
+maybeToList : Maybe a → List a
+maybeToList = λ where Nothing  → []
+                      (Just x) → x ∷ []
+{-# COMPILE AGDA2HS maybeToList #-}
+
+mhead : List a → Maybe a
+mhead xs = case xs of λ where
+  []      → Nothing
+  (x ∷ _) → Just x
+{-# COMPILE AGDA2HS mhead #-}
+
+-- Applied to lambda
+plus5minus5 : Int → Int
+plus5minus5 n = case n + 5 of λ m → m - 5
+{-# COMPILE AGDA2HS plus5minus5 #-}
+
+-- Applied to non-lambda
+len : List a → Int
+len xs = case xs of length
+{-# COMPILE AGDA2HS len #-}
+
+-- Underapplied
+applyToFalse : (Bool → a) → a
+applyToFalse = case false of_
+{-# COMPILE AGDA2HS applyToFalse #-}
+
+caseOf : a → (a → b) → b
+caseOf = case_of_
+{-# COMPILE AGDA2HS caseOf #-}

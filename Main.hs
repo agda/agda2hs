@@ -172,8 +172,10 @@ applyNoBodies d args = revert $ d `apply` args
 -- Builtins ---------------------------------------------------------------
 
 isSpecialTerm :: QName -> Maybe (QName -> Elims -> TCM (Hs.Exp ()))
-isSpecialTerm = show >>> \ case
+isSpecialTerm q = case show q of
+  _ | isExtendedLambdaName q                    -> Just lambdaCase
   "Haskell.Prim.if_then_else_"                  -> Just ifThenElse
+  "Haskell.Prelude.case_of_"                    -> Just caseOf
   "Agda.Builtin.FromNat.Number.fromNat"         -> Just fromNat
   "Agda.Builtin.FromNeg.Negative.fromNeg"       -> Just fromNeg
   "Agda.Builtin.FromString.IsString.fromString" -> Just fromString
@@ -225,6 +227,41 @@ ifThenElse _ es = compileArgs es >>= \case
     xs <- fmap Hs.name . drop (length es') <$> mapM freshString ["b", "t", "f"]
     let [b, t, f] = es' ++ map Hs.var xs
     return $ Hs.lamE (Hs.pvar <$> xs) $ Hs.If () b t f
+
+caseOf :: QName -> Elims -> TCM (Hs.Exp ())
+caseOf _ es = compileArgs es >>= \ case
+  -- applied to pattern lambda
+  e : Hs.LCase _ alts : es' ->
+    return $ eApp (Hs.Case () e alts) es'
+  -- applied to regular lambda
+  e : Hs.Lambda _ (p : ps) b : es' -> do
+    let lam [] = id
+        lam qs = Hs.Lambda () qs
+    return $ eApp (Hs.Case () e [Hs.Alt () p (Hs.UnGuardedRhs () $ lam ps b) Nothing]) es'
+  -- no lambda, but fully applied: inline
+  e : f : es' -> return $ eApp f $ e : es'
+  -- partial application
+  [e]         -> do
+    let Just dollar = getOp (hsVar "_$_")
+    return $ Hs.RightSection () dollar e
+  -- unapplied
+  []          -> return $ eApp (hsVar "flip") [hsVar "_$_"]
+
+lambdaCase :: QName -> Elims -> TCM (Hs.Exp ())
+lambdaCase q es = setCurrentRange (nameBindingSite $ qnameName q) $ do
+  def@Function{ funExtLam = Just (ExtLamInfo mname _) } <- theDef <$> getConstInfo q
+  npars <- size <$> lookupSection mname
+  let (pars, rest) = splitAt npars es
+      cs           = applyE (funClauses def) pars
+  cs   <- mapM (compileClause [] $ hsName "(lambdaCase)") cs
+  alts <- mapM clauseToAlt $ map snd cs -- Pattern lambdas cannot have where blocks
+  args <- compileArgs rest
+  return $ eApp (Hs.LCase () alts) args
+
+clauseToAlt :: Hs.Match () -> TCM (Hs.Alt ())
+clauseToAlt (Hs.Match _ _ [p] rhs wh) = pure $ Hs.Alt () p rhs wh
+clauseToAlt (Hs.Match _ _ ps _ _)     = genericError $ "Pattern matching lambdas must take a single argument"
+clauseToAlt Hs.InfixMatch{}           = __IMPOSSIBLE__
 
 fromNat :: QName -> Elims -> TCM (Hs.Exp ())
 fromNat _ es = compileArgs es <&> \ case
