@@ -114,7 +114,7 @@ hsQName f
     s <- showTCM f
     return $
       case break (== '.') $ reverse s of
-        (_, "")        -> Hs.UnQual () (hsName s)
+        (_, "")      -> Hs.UnQual () (hsName s)
         (fr, _ : mr) -> Hs.Qual () (Hs.ModuleName () $ reverse mr) (hsName $ reverse fr)
 
 freshString :: String -> TCM String
@@ -229,20 +229,19 @@ ifThenElse _ es = compileArgs es >>= \case
 fromNat :: QName -> Elims -> TCM (Hs.Exp ())
 fromNat _ es = compileArgs es <&> \ case
   _ : n@Hs.Lit{} : es' -> n `eApp` es'
-  es'                  -> Hs.Var () (Hs.UnQual () $ hsName "fromIntegral") `eApp` drop 1 es'
+  es'                  -> hsVar "fromIntegral" `eApp` drop 1 es'
 
 fromNeg :: QName -> Elims -> TCM (Hs.Exp ())
 fromNeg _ es = compileArgs es <&> \ case
   _ : n@Hs.Lit{} : es' -> Hs.NegApp () n `eApp` es'
-  es'                  -> (hsV "negate" `o` hsV "fromIntegral") `eApp` drop 1 es'
+  es'                  -> (hsVar "negate" `o` hsVar "fromIntegral") `eApp` drop 1 es'
   where
-    hsV = Hs.Var () . Hs.UnQual () . hsName
     f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ Hs.UnQual () $ hsName "_._") g
 
 fromString :: QName -> Elims -> TCM (Hs.Exp ())
 fromString _ es = compileArgs es <&> \ case
   _ : s@Hs.Lit{} : es' -> s `eApp` es'
-  es'                  -> Hs.Var () (Hs.UnQual () $ hsName "fromString") `eApp` drop 1 es'
+  es'                  -> hsVar "fromString" `eApp` drop 1 es'
 
 tupleType' :: QName -> Elims -> TCM (Hs.Type ())
 tupleType' q es = do
@@ -578,7 +577,7 @@ isRecordFunction q
 compileTerm :: Term -> TCM (Hs.Exp ())
 compileTerm v =
   case unSpine v of
-    Var x es   -> (`app` es) . Hs.Var () . Hs.UnQual () . hsName =<< showTCM (Var x [])
+    Var x es   -> (`app` es) . hsVar =<< showTCM (Var x [])
     -- v currently we assume all record projections are instance
     -- args that need attention
     Def f es
@@ -590,10 +589,10 @@ compileTerm v =
           -- v not sure why this fails to strip the name
           --f <- hsQName builtins (qualify_ (qnameName f))
           -- here's a horrible way to strip the module prefix off the name
-          let uf = Hs.UnQual () (hsName (show (nameConcrete (qnameName f))))
-          (`appStrip` es) (Hs.Var () uf)
+          let uf = show (nameConcrete (qnameName f))
+          (`appStrip` es) (hsVar uf)
         False -> (`app` es) . Hs.Var () =<< hsQName f
-    Con h ConORec es -> return $ Hs.Var () $ Hs.UnQual () (hsName (show "wibble"))
+    Con h ConORec es -> return $ hsVar "wibble"
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName (conName h)
@@ -608,7 +607,7 @@ compileTerm v =
       -- System-inserted lambda, no need to preserve the name.
       underAbstraction_ b $ \ body -> do
         x <- showTCM (Var 0 [])
-        let hsx = Hs.Var () $ Hs.UnQual () (hsName x)
+        let hsx = hsVar x
         body <- compileTerm body
         return $ case body of
           Hs.InfixApp _ a op b
