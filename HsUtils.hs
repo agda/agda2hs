@@ -93,11 +93,14 @@ hsLambda x e =
   where
     p = PVar () $ hsName x
 
+hsVar :: String -> Exp ()
+hsVar = Var () . UnQual () . hsName
+
 hsUndefined :: Exp ()
-hsUndefined = Var () $ UnQual () (hsName "undefined")
+hsUndefined = hsVar "undefined"
 
 hsError :: String -> Exp ()
-hsError s = Var () (UnQual () $ hsName "error") `eApp` [strE s]
+hsError s = hsVar "error" `eApp` [strE s]
 
 getExplicitImports :: ImportSpec l -> [String]
 getExplicitImports = map pp . \case
