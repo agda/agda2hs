@@ -22,7 +22,7 @@ data Exp (v : Set) : Set where
   Plus : Exp v → Exp v → Exp v
   Lit : Nat → Exp v
   Var : v → Exp v
-{-# COMPILE AGDA2HS Exp #-}
+{-# COMPILE AGDA2HS Exp deriving (Show,Eq) #-}
 
 eval : (a → Nat) → Exp a → Nat
 eval env (Plus a b) = eval env a + eval env b

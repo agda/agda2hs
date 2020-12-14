@@ -10,6 +10,7 @@ import Data.Monoid
 data Exp v = Plus (Exp v) (Exp v)
            | Lit Natural
            | Var v
+               deriving (Show, Eq)
 
 eval :: (a -> Natural) -> Exp a -> Natural
 eval env (Plus a b) = eval env a + eval env b
