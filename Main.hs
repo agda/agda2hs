@@ -324,6 +324,7 @@ data ParsedResult
   = NoPragma
   | DefaultPragma
   | ClassPragma CodeGen
+  | DerivingPragma [Hs.Deriving Hs.SrcSpanInfo]
 
 classes :: [String]
 classes = ["Show"]
@@ -337,14 +338,25 @@ processPragma qn = getUniqueCompilerPragma pragmaName qn >>= \case
     return $ ClassPragma NoCode
   Just (CompilerPragma _ s) | s == "class" ->
     return $ ClassPragma YesCode
-  _                                        -> return DefaultPragma
-
+  Just (CompilerPragma _ s) | "deriving" `isPrefixOf` s ->
+    -- parse a deriving clause for a datatype by tacking it onto a
+    -- dummy datatype and then only keeping the deriving part
+    case Hs.parseDecl ("data X = X " ++ s) of
+      Hs.ParseFailed loc msg ->
+        setCurrentRange (srcLocToRange loc) $ genericError msg
+      Hs.ParseOk m | Hs.DataDecl _ _ _ _ _ ds <- m ->
+        return $ DerivingPragma ds
+      Hs.ParseOk _ -> __IMPOSSIBLE__
+  _ -> return DefaultPragma
 compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
 compile _ _ _ def = processPragma (defName def) >>= \ case
   NoPragma -> return []
   DefaultPragma -> compile' def
   ClassPragma NoCode -> return []
   ClassPragma YesCode -> return []
+  DerivingPragma ds   -> tag <$> compileData (map (() <$) ds) def
+      where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
+
 
 compile' :: Definition -> TCM CompiledDef
 compile' def =
@@ -352,7 +364,7 @@ compile' def =
     (Just _ , _         ) -> tag <$> compileInstance def
     (_      , Axiom     ) -> tag <$> compilePostulate def
     (_      , Function{}) -> tag <$> compileFun def
-    (_      , Datatype{}) -> tag <$> compileData def
+    (_      , Datatype{}) -> tag <$> compileData [] def
     (_      , Record{}  ) -> tag <$> compileRecord def
     _                     -> return []
   where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
@@ -434,8 +446,8 @@ compileRecField tel n ty = addContext tel $ do
   hty <- compileType (unEl ty)
   return $ Hs.ClsDecl () (Hs.TypeSig () [hsName $ prettyShow $ qnameName n] hty)
 
-compileData :: Definition -> TCM [Hs.Decl ()]
-compileData def = do
+compileData :: [Hs.Deriving ()] -> Definition -> TCM [Hs.Decl ()]
+compileData ds def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
   case theDef def of
     Datatype{dataPars = n, dataIxs = 0, dataCons = cs} -> do
@@ -446,7 +458,7 @@ compileData def = do
         cs   <- mapM (compileConstructor params) cs
         let hd   = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
                          (Hs.DHead () d) pars
-        return [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs []]
+        return [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs ds]
     _ -> __IMPOSSIBLE__
 
 compileConstructor :: [Arg Term] -> QName -> TCM (Hs.QualConDecl ())
