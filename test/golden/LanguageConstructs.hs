@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module LanguageConstructs where
 
 oneTwoThree :: [Int]
@@ -9,4 +11,30 @@ exactlyTwo _ = Nothing
 
 ifThenElse :: Int -> String
 ifThenElse n = if n >= 10 then "big" else "small"
+
+maybeToList :: Maybe a -> [a]
+maybeToList
+  = \case
+        Nothing -> []
+        Just x -> [x]
+
+mhead :: [a] -> Maybe a
+mhead xs
+  = case xs of
+        [] -> Nothing
+        x : _ -> Just x
+
+plus5minus5 :: Int -> Int
+plus5minus5 n
+  = case n + 5 of
+        m -> m - 5
+
+len :: [a] -> Int
+len xs = length xs
+
+applyToFalse :: (Bool -> a) -> a
+applyToFalse = ($ False)
+
+caseOf :: a -> (a -> b) -> b
+caseOf = flip ($)
 
