@@ -5,7 +5,7 @@ open import Haskell.Prim
 open import Haskell.Prim.Num
 open import Haskell.Prim.Eq
 open import Haskell.Prim.List
-open import Haskell.Prim.Int renaming (Int64 to Int)
+open import Haskell.Prim.Int
 open import Haskell.Prim.Bool
 open import Haskell.Prim.Maybe
 open import Haskell.Prim.Either

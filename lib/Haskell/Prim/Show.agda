@@ -17,7 +17,7 @@ open import Haskell.Prim.Ord
 open import Haskell.Prim.Either
 open import Haskell.Prim.Integer
 open import Haskell.Prim.Bool
-open import Haskell.Prim.Int renaming (Int64 to Int)
+open import Haskell.Prim.Int
 open import Haskell.Prim.Foldable
 
 
@@ -73,7 +73,7 @@ instance
   iShowInt : Show Int
   iShowInt = makeShow showInt
 
-  iShowWord : Show Word64
+  iShowWord : Show Word
   iShowWord = makeShow showWord
 
   iShowDouble : Show Double

@@ -6,7 +6,7 @@ open import Agda.Builtin.Nat as Nat hiding (_==_; _<_)
 open import Haskell.Prim
 open import Haskell.Prim.Eq
 open import Haskell.Prim.Bool
-open import Haskell.Prim.Int renaming (Int64 to Int)
+open import Haskell.Prim.Int
 open import Haskell.Prim.Word
 open import Haskell.Prim.Integer
 open import Haskell.Prim.Double
@@ -96,7 +96,7 @@ instance
   iOrdInt : Ord Int
   iOrdInt = ordFromLessThan ltInt
 
-  iOrdWord : Ord Word64
+  iOrdWord : Ord Word
   iOrdWord = ordFromLessThan ltWord
 
   iOrdDouble : Ord Double
