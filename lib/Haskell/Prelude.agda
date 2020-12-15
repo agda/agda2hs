@@ -9,7 +9,6 @@ open import Agda.Builtin.Char         public
 open import Agda.Builtin.FromString   public
 import Agda.Builtin.String as Str
 open import Agda.Builtin.Strict
-open import Agda.Builtin.Word         public renaming (Word64 to Word)
 open import Agda.Builtin.Equality     public
 open import Agda.Builtin.Int using (pos; negsuc)
 
@@ -21,35 +20,27 @@ open Haskell.Prim public using ( TypeError; ⊥; iNumberNat; IsTrue; IsFalse;
                                  Number; fromNat; Negative; fromNeg;
                                  a; b; c; d; e; f; m; s; t )
 
-open import Haskell.Prim.Absurd
-
-open import Haskell.Prim.Integer
-open Haskell.Prim.Integer public using (Integer; iNumberInteger; iNegativeInteger; isNegativeInteger; IsNonNegativeInteger)
-
-open import Haskell.Prim.Int renaming (Int64 to Int)
-open Haskell.Prim.Int public using (iNumberInt; iNegativeInt; isNegativeInt; IsNonNegativeInt) renaming (Int64 to Int)
-
-open import Haskell.Prim.Double
-open Haskell.Prim.Double public using (iNumberDouble; iNegativeDouble; Double)
-
-open import Haskell.Prim.Word
-
-open import Haskell.Prim.Bool            public
-open import Haskell.Prim.List            public
-open import Haskell.Prim.Maybe           public
-open import Haskell.Prim.Either          public
-open import Haskell.Prim.Tuple  as Tuple public hiding (first; second; _***_)
-open import Haskell.Prim.Eq              public
-open import Haskell.Prim.Ord             public
-open import Haskell.Prim.Monoid          public
-open import Haskell.Prim.Num             public
-open import Haskell.Prim.Foldable        public
-open import Haskell.Prim.String          public
-open import Haskell.Prim.Show            public
-open import Haskell.Prim.Functor         public
-open import Haskell.Prim.Applicative     public
-open import Haskell.Prim.Monad           public
-open import Haskell.Prim.Traversable     public
+open import Haskell.Prim.Absurd      public
+open import Haskell.Prim.Applicative public
+open import Haskell.Prim.Bool        public
+open import Haskell.Prim.Double      public
+open import Haskell.Prim.Either      public
+open import Haskell.Prim.Eq          public
+open import Haskell.Prim.Foldable    public
+open import Haskell.Prim.Functor     public
+open import Haskell.Prim.Int         public
+open import Haskell.Prim.Integer     public
+open import Haskell.Prim.List        public
+open import Haskell.Prim.Maybe       public
+open import Haskell.Prim.Monad       public
+open import Haskell.Prim.Monoid      public
+open import Haskell.Prim.Num         public
+open import Haskell.Prim.Ord         public
+open import Haskell.Prim.Show        public
+open import Haskell.Prim.String      public
+open import Haskell.Prim.Traversable public
+open import Haskell.Prim.Tuple       public hiding (first; second; _***_)
+open import Haskell.Prim.Word        public
 
 -- Problematic features
 --  - [Partial]:  Could pass implicit/instance arguments to prove totality.

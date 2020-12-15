@@ -7,7 +7,7 @@ open import Agda.Builtin.Nat
 open import Haskell.Prim
 open import Haskell.Prim.Tuple
 open import Haskell.Prim.Bool
-open import Haskell.Prim.Int renaming (Int64 to Int)
+open import Haskell.Prim.Int
 
 
 --------------------------------------------------

@@ -9,8 +9,8 @@ open import Agda.Builtin.FromNeg
 open import Agda.Builtin.Unit
 
 open import Haskell.Prim
-open import Haskell.Prim.Word renaming (Word64 to Word)
-open import Haskell.Prim.Int  renaming (Int64  to Int)
+open import Haskell.Prim.Word
+open import Haskell.Prim.Int
 open import Haskell.Prim.Integer
 open import Haskell.Prim.Double
 open import Haskell.Prim.Eq
