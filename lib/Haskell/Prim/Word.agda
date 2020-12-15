@@ -6,7 +6,6 @@ open import Agda.Builtin.Bool
 open import Agda.Builtin.List
 open import Agda.Builtin.Char
 open import Agda.Builtin.String
-open import Agda.Builtin.FromNat
 open import Agda.Builtin.Unit
 open import Agda.Builtin.Int using (pos; negsuc)
 

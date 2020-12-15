@@ -175,7 +175,7 @@ isSpecialTerm :: QName -> Maybe (QName -> Elims -> TCM (Hs.Exp ()))
 isSpecialTerm q = case show q of
   _ | isExtendedLambdaName q                    -> Just lambdaCase
   "Haskell.Prim.if_then_else_"                  -> Just ifThenElse
-  "Haskell.Prelude.case_of_"                    -> Just caseOf
+  "Haskell.Prim.case_of_"                       -> Just caseOf
   "Agda.Builtin.FromNat.Number.fromNat"         -> Just fromNat
   "Agda.Builtin.FromNeg.Negative.fromNeg"       -> Just fromNeg
   "Agda.Builtin.FromString.IsString.fromString" -> Just fromString
@@ -183,19 +183,19 @@ isSpecialTerm q = case show q of
 
 isSpecialCon :: QName -> Maybe (ConHead -> ConInfo -> Elims -> TCM (Hs.Exp ()))
 isSpecialCon = show >>> \ case
-  "Haskell.Prelude.Tuple._∷_" -> Just tupleTerm
+  "Haskell.Prim.Tuple.Tuple._∷_" -> Just tupleTerm
   _ -> Nothing
 
 isSpecialPat :: QName -> Maybe (ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> TCM (Hs.Pat ()))
 isSpecialPat = show >>> \ case
-  "Haskell.Prelude.Tuple._∷_" -> Just tuplePat
+  "Haskell.Prim.Tuple.Tuple._∷_" -> Just tuplePat
   _ -> Nothing
 
 isSpecialType :: QName -> Maybe (QName -> Elims -> TCM (Hs.Type ()))
 isSpecialType = show >>> \ case
-  "Haskell.Prelude.Tuple" -> Just tupleType
-  "Haskell.Prelude._×_"   -> Just tupleType'
-  "Haskell.Prelude._×_×_" -> Just tupleType'
+  "Haskell.Prim.Tuple.Tuple" -> Just tupleType
+  "Haskell.Prim.Tuple._×_"   -> Just tupleType'
+  "Haskell.Prim.Tuple._×_×_" -> Just tupleType'
   _ -> Nothing
 
 isSpecialName :: QName -> Maybe (Hs.QName ())
@@ -211,8 +211,8 @@ isSpecialName = show >>> \ case
     "Agda.Builtin.List.List.[]"    -> special Hs.ListCon
     "Agda.Builtin.Unit.⊤"          -> special Hs.UnitCon
     "Agda.Builtin.Unit.tt"         -> special Hs.UnitCon
-    "Haskell.Prelude.Tuple.[]"     -> special Hs.UnitCon
-    "Haskell.Prelude._∘_"          -> unqual "_._"
+    "Haskell.Prim.Tuple.Tuple.[]"  -> special Hs.UnitCon
+    "Haskell.Prim._∘_"             -> unqual "_._"
     _ -> Nothing
   where
     unqual n  = Just $ Hs.UnQual () $ hsName n
@@ -302,7 +302,7 @@ tupleTerm cons i es = do
       err = sep [ text "Tuple value"
                 , nest 2 $ prettyTCM v
                 , text "does not have a known size." ]
-  xs <- makeList' "Haskell.Prelude.Tuple.[]" "Haskell.Prelude.Tuple._∷_" err v
+  xs <- makeList' "Haskell.Prim.Tuple.Tuple.[]" "Haskell.Prim.Tuple.Tuple._∷_" err v
   ts <- mapM compileTerm xs
   return $ Hs.Tuple () Hs.Boxed ts
 
@@ -312,7 +312,7 @@ tuplePat cons i ps = do
       err = sep [ text "Tuple pattern"
                 , nest 2 $ prettyTCM p
                 , text "does not have a known size." ]
-  xs <- makeListP' "Haskell.Prelude.Tuple.[]" "Haskell.Prelude.Tuple._∷_" err p
+  xs <- makeListP' "Haskell.Prim.Tuple.Tuple.[]" "Haskell.Prim.Tuple.Tuple._∷_" err p
   qs <- mapM compilePat xs
   return $ Hs.PTuple () Hs.Boxed qs
 
