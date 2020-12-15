@@ -1,3 +1,4 @@
+{-# OPTIONS --no-auto-inline #-}
 
 -- Basic things needed by other primitive modules.
 
@@ -6,26 +7,60 @@ module Haskell.Prim where
 open import Agda.Primitive
 open import Agda.Builtin.Bool
 open import Agda.Builtin.Nat
-open import Agda.Builtin.Unit
+open import Agda.Builtin.Unit       public
 open import Agda.Builtin.List
 open import Agda.Builtin.String
-open import Agda.Builtin.FromNat
 open import Agda.Builtin.Equality
+open import Agda.Builtin.FromNat    public
+open import Agda.Builtin.FromNeg    public
+open import Agda.Builtin.FromString public
 
-private
-  variable
-    ℓ : Level
-    a b c d : Set
+variable
+  ℓ : Level
+  a b c d e : Set
+  f m s t : Set → Set
 
 
 --------------------------------------------------
--- Booleans
+-- Functions
+
+id : a → a
+id x = x
+
+infixr 9 _∘_
+_∘_ : (b → c) → (a → b) → a → c
+(f ∘ g) x = f (g x)
+
+flip : (a → b → c) → b → a → c
+flip f x y = f y x
+
+const : a → b → a
+const x _ = x
+
+infixr 0 _$_
+_$_ : (a → b) → a → b
+f $ x = f x
+
+
+--------------------------------------------------
+-- Language constructs
+
+infix -1 case_of_
+case_of_ : a → (a → b) → b
+case x of f = f x
 
 infix -2 if_then_else_
-
 if_then_else_ : {a : Set ℓ} → Bool → a → a → a
 if false then x else y = y
 if true  then x else y = x
+
+--------------------------------------------------
+-- Agda strings
+
+instance
+  iIsStringAgdaString : IsString String
+  iIsStringAgdaString .IsString.Constraint _ = ⊤
+  iIsStringAgdaString .fromString s = s
 
 
 --------------------------------------------------

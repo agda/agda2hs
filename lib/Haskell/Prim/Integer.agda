@@ -7,14 +7,13 @@ open import Agda.Builtin.List
 open import Agda.Builtin.String
 open import Agda.Builtin.Char
 open import Agda.Builtin.Unit
-open import Agda.Builtin.FromNat
-open import Agda.Builtin.FromNeg
 
 import Agda.Builtin.Int
 open Agda.Builtin.Int public using () renaming (Int to Integer)
 open Agda.Builtin.Int renaming (Int to Integer)
 
 open import Haskell.Prim
+open import Haskell.Prim.Bool
 
 
 --------------------------------------------------

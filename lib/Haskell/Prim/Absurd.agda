@@ -13,12 +13,6 @@ private
 
   pattern vArg x = arg (arg-info visible relevant) x
 
-  variable
-    a b : Set
-
-  _$_ : (a → b) → a → b
-  f $ x = f x
-
   refute : Nat → Term
   refute i = def (quote _$_) (vArg (pat-lam (absurd-clause (vArg absurdP ∷ []) ∷ []) []) ∷ vArg (var i []) ∷ [])
 

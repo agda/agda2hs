@@ -1,3 +1,4 @@
+{-# OPTIONS --no-auto-inline #-}
 
 -- Agda doesn't have an Int64 type (only Word64). With some work we
 -- can represent signed ints using Word64.
@@ -6,12 +7,9 @@ module Haskell.Prim.Int where
 
 open import Agda.Builtin.Nat
 open import Agda.Builtin.Word renaming (primWord64ToNat to w2n; primWord64FromNat to n2w)
-open import Agda.Builtin.Bool
 open import Agda.Builtin.List
 open import Agda.Builtin.Char
 open import Agda.Builtin.String
-open import Agda.Builtin.FromNat
-open import Agda.Builtin.FromNeg
 open import Agda.Builtin.Unit
 open import Agda.Builtin.Int using (pos; negsuc)
 open import Agda.Builtin.Equality
@@ -19,6 +17,7 @@ open import Agda.Builtin.Equality
 open import Haskell.Prim
 open import Haskell.Prim.Word
 open import Haskell.Prim.Integer
+open import Haskell.Prim.Bool
 
 
 --------------------------------------------------
