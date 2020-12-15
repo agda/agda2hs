@@ -320,18 +320,22 @@ tuplePat cons i ps = do
 
 data CodeGen = YesCode | NoCode
 
-data ParsedResult
+data ParsedPragma
   = NoPragma
   | DefaultPragma
   | ClassPragma CodeGen
-  | DerivingPragma [Hs.Deriving Hs.SrcSpanInfo]
+  | DerivingPragma [Hs.Deriving ()]
 
 classes :: [String]
 classes = ["Show"]
 
 -- "class" is not being used usefully, any record with a pragma is
 -- considered a typeclass
-processPragma :: QName -> TCM ParsedResult
+
+-- no pragma at all means no code is compiled
+-- if the pragma contains extraneous stuff we treat it as default
+-- using a class pragma currently leads to no code being compiled
+processPragma :: QName -> TCM ParsedPragma
 processPragma qn = getUniqueCompilerPragma pragmaName qn >>= \case
   Nothing -> return NoPragma
   Just (CompilerPragma _ s) | s == "class" && s `elem` classes ->
@@ -345,28 +349,23 @@ processPragma qn = getUniqueCompilerPragma pragmaName qn >>= \case
       Hs.ParseFailed loc msg ->
         setCurrentRange (srcLocToRange loc) $ genericError msg
       Hs.ParseOk (Hs.DataDecl _ _ _ _ _ ds) ->
-        return $ DerivingPragma ds
-      Hs.ParseOk _ -> __IMPOSSIBLE__
+        return $ DerivingPragma (map (() <$) ds)
+      Hs.ParseOk _ -> return DefaultPragma
   _ -> return DefaultPragma
+
+
 compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
-compile _ _ _ def = processPragma (defName def) >>= \ case
-  NoPragma -> return []
-  DefaultPragma -> compile' def
-  ClassPragma NoCode -> return []
-  ClassPragma YesCode -> return []
-  DerivingPragma ds   -> tag <$> compileData (map (() <$) ds) def
-      where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
-
-
-compile' :: Definition -> TCM CompiledDef
-compile' def =
-  case (defInstance def , theDef def) of
-    (Just _ , _         ) -> tag <$> compileInstance def
-    (_      , Axiom     ) -> tag <$> compilePostulate def
-    (_      , Function{}) -> tag <$> compileFun def
-    (_      , Datatype{}) -> tag <$> compileData [] def
-    (_      , Record{}  ) -> tag <$> compileRecord def
-    _                     -> return []
+compile _ _ _ def = processPragma (defName def) >>= \ p ->
+  case (p , defInstance def , theDef def) of
+    (NoPragma          , _      , _         ) -> return []
+    (ClassPragma _     , _      , _         ) -> return [] -- currently unused
+    (DerivingPragma ds , _      , Datatype{}) -> tag <$> compileData ds def    
+    (DefaultPragma     , _      , Datatype{}) -> tag <$> compileData [] def
+    (DefaultPragma     , Just _ , _         ) -> tag <$> compileInstance def
+    (DefaultPragma     , _      , Axiom     ) -> tag <$> compilePostulate def
+    (DefaultPragma     , _      , Function{}) -> tag <$> compileFun def
+    (DefaultPragma     , _      , Record{}  ) -> tag <$> compileRecord def
+    _                                         -> return []
   where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
 
 compileInstance :: Definition -> TCM [Hs.Decl ()]
