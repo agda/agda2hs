@@ -92,6 +92,7 @@ ltInteger (negsuc n) (negsuc m) = m < n
 showInteger : Integer → List Char
 showInteger n = primStringToList (primShowInteger n)
 
+
 --------------------------------------------------
 -- Constraints
 

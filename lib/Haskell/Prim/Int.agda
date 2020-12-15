@@ -26,12 +26,11 @@ open import Haskell.Prim.Bool
 data Int : Set where
   int64 : Word64 → Int
 
-private
-  intToWord : Int → Word64
-  intToWord (int64 a) = a
+intToWord : Int → Word64
+intToWord (int64 a) = a
 
-  unsafeIntToNat : Int → Nat
-  unsafeIntToNat a = w2n (intToWord a)
+unsafeIntToNat : Int → Nat
+unsafeIntToNat a = w2n (intToWord a)
 
 
 --------------------------------------------------
