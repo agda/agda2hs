@@ -101,3 +101,6 @@ data NonEmpty {a : Set} : List a → Set where
   instance itsNonEmpty : ∀ {x xs} → NonEmpty (x ∷ xs)
 
 data TypeError (err : String) : Set where
+
+it : ∀ {ℓ} {a : Set ℓ} → ⦃ a ⦄ → a
+it ⦃ x ⦄ = x

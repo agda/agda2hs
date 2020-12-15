@@ -23,8 +23,10 @@ open Haskell.Prim public using ( TypeError; ⊥; iNumberNat; IsTrue; IsFalse;
 open import Haskell.Prim.Absurd      public
 open import Haskell.Prim.Applicative public
 open import Haskell.Prim.Bool        public
+open import Haskell.Prim.Bounded     public
 open import Haskell.Prim.Double      public
 open import Haskell.Prim.Either      public
+open import Haskell.Prim.Enum        public
 open import Haskell.Prim.Eq          public
 open import Haskell.Prim.Foldable    public
 open import Haskell.Prim.Functor     public
@@ -48,10 +50,6 @@ open import Haskell.Prim.Word        public
 --  - [Infinite]: Define colists and map to Haskell lists?
 
 -- Missing from the Haskell Prelude:
---
---     Enum(succ, pred, toEnum, fromEnum, enumFrom, enumFromThen,
---          enumFromTo, enumFromThenTo),      [Partial]
---     Bounded(minBound, maxBound),
 --
 --     Float        [Float]
 --     Rational

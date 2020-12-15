@@ -57,3 +57,6 @@ showWord a = primStringToList (primShowNat (w2n a))
 integerToWord : Integer → Word
 integerToWord (pos n)    = n2w n
 integerToWord (negsuc n) = negateWord (n2w (suc n))
+
+wordToInteger : Word → Integer
+wordToInteger n = pos (w2n n)

@@ -2,6 +2,7 @@
 module Haskell.Prim.Ord where
 
 open import Agda.Builtin.Nat as Nat hiding (_==_; _<_)
+open import Agda.Builtin.Char
 
 open import Haskell.Prim
 open import Haskell.Prim.Eq
@@ -101,6 +102,9 @@ instance
 
   iOrdDouble : Ord Double
   iOrdDouble = ordFromLessThan primFloatNumericalLess
+
+  iOrdChar : Ord Char
+  iOrdChar = ordFromLessThan λ x y → primCharToNat x < primCharToNat y
 
   iOrdBool : Ord Bool
   iOrdBool = ordFromCompare λ where
