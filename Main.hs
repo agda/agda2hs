@@ -344,7 +344,7 @@ processPragma qn = getUniqueCompilerPragma pragmaName qn >>= \case
     case Hs.parseDecl ("data X = X " ++ s) of
       Hs.ParseFailed loc msg ->
         setCurrentRange (srcLocToRange loc) $ genericError msg
-      Hs.ParseOk m | Hs.DataDecl _ _ _ _ _ ds <- m ->
+      Hs.ParseOk (Hs.DataDecl _ _ _ _ _ ds) ->
         return $ DerivingPragma ds
       Hs.ParseOk _ -> __IMPOSSIBLE__
   _ -> return DefaultPragma
