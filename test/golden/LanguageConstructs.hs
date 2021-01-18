@@ -38,3 +38,18 @@ applyToFalse = ($ False)
 caseOf :: a -> (a -> b) -> b
 caseOf = flip ($)
 
+enum₁ :: [Int]
+enum₁ = [5 .. 10]
+
+enum₂ :: [Integer]
+enum₂ = [10, 20 .. 100]
+
+enum₃ :: [Bool]
+enum₃ = [False ..]
+
+enum₄ :: [Ordering]
+enum₄ = [LT, EQ ..]
+
+underappliedEnum :: [Int] -> [[Int]]
+underappliedEnum = map (enumFromTo 1)
+
