@@ -175,11 +175,15 @@ isSpecialTerm :: QName -> Maybe (QName -> Elims -> TCM (Hs.Exp ()))
 isSpecialTerm q = case show q of
   _ | isExtendedLambdaName q                    -> Just lambdaCase
   "Haskell.Prim.if_then_else_"                  -> Just ifThenElse
+  "Haskell.Prim.Enum.Enum.enumFrom"             -> Just mkEnumFrom
+  "Haskell.Prim.Enum.Enum.enumFromTo"           -> Just mkEnumFromTo
+  "Haskell.Prim.Enum.Enum.enumFromThen"         -> Just mkEnumFromThen
+  "Haskell.Prim.Enum.Enum.enumFromThenTo"       -> Just mkEnumFromThenTo
   "Haskell.Prim.case_of_"                       -> Just caseOf
   "Agda.Builtin.FromNat.Number.fromNat"         -> Just fromNat
   "Agda.Builtin.FromNeg.Negative.fromNeg"       -> Just fromNeg
   "Agda.Builtin.FromString.IsString.fromString" -> Just fromString
-  _ -> Nothing
+  _                                             -> Nothing
 
 isSpecialCon :: QName -> Maybe (ConHead -> ConInfo -> Elims -> TCM (Hs.Exp ()))
 isSpecialCon = show >>> \ case
@@ -221,12 +225,32 @@ isSpecialName = show >>> \ case
 ifThenElse :: QName -> Elims -> TCM (Hs.Exp ())
 ifThenElse _ es = compileArgs es >>= \case
   -- fully applied
-  (b : t : f : es') -> return $ Hs.If () b t f `eApp` es'
+  b : t : f : es' -> return $ Hs.If () b t f `eApp` es'
   -- partially applied -> eta-expand
   es' -> do
     xs <- fmap Hs.name . drop (length es') <$> mapM freshString ["b", "t", "f"]
     let [b, t, f] = es' ++ map Hs.var xs
     return $ Hs.lamE (Hs.pvar <$> xs) $ Hs.If () b t f
+
+mkEnumFrom :: QName -> Elims -> TCM (Hs.Exp ())
+mkEnumFrom q es = compileArgs es >>= \case
+  _ : a : es' -> return $ Hs.EnumFrom () a `eApp` es'
+  es'         -> return $ hsVar "enumFrom" `eApp` drop 1 es'
+
+mkEnumFromTo :: QName -> Elims -> TCM (Hs.Exp ())
+mkEnumFromTo q es = compileArgs es >>= \case
+  _ : a : b : es' -> return $ Hs.EnumFromTo () a b `eApp` es'
+  es'             -> return $ hsVar "enumFromTo" `eApp` drop 1 es'
+
+mkEnumFromThen :: QName -> Elims -> TCM (Hs.Exp ())
+mkEnumFromThen q es = compileArgs es >>= \case
+  _ : a : a' : es' -> return $ Hs.EnumFromThen () a a' `eApp` es'
+  es'              -> return $ hsVar "enumFromThen" `eApp` drop 1 es'
+
+mkEnumFromThenTo :: QName -> Elims -> TCM (Hs.Exp ())
+mkEnumFromThenTo q es = compileArgs es >>= \case
+  _ : a : a' : b : es' -> return $ Hs.EnumFromThenTo () a a' b `eApp` es'
+  es'                  -> return $ hsVar "enumFromThenTo" `eApp` drop 1 es'
 
 caseOf :: QName -> Elims -> TCM (Hs.Exp ())
 caseOf _ es = compileArgs es >>= \ case
@@ -359,7 +383,7 @@ compile _ _ _ def = processPragma (defName def) >>= \ p ->
   case (p , defInstance def , theDef def) of
     (NoPragma          , _      , _         ) -> return []
     (ClassPragma _     , _      , _         ) -> return [] -- currently unused
-    (DerivingPragma ds , _      , Datatype{}) -> tag <$> compileData ds def    
+    (DerivingPragma ds , _      , Datatype{}) -> tag <$> compileData ds def
     (DefaultPragma     , _      , Datatype{}) -> tag <$> compileData [] def
     (DefaultPragma     , Just _ , _         ) -> tag <$> compileInstance def
     (DefaultPragma     , _      , Axiom     ) -> tag <$> compilePostulate def
