@@ -32,3 +32,7 @@ executable agda2hs
   default-extensions:  LambdaCase,
                        RecordWildCards
 
+  -- Agda-2.6.1.2 does not work with ghc-8.10.3 (see https://github.com/agda/agda/issues/5136)
+  if impl(ghc == 8.10.3)
+    build-depends: Agda == 2.6.1.1
+
