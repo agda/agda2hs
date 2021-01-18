@@ -74,9 +74,6 @@ ex_char : Char
 ex_char = 'a'
 {-# COMPILE AGDA2HS ex_char #-}
 
-postulate
-  toEnum : Int → Char
-
 char_d : Char
 char_d = toEnum 100
 {-# COMPILE AGDA2HS char_d #-}
@@ -156,14 +153,14 @@ instance
 instance
   MonoidFunNat : {a : Set} → MonoidX (a → Nat)
   memptyX  {{MonoidFunNat}}     _ = memptyX
-  mappendX {{MonoidFunNat}} f g x = mappendX (f x) (g x) 
+  mappendX {{MonoidFunNat}} f g x = mappendX (f x) (g x)
 
 {-# COMPILE AGDA2HS MonoidFunNat #-}
 
 instance
   MonoidFun : {a b : Set} → {{MonoidX b}} → MonoidX (a → b)
   memptyX  {{MonoidFun}}     _ = memptyX
-  mappendX {{MonoidFun}} f g x = mappendX (f x) (g x) 
+  mappendX {{MonoidFun}} f g x = mappendX (f x) (g x)
 {-# COMPILE AGDA2HS MonoidFun #-}
 
 sumMonX : ∀{a} → {{MonoidX a}} → List a → a

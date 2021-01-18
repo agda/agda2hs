@@ -58,3 +58,28 @@ applyToFalse = case false of_
 caseOf : a → (a → b) → b
 caseOf = case_of_
 {-# COMPILE AGDA2HS caseOf #-}
+
+
+--------------------------------------------------
+-- Enums
+
+
+enum₁ : List Int
+enum₁ = enumFromTo 5 10
+{-# COMPILE AGDA2HS enum₁ #-}
+
+enum₂ : List Integer
+enum₂ = enumFromThenTo 10 20 100
+{-# COMPILE AGDA2HS enum₂ #-}
+
+enum₃ : List Bool
+enum₃ = enumFrom false
+{-# COMPILE AGDA2HS enum₃ #-}
+
+enum₄ : List Ordering
+enum₄ = enumFromThen LT EQ
+{-# COMPILE AGDA2HS enum₄ #-}
+
+underappliedEnum : List Int → List (List Int)
+underappliedEnum = map (enumFromTo 1)
+{-# COMPILE AGDA2HS underappliedEnum #-}
