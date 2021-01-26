@@ -31,37 +31,51 @@ open import Haskell.Prim.Word
 --    minBound and maxBound. Unbounded enums do not support enumFrom
 --    and enumFromThen (since they return infinite lists).
 
-IfBounded : Maybe (Bounded a) → (⦃ Bounded a ⦄ → Set) → Set
-IfBounded Nothing  k = ⊤
-IfBounded (Just i) k = k ⦃ i ⦄
+IfBoundedBelow : Maybe (BoundedBelow a) → (⦃ BoundedBelow a ⦄ → Set) → Set
+IfBoundedBelow Nothing  k = ⊤
+IfBoundedBelow (Just i) k = k ⦃ i ⦄
+
+IfBoundedAbove : Maybe (BoundedAbove a) → (⦃ BoundedAbove a ⦄ → Set) → Set
+IfBoundedAbove Nothing  k = ⊤
+IfBoundedAbove (Just i) k = k ⦃ i ⦄
 
 record Enum (a : Set) : Set₁ where
   field
-    BoundedEnum : Maybe (Bounded a)
-    fromEnum    : a → Int
+    BoundedBelowEnum : Maybe (BoundedBelow a)
+    BoundedAboveEnum : Maybe (BoundedAbove a)
+    fromEnum         : a → Int
 
   private
-    IsBounded : Set
-    IsBounded = maybe ⊥ (λ _ → ⊤) BoundedEnum
+    IsBoundedBelow : Set
+    IsBoundedBelow = maybe ⊥ (λ _ → ⊤) BoundedBelowEnum
 
-    True : (⦃ Bounded a ⦄ → Bool) → Set
-    True C = IfBounded BoundedEnum (IsTrue C)
+    IsBoundedAbove : Set
+    IsBoundedAbove = maybe ⊥ (λ _ → ⊤) BoundedAboveEnum
 
-    False : (⦃ Bounded a ⦄ → Bool) → Set
-    False C = IfBounded BoundedEnum (IsFalse C)
+    TrueIfLB : (⦃ BoundedBelow a ⦄ → Bool) → Set
+    TrueIfLB C = IfBoundedBelow BoundedBelowEnum (IsTrue C)
 
-    minInt : ⦃ Bounded a ⦄ → Int
+    TrueIfUB : (⦃ BoundedAbove a ⦄ → Bool) → Set
+    TrueIfUB C = IfBoundedAbove BoundedAboveEnum (IsTrue C)
+
+    FalseIfLB : (⦃ BoundedBelow a ⦄ → Bool) → Set
+    FalseIfLB C = IfBoundedBelow BoundedBelowEnum (IsFalse C)
+
+    FalseIfUB : (⦃ BoundedAbove a ⦄ → Bool) → Set
+    FalseIfUB C = IfBoundedAbove BoundedAboveEnum (IsFalse C)
+
+    minInt : ⦃ BoundedBelow a ⦄ → Int
     minInt ⦃ _ ⦄ = fromEnum minBound
 
-    maxInt : ⦃ Bounded a ⦄ → Int
+    maxInt : ⦃ BoundedAbove a ⦄ → Int
     maxInt ⦃ _ ⦄ = fromEnum maxBound
 
   field
-    toEnum : (n : Int) → ⦃ True (minInt <= n && n <= maxInt) ⦄ → a
-    succ   : (x : a) → ⦃ False (fromEnum x == maxInt) ⦄ → a
-    pred   : (x : a) → ⦃ False (fromEnum x == minInt) ⦄ → a
+    toEnum : (n : Int) → ⦃ TrueIfLB (minInt <= n) ⦄ → ⦃ TrueIfUB (n <= maxInt) ⦄ → a
+    succ   : (x : a) → ⦃ FalseIfUB (fromEnum x == maxInt) ⦄ → a
+    pred   : (x : a) → ⦃ FalseIfLB (fromEnum x == minInt) ⦄ → a
 
-    enumFrom       : ⦃ IsBounded ⦄ → a → List a
+    enumFrom       : ⦃ IsBoundedAbove ⦄ → a → List a
     enumFromTo     : a → a → List a
     -- In the Prelude Enum instances `enumFromThenTo x x y` gives the
     -- infinite list of `x`s. The constraint is a little bit stronger than it needs to be,
@@ -69,7 +83,7 @@ record Enum (a : Set) : Set₁ where
     -- requiring an Eq instance for `a`, and it's not a terrible limitation to not be able to
     -- write [0, 2^64 .. 2^66].
     enumFromThenTo : (x x₁ : a) → ⦃ IsFalse (fromEnum x == fromEnum x₁) ⦄ → a → List a
-    enumFromThen   : ⦃ IsBounded ⦄ → (x x₁ : a) → ⦃ IsFalse (fromEnum x == fromEnum x₁) ⦄ → List a
+    enumFromThen   : ⦃ IsBoundedBelow ⦄ → ⦃ IsBoundedAbove ⦄ → (x x₁ : a) → ⦃ IsFalse (fromEnum x == fromEnum x₁) ⦄ → List a
 
 open Enum ⦃ ... ⦄ public
 
@@ -104,13 +118,14 @@ private
 
 instance
   iEnumInteger : Enum Integer
-  iEnumInteger .Enum.BoundedEnum       = Nothing
-  iEnumInteger .Enum.fromEnum          = integerToInt
-  iEnumInteger .Enum.toEnum          n = intToInteger n
-  iEnumInteger .Enum.succ              = _+ 1
-  iEnumInteger .Enum.pred              = _- 1
-  iEnumInteger .Enum.enumFromTo        = integerFromTo
-  iEnumInteger .Enum.enumFromThenTo    = integerFromThenTo
+  iEnumInteger .BoundedBelowEnum  = Nothing
+  iEnumInteger .BoundedAboveEnum  = Nothing
+  iEnumInteger .fromEnum          = integerToInt
+  iEnumInteger .toEnum          n = intToInteger n
+  iEnumInteger .succ              = _+ 1
+  iEnumInteger .pred              = _- 1
+  iEnumInteger .enumFromTo        = integerFromTo
+  iEnumInteger .enumFromThenTo    = integerFromThenTo
 
 module _ (from : a → Integer) (to : Integer → a) where
   private
@@ -121,7 +136,8 @@ module _ (from : a → Integer) (to : Integer → a) where
     fromThenTo a a₁ b = map to (enumFromThenTo (from a) (from a₁) (from b))
 
   unboundedEnumViaInteger : Enum a
-  unboundedEnumViaInteger .BoundedEnum           = Nothing
+  unboundedEnumViaInteger .BoundedBelowEnum      = Nothing
+  unboundedEnumViaInteger .BoundedAboveEnum      = Nothing
   unboundedEnumViaInteger .fromEnum              = integerToInt ∘ from
   unboundedEnumViaInteger .toEnum         n      = to (intToInteger n)
   unboundedEnumViaInteger .succ           x      = to (from x + 1)
@@ -129,8 +145,30 @@ module _ (from : a → Integer) (to : Integer → a) where
   unboundedEnumViaInteger .enumFromTo     a b    = fromTo a b
   unboundedEnumViaInteger .enumFromThenTo a a₁ b = fromThenTo a a₁ b
 
+  boundedBelowEnumViaInteger : ⦃ Ord a ⦄ → ⦃ BoundedBelow a ⦄ → Enum a
+  boundedBelowEnumViaInteger .BoundedBelowEnum      = Just it
+  boundedBelowEnumViaInteger .BoundedAboveEnum      = Nothing
+  boundedBelowEnumViaInteger .fromEnum              = integerToInt ∘ from
+  boundedBelowEnumViaInteger .toEnum         n      = to (intToInteger n)
+  boundedBelowEnumViaInteger .succ           x      = to (from x + 1)
+  boundedBelowEnumViaInteger .pred           x      = to (from x - 1)
+  boundedBelowEnumViaInteger .enumFromTo     a b    = fromTo a b
+  boundedBelowEnumViaInteger .enumFromThenTo a a₁ b = fromThenTo a a₁ b
+
+  boundedAboveEnumViaInteger : ⦃ Ord a ⦄ → ⦃ BoundedAbove a ⦄ → Enum a
+  boundedAboveEnumViaInteger .BoundedBelowEnum      = Nothing
+  boundedAboveEnumViaInteger .BoundedAboveEnum      = Just it
+  boundedAboveEnumViaInteger .fromEnum              = integerToInt ∘ from
+  boundedAboveEnumViaInteger .toEnum         n      = to (intToInteger n)
+  boundedAboveEnumViaInteger .succ           x      = to (from x + 1)
+  boundedAboveEnumViaInteger .pred           x      = to (from x - 1)
+  boundedAboveEnumViaInteger .enumFrom       a      = fromTo a maxBound
+  boundedAboveEnumViaInteger .enumFromTo     a b    = fromTo a b
+  boundedAboveEnumViaInteger .enumFromThenTo a a₁ b = fromThenTo a a₁ b
+
   boundedEnumViaInteger : ⦃ Ord a ⦄ → ⦃ Bounded a ⦄ → Enum a
-  boundedEnumViaInteger .BoundedEnum           = Just it
+  boundedEnumViaInteger .BoundedBelowEnum      = Just it
+  boundedEnumViaInteger .BoundedAboveEnum      = Just it
   boundedEnumViaInteger .fromEnum              = integerToInt ∘ from
   boundedEnumViaInteger .toEnum         n      = to (intToInteger n)
   boundedEnumViaInteger .succ           x      = to (from x + 1)
@@ -143,6 +181,9 @@ module _ (from : a → Integer) (to : Integer → a) where
               else fromThenTo a a₁ minBound
 
 instance
+  iEnumNatural : Enum Nat
+  iEnumNatural = boundedBelowEnumViaInteger pos λ where (pos n) → n; _ → 0
+
   iEnumInt : Enum Int
   iEnumInt = boundedEnumViaInteger intToInteger integerToInt
 
@@ -165,4 +206,3 @@ instance
 
   -- Missing:
   --  Enum Double  (can't go via Integer)
-  --  Enum Natural (bounded only below)
