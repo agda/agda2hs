@@ -182,7 +182,7 @@ module _ (from : a → Integer) (to : Integer → a) where
 
 instance
   iEnumNatural : Enum Nat
-  iEnumNatural = boundedBelowEnumViaInteger pos λ where (pos n) → n; _ → 0
+  iEnumNatural = boundedBelowEnumViaInteger pos unsafeIntegerToNat
 
   iEnumInt : Enum Int
   iEnumInt = boundedEnumViaInteger intToInteger integerToInt
