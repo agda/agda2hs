@@ -1,9 +1,6 @@
 
 module Haskell.Prim.Maybe where
 
-private
-  variable a b : Set
-
 --------------------------------------------------
 -- Maybe
 
