@@ -40,7 +40,10 @@ isOp _                   = False
 -- Utilities for building Haskell constructs
 
 pp :: Pretty a => a -> String
-pp = prettyPrintWithMode defaultMode{ spacing = False }
+pp = prettyPrintWithMode defaultMode{ spacing = False
+                                    , classIndent = 4
+                                    , whereIndent = 2
+                                    }
 
 -- exactPrint really looks at the line numbers (and we're using the locations from the agda source
 -- to report Haskell parse errors at the right location), so shift everything to start at line 1.

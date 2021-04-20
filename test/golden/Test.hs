@@ -79,20 +79,20 @@ initLast :: [a] -> ([a], a)
 initLast xs = (init xs, last xs)
 
 class MonoidX a where
-        memptyX :: a
-        mappendX :: a -> a -> a
+    memptyX :: a
+    mappendX :: a -> a -> a
 
 instance MonoidX Natural where
-        memptyX = 0
-        mappendX i j = i + j
+    memptyX = 0
+    mappendX i j = i + j
 
 instance MonoidX (a -> Natural) where
-        memptyX _ = memptyX
-        mappendX f g x = mappendX (f x) (g x)
+    memptyX _ = memptyX
+    mappendX f g x = mappendX (f x) (g x)
 
 instance (MonoidX b) => MonoidX (a -> b) where
-        memptyX _ = memptyX
-        mappendX f g x = mappendX (f x) (g x)
+    memptyX _ = memptyX
+    mappendX f g x = mappendX (f x) (g x)
 
 sumMonX :: MonoidX a => [a] -> a
 sumMonX [] = memptyX
