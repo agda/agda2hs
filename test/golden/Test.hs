@@ -102,6 +102,20 @@ sumMon :: Monoid a => [a] -> a
 sumMon [] = mempty
 sumMon (x : xs) = x <> sumMon xs
 
+data NatSum = MkSum Natural
+
+instance Semigroup NatSum where
+    MkSum a <> MkSum b = MkSum (a + b)
+
+instance Monoid NatSum where
+    mempty = MkSum 0
+
+double :: Monoid a => a -> a
+double x = x <> x
+
+doubleSum :: NatSum -> NatSum
+doubleSum = double
+
 hd :: [a] -> a
 hd [] = error "hd: empty list"
 hd (x : _) = x

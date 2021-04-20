@@ -132,7 +132,7 @@ thm : (xs ys : List Nat) → sum (xs ++ ys) ≡ sum xs + sum ys
 thm []       ys = refl
 thm (x ∷ xs) ys rewrite thm xs ys | assoc x (sum xs) (sum ys) = refl
 
--- (custom) Monoid instance
+-- (custom) Monoid class
 
 record MonoidX (a : Set) : Set where
   field memptyX  : a
@@ -172,6 +172,31 @@ sumMon : ∀{a} → {{Monoid a}} → List a → a
 sumMon []       = mempty
 sumMon (x ∷ xs) = x <> sumMon xs
 {-# COMPILE AGDA2HS sumMon #-}
+
+-- Using the Monoid class from the Prelude
+
+data NatSum : Set where
+  MkSum : Nat → NatSum
+
+{-# COMPILE AGDA2HS NatSum #-}
+
+instance
+  SemigroupNatSum : Semigroup NatSum
+  SemigroupNatSum ._<>_ (MkSum a) (MkSum b) = MkSum (a + b)
+
+  MonoidNatSum : Monoid NatSum
+  MonoidNatSum .mempty = MkSum 0
+
+double : ⦃ Monoid a ⦄ → a → a
+double x = x <> x
+
+doubleSum : NatSum → NatSum
+doubleSum = double
+
+{-# COMPILE AGDA2HS SemigroupNatSum #-}
+{-# COMPILE AGDA2HS MonoidNatSum    #-}
+{-# COMPILE AGDA2HS double          #-}
+{-# COMPILE AGDA2HS doubleSum       #-}
 
 -- Instance argument proof obligation that should not turn into a class constraint
 hd : (xs : List a) → ⦃ NonEmpty xs ⦄ → a
