@@ -398,7 +398,7 @@ compileInstance def = do
   locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
           . dropWhile ((<= defName def) . fst)
           . sortDefs <$> curDefs
-  ds <- mapM (compileInstanceClause locals) funClauses
+  ds <- concat <$> mapM (compileInstanceClause locals) funClauses
   return $ [Hs.InstDecl () Nothing ir (Just ds)]
   where Function{..} = theDef def
 
@@ -425,7 +425,7 @@ compileInstRule cs ty = case unSpine  $ ty of
     where dropPi = underAbstr a b (compileInstRule cs . unEl)
   _ -> __IMPOSSIBLE__
 
-compileInstanceClause :: LocalDecls -> Clause -> TCM (Hs.InstDecl ())
+compileInstanceClause :: LocalDecls -> Clause -> TCM [Hs.InstDecl ()]
 compileInstanceClause ls c = do
   -- abuse compileClause:
   -- 1. drop any patterns before record projection to suppress the instance arg
@@ -434,9 +434,27 @@ compileInstanceClause ls c = do
   let (p : ps) = dropWhile (isNothing . isProjP) (namedClausePats c)
       c' = c {namedClausePats = ps}
       ProjP _ q = namedArg p
-      uf = hsName (show (nameConcrete (qnameName q)))
+
+  -- We want the actual field name, not the instance-opened projection.
+  (q, _, _) <- origProjection q
+
+  let uf = hsName (show (nameConcrete (qnameName q)))
   (_ , x) <- compileClause ls uf c'
-  return $ Hs.InsDecl () (Hs.FunBind () [x])
+  arg <- fieldArgInfo q
+  if visible arg
+    then return [Hs.InsDecl () (Hs.FunBind () [x])]
+    else return []
+
+fieldArgInfo :: QName -> TCM ArgInfo
+fieldArgInfo f = do
+  r <- maybe badness return =<< getRecordOfField f
+  Record{ recFields = fs } <- theDef <$> getConstInfo r
+  case filter ((== f) . unDom) fs of
+    df : _ -> return $ getArgInfo df
+    []     -> badness
+  where
+    badness = genericDocError =<< text "Not a record field:" <+> prettyTCM f
+
 
 compileRecord :: Definition -> TCM [Hs.Decl ()]
 compileRecord def = do
