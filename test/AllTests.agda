@@ -9,6 +9,7 @@ import Sections
 import Test
 import Tuples
 import Where
+import TypeSynonyms
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -19,4 +20,5 @@ import Sections
 import Test
 import Tuples
 import Where
+import TypeSynonyms
 #-}

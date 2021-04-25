@@ -49,6 +49,7 @@ import Agda.TypeChecking.Reduce
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
 import Agda.TypeChecking.Records
+import Agda.TypeChecking.Sort
 import Agda.Utils.Lens
 import Agda.Utils.Pretty (prettyShow)
 import qualified Agda.Utils.Pretty as P
@@ -519,16 +520,46 @@ compileFun d = do
   compileFun' d locals
 
 compileFun' :: Definition -> LocalDecls -> TCM [Hs.Decl ()]
-compileFun' (Defn {..}) locals = do
+compileFun' def@(Defn {..}) locals = do
   let n = qnameName defName
       x = hsName $ prettyShow n
       go = foldM $ \(ds, ms) -> compileClause ds x >=> return . fmap (ms `snoc`)
   setCurrentRange (nameBindingSite n) $ do
-    ty <- compileType (unEl defType)
-    cs <- snd <$> go (locals, []) funClauses
-    return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
+    ifM (endsInSort defType) (compileTypeDef x def locals) $ do
+      ty <- compileType (unEl defType)
+      cs <- snd <$> go (locals, []) funClauses
+      return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
   where
     Function{..} = theDef
+
+    endsInSort t = do
+      TelV tel b <- telView t
+      addContext tel $ ifIsSort b (\_ -> return True) (return False)
+
+compileTypeDef :: Hs.Name () -> Definition -> LocalDecls -> TCM [Hs.Decl ()]
+compileTypeDef name (Defn {..}) locals = do
+  noLocals locals
+  Clause{..} <- singleClause funClauses
+  addContext (KeepNames clauseTel) $ localScope $ do
+    as <- compileTypeArgs namedClausePats
+    let hd = foldl (Hs.DHApp ()) (Hs.DHead () name) as
+    rhs <- compileType $ fromMaybe __IMPOSSIBLE__ clauseBody
+    return [Hs.TypeDecl () hd rhs]
+
+  where
+    Function{..} = theDef
+    noLocals locals = unless (null locals) $
+      genericError "Not supported: type definition with `where` clauses"
+    singleClause = \case
+      [cl] -> return cl
+      _    -> genericError "Not supported: type definition with several clauses"
+
+compileTypeArgs :: NAPs -> TCM [Hs.TyVarBind ()]
+compileTypeArgs ps = mapM (compileTypeArg . namedArg) $ filter visible ps
+
+compileTypeArg :: DeBruijnPattern -> TCM (Hs.TyVarBind ())
+compileTypeArg p@(VarP o _) = Hs.UnkindedVar () . hsName <$> showTCM p
+compileTypeArg _ = genericError "Not supported: type definition by pattern matching"
 
 compileClause :: LocalDecls -> Hs.Name () -> Clause -> TCM (LocalDecls, Hs.Match ())
 compileClause locals x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBody = body} = do
