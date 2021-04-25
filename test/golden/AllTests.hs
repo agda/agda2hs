@@ -8,4 +8,5 @@ import Sections
 import Test
 import Tuples
 import Where
+import TypeSynonyms
 
