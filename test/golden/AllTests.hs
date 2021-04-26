@@ -1,6 +1,7 @@
 module AllTests where
 
 import Issue14
+import Fixities
 import LanguageConstructs
 import Numbers
 import Pragmas
