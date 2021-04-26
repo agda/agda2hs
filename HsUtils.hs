@@ -1,13 +1,17 @@
+
 module HsUtils where
 
-import Data.Data
-import Data.Generics.Schemes (listify)
+import Data.Data (Data)
+import Data.Generics (listify, everywhere, mkT)
+import Data.Map (Map)
+import qualified Data.Map as Map
 
 import Language.Haskell.Exts.SrcLoc
 import Language.Haskell.Exts.Syntax
 import Language.Haskell.Exts.Build
 import Language.Haskell.Exts.Comments
 import Language.Haskell.Exts.Pretty
+import Language.Haskell.Exts.Fixity
 
 import Agda.Syntax.Position
 import Agda.Utils.FileName
@@ -139,3 +143,36 @@ usedTypesOf s = listify $ (== s) . pp
 
 uses :: Data a => String -> a -> Bool
 uses ty = not . null . usedTypesOf ty
+
+-- Fixities
+
+insertParens :: Data a => a -> a
+insertParens = everywhere (mkT $ insertPars $ fixityMap baseFixities)
+  where
+    fixityMap fxs = Map.fromList [ (q, fx) | fx@(Fixity _ _ q) <- fxs ]
+
+insertPars :: Map (QName ()) Fixity -> Exp () -> Exp ()
+insertPars fixs (InfixApp l e1 op e2) = InfixApp l (parL e1) op (parR e2)
+  where
+    getFix op = Map.lookup (qopName op) fixs
+    topFix    = getFix op
+
+    qopName (QVarOp _ x) = x
+    qopName (QConOp _ x) = x
+
+    needParen same (Just (Fixity atop top _)) (Just (Fixity achild child _))
+      | top > child    = True
+      | top < child    = False
+      | atop /= achild = True
+      | otherwise      = same atop
+    needParen _ Nothing _ = True  -- If we don't know, add parens
+    needParen _ _ Nothing = True
+
+    parL = par $ needParen (AssocLeft () /=)
+    parR = par $ needParen (AssocRight () /=)
+
+    par need e@(InfixApp _ _ op _)
+      | need topFix (getFix op) = Paren () e
+    par _ e = e
+insertPars _ e = e
+

@@ -818,7 +818,7 @@ renderBlocks :: [Block] -> String
 renderBlocks = unlines . map unlines . sortRanges . filter (not . null . snd)
 
 defBlock :: CompiledDef -> [Block]
-defBlock def = [ (r, map pp ds) | (r, ds) <- def ]
+defBlock def = [ (r, map (pp . insertParens) ds) | (r, ds) <- def ]
 
 codePragmas :: [Ranged Code] -> [Block]
 codePragmas code = [ (r, map pp ps) | (r, (Hs.Module _ _ ps _ _, _)) <- code ]

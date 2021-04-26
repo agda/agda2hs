@@ -39,7 +39,7 @@ ex4 b = mult 42
     mult n = bump n (bool2nat b)
       where
         bump :: Natural -> Natural -> Natural
-        bump x y = x * y + n - bool2nat b
+        bump x y = x * y + (n - bool2nat b)
 
 ex4' :: Bool -> Natural
 ex4' b = mult (bool2nat b)
@@ -80,7 +80,7 @@ ex6 (n : ns) b = mult [num, 1]
     mult (m : ms) = bump n m
       where
         bump :: Natural -> Natural -> Natural
-        bump x y = x * y + m - n
+        bump x y = x * y + (m - n)
     num :: Natural
     num = 42 + ex6 ns True
 

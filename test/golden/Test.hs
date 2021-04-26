@@ -51,7 +51,7 @@ char_d = toEnum 100
 
 (+++) :: [a] -> [a] -> [a]
 [] +++ ys = ys
-(x : xs) +++ ys = x : xs +++ ys
+(x : xs) +++ ys = x : (xs +++ ys)
 
 listMap :: (a -> b) -> [a] -> [b]
 listMap f [] = []
