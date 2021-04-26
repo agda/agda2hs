@@ -3,3 +3,8 @@ dist
 dist-newstyle
 test/build
 test/agda2hs
+.idea
+.stack-work
+stack.yaml
+stack.yaml.lock
+agda2hs.iml
