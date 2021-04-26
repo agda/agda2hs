@@ -398,7 +398,7 @@ compileInstance def = do
   locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
           . dropWhile ((<= defName def) . fst)
           . sortDefs <$> curDefs
-  ds <- concat <$> mapM (compileInstanceClause locals) funClauses
+  ds <- catMaybes <$> mapM (compileInstanceClause locals) funClauses
   return $ [Hs.InstDecl () Nothing ir (Just ds)]
   where Function{..} = theDef def
 
@@ -425,7 +425,7 @@ compileInstRule cs ty = case unSpine  $ ty of
     where dropPi = underAbstr a b (compileInstRule cs . unEl)
   _ -> __IMPOSSIBLE__
 
-compileInstanceClause :: LocalDecls -> Clause -> TCM [Hs.InstDecl ()]
+compileInstanceClause :: LocalDecls -> Clause -> TCM (Maybe (Hs.InstDecl ()))
 compileInstanceClause ls c = do
   -- abuse compileClause:
   -- 1. drop any patterns before record projection to suppress the instance arg
@@ -442,8 +442,8 @@ compileInstanceClause ls c = do
   (_ , x) <- compileClause ls uf c'
   arg <- fieldArgInfo q
   if visible arg
-    then return [Hs.InsDecl () (Hs.FunBind () [x])]
-    else return []
+    then return $ Just $ Hs.InsDecl () (Hs.FunBind () [x])
+    else return Nothing
 
 fieldArgInfo :: QName -> TCM ArgInfo
 fieldArgInfo f = do
