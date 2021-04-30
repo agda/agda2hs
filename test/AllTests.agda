@@ -12,6 +12,7 @@ import Tuples
 import Where
 import TypeSynonyms
 import Datatypes
+import Records
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -25,4 +26,5 @@ import Tuples
 import Where
 import TypeSynonyms
 import Datatypes
+import Records
 #-}

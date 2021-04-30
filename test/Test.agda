@@ -140,7 +140,7 @@ record MonoidX (a : Set) : Set where
 
 open MonoidX {{...}} public
 
-{-# COMPILE AGDA2HS MonoidX #-}
+{-# COMPILE AGDA2HS MonoidX class #-}
 
 instance
   MonoidNat : MonoidX Nat
