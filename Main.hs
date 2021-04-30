@@ -713,7 +713,7 @@ compileTerm v =
           let uf = show (nameConcrete (qnameName f))
           (`appStrip` es) (hsVar uf)
         False -> (`app` es) . Hs.Var () =<< hsQName f
-    Con h ConORec es -> return $ hsVar "wibble"
+    Con h ConORec es -> genericDocError =<< text "Not supported: record constructors"
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName (conName h)
