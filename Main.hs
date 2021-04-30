@@ -513,10 +513,14 @@ compileConstructor params c = do
 
 compileConstructorArgs :: Telescope -> TCM [Hs.Type ()]
 compileConstructorArgs EmptyTel = return []
-compileConstructorArgs (ExtendTel a tel)
-  | visible a, NoAbs _ tel <- reAbs tel = do
-    (:) <$> compileType (unEl $ unDom a) <*> compileConstructorArgs tel
-compileConstructorArgs tel = genericDocError =<< text "Bad constructor args:" <?> prettyTCM tel
+compileConstructorArgs (ExtendTel a tel) = case getHiding a of
+  -- Drop hidden arguments
+  Hidden -> underAbstraction a tel compileConstructorArgs
+  -- Compile visible constructor argument
+  -- TODO: check that there are no dependencies on this argument
+  NotHidden -> (:) <$> compileType (unEl $ unDom a)
+                   <*> underAbstraction a tel compileConstructorArgs
+  Instance{} -> genericDocError =<< text "Not supported: constructors with class constraints"
 
 compilePostulate :: Definition -> TCM [Hs.Decl ()]
 compilePostulate def = do
