@@ -343,12 +343,12 @@ tuplePat cons i ps = do
 
 -- Compiling things -------------------------------------------------------
 
-data CodeGen = YesCode | NoCode
+data RecordTarget = ToRecord | ToClass
 
 data ParsedPragma
   = NoPragma
   | DefaultPragma
-  | ClassPragma CodeGen
+  | ClassPragma
   | DerivingPragma [Hs.Deriving ()]
 
 classes :: [String]
@@ -363,10 +363,7 @@ classes = ["Show"]
 processPragma :: QName -> TCM ParsedPragma
 processPragma qn = getUniqueCompilerPragma pragmaName qn >>= \case
   Nothing -> return NoPragma
-  Just (CompilerPragma _ s) | s == "class" && s `elem` classes ->
-    return $ ClassPragma NoCode
-  Just (CompilerPragma _ s) | s == "class" ->
-    return $ ClassPragma YesCode
+  Just (CompilerPragma _ s) | s == "class" -> return ClassPragma
   Just (CompilerPragma _ s) | "deriving" `isPrefixOf` s ->
     -- parse a deriving clause for a datatype by tacking it onto a
     -- dummy datatype and then only keeping the deriving part
@@ -383,13 +380,13 @@ compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
 compile _ _ _ def = processPragma (defName def) >>= \ p ->
   case (p , defInstance def , theDef def) of
     (NoPragma          , _      , _         ) -> return []
-    (ClassPragma _     , _      , _         ) -> return [] -- currently unused
+    (ClassPragma       , _      , Record{}  ) -> tag <$> compileRecord ToClass def
     (DerivingPragma ds , _      , Datatype{}) -> tag <$> compileData ds def
     (DefaultPragma     , _      , Datatype{}) -> tag <$> compileData [] def
     (DefaultPragma     , Just _ , _         ) -> tag <$> compileInstance def
     (DefaultPragma     , _      , Axiom     ) -> tag <$> compilePostulate def
     (DefaultPragma     , _      , Function{}) -> tag <$> compileFun def
-    (DefaultPragma     , _      , Record{}  ) -> tag <$> compileRecord def
+    (DefaultPragma     , _      , Record{}  ) -> tag <$> compileRecord ToRecord def
     _                                         -> return []
   where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
 
@@ -457,36 +454,53 @@ fieldArgInfo f = do
     badness = genericDocError =<< text "Not a record field:" <+> prettyTCM f
 
 
-compileRecord :: Definition -> TCM [Hs.Decl ()]
-compileRecord def = do
-  let r = hsName $ prettyShow $ qnameName $ defName def
-  TelV tel _ <- telViewUpTo (recPars (theDef def)) (defType def)
+compileRecord :: RecordTarget -> Definition -> TCM [Hs.Decl ()]
+compileRecord target def = do
+  TelV tel _ <- telViewUpTo recPars (defType def)
   hd <- addContext tel $ do
     let params = teleArgs tel :: [Arg Term]
     pars <- mapM (showTCM . unArg) $ filter visible params
     return $ foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
-                   (Hs.DHead () r)
+                   (Hs.DHead () (hsName rName))
                    pars
-  let help :: Int -> [QName] -> Telescope -> TCM [Hs.ClassDecl ()]
-      help i ns tel = case (ns,splitTelescopeAt i tel) of
+  case target of
+    ToClass -> do
+      classDecls <- compileRecFields classDecl recPars (unDom <$> recFields) recTel
+      return [Hs.ClassDecl () Nothing hd [] (Just classDecls)]
+
+    ToRecord | recNamedCon -> do
+      fieldDecls <- compileRecFields fieldDecl recPars (unDom <$> recFields) recTel
+      let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
+      return [Hs.DataDecl () (Hs.DataType ()) Nothing hd [conDecl] []]
+
+             | otherwise   -> genericError $
+      "Not supported: " ++ rName ++ " is missing a named constructor."
+
+  where
+    rName = prettyShow $ qnameName $ defName def
+    cName = hsName $ prettyShow $ qnameName $ conName recConHead
+
+    Record{..} = theDef def
+
+    classDecl :: Hs.Name () -> Hs.Type () -> Hs.ClassDecl ()
+    classDecl n = Hs.ClsDecl () . Hs.TypeSig () [n]
+
+    fieldDecl :: Hs.Name () -> Hs.Type () -> Hs.FieldDecl ()
+    fieldDecl n = Hs.FieldDecl () [n]
+
+    compileRecFields :: (Hs.Name () -> Hs.Type () -> b)
+                     -> Int -> [QName] -> Telescope -> TCM [b]
+    compileRecFields decl i ns tel =
+      case (ns, splitTelescopeAt i tel) of
         (_     ,(_   ,EmptyTel      )) -> return []
-        ((n:ns),(tel',ExtendTel ty _)) -> do
-          ty  <- compileRecField tel' n (unDom ty)
-          tys <- help (i+1) ns tel
+        (n:ns,(tel',ExtendTel ty _)) -> do
+          ty  <- addContext tel' $
+                   compileType (unEl $ unDom ty)
+                   <&> decl (hsName $ prettyShow $ qnameName n)
+          tys <- compileRecFields decl (i+1) ns tel
           return (ty:tys)
         (_, _) -> __IMPOSSIBLE__
-  telBig <- getRecordFieldTypes (defName def)
-  let fieldNames = map unDom $ recFields (theDef def)
-  y <- help (recPars (theDef def)) fieldNames telBig
-  return [Hs.ClassDecl () Nothing hd [] (Just y)]
 
-compileRecField :: Telescope
-                -> QName
-                -> Type
-                -> TCM (Hs.ClassDecl ())
-compileRecField tel n ty = addContext tel $ do
-  hty <- compileType (unEl ty)
-  return $ Hs.ClsDecl () (Hs.TypeSig () [hsName $ prettyShow $ qnameName n] hty)
 
 compileData :: [Hs.Deriving ()] -> Definition -> TCM [Hs.Decl ()]
 compileData ds def = do
