@@ -492,7 +492,8 @@ compileData :: [Hs.Deriving ()] -> Definition -> TCM [Hs.Decl ()]
 compileData ds def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
   case theDef def of
-    Datatype{dataPars = n, dataIxs = 0, dataCons = cs} -> do
+    Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} -> do
+      unless (numIxs == 0) $ genericDocError =<< text "Not supported: indexed datatypes"
       TelV tel _ <- telViewUpTo n (defType def)
       addContext tel $ do
         let params = teleArgs tel :: [Arg Term]
@@ -501,7 +502,6 @@ compileData ds def = do
         let hd   = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
                          (Hs.DHead () d) pars
         return [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs ds]
-    _ -> __IMPOSSIBLE__
 
 compileConstructor :: [Arg Term] -> QName -> TCM (Hs.QualConDecl ())
 compileConstructor params c = do
