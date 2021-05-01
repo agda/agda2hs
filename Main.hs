@@ -492,7 +492,8 @@ compileData :: [Hs.Deriving ()] -> Definition -> TCM [Hs.Decl ()]
 compileData ds def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
   case theDef def of
-    Datatype{dataPars = n, dataIxs = 0, dataCons = cs} -> do
+    Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} -> do
+      unless (numIxs == 0) $ genericDocError =<< text "Not supported: indexed datatypes"
       TelV tel _ <- telViewUpTo n (defType def)
       addContext tel $ do
         let params = teleArgs tel :: [Arg Term]
@@ -501,7 +502,6 @@ compileData ds def = do
         let hd   = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
                          (Hs.DHead () d) pars
         return [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs ds]
-    _ -> __IMPOSSIBLE__
 
 compileConstructor :: [Arg Term] -> QName -> TCM (Hs.QualConDecl ())
 compileConstructor params c = do
@@ -513,10 +513,14 @@ compileConstructor params c = do
 
 compileConstructorArgs :: Telescope -> TCM [Hs.Type ()]
 compileConstructorArgs EmptyTel = return []
-compileConstructorArgs (ExtendTel a tel)
-  | visible a, NoAbs _ tel <- reAbs tel = do
-    (:) <$> compileType (unEl $ unDom a) <*> compileConstructorArgs tel
-compileConstructorArgs tel = genericDocError =<< text "Bad constructor args:" <?> prettyTCM tel
+compileConstructorArgs (ExtendTel a tel) = case getHiding a of
+  -- Drop hidden arguments
+  Hidden -> underAbstraction a tel compileConstructorArgs
+  -- Compile visible constructor argument
+  -- TODO: check that there are no dependencies on this argument
+  NotHidden -> (:) <$> compileType (unEl $ unDom a)
+                   <*> underAbstraction a tel compileConstructorArgs
+  Instance{} -> genericDocError =<< text "Not supported: constructors with class constraints"
 
 compilePostulate :: Definition -> TCM [Hs.Decl ()]
 compilePostulate def = do
@@ -713,7 +717,7 @@ compileTerm v =
           let uf = show (nameConcrete (qnameName f))
           (`appStrip` es) (hsVar uf)
         False -> (`app` es) . Hs.Var () =<< hsQName f
-    Con h ConORec es -> return $ hsVar "wibble"
+    Con h ConORec es -> genericDocError =<< text "Not supported: record constructors"
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName (conName h)
