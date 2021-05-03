@@ -29,6 +29,8 @@ record Eq (a : Set) : Set where
 
 open Eq ⦃ ... ⦄ public
 
+{-# COMPILE AGDA2HS Eq existing-class #-}
+
 instance
   iEqNat : Eq Nat
   iEqNat ._==_ = Nat._==_

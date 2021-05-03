@@ -31,6 +31,8 @@ record Monad (m : Set → Set) : Set₁ where
 
 open Monad ⦃ ... ⦄ public
 
+{-# COMPILE AGDA2HS Monad existing-class #-}
+
 mapM₋ : ⦃ Monad m ⦄ → ⦃ Foldable t ⦄ → (a → m b) → t a → m ⊤
 mapM₋ f = foldr (λ x k → f x >> k) (pure tt)
 
@@ -70,6 +72,8 @@ record MonadFail (m : Set → Set) : Set₁ where
     overlap ⦃ super ⦄ : Monad m
 
 open MonadFail ⦃ ... ⦄ public
+
+{-# COMPILE AGDA2HS MonadFail existing-class #-}
 
 instance
   MonadFailList : MonadFail List

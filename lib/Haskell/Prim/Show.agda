@@ -54,6 +54,8 @@ defaultShowList shows (x ∷ xs) = showString "[" ∘ foldl (λ s x → s ∘ sh
 
 open Show ⦃ ... ⦄ public
 
+{-# COMPILE AGDA2HS Show existing-class #-}
+
 private
   makeShow : (a → String) → Show a
   makeShow sh .showsPrec _ = showString ∘ sh

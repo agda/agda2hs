@@ -40,6 +40,8 @@ record Num (a : Set) : Set₁ where
 
 open Num ⦃ ... ⦄ public hiding (FromIntegerOK; number)
 
+{-# COMPILE AGDA2HS Num existing-class #-}
+
 instance
   iNumNat : Num Nat
   iNumNat .MinusOK n m      = IsFalse (n Nat.< m)

@@ -31,6 +31,8 @@ record Bounded (a : Set) : Set where
     overlap ⦃ below ⦄ : BoundedBelow a
     overlap ⦃ above ⦄ : BoundedAbove a
 
+{-# COMPILE AGDA2HS Bounded existing-class #-}
+
 open BoundedBelow ⦃ ... ⦄ public
 open BoundedAbove ⦃ ... ⦄ public
 

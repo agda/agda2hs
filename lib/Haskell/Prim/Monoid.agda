@@ -20,6 +20,8 @@ record Semigroup (a : Set) : Set where
 
 open Semigroup ⦃ ... ⦄ public
 
+{-# COMPILE AGDA2HS Semigroup existing-class #-}
+
 instance
   iSemigroupList : Semigroup (List a)
   iSemigroupList ._<>_ = _++_
@@ -62,6 +64,8 @@ record Monoid (a : Set) : Set where
   mconcat (x ∷ xs) = x <> mconcat xs
 
 open Monoid ⦃ ... ⦄ public
+
+{-# COMPILE AGDA2HS Monoid existing-class #-}
 
 instance
   iMonoidList : Monoid (List a)

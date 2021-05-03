@@ -66,6 +66,8 @@ record Foldable (t : Set → Set) : Set₁ where
 
 open Foldable ⦃ ... ⦄ public
 
+{-# COMPILE AGDA2HS Foldable existing-class #-}
+
 instance
   iFoldableList : Foldable List
   iFoldableList .foldMap f []       = mempty

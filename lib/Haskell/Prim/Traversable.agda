@@ -31,6 +31,8 @@ record Traversable (t : Set → Set) : Set₁ where
 
 open Traversable ⦃ ... ⦄ public
 
+{-# COMPILE AGDA2HS Traversable existing-class #-}
+
 instance
   iTraversableList : Traversable List
   iTraversableList .traverse f []       = pure []
