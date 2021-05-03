@@ -29,6 +29,8 @@ record Applicative (f : Set → Set) : Set₁ where
 
 open Applicative ⦃ ... ⦄ public
 
+{-# COMPILE AGDA2HS Applicative existing-class #-}
+
 instance
   iApplicativeList : Applicative List
   iApplicativeList .pure x      = x ∷ []

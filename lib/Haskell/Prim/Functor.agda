@@ -34,6 +34,8 @@ record Functor (f : Set → Set) : Set₁ where
 
 open Functor ⦃ ... ⦄ public
 
+{-# COMPILE AGDA2HS Functor existing-class #-}
+
 instance
   iFunctorList : Functor List
   iFunctorList .fmap = map

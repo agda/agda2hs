@@ -56,6 +56,8 @@ record Ord (a : Set) : Set where
 
 open Ord ⦃ ... ⦄ public
 
+{-# COMPILE AGDA2HS Ord existing-class #-}
+
 ordFromCompare : ⦃ Eq a ⦄ → (a → a → Ordering) → Ord a
 ordFromCompare cmp .compare = cmp
 ordFromCompare cmp ._<_  x y = cmp x y == LT

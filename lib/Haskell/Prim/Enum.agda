@@ -87,6 +87,8 @@ record Enum (a : Set) : Set₁ where
 
 open Enum ⦃ ... ⦄ public
 
+{-# COMPILE AGDA2HS Enum existing-class #-}
+
 private
   divNat : Nat → Nat → Nat
   divNat a 0       = 0

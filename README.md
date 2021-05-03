@@ -19,7 +19,7 @@ See `test/Test.agda` for an example.
 - [x] Compile if/then/else [#13](https://github.com/agda/agda2hs/pull/13)
 - [ ] Literals in patterns
 - [x] Use some Haskell syntax ADT and a proper pretty printing library [#4](https://github.com/agda/agda2hs/pull/4)
-- [ ] Map instance arguments to Haskell type classes (definitions and use) [#3](https://github.com/agda/agda2hs/pull/3)
+- [x] Map instance arguments to Haskell type classes (definitions and use) [#3](https://github.com/agda/agda2hs/pull/3)
 - [x] `where` clauses [#23](https://github.com/agda/agda2hs/pull/23)
 - [ ] Higher-rank polymorphism
 - [x] More builtin types (Double, Word64) [#12](https://github.com/agda/agda2hs/pull/12)
