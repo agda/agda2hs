@@ -768,6 +768,9 @@ compileTerm v =
           Hs.InfixApp _ a op b
             | a == hsx -> Hs.RightSection () op b -- System-inserted visible lambdas can only come from sections
           _            -> hsLambda x body         -- so we know x is not free in b.
+    Lam v b ->
+      -- Drop non-visible lambdas (#65)
+      underAbstraction_ b $ \ body -> compileTerm body
     t -> genericDocError =<< text "bad term:" <?> prettyTCM t
   where
     app :: Hs.Exp () -> Elims -> TCM (Hs.Exp ())
