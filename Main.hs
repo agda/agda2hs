@@ -396,7 +396,7 @@ compile _ _ _ def = processPragma (defName def) >>= \ p ->
   where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
 
 compileInstance :: Definition -> TCM [Hs.Decl ()]
-compileInstance def = do
+compileInstance def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
   ir <- compileInstRule [] (unEl . defType $ def)
   locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
           . dropWhile ((<= defName def) . fst)
@@ -434,19 +434,22 @@ compileInstanceClause ls c = do
   -- 1. drop any patterns before record projection to suppress the instance arg
   -- 2. use record proj. as function name
   -- 3. process remaing patterns as usual
-  let (p : ps) = dropWhile (isNothing . isProjP) (namedClausePats c)
-      c' = c {namedClausePats = ps}
-      ProjP _ q = namedArg p
+  case dropWhile (isNothing . isProjP) (namedClausePats c) of
+    []     -> genericDocError =<< fsep (pwords $ "Type class instances must be defined using copatterns and " ++
+                                                 "cannot be defined using helper functions or record expressions.")
+    p : ps -> do
+      let c' = c {namedClausePats = ps}
+          ProjP _ q = namedArg p
 
-  -- We want the actual field name, not the instance-opened projection.
-  (q, _, _) <- origProjection q
+      -- We want the actual field name, not the instance-opened projection.
+      (q, _, _) <- origProjection q
 
-  let uf = hsName (show (nameConcrete (qnameName q)))
-  (_ , x) <- compileClause ls uf c'
-  arg <- fieldArgInfo q
-  if visible arg
-    then return $ Just $ Hs.InsDecl () (Hs.FunBind () [x])
-    else return Nothing
+      let uf = hsName (show (nameConcrete (qnameName q)))
+      (_ , x) <- compileClause ls uf c'
+      arg <- fieldArgInfo q
+      if visible arg
+        then return $ Just $ Hs.InsDecl () (Hs.FunBind () [x])
+        else return Nothing
 
 fieldArgInfo :: QName -> TCM ArgInfo
 fieldArgInfo f = do
