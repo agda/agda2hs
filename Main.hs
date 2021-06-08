@@ -544,14 +544,10 @@ compileConstructor params c = do
 
 compileConstructorArgs :: Telescope -> TCM [Hs.Type ()]
 compileConstructorArgs EmptyTel = return []
-compileConstructorArgs (ExtendTel a tel) = case getHiding a of
-  -- Drop hidden arguments
-  Hidden -> underAbstraction a tel compileConstructorArgs
-  -- Compile visible constructor argument
-  -- TODO: check that there are no dependencies on this argument
-  NotHidden -> (:) <$> compileType (unEl $ unDom a)
-                   <*> underAbstraction a tel compileConstructorArgs
-  Instance{} -> genericDocError =<< text "Not supported: constructors with class constraints"
+compileConstructorArgs (ExtendTel a tel) = compileDom a >>= \case
+  DomType hsA       -> (hsA :) <$> underAbstraction a tel compileConstructorArgs
+  DomConstraint hsA -> genericDocError =<< text "Not supported: constructors with class constraints"
+  DomDropped        -> underAbstraction a tel compileConstructorArgs
 
 compilePostulate :: Definition -> TCM [Hs.Decl ()]
 compilePostulate def = do
@@ -693,18 +689,14 @@ dependsOnVisibleVar t = do
 compileType :: Term -> TCM (Hs.Type ())
 compileType t = do
   case t of
-    Pi a b
-      | hidden a -> dropPi -- Hidden Pi means Haskell forall, which we leave implicit
-      | visible a -> do
-          hsA <- compileType (unEl $ unDom a)
-          hsB <- underAbstraction a b $ compileType . unEl
-          return $ Hs.TyFun () hsA hsB
-      | isInstance a -> ifM (dependsOnVisibleVar a) dropPi $ do
-          hsA <- compileType (unEl $ unDom a)
-          hsB <- underAbstraction a b (compileType . unEl)
-          return $ Hs.TyForall () Nothing (Just (Hs.CxSingle () (Hs.TypeA () hsA))) hsB
-      | otherwise -> dropPi
-      where dropPi = underAbstr a b (compileType . unEl)
+    Pi a b -> compileDom a >>= \case
+      DomType hsA -> do
+        hsB <- underAbstraction a b $ compileType . unEl
+        return $ Hs.TyFun () hsA hsB
+      DomConstraint hsA -> do
+        hsB <- underAbstraction a b (compileType . unEl)
+        return $ Hs.TyForall () Nothing (Just hsA) hsB
+      DomDropped -> underAbstr a b (compileType . unEl)
     Def f es
       | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics f es
       | Just args <- allApplyElims es -> do
@@ -717,6 +709,23 @@ compileType t = do
       return $ tApp (Hs.TyVar () x) vs
     Sort s -> return (Hs.TyStar ())
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
+
+-- Currently we can compile an Agda "Dom Type" in three ways:
+-- - To a type in Haskell
+-- - To a typeclass constraint in Haskell
+-- - To nothing (e.g. for proofs)
+data CompiledDom
+  = DomType (Hs.Type ())
+  | DomConstraint (Hs.Context ())
+  | DomDropped
+
+compileDom :: Dom Type -> TCM CompiledDom
+compileDom a
+  | hidden a     = return DomDropped -- Hidden Pi means Haskell forall, which we leave implicit
+  | visible a    = DomType <$> compileType (unEl $ unDom a)
+  | isInstance a = ifM (dependsOnVisibleVar a) (return DomDropped) $
+      DomConstraint . Hs.CxSingle () . Hs.TypeA () <$> compileType (unEl $ unDom a)
+  | otherwise    = return DomDropped
 
 -- Exploits the fact that the name of the record type and the name of the record module are the
 -- same, including the unique name ids.
