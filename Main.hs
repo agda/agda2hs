@@ -540,11 +540,13 @@ compileMinRecord :: [Hs.Name ()] -> QName -> TCM MinRecord
 compileMinRecord fieldNames m = do
   rdef <- getConstInfo m
   definedFields <- classMemberNames rdef
+  let Record{recPars = npars} = theDef rdef
+      pars = map defaultArg [ Var i [] | i <- [npars, npars - 1..0] ]
   defaults <- lookupDefaultImplementations m (fieldNames \\ definedFields)
   -- We can't simply compileFun here for two reasons:
   -- * it has an explicit dictionary argument
   -- * it's using the fields and definitions from the minimal record and not the parent record
-  compiled <- fmap concat $ traverse compileFun defaults
+  compiled <- fmap concat $ traverse (compileFun . (`apply` pars)) defaults
   let declMap = Map.fromList [ (definedName c, def) | def@(Hs.FunBind _ (c : _)) <- compiled ]
   return (definedFields, declMap)
 
