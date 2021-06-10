@@ -28,7 +28,7 @@ record Ord₁ (a : Set) : Set where
     _<_ : a → a → Bool
 
   _>_ : a → a → Bool
-  _>_ = flip _<_
+  x > y = y < x
 
 record Ord₂ (a : Set) : Set where
   field

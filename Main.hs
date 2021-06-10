@@ -11,6 +11,7 @@ import Data.List
 import Data.Maybe
 import Data.Map (Map)
 import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as HMap
 import Data.Set (Set)
 import qualified Data.Set as Set
 import System.Console.GetOpt
@@ -504,41 +505,58 @@ fieldArgInfo f = do
   where
     badness = genericDocError =<< text "Not a record field:" <+> prettyTCM f
 
-type MinRecord =
-  ([Hs.Name ()], -- coming from record
-   Map (Hs.Name ()) (Hs.Decl ())) -- coming from module
+findDefinitions :: (QName -> Definition -> TCM Bool) -> ModuleName -> TCM [Definition]
+findDefinitions p m = do
+  localDefs    <- (^. sigDefinitions) <$> (^. stSignature) <$> getTCState
+  importedDefs <- (^. sigDefinitions) <$> (^. stImports)   <$> getTCState
+  let allDefs = HMap.union localDefs importedDefs
+      inMod = [ (x, def) | (x, def) <- HMap.toList allDefs, isInModule x m ]
+  map snd <$> filterM (uncurry p) inMod
 
+resolveStringName :: String -> TCM QName
+resolveStringName s = do
+  cqname <- parseName noRange s
+  rname <- resolveName cqname
+  case rname of
+    DefinedName _ aname -> return $ anameName aname
+    _ -> genericDocError =<< text ("Couldn't find " ++ s)
 
-lookupModule :: QName -> TCM [Definition]
-lookupModule m = do
-    -- lookup all sections
-    --  sections <- (^. sigSections) <$> (^. stSignature) <$> getTCState
-  return []
+lookupDefaultImplementations :: QName -> [Hs.Name ()] -> TCM [Definition]
+lookupDefaultImplementations recName fields = do
+  let modName = qnameToMName recName
+      isField f _ = (`elem` fields) . unQual <$> hsQName f
+  findDefinitions isField modName
 
+classMemberNames :: Definition -> TCM [Hs.Name ()]
+classMemberNames def =
+  case theDef def of
+    Record{recFields = fs} -> fmap unQual <$> traverse hsQName (map unDom fs)
+    _ -> genericDocError =<< text "Not a record:" <+> prettyTCM (defName def)
 
-compileMinRecord :: QName -> TCM MinRecord
-compileMinRecord m = do
-  -- lookup all defs in the module
-  defs <- (^. stImports . sigDefinitions) <$> getTCState
-  -- trace $ "Defs: " ++ show defs
+-- Primitive fields and default implementations
+type MinRecord = ([Hs.Name ()], Map (Hs.Name ()) (Hs.Decl ()))
 
-  rd <- theDef <$> getConstInfo m
-  case rd of
-    Record {recFields = fs} -> do
-      primQnames <- fmap unQual <$> traverse hsQName (map unDom fs)
-      trace $ "PrimQnames: " ++ show primQnames
-      decls <- lookupModule m :: TCM [Definition]
-      decls <- filter (not . isTySig) . concat <$> traverse compileFun decls
-      return (primQnames, Map.empty)
-
-    _ -> genericDocError =<< text "Not a record:" <+> prettyTCM m
+compileMinRecord :: [Hs.Name ()] -> QName -> TCM MinRecord
+compileMinRecord fieldNames m = do
+  rdef <- getConstInfo m
+  definedFields <- classMemberNames rdef
+  defaults <- lookupDefaultImplementations m (fieldNames \\ definedFields)
+  -- We can't simply compileFun here for two reasons:
+  -- * it has an explicit dictionary argument
+  -- * it's using the fields and definitions from the minimal record and not the parent record
+  compiled <- fmap concat $ traverse compileFun defaults
+  let declMap = Map.fromList [ (definedName c, def) | def@(Hs.FunBind _ (c : _)) <- compiled ]
+  return (definedFields, declMap)
 
 compileMinRecords :: Definition -> [String] -> TCM [Hs.Decl ()]
 compileMinRecords def sls = do
 
+  members <- classMemberNames def
+
   qnames <- traverse resolveStringName sls
-  trace $ "Qnames: " ++ show qnames
-  (prims , crecords) <- unzip <$> traverse compileMinRecord {- parent fields names-} qnames
+  (prims , defaults) <- unzip <$> traverse (compileMinRecord members) qnames
+
+  -- 0. [OPTIONAL] check all record signatures match (or simply leave to GHC)
 
   -- 1. build minimal pragma
   -- make the formula for a list of names of methods for for a single minimal instance
@@ -551,30 +569,10 @@ compileMinRecords def sls = do
 
       minPragma = helpOr (map helpAnd prims)
 
-  -- 2. assert that all default implementations are the same (for a certain field)
-  let decls = [] :: [Hs.Decl ()]
+  -- 2. assert that all default implementations are the same (for a certain field) (TODO)
+  let decls = Map.elems $ Map.unions defaults
 
-  -- 3. return the decls
   return (minPragma : decls)
-  -- extract default implementations of fields
-  -- generate minimal pragma
-
-
-  -- check fields for main def of a class  and minimal defs
-      -- 2. TODO: Check that the minimal records are sensible
-      --    * in case of overlapping, make sure they are syntactically equal
-      --        - covers check for distinct minimal schemes, e.g. cannot have the exact same derivation
-      --        - easier to check after compiling to Haskell
-      --    * [OPTIONAL] check all record signatures match (or simply leave to GHC)
-      --    * Never inline inside minimal records
-  where
-    resolveStringName :: String -> TCM QName
-    resolveStringName s = do
-      cqname <- parseName noRange s
-      rname <- resolveName cqname
-      case rname of
-        DefinedName _ aname -> return $ anameName aname
-        _ -> genericDocError =<< text ("Couldn't find " ++ s)
 
 compileRecord :: RecordTarget -> Definition -> TCM (Hs.Decl ())
 compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
@@ -587,13 +585,10 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
                    pars
   case target of
     ToClass ms -> do
-      trace $ "Compiling class '" ++ show (defName def) ++ "' with minimal records: " ++ show ms
       classDecls <- compileRecFields classDecl recPars (unDom <$> recFields) recTel
       defaultDecls <- compileMinRecords def ms
-      trace $ "DefaultDecls: " ++ show defaultDecls
       return $ Hs.ClassDecl () Nothing hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
     ToRecord -> do
-      trace $ "Compiling record: " ++ show def
       fieldDecls <- compileRecFields fieldDecl recPars (unDom <$> recFields) recTel
       mapM_ checkFieldInScope (map unDom recFields)
       let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls

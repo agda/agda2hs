@@ -24,6 +24,7 @@ executable agda2hs
   build-depends:       base >= 4.10 && < 4.15,
                        Agda >= 2.6 && < 2.6.2,
                        containers >= 0.6 && < 0.7,
+                       unordered-containers >= 0.2,
                        directory >= 1.2.6.2 && < 1.4,
                        filepath >= 1.4.1.0 && < 1.5,
                        haskell-src-exts >= 1.23 && < 1.25,

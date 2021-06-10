@@ -46,9 +46,9 @@ unQual (UnQual _ n) = n
 unQual (Qual _ _ n) = n
 unQual (Special _ _)  = error "Unexpected special con"
 
-isTySig :: Decl () -> Bool
-isTySig TypeSig {} = True
-isTySig _          = False
+definedName :: Match l -> Name l
+definedName (Match _ f _ _ _) = f
+definedName (InfixMatch _ _ f _ _ _) = f
 
 -- Utilities for building Haskell constructs
 
