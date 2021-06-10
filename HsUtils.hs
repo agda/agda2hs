@@ -41,6 +41,15 @@ isOp (UnQual _ Symbol{}) = True
 isOp (Special _ Cons{})  = True
 isOp _                   = False
 
+unQual :: QName () -> Name ()
+unQual (UnQual _ n) = n
+unQual (Qual _ _ n) = n
+unQual (Special _ _)  = error "Unexpected special con"
+
+isTySig :: Decl () -> Bool
+isTySig TypeSig {} = True
+isTySig _          = False
+
 -- Utilities for building Haskell constructs
 
 pp :: Pretty a => a -> String

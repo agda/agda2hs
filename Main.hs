@@ -5,7 +5,7 @@ import Control.Arrow ((>>>))
 import Control.Monad
 import Control.Monad.Fail (MonadFail)
 import Control.Monad.IO.Class
-import Data.Generics (mkT, everywhere, listify, extT, everything, mkQ)
+import Data.Generics (mkT, everywhere, listify, extT, everything, mkQ, Data)
 import Data.Function
 import Data.List
 import Data.Maybe
@@ -62,6 +62,46 @@ import Agda.Utils.Size
 
 import HsUtils
 
+-- tracing
+ppNoqual :: (P.Pretty a, Data a) => a -> String
+ppNoqual = prettyShow . (everywhere $ mkT $ \(QName _ n) -> qualify_ n)
+
+trace' :: String -> TCM ()
+trace' s = displayDebugMessage "agda2hs" 100 s
+trace    = trace' . (++ "\n") . ("\n" ++)
+-- traceS  pre = trace . title pre . show
+traceP' pre = trace . heading pre . ppNoqual
+traceP  pre = trace . title pre . ppNoqual
+
+spaced s = "\n" ++ s ++ "\n"
+heading pre s = pre ++ ": " ++ s
+title pre s = pre' ++ s ++ spaced (replicate (length pre') '*')
+  where pre' = spaced $ "****** " ++ pre ++ " ******"
+
+traceDefn :: QName -> Defn -> String
+traceDefn q d =
+  "[in range: " ++ show (nameBindingSite $ qnameName q) ++ " ]\n" ++
+  case d of {(Function {..}) -> ppNoqual funClauses; _ -> ppNoqual d}
+
+traceDef :: (a, Definition) -> TCM ()
+traceDef (_, Defn {..}) = trace $
+  prettyShow defName ++ " :: " ++ ppNoqual defType
+    ++ "\n" ++ prettyShow defName ++ " = " ++ traceDefn defName theDef
+
+traceDecls :: LocalDecls -> TCM ()
+traceDecls ds = mapM_ traceDef ds
+
+traceChildren :: [(Definition, LocalDecls)] -> TCM ()
+traceChildren = mapM_ $ \(d, ds) -> do
+  trace " -- Child -- "
+  traceDef ((), d)
+  when (not $ null ds) $ do
+    trace " -- Grandchildren -- "
+    traceDecls ds
+
+-- examine :: (Show a, P.Pretty a) => String -> a -> TCM ()
+-- examine pre x = traceP pre x >> traceS (pre ++ " (long)") x
+--
 
 data Options = Options { optOutDir     :: FilePath,
                          optExtensions :: [Hs.Extension] }
@@ -348,14 +388,15 @@ tuplePat cons i ps = do
 
 -- Compiling things -------------------------------------------------------
 
-data RecordTarget = ToRecord | ToClass
+data RecordTarget = ToRecord | ToClass [String]
 
 data ParsedPragma
   = NoPragma
   | DefaultPragma
-  | ClassPragma
+  | ClassPragma [String]
   | ExistingClassPragma
   | DerivingPragma [Hs.Deriving ()]
+  deriving Show
 
 -- "class" is not being used usefully, any record with a pragma is
 -- considered a typeclass
@@ -366,37 +407,39 @@ data ParsedPragma
 processPragma :: QName -> TCM ParsedPragma
 processPragma qn = getUniqueCompilerPragma pragmaName qn >>= \case
   Nothing -> return NoPragma
-  Just (CompilerPragma _ s) | s == "class"          -> return ClassPragma
-                            | s == "existing-class" -> return ExistingClassPragma
-  Just (CompilerPragma _ s) | "deriving" `isPrefixOf` s ->
-    -- parse a deriving clause for a datatype by tacking it onto a
-    -- dummy datatype and then only keeping the deriving part
-    case Hs.parseDecl ("data X = X " ++ s) of
-      Hs.ParseFailed loc msg ->
-        setCurrentRange (srcLocToRange loc) $ genericError msg
-      Hs.ParseOk (Hs.DataDecl _ _ _ _ _ ds) ->
-        return $ DerivingPragma (map (() <$) ds)
-      Hs.ParseOk _ -> return DefaultPragma
+  Just (CompilerPragma _ s)
+    | "class" `isPrefixOf` s    -> return $ ClassPragma (words $ drop 5 s)
+    | s == "existing-class"     -> return ExistingClassPragma
+    | "deriving" `isPrefixOf` s ->
+      -- parse a deriving clause for a datatype by tacking it onto a
+      -- dummy datatype and then only keeping the deriving part
+      case Hs.parseDecl ("data X = X " ++ s) of
+        Hs.ParseFailed loc msg ->
+          setCurrentRange (srcLocToRange loc) $ genericError msg
+        Hs.ParseOk (Hs.DataDecl _ _ _ _ _ ds) ->
+          return $ DerivingPragma (map (() <$) ds)
+        Hs.ParseOk _ -> return DefaultPragma
   _ -> return DefaultPragma
-
 
 compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
 compile _ _ _ def = processPragma (defName def) >>= \ p ->
   case (p , defInstance def , theDef def) of
     (NoPragma           , _      , _         ) -> return []
     (ExistingClassPragma, _      , _         ) -> return [] -- No code generation, but affects how projections are compiled
-    (ClassPragma        , _      , Record{}  ) -> tag <$> compileRecord ToClass def
+    (ClassPragma ms     , _      , Record{}  ) -> tag1 <$> compileRecord (ToClass ms) def
     (DerivingPragma ds  , _      , Datatype{}) -> tag <$> compileData ds def
     (DefaultPragma      , _      , Datatype{}) -> tag <$> compileData [] def
     (DefaultPragma      , Just _ , _         ) -> tag <$> compileInstance def
     (DefaultPragma      , _      , Axiom     ) -> tag <$> compilePostulate def
     (DefaultPragma      , _      , Function{}) -> tag <$> compileFun def
-    (DefaultPragma      , _      , Record{}  ) -> tag <$> compileRecord ToRecord def
+    (DefaultPragma      , _      , Record{}  ) -> tag1 <$> compileRecord ToRecord def
     _                                         -> return []
   where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
+        tag1 code = [(nameBindingSite $ qnameName $ defName def, [code])]
 
 compileInstance :: Definition -> TCM [Hs.Decl ()]
 compileInstance def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
+  trace $ "Compiling instance: " ++ show def
   ir <- compileInstRule [] (unEl . defType $ def)
   locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
           . dropWhile ((<= defName def) . fst)
@@ -461,8 +504,79 @@ fieldArgInfo f = do
   where
     badness = genericDocError =<< text "Not a record field:" <+> prettyTCM f
 
+type MinRecord =
+  ([Hs.Name ()], -- coming from record
+   Map (Hs.Name ()) (Hs.Decl ())) -- coming from module
 
-compileRecord :: RecordTarget -> Definition -> TCM [Hs.Decl ()]
+
+lookupModule :: QName -> TCM [Definition]
+lookupModule m = do
+    -- lookup all sections
+    --  sections <- (^. sigSections) <$> (^. stSignature) <$> getTCState
+  return []
+
+
+compileMinRecord :: QName -> TCM MinRecord
+compileMinRecord m = do
+  -- lookup all defs in the module
+  defs <- (^. stImports . sigDefinitions) <$> getTCState
+  -- trace $ "Defs: " ++ show defs
+
+  rd <- theDef <$> getConstInfo m
+  case rd of
+    Record {recFields = fs} -> do
+      primQnames <- fmap unQual <$> traverse hsQName (map unDom fs)
+      trace $ "PrimQnames: " ++ show primQnames
+      decls <- lookupModule m :: TCM [Definition]
+      decls <- filter (not . isTySig) . concat <$> traverse compileFun decls
+      return (primQnames, Map.empty)
+
+    _ -> genericDocError =<< text "Not a record:" <+> prettyTCM m
+
+compileMinRecords :: Definition -> [String] -> TCM [Hs.Decl ()]
+compileMinRecords def sls = do
+
+  qnames <- traverse resolveStringName sls
+  trace $ "Qnames: " ++ show qnames
+  (prims , crecords) <- unzip <$> traverse compileMinRecord {- parent fields names-} qnames
+
+  -- 1. build minimal pragma
+  -- make the formula for a list of names of methods for for a single minimal instance
+  let helpAnd :: [Hs.Name ()] -> Hs.BooleanFormula ()
+      helpAnd xs = Hs.AndFormula () $ Hs.VarFormula () <$> xs
+
+      -- combine formulae for all minimal instances
+      helpOr :: [Hs.BooleanFormula ()] -> Hs.Decl ()
+      helpOr bs = Hs.MinimalPragma () (Just $ Hs.OrFormula () bs)  --- .... or prims ...
+
+      minPragma = helpOr (map helpAnd prims)
+
+  -- 2. assert that all default implementations are the same (for a certain field)
+  let decls = [] :: [Hs.Decl ()]
+
+  -- 3. return the decls
+  return (minPragma : decls)
+  -- extract default implementations of fields
+  -- generate minimal pragma
+
+
+  -- check fields for main def of a class  and minimal defs
+      -- 2. TODO: Check that the minimal records are sensible
+      --    * in case of overlapping, make sure they are syntactically equal
+      --        - covers check for distinct minimal schemes, e.g. cannot have the exact same derivation
+      --        - easier to check after compiling to Haskell
+      --    * [OPTIONAL] check all record signatures match (or simply leave to GHC)
+      --    * Never inline inside minimal records
+  where
+    resolveStringName :: String -> TCM QName
+    resolveStringName s = do
+      cqname <- parseName noRange s
+      rname <- resolveName cqname
+      case rname of
+        DefinedName _ aname -> return $ anameName aname
+        _ -> genericDocError =<< text ("Couldn't find " ++ s)
+
+compileRecord :: RecordTarget -> Definition -> TCM (Hs.Decl ())
 compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
   TelV tel _ <- telViewUpTo recPars (defType def)
   hd <- addContext tel $ do
@@ -472,20 +586,24 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
                    (Hs.DHead () (hsName rName))
                    pars
   case target of
-    ToClass -> do
+    ToClass ms -> do
+      trace $ "Compiling class '" ++ show (defName def) ++ "' with minimal records: " ++ show ms
       classDecls <- compileRecFields classDecl recPars (unDom <$> recFields) recTel
-      return [Hs.ClassDecl () Nothing hd [] (Just classDecls)]
-
+      defaultDecls <- compileMinRecords def ms
+      trace $ "DefaultDecls: " ++ show defaultDecls
+      return $ Hs.ClassDecl () Nothing hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
     ToRecord -> do
+      trace $ "Compiling record: " ++ show def
       fieldDecls <- compileRecFields fieldDecl recPars (unDom <$> recFields) recTel
       mapM_ checkFieldInScope (map unDom recFields)
       let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
-      return [Hs.DataDecl () (Hs.DataType ()) Nothing hd [conDecl] []]
+      return $ Hs.DataDecl () (Hs.DataType ()) Nothing hd [conDecl] []
 
   where
     rName = prettyShow $ qnameName $ defName def
     cName | recNamedCon = hsName $ prettyShow $ qnameName $ conName recConHead
           | otherwise   = hsName rName   -- Reuse record name for constructor if no given name
+
 
     -- In Haskell, projections live in the same scope as the record type, so check here that the
     -- record module has been opened.
@@ -517,10 +635,10 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
           return (ty:tys)
         (_, _) -> __IMPOSSIBLE__
 
-
 compileData :: [Hs.Deriving ()] -> Definition -> TCM [Hs.Decl ()]
 compileData ds def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
+  -- trace $ "Compiling data: " ++ show d
   case theDef def of
     Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} -> do
       unless (numIxs == 0) $ genericDocError =<< text "Not supported: indexed datatypes"
@@ -688,6 +806,7 @@ dependsOnVisibleVar t = do
 
 compileType :: Term -> TCM (Hs.Type ())
 compileType t = do
+  -- trace $ "Compiling type: " ++ show t
   case t of
     Pi a b -> compileDom a >>= \case
       DomType hsA -> do
@@ -737,7 +856,7 @@ isClassFunction q
       Right Defn{defName = r, theDef = Record{}} ->
         -- It would be nicer if we remembered this from when we looked at the record the first time.
         processPragma r <&> \ case
-          ClassPragma         -> True
+          ClassPragma _       -> True
           ExistingClassPragma -> True
           _                   -> False
       _                             -> return False
@@ -745,7 +864,8 @@ isClassFunction q
     m = qnameModule q
 
 compileTerm :: Term -> TCM (Hs.Exp ())
-compileTerm v =
+compileTerm v = do
+  -- trace $ "Compiling term: " ++ show v
   case unSpine v of
     Var x es   -> (`app` es) . hsVar =<< showTCM (Var x [])
     -- v currently we assume all record projections are instance
