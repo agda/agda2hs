@@ -42,13 +42,15 @@ open Ord ⦃ ... ⦄
 {-# COMPILE AGDA2HS Ord class Ord₁ Ord₂ #-}
 -- CHECKS
 
--- instance
---   OrdBool₁ : Ord Bool
---   OrdBool₁ = record {Ord₁ (λ where .Ord₁._<_ → _<ᵇ_)}
---     where
---       _<ᵇ_ : Bool → Bool → Bool
---       false <ᵇ b = b
---       true  <ᵇ _ = false
+instance
+  OrdBool₁ : Ord Bool
+  OrdBool₁ = record {Ord₁ (λ where .Ord₁._<_ → _<ᵇ_)}
+    where
+      _<ᵇ_ : Bool → Bool → Bool
+      false <ᵇ b = b
+      true  <ᵇ _ = false
+
+{-# COMPILE AGDA2HS OrdBool₁ #-}
 
 --   -- OrdBool₂ : Ord Bool
 --   -- OrdBool₂ = record {Ord₂ (λ where
@@ -129,18 +131,21 @@ open Show ⦃ ... ⦄
 --   showList = defaultShowList (showPrec 0)
 -- -}
 
--- SB : Show₂ Bool
--- SB .Show₂.show true  = "true"
--- SB .Show₂.show false = "false"
+SB : Show₂ Bool
+SB .Show₂.show true  = "true"
+SB .Show₂.show false = "false"
+
+instance
+  ShowBool : Show Bool
+  ShowBool .show     = Show₂.show SB
+  ShowBool .showPrec = Show₂.showPrec SB
+  ShowBool .showList []       = showString ""
+  ShowBool .showList (true ∷ bs) = showString "1" ∘ showList bs
+  ShowBool .showList (false ∷ bs) = showString "0" ∘ showList bs
+
+{-# COMPILE AGDA2HS ShowBool #-}
 
 -- instance
---   ShowBool : Show Bool
---   ShowBool .show     = Show₂.show SB
---   ShowBool .showPrec = Show₂.showPrec SB
---   ShowBool .showList []       = showString ""
---   ShowBool .showList (true ∷ bs) = showString "1" ∘ showList bs
---   ShowBool .showList (false ∷ bs) = showString "0" ∘ showList bs
-
 --   ShowMaybe : ⦃ Show a ⦄ → Show (Maybe a)
 --   ShowMaybe {a = a} = record {Show₁ s₁}
 --     where

@@ -461,12 +461,11 @@ compile _ _ _ def = runC $ processPragma (defName def) >>= \ p ->
 
 compileInstance :: Definition -> C [Hs.Decl ()]
 compileInstance def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
-  trace $ "Compiling instance: " ++ show def
   ir <- compileInstRule [] (unEl . defType $ def)
   locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
           . dropWhile ((<= defName def) . fst)
           . sortDefs <$> liftTCM curDefs
-  ds <- catMaybes <$> mapM (compileInstanceClause locals) funClauses
+  ds <- concat <$> mapM (compileInstanceClause locals) funClauses
   return $ [Hs.InstDecl () Nothing ir (Just ds)]
   where Function{..} = theDef def
 
@@ -493,15 +492,35 @@ compileInstRule cs ty = case unSpine  $ ty of
     where dropPi = underAbstr a b (compileInstRule cs . unEl)
   _ -> __IMPOSSIBLE__
 
-compileInstanceClause :: LocalDecls -> Clause -> C (Maybe (Hs.InstDecl ()))
+etaExpandClause :: Clause -> C [Clause]
+etaExpandClause cl@Clause{clauseBody = Nothing} = genericError "Instance definition with absurd pattern!"
+etaExpandClause cl@Clause{namedClausePats = ps, clauseBody = Just t} =
+  -- Plan:  drop default implementations and chase definitions of primitive methods in minimal
+  --        records
+  -- Check: - Only one minimal record
+  --        - all primitives of the minimal are projected from the same dictionary
+  --        - default implementation that get dropped are also projected from that same dictionary
+  case t of
+    Con c _ _ ->
+      return
+        [ cl{ namedClausePats = ps ++ [unnamed . ProjP ProjSystem <$> f],
+              clauseBody      = Just $ t `applyE` [Proj ProjSystem $ unArg f] }
+        | f <- fields ]
+      where
+        fields = conFields c
+    _ ->
+      genericDocError =<< fsep (pwords $ "Type class instances must be defined using copatterns and " ++
+                                         "cannot be defined using helper functions.")
+
+compileInstanceClause :: LocalDecls -> Clause -> C [Hs.InstDecl ()]
 compileInstanceClause ls c = do
   -- abuse compileClause:
   -- 1. drop any patterns before record projection to suppress the instance arg
   -- 2. use record proj. as function name
   -- 3. process remaing patterns as usual
   case dropWhile (isNothing . isProjP) (namedClausePats c) of
-    []     -> genericDocError =<< fsep (pwords $ "Type class instances must be defined using copatterns and " ++
-                                                 "cannot be defined using helper functions or record expressions.")
+    [] ->
+      concat <$> (mapM (compileInstanceClause ls) =<< etaExpandClause c)
     p : ps -> do
       let c' = c {namedClausePats = ps}
           ProjP _ q = namedArg p
@@ -512,9 +531,7 @@ compileInstanceClause ls c = do
       let uf = hsName (show (nameConcrete (qnameName q)))
       (_ , x) <- compileClause ls uf c'
       arg <- fieldArgInfo q
-      if visible arg
-        then return $ Just $ Hs.InsDecl () (Hs.FunBind () [x])
-        else return Nothing
+      return [Hs.InsDecl () (Hs.FunBind () [x]) | visible arg]
 
 fieldArgInfo :: QName -> C ArgInfo
 fieldArgInfo f = do
