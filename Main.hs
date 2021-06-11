@@ -9,6 +9,8 @@ import Control.Monad.IO.Class
 import Data.Generics (mkT, everywhere, listify, extT, everything, mkQ, Data)
 import Data.Function
 import Data.List
+import Data.List.NonEmpty (NonEmpty(..))
+import qualified Data.List.NonEmpty as List1
 import Data.Maybe
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -63,6 +65,9 @@ import Agda.Utils.Monad
 import Agda.Utils.Size
 
 import HsUtils
+
+multilineText :: Monad m => String -> m Doc
+multilineText s = vcat $ map text $ lines s
 
 -- tracing
 ppNoqual :: (P.Pretty a, Data a) => a -> String
@@ -590,10 +595,14 @@ compileMinRecords def sls = do
 
       minPragma = helpOr (map helpAnd prims)
 
-  -- 2. assert that all default implementations are the same (for a certain field) (TODO)
-  let decls = Map.elems $ Map.unions defaults
+  -- 2. assert that all default implementations are the same (for a certain field)
+  let getUnique f (x :| xs)
+        | all (x ==) xs = return x
+        | otherwise     = genericDocError =<< do text ("Conflicting default implementations for " ++ pp f ++ ":") $$
+                                                   vcat [ text "-" <+> multilineText (pp d) | d <- nub (x : xs) ]
+  decls <- Map.traverseWithKey getUnique $ Map.unionsWith (<>) $ (map . fmap) (:| []) defaults
 
-  return (minPragma : decls)
+  return (minPragma : Map.elems decls)
 
 compileRecord :: RecordTarget -> Definition -> C (Hs.Decl ())
 compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do

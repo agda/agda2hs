@@ -68,53 +68,54 @@ open Ord ⦃ ... ⦄
 -- {-# COMPILE AGDA2HS OrdBool₁ #-}
 -- {-# COMPILE AGDA2HS Ordℕ #-}
 
--- ShowS : Set
--- ShowS = String → String
--- {-# COMPILE AGDA2HS ShowS #-}
+ShowS : Set
+ShowS = String → String
+{-# COMPILE AGDA2HS ShowS #-}
 
--- showString : String → ShowS
--- showString = _++_
--- {-# COMPILE AGDA2HS showString #-}
+showString : String → ShowS
+showString = _++_
+{-# COMPILE AGDA2HS showString #-}
 
--- showParen : Bool → ShowS → ShowS
--- showParen false s = s
--- showParen true  s = showString "(" ∘ s ∘ showString ")"
--- {-# COMPILE AGDA2HS showParen #-}
+showParen : Bool → ShowS → ShowS
+showParen false s = s
+showParen true  s = showString "(" ∘ s ∘ showString ")"
+{-# COMPILE AGDA2HS showParen #-}
 
--- defaultShowList : (a → ShowS) → List a → ShowS
--- defaultShowList _     []       = showString "[]"
--- defaultShowList shows (x ∷ xs) = showString "[" ∘ foldl (λ s x → s ∘ showString "," ∘ shows x) (shows x) xs ∘ showString "]"
--- {-# COMPILE AGDA2HS defaultShowList #-}
+defaultShowList : (a → ShowS) → List a → ShowS
+defaultShowList _     []       = showString "[]"
+defaultShowList shows (x ∷ xs) = showString "[" ∘ foldl (λ s x → s ∘ showString "," ∘ shows x) (shows x) xs ∘ showString "]"
+{-# COMPILE AGDA2HS defaultShowList #-}
 
--- record Show (a : Set) : Set where
---   field
---     show : a → String
---     showPrec : Nat → a → ShowS
---     showList : List a → ShowS
+record Show (a : Set) : Set where
+  field
+    show : a → String
+    showPrec : Nat → a → ShowS
+    showList : List a → ShowS
 
--- record Show₁ (a : Set) : Set where
---   field
---     showPrec : Nat → a → ShowS
+record Show₁ (a : Set) : Set where
+  field
+    showPrec : Nat → a → ShowS
 
---   show : a → String
---   show x = showPrec 0 x ""
+  show : a → String
+  show x = showPrec 0 x ""
 
---   showList : List a → ShowS
---   showList = defaultShowList (showPrec 0)
+  showList : List a → ShowS
+  showList = defaultShowList (showPrec 0)
 
--- record Show₂ (a : Set) : Set where
---   field
---     show : a → String
+record Show₂ (a : Set) : Set where
+  field
+    show : a → String
 
---   showPrec : Nat → a → ShowS
---   showPrec _ x s = show x ++ s
+  showPrec : Nat → a → ShowS
+  showPrec _ x s = show x ++ s
 
---   showList : List a → ShowS
---   showList = defaultShowList (showPrec 0)
+  showList : List a → ShowS
+  showList = defaultShowList (showPrec 0)
 
--- open Show ⦃ ... ⦄
+open Show ⦃ ... ⦄
 
--- {-# COMPILE AGDA2HS Show class Show₁ Show₂ #-}
+{-# COMPILE AGDA2HS Show class Show₁ Show₂ #-}
+
 -- -- NB: after looking up the minimal records, we can generate a GHC pragma {-# MINIMAL show | showPrec #-}
 -- --    ++ overlapping definitions match (syntactically, after compiling Haskell!)
 -- {- OUTPUT
