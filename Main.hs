@@ -492,14 +492,20 @@ compileInstRule cs ty = case unSpine  $ ty of
     where dropPi = underAbstr a b (compileInstRule cs . unEl)
   _ -> __IMPOSSIBLE__
 
+-- Plan:
+--  - Eta-expand if no copatterns (top-level)
+--  - drop default implementations and chase definitions of primitive methods in minimal
+--    records + *checks*
+--  - compileInstanceClause on resulting clauses
+--
+-- *checks*
+--  - Only one minimal record
+--  - all primitives of the minimal are projected from the same dictionary
+--  - default implementation that get dropped are also projected from that same dictionary
+
 etaExpandClause :: Clause -> C [Clause]
 etaExpandClause cl@Clause{clauseBody = Nothing} = genericError "Instance definition with absurd pattern!"
 etaExpandClause cl@Clause{namedClausePats = ps, clauseBody = Just t} =
-  -- Plan:  drop default implementations and chase definitions of primitive methods in minimal
-  --        records
-  -- Check: - Only one minimal record
-  --        - all primitives of the minimal are projected from the same dictionary
-  --        - default implementation that get dropped are also projected from that same dictionary
   case t of
     Con c _ _ ->
       return
