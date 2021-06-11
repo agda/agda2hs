@@ -424,7 +424,7 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
   _ -> return DefaultPragma
 
 data CompileEnv = CompileEnv
-  { minRecordName :: Maybe QName
+  { minRecordName :: Maybe ModuleName
   }
 
 initCompileEnv :: CompileEnv
@@ -552,6 +552,9 @@ classMemberNames def =
 -- Primitive fields and default implementations
 type MinRecord = ([Hs.Name ()], Map (Hs.Name ()) (Hs.Decl ()))
 
+withMinRecord :: QName -> C a -> C a
+withMinRecord m = local $ \ e -> e { minRecordName = Just (qnameToMName m) }
+
 compileMinRecord :: [Hs.Name ()] -> QName -> C MinRecord
 compileMinRecord fieldNames m = do
   rdef <- getConstInfo m
@@ -562,7 +565,7 @@ compileMinRecord fieldNames m = do
   -- We can't simply compileFun here for two reasons:
   -- * it has an explicit dictionary argument
   -- * it's using the fields and definitions from the minimal record and not the parent record
-  compiled <- fmap concat $ traverse (compileFun . (`apply` pars)) defaults
+  compiled <- withMinRecord m $ fmap concat $ traverse (compileFun . (`apply` pars)) defaults
   let declMap = Map.fromList [ (definedName c, def) | def@(Hs.FunBind _ (c : _)) <- compiled ]
   return (definedFields, declMap)
 
@@ -864,8 +867,10 @@ compileDom a
 isClassFunction :: QName -> C Bool
 isClassFunction q
   | null $ mnameToList m = return False
-  | otherwise            =
+  | otherwise            = do
+    minRec <- asks minRecordName
     getConstInfo' (mnameToQName m) >>= \ case
+      _ | Just m == minRec -> return True
       Right Defn{defName = r, theDef = Record{}} ->
         -- It would be nicer if we remembered this from when we looked at the record the first time.
         processPragma r <&> \ case
