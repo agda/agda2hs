@@ -15,7 +15,10 @@ open import Haskell.Prim.Bool
 open import Haskell.Prim.Maybe
 open import Haskell.Prim.Foldable
 
--- open import Haskell.Prelude hiding (Show; showsPrec; )
+{-# FOREIGN AGDA2HS
+{-# LANGUAGE TypeSynonymInstances #-}
+import Prelude hiding (Show, ShowS, show, showList, showString, showParen, Ord, (<), (>))
+#-}
 
 -- ** Ord
 
@@ -40,34 +43,91 @@ record Ord₂ (a : Set) : Set where
 open Ord ⦃ ... ⦄
 
 {-# COMPILE AGDA2HS Ord class Ord₁ Ord₂ #-}
--- CHECKS
+
+OB : Ord₁ Bool
+OB .Ord₁._<_ false b = b
+OB .Ord₁._<_ true  _ = false
 
 instance
-  OrdBool₁ : Ord Bool
-  OrdBool₁ = record {Ord₁ (λ where .Ord₁._<_ → _<ᵇ_)}
-    where
-      _<ᵇ_ : Bool → Bool → Bool
-      false <ᵇ b = b
-      true  <ᵇ _ = false
+  OrdBool₀ : Ord Bool
+  OrdBool₀ ._<_ = Ord₁._<_ OB
+  OrdBool₀ ._>_ = Ord₁._>_ OB
+{-# COMPILE AGDA2HS OrdBool₀ #-}
 
+data Bool1 : Set where
+  Mk1 : Bool -> Bool1
+{-# COMPILE AGDA2HS Bool1 #-}
+instance
+  OrdBool₁ : Ord Bool1
+  OrdBool₁ = record {Ord₁ ord₁}
+    where
+      ord₁ : Ord₁ Bool1
+      ord₁ .Ord₁._<_ (Mk1 false) (Mk1 b) = b
+      ord₁ .Ord₁._<_ (Mk1 true)  _       = false
 {-# COMPILE AGDA2HS OrdBool₁ #-}
 
---   -- OrdBool₂ : Ord Bool
---   -- OrdBool₂ = record {Ord₂ (λ where
---   --   .Ord₂._>_ false false → false
---   --   .Ord₂._>_ false true  → false
---   --   .Ord₂._>_ true  false → true
---   --   .Ord₂._>_ true  true  → false)}
+data Bool2 : Set where
+  Mk2 : Bool -> Bool2
+{-# COMPILE AGDA2HS Bool2 #-}
+instance
+  OrdBool₂ : Ord Bool2
+  OrdBool₂ = record {_<_ = _<:_; _>_ = flip _<:_}
+    where
+      _<:_ : Bool2 → Bool2 → Bool
+      (Mk2 false) <: (Mk2 b) = b
+      (Mk2 true)  <: _       = false
+{-# COMPILE AGDA2HS OrdBool₂ #-}
 
---   Ordℕ : Ord Nat
---   Ordℕ = record {Ord₁ (λ where .Ord₁._<_ → Nat._<_)}
--- --   --   ~ record {_<_ = Ordℕ₁._<_; _>_ = Ordℕ₁._>_}
--- --   --   ~ OrdN ._<_ = OrdN1._<_       ~> compile N1._<_ (primitive)
--- --   --     OrdN ._>_ = OrdN1._>_       ~> drop N1._>_ (derived)
--- --   --   ~ record {_<_ = Ordℕ₁._<_; _>_ = λ ....}
--- --   --   ~ OrdN ._<_ = OrdN1._<_       ~> compile N1._<_ (primitive)
--- --   --     OrdN ._>_ = λ ....          ~> compile λ .... (not even related to N1)
--- {-# COMPILE AGDA2HS OrdBool₁ #-}
+data Bool3 : Set where
+  Mk3 : Bool -> Bool3
+{-# COMPILE AGDA2HS Bool3 #-}
+instance
+  OrdBool₃ : Ord Bool3
+  OrdBool₃ = record {Ord₁ (λ where .Ord₁._<_ → _<:_)}
+    where
+      _<:_ : Bool3 → Bool3 → Bool
+      (Mk3 false) <: (Mk3 b) = b
+      (Mk3 true)  <: _       = false
+{-# COMPILE AGDA2HS OrdBool₃ #-}
+
+data Bool4 : Set where
+  Mk4 : Bool -> Bool4
+{-# COMPILE AGDA2HS Bool4 #-}
+lift4 : (Bool → Bool → a) → (Bool4 → Bool4 → a)
+lift4 f (Mk4 x) (Mk4 y) = f x y
+{-# COMPILE AGDA2HS lift4 #-}
+instance
+  OrdBool₄ : Ord Bool4
+  OrdBool₄ = record {Ord₁ (λ where .Ord₁._<_ → lift4 (λ x y → not x && y))}
+{-# COMPILE AGDA2HS OrdBool₄ #-}
+
+data Bool5 : Set where
+  Mk5 : Bool -> Bool5
+{-# COMPILE AGDA2HS Bool5 #-}
+instance
+  OrdBool₅ : Ord Bool5
+  OrdBool₅ = record {Ord₂ (λ where .Ord₂._>_ → _>:_)}
+    where
+      _>:_ : Bool5 → Bool5 → Bool
+      (Mk5 false) >: _       = false
+      (Mk5 true)  >: (Mk5 b) = not b
+{-# COMPILE AGDA2HS OrdBool₅ #-}
+
+data Bool6 : Set where
+  Mk6 : Bool -> Bool6
+{-# COMPILE AGDA2HS Bool6 #-}
+instance
+  OrdBool₆ : Ord Bool6
+  OrdBool₆ = record {Ord₂ (λ where .Ord₂._>_ → _>:_); _<_ = flip _>:_}
+    where
+      _>:_ : Bool6 → Bool6 → Bool
+      (Mk6 false) >: _       = false
+      (Mk6 true)  >: (Mk6 b) = not b
+{-# COMPILE AGDA2HS OrdBool₆ #-}
+
+instance
+  Ordℕ : Ord Nat
+  Ordℕ = record {Ord₁ (λ where .Ord₁._<_ → Nat._<_)}
 -- {-# COMPILE AGDA2HS Ordℕ #-}
 
 ShowS : Set
@@ -118,19 +178,6 @@ open Show ⦃ ... ⦄
 
 {-# COMPILE AGDA2HS Show class Show₁ Show₂ #-}
 
--- -- NB: after looking up the minimal records, we can generate a GHC pragma {-# MINIMAL show | showPrec #-}
--- --    ++ overlapping definitions match (syntactically, after compiling Haskell!)
--- {- OUTPUT
--- class Show a where
---   show :: a → String
---   showPrec :: Int → a → ShowS
---   showList :: List a → ShowS
-
---   showPrec _ x s = show x ++ s
---   show x = showPrec 0 x ""
---   showList = defaultShowList (showPrec 0)
--- -}
-
 SB : Show₂ Bool
 SB .Show₂.show true  = "true"
 SB .Show₂.show false = "false"
@@ -142,40 +189,18 @@ instance
   ShowBool .showList []       = showString ""
   ShowBool .showList (true ∷ bs) = showString "1" ∘ showList bs
   ShowBool .showList (false ∷ bs) = showString "0" ∘ showList bs
-
 {-# COMPILE AGDA2HS ShowBool #-}
 
--- instance
---   ShowMaybe : ⦃ Show a ⦄ → Show (Maybe a)
---   ShowMaybe {a = a} = record {Show₁ s₁}
---     where
---       s₁ : Show₁ (Maybe a)
---       s₁ .Show₁.showPrec n Nothing = showString "nothing"
---       s₁ .Show₁.showPrec n (Just x) = showParen (9 Nat.< n) (showString "just " ∘ showPrec 10 x)
+instance
+  ShowMaybe : ⦃ Show a ⦄ → Show (Maybe a)
+  ShowMaybe {a = a} = record {Show₁ s₁}
+    where
+      s₁ : Show₁ (Maybe a)
+      s₁ .Show₁.showPrec n Nothing = showString "nothing"
+      s₁ .Show₁.showPrec n (Just x) = showParen true {-(9 < n)-} (showString "just " ∘ showPrec 10 x)
+{-# COMPILE AGDA2HS ShowMaybe #-}
 
---   ShowList : ⦃ Show a ⦄ → Show (List a)
---   ShowList = record {Show₁ (λ where .Show₁.showPrec _ → showList)}
-
--- {-# COMPILE AGDA2HS ShowBool #-}
--- {-# COMPILE AGDA2HS ShowMaybe #-}
--- -- NB: assuming we always get copatterns (from outer-most records):
--- --    1. normal case (no minimality, just as before)
--- --    2. minimal primitive used (chase down definition and inline it)
--- --    3. minimal derived method used (ignore)
-
--- {- OUTPUT
--- instance Show Bool where
---   show True = "true"
---   show False = "false"
-
---   showList [] = ....
---   showList (true : ...
---   showList (false : ...
-
--- instance Show a => Show (Maybe a) where
---   showPrec n Nothing  = ...
---   showPrec n (Just x) = ...
-
--- instance Show a => Show (List a) where
---   showPrec _ = showList
--- -}
+instance
+  ShowList : ⦃ Show a ⦄ → Show (List a)
+  ShowList = record {Show₁ (λ where .Show₁.showPrec _ → showList)}
+{-# COMPILE AGDA2HS ShowList #-}

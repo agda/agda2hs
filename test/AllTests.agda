@@ -14,6 +14,7 @@ import Where
 import TypeSynonyms
 import Datatypes
 import Records
+import DefaultMethods
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -29,4 +30,5 @@ import Where
 import TypeSynonyms
 import Datatypes
 import Records
+import DefaultMethods
 #-}

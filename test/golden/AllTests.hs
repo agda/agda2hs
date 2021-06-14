@@ -13,4 +13,5 @@ import Where
 import TypeSynonyms
 import Datatypes
 import Records
+import DefaultMethods
 

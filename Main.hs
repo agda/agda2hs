@@ -1,7 +1,8 @@
+{-# LANGUAGE MultiWayIf #-}
 module Main where
 
 import Control.Applicative
-import Control.Arrow ((>>>))
+import Control.Arrow ((>>>), (***))
 import Control.Monad
 import Control.Monad.Fail (MonadFail)
 import Control.Monad.Reader
@@ -63,52 +64,9 @@ import Agda.Utils.Impossible
 import Agda.Utils.Maybe.Strict (toLazy, toStrict)
 import Agda.Utils.Monad
 import Agda.Utils.Size
+import Agda.Utils.Functor
 
 import HsUtils
-
-multilineText :: Monad m => String -> m Doc
-multilineText s = vcat $ map text $ lines s
-
--- tracing
-ppNoqual :: (P.Pretty a, Data a) => a -> String
-ppNoqual = prettyShow . (everywhere $ mkT $ \(QName _ n) -> qualify_ n)
-
-trace' :: String -> C ()
-trace' s = displayDebugMessage "agda2hs" 100 s
-trace    = trace' . (++ "\n") . ("\n" ++)
--- traceS  pre = trace . title pre . show
-traceP' pre = trace . heading pre . ppNoqual
-traceP  pre = trace . title pre . ppNoqual
-
-spaced s = "\n" ++ s ++ "\n"
-heading pre s = pre ++ ": " ++ s
-title pre s = pre' ++ s ++ spaced (replicate (length pre') '*')
-  where pre' = spaced $ "****** " ++ pre ++ " ******"
-
-traceDefn :: QName -> Defn -> String
-traceDefn q d =
-  "[in range: " ++ show (nameBindingSite $ qnameName q) ++ " ]\n" ++
-  case d of {(Function {..}) -> ppNoqual funClauses; _ -> ppNoqual d}
-
-traceDef :: (a, Definition) -> C ()
-traceDef (_, Defn {..}) = trace $
-  prettyShow defName ++ " :: " ++ ppNoqual defType
-    ++ "\n" ++ prettyShow defName ++ " = " ++ traceDefn defName theDef
-
-traceDecls :: LocalDecls -> C ()
-traceDecls ds = mapM_ traceDef ds
-
-traceChildren :: [(Definition, LocalDecls)] -> C ()
-traceChildren = mapM_ $ \(d, ds) -> do
-  trace " -- Child -- "
-  traceDef ((), d)
-  when (not $ null ds) $ do
-    trace " -- Grandchildren -- "
-    traceDecls ds
-
--- examine :: (Show a, P.Pretty a) => String -> a -> TCM ()
--- examine pre x = traceP pre x >> traceS (pre ++ " (long)") x
---
 
 data Options = Options { optOutDir     :: FilePath,
                          optExtensions :: [Hs.Extension] }
@@ -154,6 +112,9 @@ backend = Backend'
 
 showTCM :: PrettyTCM a => a -> C String
 showTCM x = lift $ show <$> prettyTCM x
+
+multilineText :: Monad m => String -> m Doc
+multilineText s = vcat $ map text $ lines s
 
 hsQName :: QName -> C (Hs.QName ())
 hsQName f
@@ -221,6 +182,8 @@ applyNoBodies d args = revert $ d `apply` args
     revert d@(Defn {theDef = f@(Function {funClauses = cls})}) =
       d {theDef = f {funClauses = zipWith setBody cls bodies}}
     revert _ = __IMPOSSIBLE__
+
+concatUnzip = (concat *** concat ) . unzip
 
 -- Builtins ---------------------------------------------------------------
 
@@ -448,25 +411,27 @@ compile _ _ _ def = runC $ processPragma (defName def) >>= \ p ->
   case (p , defInstance def , theDef def) of
     (NoPragma           , _      , _         ) -> return []
     (ExistingClassPragma, _      , _         ) -> return [] -- No code generation, but affects how projections are compiled
-    (ClassPragma ms     , _      , Record{}  ) -> tag1 <$> compileRecord (ToClass ms) def
+    (ClassPragma ms     , _      , Record{}  ) -> tag . single <$> compileRecord (ToClass ms) def
     (DerivingPragma ds  , _      , Datatype{}) -> tag <$> compileData ds def
     (DefaultPragma      , _      , Datatype{}) -> tag <$> compileData [] def
-    (DefaultPragma      , Just _ , _         ) -> tag <$> compileInstance def
+    (DefaultPragma      , Just _ , _         ) -> tag . single <$> compileInstance def
     (DefaultPragma      , _      , Axiom     ) -> tag <$> compilePostulate def
     (DefaultPragma      , _      , Function{}) -> tag <$> compileFun def
-    (DefaultPragma      , _      , Record{}  ) -> tag1 <$> compileRecord ToRecord def
+    (DefaultPragma      , _      , Record{}  ) -> tag . single <$> compileRecord ToRecord def
     _                                         -> return []
   where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
-        tag1 code = [(nameBindingSite $ qnameName $ defName def, [code])]
+        single x = [x]
 
-compileInstance :: Definition -> C [Hs.Decl ()]
+compileInstance :: Definition -> C (Hs.Decl ())
 compileInstance def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
   ir <- compileInstRule [] (unEl . defType $ def)
   locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
           . dropWhile ((<= defName def) . fst)
           . sortDefs <$> liftTCM curDefs
-  ds <- concat <$> mapM (compileInstanceClause locals) funClauses
-  return $ [Hs.InstDecl () Nothing ir (Just ds)]
+  (ds, rs) <- concatUnzip <$> mapM (compileInstanceClause locals) funClauses
+  when (length (nub rs) > 1) $
+    genericDocError =<< fsep (pwords "More than one minimal record used.")
+  return $ Hs.InstDecl () Nothing ir (Just ds)
   where Function{..} = theDef def
 
 compileInstRule :: [Hs.Asst ()] -> Term -> C (Hs.InstRule ())
@@ -493,32 +458,30 @@ compileInstRule cs ty = case unSpine  $ ty of
   _ -> __IMPOSSIBLE__
 
 -- Plan:
---  - Eta-expand if no copatterns (top-level)
---  - drop default implementations and chase definitions of primitive methods in minimal
---    records + *checks*
---  - compileInstanceClause on resulting clauses
+--  - ✓ Eta-expand if no copatterns (top-level)
+--  - ✓ drop default implementations and chase definitions of primitive methods in minimal records + *checks*
+--  - ✓ compileInstanceClause on resulting clauses
 --
 -- *checks*
---  - Only one minimal record
---  - all primitives of the minimal are projected from the same dictionary
---  - default implementation that get dropped are also projected from that same dictionary
+--  - ✓ Only one minimal record
+--  - ✓ all primitives of the minimal are projected from the same dictionary
+--  - ✓ default implementation that get dropped are also projected from that same dictionary
 
 etaExpandClause :: Clause -> C [Clause]
 etaExpandClause cl@Clause{clauseBody = Nothing} = genericError "Instance definition with absurd pattern!"
-etaExpandClause cl@Clause{namedClausePats = ps, clauseBody = Just t} =
+etaExpandClause cl@Clause{namedClausePats = ps, clauseBody = Just t} = do
   case t of
-    Con c _ _ ->
-      return
-        [ cl{ namedClausePats = ps ++ [unnamed . ProjP ProjSystem <$> f],
-              clauseBody      = Just $ t `applyE` [Proj ProjSystem $ unArg f] }
-        | f <- fields ]
-      where
-        fields = conFields c
+    Con c _ _ -> do
+      let fields = conFields c
+      let cls = [ cl{ namedClausePats = ps ++ [unnamed . ProjP ProjSystem <$> f],
+                      clauseBody      = Just $ t `applyE` [Proj ProjSystem $ unArg f] }
+                | f <- fields ]
+      return cls
     _ ->
-      genericDocError =<< fsep (pwords $ "Type class instances must be defined using copatterns and " ++
-                                         "cannot be defined using helper functions.")
+      genericDocError =<< fsep (pwords $ "Type class instances must be defined using copatterns (or top-level" ++
+                                         " records) and cannot be defined using helper functions.")
 
-compileInstanceClause :: LocalDecls -> Clause -> C [Hs.InstDecl ()]
+compileInstanceClause :: LocalDecls -> Clause -> C ([Hs.InstDecl ()], [QName])
 compileInstanceClause ls c = do
   -- abuse compileClause:
   -- 1. drop any patterns before record projection to suppress the instance arg
@@ -526,18 +489,56 @@ compileInstanceClause ls c = do
   -- 3. process remaing patterns as usual
   case dropWhile (isNothing . isProjP) (namedClausePats c) of
     [] ->
-      concat <$> (mapM (compileInstanceClause ls) =<< etaExpandClause c)
+      concatUnzip <$> (mapM (compileInstanceClause ls) =<< etaExpandClause c)
     p : ps -> do
       let c' = c {namedClausePats = ps}
           ProjP _ q = namedArg p
 
       -- We want the actual field name, not the instance-opened projection.
       (q, _, _) <- origProjection q
-
-      let uf = hsName (show (nameConcrete (qnameName q)))
-      (_ , x) <- compileClause ls uf c'
       arg <- fieldArgInfo q
-      return [Hs.InsDecl () (Hs.FunBind () [x]) | visible arg]
+      let uf = hsName $ show $ nameConcrete $ qnameName q
+
+      let
+        (.~) :: QName -> QName -> Bool
+        x .~ y = nameConcrete (qnameName x) == nameConcrete (qnameName y)
+
+        resolveExtendedLambda :: QName -> C QName
+        resolveExtendedLambda n | isExtendedLambdaName n = defName <$> getConstInfo n
+                                | otherwise              = return n
+
+        chaseDef :: QName -> C Definition
+        chaseDef n = do
+          d <- getConstInfo n
+          let Function {..} = theDef d
+          case funClauses of
+            [ Clause {clauseBody = Just (Def n' [])} ] -> do
+              chaseDef n'
+            _ -> return d
+
+      if
+        -- Projection of a primitive field: chase down definition and inline as instance clause.
+        | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
+        , [(_, f)] <- mapMaybe isProjElim es
+        , f .~ q
+        -> do d <- chaseDef n
+              fc <- drop 1 <$> compileFun d
+              let hd = hsName $ show $ nameConcrete $ qnameName $ defName d
+              let fc' = dropPatterns 1 $ replaceName hd uf fc
+              return (if visible arg then map (Hs.InsDecl ()) fc' else [], [n])
+
+         -- Projection of a default implementation: drop while making sure these are drawn from the
+         -- same (minimal) dictionary as the primitive fields.
+         | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
+         , n .~ q
+         , Just [ Def n' _ ] <- map unArg . filter visible <$> allApplyElims es
+         -> do n' <- resolveExtendedLambda n'
+               return ([], [n'])
+
+         -- No minimal dictionary used, proceed with compiling as a regular clause.
+         | otherwise
+         -> do (_ , x) <- compileClause ls uf c'
+               return ([Hs.InsDecl () (Hs.FunBind () [x]) | visible arg], [])
 
 fieldArgInfo :: QName -> C ArgInfo
 fieldArgInfo f = do
@@ -608,15 +609,17 @@ compileMinRecords def sls = do
   -- 0. [OPTIONAL] check all record signatures match (or simply leave to GHC)
 
   -- 1. build minimal pragma
-  -- make the formula for a list of names of methods for for a single minimal instance
-  let helpAnd :: [Hs.Name ()] -> Hs.BooleanFormula ()
-      helpAnd xs = Hs.AndFormula () $ Hs.VarFormula () <$> xs
 
-      -- combine formulae for all minimal instances
-      helpOr :: [Hs.BooleanFormula ()] -> Hs.Decl ()
-      helpOr bs = Hs.MinimalPragma () (Just $ Hs.OrFormula () bs)  --- .... or prims ...
+  let
+    -- make the formula for a list of names of methods for for a single minimal instance
+    helpAnd :: [Hs.Name ()] -> Hs.BooleanFormula ()
+    helpAnd xs = Hs.AndFormula () $ Hs.VarFormula () <$> xs
 
-      minPragma = helpOr (map helpAnd prims)
+    -- combine formulae for all minimal instances
+    helpOr :: [Hs.BooleanFormula ()] -> Hs.Decl ()
+    helpOr bs = Hs.MinimalPragma () (Just $ Hs.OrFormula () bs)
+
+    minPragma = helpOr (map helpAnd prims)
 
   -- 2. assert that all default implementations are the same (for a certain field)
   let getUnique f (x :| xs)
@@ -625,7 +628,8 @@ compileMinRecords def sls = do
                                                    vcat [ text "-" <+> multilineText (pp d) | d <- nub (x : xs) ]
   decls <- Map.traverseWithKey getUnique $ Map.unionsWith (<>) $ (map . fmap) (:| []) defaults
 
-  return (minPragma : Map.elems decls)
+  -- TODO: order default implementations differently?
+  return ([minPragma | not (null prims)] ++ Map.elems decls)
 
 compileRecord :: RecordTarget -> Definition -> C (Hs.Decl ())
 compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
@@ -686,7 +690,6 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
 compileData :: [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
 compileData ds def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
-  -- trace $ "Compiling data: " ++ show d
   case theDef def of
     Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} -> do
       unless (numIxs == 0) $ genericDocError =<< text "Not supported: indexed datatypes"
@@ -784,7 +787,7 @@ compileClause locals x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBo
 
     -- Compile rhs and its @where@ clauses, making sure that:
     --   * inner modules get instantiated
-    --   * references to inner modules get un-qualifiyed (and instantiated)
+    --   * references to inner modules get un-qualified (and instantiated)
     let localUses = nub $ listify (`elem` map fst locals) body
         belongs q@(QName m _) (QName m0 _) =
           ((show m0 ++ "._") `isPrefixOf` show m) && (q `notElem` localUses)
@@ -854,7 +857,6 @@ dependsOnVisibleVar t = do
 
 compileType :: Term -> C (Hs.Type ())
 compileType t = do
-  -- trace $ "Compiling type: " ++ show t
   case t of
     Pi a b -> compileDom a >>= \case
       DomType hsA -> do
@@ -886,7 +888,7 @@ data CompiledDom
   | DomConstraint (Hs.Context ())
   | DomDropped
 
-compileDom :: Dom Type -> TCM CompiledDom
+compileDom :: Dom Type -> C CompiledDom
 compileDom a
   | hidden a     = return DomDropped -- Hidden Pi means Haskell forall, which we leave implicit
   | visible a    = DomType <$> compileType (unEl $ unDom a)
@@ -915,7 +917,6 @@ isClassFunction q
 
 compileTerm :: Term -> C (Hs.Exp ())
 compileTerm v = do
-  -- trace $ "Compiling term: " ++ show v
   case unSpine v of
     Var x es   -> (`app` es) . hsVar =<< showTCM (Var x [])
     -- v currently we assume all record projections are instance
