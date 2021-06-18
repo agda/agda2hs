@@ -65,7 +65,7 @@ instance
   iEqTuple ._==_ (x ∷ xs) (y ∷ ys) = x == y && xs == ys
 
   iEqList : ⦃ Eq a ⦄ → Eq (List a)
-  iEqList ._==_ []       []       = false
+  iEqList ._==_ []       []       = true
   iEqList ._==_ (x ∷ xs) (y ∷ ys) = x == y && xs == ys
   iEqList ._==_ _        _        = false
 
