@@ -1,12 +1,15 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiWayIf #-}
 module Main where
 
 import Control.Applicative
-import Control.Arrow ((>>>), (***))
+import Control.Arrow ((>>>), (***), (&&&), first, second)
 import Control.Monad
 import Control.Monad.Fail (MonadFail)
 import Control.Monad.Reader
 import Control.Monad.IO.Class
+import Control.DeepSeq
+import Data.Data
 import Data.Generics (mkT, everywhere, listify, extT, everything, mkQ, Data)
 import Data.Function
 import Data.List
@@ -14,6 +17,7 @@ import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as List1
 import Data.Maybe
 import Data.Map (Map)
+import qualified Data.Text as Text
 import qualified Data.Map as Map
 import qualified Data.HashMap.Strict as HMap
 import Data.Set (Set)
@@ -70,6 +74,10 @@ import HsUtils
 
 data Options = Options { optOutDir     :: FilePath,
                          optExtensions :: [Hs.Extension] }
+
+-- Required by Agda-2.6.2, but we don't really care.
+instance NFData Options where
+  rnf _ = ()
 
 defaultOptions :: Options
 defaultOptions = Options{ optOutDir = ".", optExtensions = [] }
@@ -161,13 +169,19 @@ makeListP' nil cons err p = do
   where
     vis ps = [ namedArg p | p <- ps, visible p ]
 
-underAbstr :: Subst t a => Dom Type -> Abs a -> (a -> C b) -> C b
+#if MIN_VERSION_Agda(2,6,2)
+underAbstr  :: Subst a => Dom Type -> Abs a -> (a -> C b) -> C b
+underAbstr_ :: Subst a => Abs a -> (a -> C b) -> C b
+#else
+underAbstr  :: Subst t a => Dom Type -> Abs a -> (a -> C b) -> C b
+underAbstr_ :: Subst t a => Abs a -> (a -> C b) -> C b
+#endif
+
 underAbstr a b ret
   | absName b == "_" = underAbstraction' KeepNames a b ret
   | otherwise        = underAbstraction' KeepNames a b $ \ body ->
                          liftTCM1 localScope $ bindVar 0 >> ret body
 
-underAbstr_ :: Subst t a => Abs a -> (a -> C b) -> C b
 underAbstr_ = underAbstr __DUMMY_DOM__
 
 applyNoBodies :: Definition -> [Arg Term] -> Definition
@@ -183,7 +197,8 @@ applyNoBodies d args = revert $ d `apply` args
       d {theDef = f {funClauses = zipWith setBody cls bodies}}
     revert _ = __IMPOSSIBLE__
 
-concatUnzip = (concat *** concat ) . unzip
+concatUnzip :: [([a], [b])] -> ([a], [b])
+concatUnzip = (concat *** concat) . unzip
 
 -- Builtins ---------------------------------------------------------------
 
@@ -289,7 +304,7 @@ caseOf _ es = compileArgs es >>= \ case
 
 lambdaCase :: QName -> Elims -> C (Hs.Exp ())
 lambdaCase q es = setCurrentRange (nameBindingSite $ qnameName q) $ do
-  def@Function{ funExtLam = Just (ExtLamInfo mname _) } <- theDef <$> getConstInfo q
+  def@Function{ funExtLam = Just ExtLamInfo{extLamModule = mname} } <- theDef <$> getConstInfo q
   npars <- size <$> lookupSection mname
   let (pars, rest) = splitAt npars es
       cs           = applyE (funClauses def) pars
@@ -415,7 +430,7 @@ compile _ _ _ def = runC $ processPragma (defName def) >>= \ p ->
     (DerivingPragma ds  , _      , Datatype{}) -> tag <$> compileData ds def
     (DefaultPragma      , _      , Datatype{}) -> tag <$> compileData [] def
     (DefaultPragma      , Just _ , _         ) -> tag . single <$> compileInstance def
-    (DefaultPragma      , _      , Axiom     ) -> tag <$> compilePostulate def
+    (DefaultPragma      , _      , Axiom{}   ) -> tag <$> compilePostulate def
     (DefaultPragma      , _      , Function{}) -> tag <$> compileFun def
     (DefaultPragma      , _      , Record{}  ) -> tag . single <$> compileRecord ToRecord def
     _                                         -> return []
@@ -563,7 +578,11 @@ resolveStringName s = do
   cqname <- liftTCM $ parseName noRange s
   rname <- liftTCM $ resolveName cqname
   case rname of
+#if MIN_VERSION_Agda(2,6,2)
+    DefinedName _ aname _ -> return $ anameName aname
+#else
     DefinedName _ aname -> return $ anameName aname
+#endif
     _ -> genericDocError =<< text ("Couldn't find " ++ s)
 
 lookupDefaultImplementations :: QName -> [Hs.Name ()] -> C [Definition]
@@ -779,6 +798,14 @@ compileTypeArg :: DeBruijnPattern -> C (Hs.TyVarBind ())
 compileTypeArg p@(VarP o _) = Hs.UnkindedVar () . hsName <$> showTCM p
 compileTypeArg _ = genericError "Not supported: type definition by pattern matching"
 
+mapDef :: (Term -> Term) -> Definition -> Definition
+mapDef f d = d{ theDef = mapDefn (theDef d) }
+  where
+    mapDefn def@Function{} = def{ funClauses = map mapClause (funClauses def) }
+    mapDefn defn = defn -- We only need this for Functions
+
+    mapClause c = c{ clauseBody = f <$> clauseBody c }
+
 compileClause :: LocalDecls -> Hs.Name () -> Clause -> C (LocalDecls, Hs.Match ())
 compileClause locals x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBody = body} = do
   addContext (KeepNames tel) $ liftTCM1 localScope $ do
@@ -804,15 +831,18 @@ compileClause locals x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBo
         args   = teleArgs tel
         argLen = length args
 
+
         -- 1. apply current telescope to inner definitions
-        children' = everywhere (mkT (`applyNoBodies` args)) children
+        children' = mapDefs (`applyNoBodies` args) children
+          where mapDefs f = map (f *** map (second f))
 
         -- 2. shrink calls to inner modules (unqualify + partially apply module parameters)
         localNames = concatMap (\(d,ds) -> defName d : map fst ds) children
         shrinkLocalDefs t | Def q es <- t, q `elem` localNames
                           = Def (qualify_ $ qnameName q) (drop argLen es)
                           | otherwise = t
-        (body', children'') = everywhere (mkT shrinkLocalDefs) (body, children')
+        (body', children'') = mapTerms shrinkLocalDefs (body, children')
+          where mapTerms f = fmap f *** (map (mapDef f *** map (second (mapDef f))))
 
     body' <- fromMaybe (hsError $ pp x ++ ": impossible") <$> mapM compileTerm body'
     whereDecls <- concat <$> mapM (uncurry compileFun') children''
@@ -915,6 +945,23 @@ isClassFunction q
   where
     m = qnameModule q
 
+compileLiteral :: Literal -> C (Hs.Exp ())
+#if MIN_VERSION_Agda(2,6,2)
+compileLiteral (LitNat n)    = return $ Hs.intE n
+compileLiteral (LitFloat d)  = return $ Hs.Lit () $ Hs.Frac () (toRational d) (show d)
+compileLiteral (LitWord64 w) = return $ Hs.Lit () $ Hs.PrimWord () (fromIntegral w) (show w)
+compileLiteral (LitChar c)   = return $ Hs.charE c
+compileLiteral (LitString t) = return $ Hs.Lit () $ Hs.String () s s
+  where s = Text.unpack t
+#else
+compileLiteral (LitNat _ n)    = return $ Hs.intE n
+compileLiteral (LitFloat _ d)  = return $ Hs.Lit () $ Hs.Frac () (toRational d) (show d)
+compileLiteral (LitWord64 _ w) = return $ Hs.Lit () $ Hs.PrimWord () (fromIntegral w) (show w)
+compileLiteral (LitChar _ c)   = return $ Hs.charE c
+compileLiteral (LitString _ s) = return $ Hs.Lit () $ Hs.String () s s
+#endif
+compileLiteral l               = genericDocError =<< text "bad term:" <?> prettyTCM (Lit l)
+
 compileTerm :: Term -> C (Hs.Exp ())
 compileTerm v = do
   case unSpine v of
@@ -934,11 +981,7 @@ compileTerm v = do
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName (conName h)
-    Lit (LitNat _ n)    -> return $ Hs.intE n
-    Lit (LitFloat _ d)  -> return $ Hs.Lit () $ Hs.Frac () (toRational d) (show d)
-    Lit (LitWord64 _ w) -> return $ Hs.Lit () $ Hs.PrimWord () (fromIntegral w) (show w)
-    Lit (LitChar _ c)   -> return $ Hs.charE c
-    Lit (LitString _ s) -> return $ Hs.Lit () $ Hs.String () s s
+    Lit l -> compileLiteral l
     Lam v b | visible v, getOrigin v == UserWritten -> do
       hsLambda (absName b) <$> underAbstr_ b compileTerm
     Lam v b | visible v ->
@@ -1110,7 +1153,7 @@ moduleFileName :: Options -> ModuleName -> FilePath
 moduleFileName opts name =
   optOutDir opts </> C.moduleNameToFileName (toTopLevelModuleName name) "hs"
 
-moduleSetup :: Options -> IsMain -> ModuleName -> FilePath -> TCM (Recompile ModuleEnv ModuleRes)
+moduleSetup :: Options -> IsMain -> ModuleName -> filepath -> TCM (Recompile ModuleEnv ModuleRes)
 moduleSetup _ _ _ _ = do
   setScope . iInsideScope =<< curIF
   return $ Recompile ()
