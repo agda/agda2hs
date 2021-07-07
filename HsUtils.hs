@@ -2,7 +2,7 @@
 module HsUtils where
 
 import Data.Data (Data)
-import Data.Generics (listify, everywhere, mkT)
+import Data.Generics (listify, everywhere, mkT, extT)
 import Data.Map (Map)
 import qualified Data.Map as Map
 
@@ -40,6 +40,42 @@ isOp :: QName () -> Bool
 isOp (UnQual _ Symbol{}) = True
 isOp (Special _ Cons{})  = True
 isOp _                   = False
+
+isSpecial :: QName () -> Bool
+isSpecial (Special _ _)  = True
+isSpecial _              = False
+
+unQual :: QName () -> Name ()
+unQual (UnQual _ n) = n
+unQual (Qual _ _ n) = n
+unQual (Special _ _)  = error "Unexpected special con"
+
+definedName :: Match l -> Name l
+definedName (Match _ f _ _ _) = f
+definedName (InfixMatch _ _ f _ _ _) = f
+
+replaceName :: Data a => Name () -> Name () -> a -> a
+replaceName pre post = everywhere (mkT go `extT` go')
+  where
+    go :: QName () -> QName ()
+    go n | isSpecial n = n
+         | unQual n == pre = UnQual () post
+         | otherwise = n
+
+    go' :: Match () -> Match ()
+    go' m = case m of
+      (Match () n ps rhs bs) -> Match () (f n) ps rhs bs
+      (InfixMatch () p n ps rhs bs) -> InfixMatch () p (f n) ps rhs bs
+      where f n | n == pre  = post
+                | otherwise = n
+
+dropPatterns :: Data a => Int -> a -> a
+dropPatterns n = everywhere (mkT go)
+  where
+    go :: Match () -> Match ()
+    go (Match () f ps rhs bs) = Match () f (drop n ps) rhs bs
+    go m = m
+
 
 -- Utilities for building Haskell constructs
 
@@ -175,4 +211,3 @@ insertPars fixs (InfixApp l e1 op e2) = InfixApp l (parL e1) op (parR e2)
       | need topFix (getFix op) = Paren () e
     par _ e = e
 insertPars _ e = e
-

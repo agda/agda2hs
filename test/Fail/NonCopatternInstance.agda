@@ -15,7 +15,9 @@ data Unit : Set where
 
 instance
   UnitHasId : HasId Unit
-  UnitHasId = record { id = λ x → x }   -- NOT CORRECT
+  UnitHasId = r                     -- NOT CORRECT
+    where r = record {id = λ x → x}
   -- UnitHasId .id x = x                -- CORRECT
+  -- UnitHasId = record {id = λ x → x}  -- CORRECT
 
 {-# COMPILE AGDA2HS UnitHasId #-}
