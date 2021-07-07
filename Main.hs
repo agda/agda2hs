@@ -2,11 +2,13 @@
 module Main where
 
 import Control.Applicative
-import Control.Arrow ((>>>), (***))
+import Control.Arrow ((>>>), (***), (&&&), first, second)
 import Control.Monad
 import Control.Monad.Fail (MonadFail)
 import Control.Monad.Reader
 import Control.Monad.IO.Class
+import Control.DeepSeq
+import Data.Data
 import Data.Generics (mkT, everywhere, listify, extT, everything, mkQ, Data)
 import Data.Function
 import Data.List
@@ -14,6 +16,7 @@ import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as List1
 import Data.Maybe
 import Data.Map (Map)
+import qualified Data.Text as Text
 import qualified Data.Map as Map
 import qualified Data.HashMap.Strict as HMap
 import Data.Set (Set)
@@ -46,7 +49,7 @@ import Agda.Syntax.Position
 import Agda.Syntax.Translation.ConcreteToAbstract
 import Agda.Syntax.Translation.AbstractToConcrete
 import Agda.Syntax.Scope.Base
-import Agda.Syntax.Scope.Monad
+import Agda.Syntax.Scope.Monad hiding (withCurrentModule)
 import Agda.TheTypeChecker
 import Agda.TypeChecking.Free
 import Agda.TypeChecking.Rules.Term (isType_)
@@ -71,6 +74,10 @@ import HsUtils
 data Options = Options { optOutDir     :: FilePath,
                          optExtensions :: [Hs.Extension] }
 
+-- Required by Agda-2.6.2, but we don't really care.
+instance NFData Options where
+  rnf _ = ()
+
 defaultOptions :: Options
 defaultOptions = Options{ optOutDir = ".", optExtensions = [] }
 
@@ -84,7 +91,7 @@ pragmaName :: String
 pragmaName = "AGDA2HS"
 
 type Ranged a    = (Range, a)
-type ModuleEnv   = ()
+type ModuleEnv   = ModuleName
 type ModuleRes   = ()
 type CompiledDef = [Ranged [Hs.Decl ()]]
 
@@ -125,17 +132,27 @@ hsQName f
       _                                       -> mkname f
   where
     mkname x = do
+      m <- currentModule
       s <- showTCM x
       return $
         case break (== '.') $ reverse s of
           (_, "")      -> Hs.UnQual () (hsName s)
-          (fr, _ : mr) -> Hs.Qual () (Hs.ModuleName () $ reverse mr) (hsName $ reverse fr)
+          (fr, _ : mr)
+            -- Agda 2.6.2 changed how functions in where clauses get qualified. To work around that
+            -- we never qualify things from the current module.
+            | x `isInModule` m -> Hs.UnQual () (hsName $ reverse fr)
+            | otherwise        -> Hs.Qual () (Hs.ModuleName () $ reverse mr) (hsName $ reverse fr)
+
+isInScopeUnqualified :: QName -> C Bool
+isInScopeUnqualified x = lift $ do
+  ys <- inverseScopeLookupName' AmbiguousAnything x <$> getScope
+  return $ any (not . C.isQualified) ys
 
 freshString :: String -> C String
 freshString s = liftTCM (freshName_ s) >>= showTCM
 
 (~~) :: QName -> String -> Bool
-q ~~ s = show q == s
+q ~~ s = prettyShow q == s
 
 makeList :: C Doc -> Term -> C [Term]
 makeList = makeList' "Agda.Builtin.List.List.[]" "Agda.Builtin.List.List._∷_"
@@ -161,13 +178,13 @@ makeListP' nil cons err p = do
   where
     vis ps = [ namedArg p | p <- ps, visible p ]
 
-underAbstr :: Subst t a => Dom Type -> Abs a -> (a -> C b) -> C b
+underAbstr  :: Subst a => Dom Type -> Abs a -> (a -> C b) -> C b
 underAbstr a b ret
   | absName b == "_" = underAbstraction' KeepNames a b ret
   | otherwise        = underAbstraction' KeepNames a b $ \ body ->
                          liftTCM1 localScope $ bindVar 0 >> ret body
 
-underAbstr_ :: Subst t a => Abs a -> (a -> C b) -> C b
+underAbstr_ :: Subst a => Abs a -> (a -> C b) -> C b
 underAbstr_ = underAbstr __DUMMY_DOM__
 
 applyNoBodies :: Definition -> [Arg Term] -> Definition
@@ -183,12 +200,13 @@ applyNoBodies d args = revert $ d `apply` args
       d {theDef = f {funClauses = zipWith setBody cls bodies}}
     revert _ = __IMPOSSIBLE__
 
-concatUnzip = (concat *** concat ) . unzip
+concatUnzip :: [([a], [b])] -> ([a], [b])
+concatUnzip = (concat *** concat) . unzip
 
 -- Builtins ---------------------------------------------------------------
 
 isSpecialTerm :: QName -> Maybe (QName -> Elims -> C (Hs.Exp ()))
-isSpecialTerm q = case show q of
+isSpecialTerm q = case prettyShow q of
   _ | isExtendedLambdaName q                    -> Just lambdaCase
   "Haskell.Prim.if_then_else_"                  -> Just ifThenElse
   "Haskell.Prim.Enum.Enum.enumFrom"             -> Just mkEnumFrom
@@ -202,24 +220,24 @@ isSpecialTerm q = case show q of
   _                                             -> Nothing
 
 isSpecialCon :: QName -> Maybe (ConHead -> ConInfo -> Elims -> C (Hs.Exp ()))
-isSpecialCon = show >>> \ case
+isSpecialCon = prettyShow >>> \ case
   "Haskell.Prim.Tuple.Tuple._∷_" -> Just tupleTerm
   _ -> Nothing
 
 isSpecialPat :: QName -> Maybe (ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ()))
-isSpecialPat = show >>> \ case
+isSpecialPat = prettyShow >>> \ case
   "Haskell.Prim.Tuple.Tuple._∷_" -> Just tuplePat
   _ -> Nothing
 
 isSpecialType :: QName -> Maybe (QName -> Elims -> C (Hs.Type ()))
-isSpecialType = show >>> \ case
+isSpecialType = prettyShow >>> \ case
   "Haskell.Prim.Tuple.Tuple" -> Just tupleType
   "Haskell.Prim.Tuple._×_"   -> Just tupleType'
   "Haskell.Prim.Tuple._×_×_" -> Just tupleType'
   _ -> Nothing
 
 isSpecialName :: QName -> Maybe (Hs.QName ())
-isSpecialName = show >>> \ case
+isSpecialName = prettyShow >>> \ case
     "Agda.Builtin.Nat.Nat"         -> unqual "Natural"
     "Agda.Builtin.Int.Int"         -> unqual "Integer"
     "Agda.Builtin.Word.Word64"     -> unqual "Word"
@@ -289,7 +307,7 @@ caseOf _ es = compileArgs es >>= \ case
 
 lambdaCase :: QName -> Elims -> C (Hs.Exp ())
 lambdaCase q es = setCurrentRange (nameBindingSite $ qnameName q) $ do
-  def@Function{ funExtLam = Just (ExtLamInfo mname _) } <- theDef <$> getConstInfo q
+  def@Function{ funExtLam = Just ExtLamInfo{extLamModule = mname} } <- theDef <$> getConstInfo q
   npars <- size <$> lookupSection mname
   let (pars, rest) = splitAt npars es
       cs           = applyE (funClauses def) pars
@@ -407,7 +425,7 @@ liftTCM1 :: (TCM a -> TCM b) -> C a -> C b
 liftTCM1 k m = ReaderT (k . runReaderT m)
 
 compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
-compile _ _ _ def = runC $ processPragma (defName def) >>= \ p ->
+compile _ m _ def = withCurrentModule m $ runC $ processPragma (defName def) >>= \ p ->
   case (p , defInstance def , theDef def) of
     (NoPragma           , _      , _         ) -> return []
     (ExistingClassPragma, _      , _         ) -> return [] -- No code generation, but affects how projections are compiled
@@ -415,7 +433,7 @@ compile _ _ _ def = runC $ processPragma (defName def) >>= \ p ->
     (DerivingPragma ds  , _      , Datatype{}) -> tag <$> compileData ds def
     (DefaultPragma      , _      , Datatype{}) -> tag <$> compileData [] def
     (DefaultPragma      , Just _ , _         ) -> tag . single <$> compileInstance def
-    (DefaultPragma      , _      , Axiom     ) -> tag <$> compilePostulate def
+    (DefaultPragma      , _      , Axiom{}   ) -> tag <$> compilePostulate def
     (DefaultPragma      , _      , Function{}) -> tag <$> compileFun def
     (DefaultPragma      , _      , Record{}  ) -> tag . single <$> compileRecord ToRecord def
     _                                         -> return []
@@ -497,7 +515,7 @@ compileInstanceClause ls c = do
       -- We want the actual field name, not the instance-opened projection.
       (q, _, _) <- origProjection q
       arg <- fieldArgInfo q
-      let uf = hsName $ show $ nameConcrete $ qnameName q
+      let uf = hsName $ prettyShow $ nameConcrete $ qnameName q
 
       let
         (.~) :: QName -> QName -> Bool
@@ -523,7 +541,7 @@ compileInstanceClause ls c = do
         , f .~ q
         -> do d <- chaseDef n
               fc <- drop 1 <$> compileFun d
-              let hd = hsName $ show $ nameConcrete $ qnameName $ defName d
+              let hd = hsName $ prettyShow $ nameConcrete $ qnameName $ defName d
               let fc' = dropPatterns 1 $ replaceName hd uf fc
               return (if visible arg then map (Hs.InsDecl ()) fc' else [], [n])
 
@@ -563,7 +581,7 @@ resolveStringName s = do
   cqname <- liftTCM $ parseName noRange s
   rname <- liftTCM $ resolveName cqname
   case rname of
-    DefinedName _ aname -> return $ anameName aname
+    DefinedName _ aname _ -> return $ anameName aname
     _ -> genericDocError =<< text ("Couldn't find " ++ s)
 
 lookupDefaultImplementations :: QName -> [Hs.Name ()] -> C [Definition]
@@ -659,10 +677,9 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
 
     -- In Haskell, projections live in the same scope as the record type, so check here that the
     -- record module has been opened.
-    checkFieldInScope f = hsQName f >>= \ case
-      Hs.UnQual{}  -> return ()
-      Hs.Special{} -> __IMPOSSIBLE__
-      Hs.Qual{}    -> setCurrentRange (nameBindingSite $ qnameName f) $ genericError $
+    checkFieldInScope f = isInScopeUnqualified f >>= \ case
+      True  -> return ()
+      False -> setCurrentRange (nameBindingSite $ qnameName f) $ genericError $
         "Record projections (`" ++ prettyShow (qnameName f) ++ "` in this case) must be brought into scope when compiling to Haskell record types. " ++
         "Add `open " ++ rName ++ " public` after the record declaration to fix this."
 
@@ -779,18 +796,25 @@ compileTypeArg :: DeBruijnPattern -> C (Hs.TyVarBind ())
 compileTypeArg p@(VarP o _) = Hs.UnkindedVar () . hsName <$> showTCM p
 compileTypeArg _ = genericError "Not supported: type definition by pattern matching"
 
+mapDef :: (Term -> Term) -> Definition -> Definition
+mapDef f d = d{ theDef = mapDefn (theDef d) }
+  where
+    mapDefn def@Function{} = def{ funClauses = map mapClause (funClauses def) }
+    mapDefn defn = defn -- We only need this for Functions
+
+    mapClause c = c{ clauseBody = f <$> clauseBody c }
+
 compileClause :: LocalDecls -> Hs.Name () -> Clause -> C (LocalDecls, Hs.Match ())
 compileClause locals x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBody = body} = do
   addContext (KeepNames tel) $ liftTCM1 localScope $ do
     scopeBindPatternVariables ps'
     ps <- compilePats ps'
-
     -- Compile rhs and its @where@ clauses, making sure that:
     --   * inner modules get instantiated
     --   * references to inner modules get un-qualified (and instantiated)
     let localUses = nub $ listify (`elem` map fst locals) body
         belongs q@(QName m _) (QName m0 _) =
-          ((show m0 ++ "._") `isPrefixOf` show m) && (q `notElem` localUses)
+          ((prettyShow m0 ++ "._") `isPrefixOf` prettyShow m) && (q `notElem` localUses)
         splitDecls :: LocalDecls -> ([(Definition, LocalDecls)], LocalDecls)
         splitDecls ds@((q,child):rest)
           | any ((`elem` localUses) . fst) ds
@@ -804,15 +828,18 @@ compileClause locals x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBo
         args   = teleArgs tel
         argLen = length args
 
+
         -- 1. apply current telescope to inner definitions
-        children' = everywhere (mkT (`applyNoBodies` args)) children
+        children' = mapDefs (`applyNoBodies` args) children
+          where mapDefs f = map (f *** map (second f))
 
         -- 2. shrink calls to inner modules (unqualify + partially apply module parameters)
         localNames = concatMap (\(d,ds) -> defName d : map fst ds) children
         shrinkLocalDefs t | Def q es <- t, q `elem` localNames
                           = Def (qualify_ $ qnameName q) (drop argLen es)
                           | otherwise = t
-        (body', children'') = everywhere (mkT shrinkLocalDefs) (body, children')
+        (body', children'') = mapTerms (everywhere $ mkT shrinkLocalDefs) (body, children')
+          where mapTerms f = fmap f *** (map (mapDef f *** map (second (mapDef f))))
 
     body' <- fromMaybe (hsError $ pp x ++ ": impossible") <$> mapM compileTerm body'
     whereDecls <- concat <$> mapM (uncurry compileFun') children''
@@ -915,6 +942,15 @@ isClassFunction q
   where
     m = qnameModule q
 
+compileLiteral :: Literal -> C (Hs.Exp ())
+compileLiteral (LitNat n)    = return $ Hs.intE n
+compileLiteral (LitFloat d)  = return $ Hs.Lit () $ Hs.Frac () (toRational d) (show d)
+compileLiteral (LitWord64 w) = return $ Hs.Lit () $ Hs.PrimWord () (fromIntegral w) (show w)
+compileLiteral (LitChar c)   = return $ Hs.charE c
+compileLiteral (LitString t) = return $ Hs.Lit () $ Hs.String () s s
+  where s = Text.unpack t
+compileLiteral l               = genericDocError =<< text "bad term:" <?> prettyTCM (Lit l)
+
 compileTerm :: Term -> C (Hs.Exp ())
 compileTerm v = do
   case unSpine v of
@@ -928,17 +964,13 @@ compileTerm v = do
           -- v not sure why this fails to strip the name
           --f <- hsQName builtins (qualify_ (qnameName f))
           -- here's a horrible way to strip the module prefix off the name
-          let uf = show (nameConcrete (qnameName f))
+          let uf = prettyShow (nameConcrete (qnameName f))
           (`appStrip` es) (hsVar uf)
         False -> (`app` es) . Hs.Var () =<< hsQName f
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName (conName h)
-    Lit (LitNat _ n)    -> return $ Hs.intE n
-    Lit (LitFloat _ d)  -> return $ Hs.Lit () $ Hs.Frac () (toRational d) (show d)
-    Lit (LitWord64 _ w) -> return $ Hs.Lit () $ Hs.PrimWord () (fromIntegral w) (show w)
-    Lit (LitChar _ c)   -> return $ Hs.charE c
-    Lit (LitString _ s) -> return $ Hs.Lit () $ Hs.String () s s
+    Lit l -> compileLiteral l
     Lam v b | visible v, getOrigin v == UserWritten -> do
       hsLambda (absName b) <$> underAbstr_ b compileTerm
     Lam v b | visible v ->
@@ -1110,10 +1142,10 @@ moduleFileName :: Options -> ModuleName -> FilePath
 moduleFileName opts name =
   optOutDir opts </> C.moduleNameToFileName (toTopLevelModuleName name) "hs"
 
-moduleSetup :: Options -> IsMain -> ModuleName -> FilePath -> TCM (Recompile ModuleEnv ModuleRes)
-moduleSetup _ _ _ _ = do
+moduleSetup :: Options -> IsMain -> ModuleName -> filepath -> TCM (Recompile ModuleEnv ModuleRes)
+moduleSetup _ _ m _ = do
   setScope . iInsideScope =<< curIF
-  return $ Recompile ()
+  return $ Recompile m
 
 ensureDirectory :: FilePath -> IO ()
 ensureDirectory = createDirectoryIfMissing True . takeDirectory

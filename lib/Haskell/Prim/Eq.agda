@@ -45,7 +45,7 @@ instance
   iEqWord ._==_ = eqWord
 
   iEqDouble : Eq Double
-  iEqDouble ._==_ = primFloatNumericalEquality
+  iEqDouble ._==_ = primFloatEquality
 
   iEqBool : Eq Bool
   iEqBool ._==_ false false = true

@@ -11,10 +11,11 @@ open import Haskell.Prim
 
 private
 
-  pattern vArg x = arg (arg-info visible relevant) x
+  pattern vArg x = arg (arg-info visible (modality relevant quantity-ω)) x
 
   refute : Nat → Term
-  refute i = def (quote _$_) (vArg (pat-lam (absurd-clause (vArg absurdP ∷ []) ∷ []) []) ∷ vArg (var i []) ∷ [])
+  refute i = def (quote _$_) ( vArg (pat-lam (absurd-clause [] (vArg (absurdP 0) ∷ []) ∷ []) [])
+                             ∷ vArg (var i []) ∷ [])
 
   tryRefute : Nat → Term → TC ⊤
   tryRefute 0       _    = typeError (strErr "No variable of empty type found in the context" ∷ [])

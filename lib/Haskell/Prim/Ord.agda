@@ -103,7 +103,7 @@ instance
   iOrdWord = ordFromLessThan ltWord
 
   iOrdDouble : Ord Double
-  iOrdDouble = ordFromLessThan primFloatNumericalLess
+  iOrdDouble = ordFromLessThan primFloatLess
 
   iOrdChar : Ord Char
   iOrdChar = ordFromLessThan λ x y → primCharToNat x < primCharToNat y
