@@ -15,6 +15,7 @@ import TypeSynonyms
 import Datatypes
 import Records
 import DefaultMethods
+import Vector
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -31,4 +32,5 @@ import TypeSynonyms
 import Datatypes
 import Records
 import DefaultMethods
+import Vector
 #-}
