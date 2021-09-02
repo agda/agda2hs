@@ -709,8 +709,8 @@ compileData ds def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
   case theDef def of
     Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} -> do
-      unless (numIxs == 0) $ genericDocError =<< text "Not supported: indexed datatypes"
-      TelV tel _ <- telViewUpTo n (defType def)
+      TelV tel t <- telViewUpTo n (defType def)
+      allIndicesErased t
       addContext tel $ do
         let params = teleArgs tel :: [Arg Term]
         pars <- mapM (showTCM . unArg) $ filter visible params
@@ -719,6 +719,14 @@ compileData ds def = do
                          (Hs.DHead () d) pars
         return [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs ds]
     _ -> __IMPOSSIBLE__
+  where
+    allIndicesErased :: Type -> C ()
+    allIndicesErased t = reduce (unEl t) >>= \case
+      Pi dom t -> compileDom dom >>= \case
+        DomDropped      -> allIndicesErased (unAbs t)
+        DomType{}       -> genericDocError =<< text "Not supported: indexed datatypes"
+        DomConstraint{} -> genericDocError =<< text "Not supported: constraints in types"
+      _ -> return ()
 
 compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl ())
 compileConstructor params c = do

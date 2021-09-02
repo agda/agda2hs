@@ -14,4 +14,5 @@ import TypeSynonyms
 import Datatypes
 import Records
 import DefaultMethods
+import Vector
 
