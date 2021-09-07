@@ -166,7 +166,7 @@ makeList' nil cons err v = do
       | [x, xs] <- vis es, conName c ~~ cons -> (x :) <$> makeList' nil cons err xs
     _ -> genericDocError =<< err
   where
-    vis es = [ unArg a | Apply a <- es, visible a ]
+    vis es = [ unArg a | Apply a <- es, keepArg a ]
 
 makeListP' :: String -> String -> C Doc -> DeBruijnPattern -> C [DeBruijnPattern]
 makeListP' nil cons err p = do
@@ -176,7 +176,7 @@ makeListP' nil cons err p = do
       | [x, xs] <- vis ps, conName c ~~ cons -> (x :) <$> makeListP' nil cons err xs
     _ -> genericDocError =<< err
   where
-    vis ps = [ namedArg p | p <- ps, visible p ]
+    vis ps = [ namedArg p | p <- ps, keepArg p ]
 
 underAbstr  :: Subst a => Dom Type -> Abs a -> (a -> C b) -> C b
 underAbstr a b ret
@@ -455,7 +455,7 @@ compileInstance def = setCurrentRange (nameBindingSite $ qnameName $ defName def
 compileInstRule :: [Hs.Asst ()] -> Term -> C (Hs.InstRule ())
 compileInstRule cs ty = case unSpine  $ ty of
   Def f es | Just args <- allApplyElims es -> do
-    vs <- mapM (compileType . unArg) $ filter visible args
+    vs <- mapM (compileType . unArg) $ filter keepArg args
     f <- hsQName f
     return $
       Hs.IRule () Nothing (ctx cs) $ foldl (Hs.IHApp ()) (Hs.IHCon () f) (map pars vs)
@@ -466,13 +466,11 @@ compileInstRule cs ty = case unSpine  $ ty of
           pars t@(Hs.TyVar () _) = t
           pars t@(Hs.TyCon () _) = t
           pars t = Hs.TyParen () t
-  Pi a b
-      | hidden a -> dropPi -- Hidden Pi means Haskell forall, which we leave implicit
-      | isInstance a -> ifM (dependsOnVisibleVar a) dropPi $ do
-          hsA <- compileType (unEl $ unDom a)
-          hsB <- underAbstraction a b (compileInstRule (cs ++ [Hs.TypeA () hsA]) . unEl)
-          return hsB
-    where dropPi = underAbstr a b (compileInstRule cs . unEl)
+  Pi a b -> compileDom a >>= \case
+    DomDropped -> underAbstr a b (compileInstRule cs . unEl)
+    DomConstraint hsA ->
+      underAbstraction a b (compileInstRule (cs ++ [hsA]) . unEl)
+    DomType t  -> __IMPOSSIBLE__
   _ -> __IMPOSSIBLE__
 
 -- Plan:
@@ -543,20 +541,20 @@ compileInstanceClause ls c = do
               fc <- drop 1 <$> compileFun d
               let hd = hsName $ prettyShow $ nameConcrete $ qnameName $ defName d
               let fc' = dropPatterns 1 $ replaceName hd uf fc
-              return (if visible arg then map (Hs.InsDecl ()) fc' else [], [n])
+              return (if keepArg arg then map (Hs.InsDecl ()) fc' else [], [n])
 
          -- Projection of a default implementation: drop while making sure these are drawn from the
          -- same (minimal) dictionary as the primitive fields.
          | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
          , n .~ q
-         , Just [ Def n' _ ] <- map unArg . filter visible <$> allApplyElims es
+         , Just [ Def n' _ ] <- map unArg . filter keepArg <$> allApplyElims es
          -> do n' <- resolveExtendedLambda n'
                return ([], [n'])
 
          -- No minimal dictionary used, proceed with compiling as a regular clause.
          | otherwise
          -> do (_ , x) <- compileClause ls uf c'
-               return ([Hs.InsDecl () (Hs.FunBind () [x]) | visible arg], [])
+               return ([Hs.InsDecl () (Hs.FunBind () [x]) | keepArg arg], [])
 
 fieldArgInfo :: QName -> C ArgInfo
 fieldArgInfo f = do
@@ -652,22 +650,23 @@ compileMinRecords def sls = do
 compileRecord :: RecordTarget -> Definition -> C (Hs.Decl ())
 compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
   TelV tel _ <- telViewUpTo recPars (defType def)
-  hd <- addContext tel $ do
+  addContext tel $ do
     let params = teleArgs tel :: [Arg Term]
-    pars <- mapM (showTCM . unArg) $ filter visible params
-    return $ foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
+    pars <- mapM (showTCM . unArg) $ filter keepArg params
+    let hd = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
                    (Hs.DHead () (hsName rName))
                    pars
-  case target of
-    ToClass ms -> do
-      classDecls <- compileRecFields classDecl recPars (unDom <$> recFields) recTel
-      defaultDecls <- compileMinRecords def ms
-      return $ Hs.ClassDecl () Nothing hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
-    ToRecord -> do
-      fieldDecls <- compileRecFields fieldDecl recPars (unDom <$> recFields) recTel
-      mapM_ checkFieldInScope (map unDom recFields)
-      let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
-      return $ Hs.DataDecl () (Hs.DataType ()) Nothing hd [conDecl] []
+    let fieldTel = snd $ splitTelescopeAt recPars recTel
+    case target of
+      ToClass ms -> do
+        classDecls <- compileRecFields classDecl recFields fieldTel
+        defaultDecls <- compileMinRecords def ms
+        return $ Hs.ClassDecl () Nothing hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
+      ToRecord -> do
+        fieldDecls <- compileRecFields fieldDecl recFields fieldTel
+        mapM_ checkFieldInScope (map unDom recFields)
+        let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
+        return $ Hs.DataDecl () (Hs.DataType ()) Nothing hd [conDecl] []
 
   where
     rName = prettyShow $ qnameName $ defName def
@@ -692,17 +691,20 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
     fieldDecl n = Hs.FieldDecl () [n]
 
     compileRecFields :: (Hs.Name () -> Hs.Type () -> b)
-                     -> Int -> [QName] -> Telescope -> C [b]
-    compileRecFields decl i ns tel =
-      case (ns, splitTelescopeAt i tel) of
-        (_     ,(_   ,EmptyTel      )) -> return []
-        (n:ns,(tel',ExtendTel ty _)) -> do
-          ty  <- addContext tel' $
-                   compileType (unEl $ unDom ty)
-                   <&> decl (hsName $ prettyShow $ qnameName n)
-          tys <- compileRecFields decl (i+1) ns tel
-          return (ty:tys)
-        (_, _) -> __IMPOSSIBLE__
+                     -> [Dom QName] -> Telescope -> C [b]
+    compileRecFields decl ns tel = case (ns, tel) of
+      (_   , EmptyTel          ) -> return []
+      (n:ns, ExtendTel dom tel') -> do
+        hsDom <- compileDom dom
+        hsFields <- underAbstraction dom tel' $ compileRecFields decl ns
+        case hsDom of
+          DomType hsA -> do
+            let fieldName = hsName $ prettyShow $ qnameName $ unDom n
+            return (decl fieldName hsA : hsFields)
+          DomConstraint hsA -> genericError $
+            "Not supported: record/class with constraint fields"
+          DomDropped -> return hsFields
+      (_, _) -> __IMPOSSIBLE__
 
 compileData :: [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
 compileData ds def = do
@@ -713,7 +715,7 @@ compileData ds def = do
       allIndicesErased t
       addContext tel $ do
         let params = teleArgs tel :: [Arg Term]
-        pars <- mapM (showTCM . unArg) $ filter visible params
+        pars <- mapM (showTCM . unArg) $ filter keepArg params
         cs   <- mapM (compileConstructor params) cs
         let hd   = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
                          (Hs.DHead () d) pars
@@ -798,7 +800,7 @@ compileTypeDef name (Defn {..}) locals = do
       _    -> genericError "Not supported: type definition with several clauses"
 
 compileTypeArgs :: NAPs -> C [Hs.TyVarBind ()]
-compileTypeArgs ps = mapM (compileTypeArg . namedArg) $ filter visible ps
+compileTypeArgs ps = mapM (compileTypeArg . namedArg) $ filter keepArg ps
 
 compileTypeArg :: DeBruijnPattern -> C (Hs.TyVarBind ())
 compileTypeArg p@(VarP o _) = Hs.UnkindedVar () . hsName <$> showTCM p
@@ -882,12 +884,12 @@ bindVar i = do
   x <- nameOfBV i
   liftTCM $ bindVariable LambdaBound (nameConcrete x) x
 
--- | Instance arguments that depend on visible arguments (i.e. arguments that appear in the Haskell
---   code) should not be turned into type class constraints. These are proof objects that only exist
+-- | Instance arguments that depend on arguments that are kept in the Haskell
+--   code should not be turned into type class constraints. These are proof objects that only exist
 --   on the Agda side.
-dependsOnVisibleVar :: Free t => t -> C Bool
-dependsOnVisibleVar t = do
-  vis <- Set.fromList . map fst . filter (visible . snd) . zip [0..] <$> getContext
+dependsOnKeptVar :: Free t => t -> C Bool
+dependsOnKeptVar t = do
+  vis <- Set.fromList . map fst . filter (keepArg . snd) . zip [0..] <$> getContext
   return $ any (`Set.member` vis) $ (freeVars t :: [Int])
 
 compileType :: Term -> C (Hs.Type ())
@@ -899,20 +901,26 @@ compileType t = do
         return $ Hs.TyFun () hsA hsB
       DomConstraint hsA -> do
         hsB <- underAbstraction a b (compileType . unEl)
-        return $ Hs.TyForall () Nothing (Just hsA) hsB
+        return $ Hs.TyForall () Nothing (Just $ Hs.CxSingle () hsA) hsB
       DomDropped -> underAbstr a b (compileType . unEl)
     Def f es
       | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics f es
       | Just args <- allApplyElims es -> do
-        vs <- mapM (compileType . unArg) $ filter visible args
+        vs <- mapM (compileType . unArg) $ filter keepArg args
         f <- hsQName f
         return $ tApp (Hs.TyCon () f) vs
     Var x es | Just args <- allApplyElims es -> do
-      vs <- mapM (compileType . unArg) $ filter visible args
+      vs <- mapM (compileType . unArg) $ filter keepArg args
       x  <- hsName <$> showTCM (Var x [])
       return $ tApp (Hs.TyVar () x) vs
     Sort s -> return (Hs.TyStar ())
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
+
+-- Determine whether an argument should be kept or dropped.
+-- Currently we drop all arguments that are not visibile or
+-- have quantity 0 (= run-time erased).
+keepArg :: (LensHiding a, LensQuantity a) => a -> Bool
+keepArg x = visible x && usableQuantity x
 
 -- Currently we can compile an Agda "Dom Type" in three ways:
 -- - To a type in Haskell
@@ -920,15 +928,14 @@ compileType t = do
 -- - To nothing (e.g. for proofs)
 data CompiledDom
   = DomType (Hs.Type ())
-  | DomConstraint (Hs.Context ())
+  | DomConstraint (Hs.Asst ())
   | DomDropped
 
 compileDom :: Dom Type -> C CompiledDom
 compileDom a
-  | hidden a     = return DomDropped -- Hidden Pi means Haskell forall, which we leave implicit
-  | visible a    = DomType <$> compileType (unEl $ unDom a)
-  | isInstance a = ifM (dependsOnVisibleVar a) (return DomDropped) $
-      DomConstraint . Hs.CxSingle () . Hs.TypeA () <$> compileType (unEl $ unDom a)
+  | keepArg a    = DomType <$> compileType (unEl $ unDom a)
+  | isInstance a = ifM (dependsOnKeptVar a) (return DomDropped) $
+      DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
   | otherwise    = return DomDropped
 
 -- Exploits the fact that the name of the record type and the name of the record module are the
@@ -979,9 +986,9 @@ compileTerm v = do
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName (conName h)
     Lit l -> compileLiteral l
-    Lam v b | visible v, getOrigin v == UserWritten -> do
+    Lam v b | keepArg v, getOrigin v == UserWritten -> do
       hsLambda (absName b) <$> underAbstr_ b compileTerm
-    Lam v b | visible v ->
+    Lam v b | keepArg v ->
       -- System-inserted lambda, no need to preserve the name.
       underAbstraction_ b $ \ body -> do
         x <- showTCM (Var 0 [])
@@ -1004,13 +1011,13 @@ compileTerm v = do
     appStrip :: Hs.Exp () -> Elims -> C (Hs.Exp ())
     appStrip hd es = do
       let Just args = allApplyElims es
-      args <- mapM (compileTerm . unArg) $ tail $ filter visible args
+      args <- mapM (compileTerm . unArg) $ filter keepArg $ tail $ dropWhile notVisible args
       return $ eApp hd args
 
 
 
 compilePats :: NAPs -> C [Hs.Pat ()]
-compilePats ps = mapM (compilePat . namedArg) $ filter visible ps
+compilePats ps = mapM (compilePat . namedArg) $ filter keepArg ps
 
 compilePat :: DeBruijnPattern -> C (Hs.Pat ())
 compilePat p@(VarP o _)
@@ -1031,7 +1038,7 @@ compilePat p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
 compileArgs :: Elims -> C [Hs.Exp ()]
 compileArgs es = do
   let Just args = allApplyElims es
-  mapM (compileTerm . unArg) $ filter visible args
+  mapM (compileTerm . unArg) $ filter keepArg args
 
 -- FOREIGN pragmas --------------------------------------------------------
 
