@@ -3,6 +3,7 @@ module AllTests where
 
 import Issue14
 import Issue65
+import Issue73
 import Fixities
 import LanguageConstructs
 import Numbers
@@ -20,6 +21,7 @@ import Vector
 {-# FOREIGN AGDA2HS
 import Issue14
 import Issue65
+import Issue73
 import Fixities
 import LanguageConstructs
 import Numbers
