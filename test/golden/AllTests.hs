@@ -9,6 +9,7 @@ import Numbers
 import Pragmas
 import Sections
 import Test
+import Tree
 import Tuples
 import Where
 import TypeSynonyms

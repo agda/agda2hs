@@ -934,7 +934,7 @@ data CompiledDom
 compileDom :: Dom Type -> C CompiledDom
 compileDom a
   | keepArg a    = DomType <$> compileType (unEl $ unDom a)
-  | isInstance a = ifM (dependsOnKeptVar a) (return DomDropped) $
+  | isInstance a && usableQuantity a = ifM (dependsOnKeptVar a) (return DomDropped) $
       DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
   | otherwise    = return DomDropped
 
