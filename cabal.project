@@ -1,0 +1,3 @@
+packages:
+  agda2hs.cabal
+  tui/tui.cabal
