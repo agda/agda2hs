@@ -48,10 +48,9 @@ getForeignPragmas exts = do
 
 data ParsedPragma
   = NoPragma
-  | DefaultPragma
+  | DefaultPragma [Hs.Deriving ()]
   | ClassPragma [String]
   | ExistingClassPragma
-  | DerivingPragma [Hs.Deriving ()]
   | UnboxPragma
   deriving Show
 
@@ -69,6 +68,6 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
         Hs.ParseFailed loc msg ->
           setCurrentRange (srcLocToRange loc) $ genericError msg
         Hs.ParseOk (Hs.DataDecl _ _ _ _ _ ds) ->
-          return $ DerivingPragma (map (() <$) ds)
-        Hs.ParseOk _ -> return DefaultPragma
-  _ -> return DefaultPragma
+          return $ DefaultPragma (map (() <$) ds)
+        Hs.ParseOk _ -> return $ DefaultPragma []
+  _ -> return $ DefaultPragma []

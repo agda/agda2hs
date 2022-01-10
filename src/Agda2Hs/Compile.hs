@@ -34,12 +34,11 @@ compile _ m _ def = withCurrentModule m $ runC $ processPragma (defName def) >>=
     (ExistingClassPragma, _      , _         ) -> return [] -- No code generation, but affects how projections are compiled
     (UnboxPragma        , _      , defn      ) -> checkUnboxPragma defn >> return [] -- also no code generation
     (ClassPragma ms     , _      , Record{}  ) -> tag . single <$> compileRecord (ToClass ms) def
-    (DerivingPragma ds  , _      , Datatype{}) -> tag <$> compileData ds def
-    (DefaultPragma      , _      , Datatype{}) -> tag <$> compileData [] def
-    (DefaultPragma      , Just _ , _         ) -> tag . single <$> compileInstance def
-    (DefaultPragma      , _      , Axiom{}   ) -> tag <$> compilePostulate def
-    (DefaultPragma      , _      , Function{}) -> tag <$> compileFun def
-    (DefaultPragma      , _      , Record{}  ) -> tag . single <$> compileRecord ToRecord def
-    _                                         -> return []
+    (DefaultPragma ds   , _      , Datatype{}) -> tag <$> compileData ds def
+    (DefaultPragma _    , Just _ , _         ) -> tag . single <$> compileInstance def
+    (DefaultPragma _    , _      , Axiom{}   ) -> tag <$> compilePostulate def
+    (DefaultPragma _    , _      , Function{}) -> tag <$> compileFun def
+    (DefaultPragma ds   , _      , Record{}  ) -> tag . single <$> compileRecord (ToRecord ds) def
+    _                                          -> return []
   where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
         single x = [x]

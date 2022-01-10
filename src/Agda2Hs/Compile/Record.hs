@@ -104,12 +104,12 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
               assts  -> Just (Hs.CxTuple () assts)
         defaultDecls <- compileMinRecords def ms
         return $ Hs.ClassDecl () context hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
-      ToRecord -> do
+      ToRecord ds -> do
         (constraints, fieldDecls) <- compileRecFields fieldDecl recFields fieldTel
         unless (null constraints) __IMPOSSIBLE__ -- no constraints for records
         mapM_ checkFieldInScope (map unDom recFields)
         let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
-        return $ Hs.DataDecl () (Hs.DataType ()) Nothing hd [conDecl] []
+        return $ Hs.DataDecl () (Hs.DataType ()) Nothing hd [conDecl] ds
 
   where
     rName = prettyShow $ qnameName $ defName def

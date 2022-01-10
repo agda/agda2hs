@@ -1,7 +1,8 @@
 module Records where
 
-variable
-  a b : Set
+open import Haskell.Prelude using (String; Nat)
+
+variable a b : Set
 
 -- parametrized record type exported as an Haskell record
 record Pair (a b : Set) : Set where
@@ -17,11 +18,8 @@ open Pair public
 -- no named constructor means we reuse the record name
 
 record Wrap (a : Set) : Set where
-  field
-    unwrap : a
-
+  field unwrap : a
 open Wrap public
-
 {-# COMPILE AGDA2HS Wrap #-}
 
 -- record type exported as an Haskell class definition
@@ -40,3 +38,11 @@ swap₂ (record {unwrap = p}) = record {unwrap = record { proj₁ = proj₂ p; p
 
 {-# COMPILE AGDA2HS swap #-}
 {-# COMPILE AGDA2HS swap₂ #-}
+
+-- record with deriving clause
+record User : Set where
+  field
+    name : String
+    code : Nat
+open User public
+{-# COMPILE AGDA2HS User deriving (Eq, Show) #-}

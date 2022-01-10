@@ -46,4 +46,4 @@ data CompiledDom
 
 type LocalDecls = [QName]
 
-data RecordTarget = ToRecord | ToClass [String]
+data RecordTarget = ToRecord [Hs.Deriving ()] | ToClass [String]
