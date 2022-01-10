@@ -376,14 +376,13 @@ tuplePat cons i ps = do
 
 -- Compiling things -------------------------------------------------------
 
-data RecordTarget = ToRecord | ToClass [String]
+data RecordTarget = ToRecord [Hs.Deriving ()] | ToClass [String]
 
 data ParsedPragma
   = NoPragma
-  | DefaultPragma
+  | DefaultPragma [Hs.Deriving ()]
   | ClassPragma [String]
   | ExistingClassPragma
-  | DerivingPragma [Hs.Deriving ()]
   deriving Show
 
 -- "class" is not being used usefully, any record with a pragma is
@@ -405,9 +404,9 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
         Hs.ParseFailed loc msg ->
           setCurrentRange (srcLocToRange loc) $ genericError msg
         Hs.ParseOk (Hs.DataDecl _ _ _ _ _ ds) ->
-          return $ DerivingPragma (map (() <$) ds)
-        Hs.ParseOk _ -> return DefaultPragma
-  _ -> return DefaultPragma
+          return $ DefaultPragma (map (() <$) ds)
+        Hs.ParseOk _ -> return $ DefaultPragma []
+  _ -> return $ DefaultPragma []
 
 data CompileEnv = CompileEnv
   { minRecordName :: Maybe ModuleName
@@ -430,13 +429,12 @@ compile _ m _ def = withCurrentModule m $ runC $ processPragma (defName def) >>=
     (NoPragma           , _      , _         ) -> return []
     (ExistingClassPragma, _      , _         ) -> return [] -- No code generation, but affects how projections are compiled
     (ClassPragma ms     , _      , Record{}  ) -> tag . single <$> compileRecord (ToClass ms) def
-    (DerivingPragma ds  , _      , Datatype{}) -> tag <$> compileData ds def
-    (DefaultPragma      , _      , Datatype{}) -> tag <$> compileData [] def
-    (DefaultPragma      , Just _ , _         ) -> tag . single <$> compileInstance def
-    (DefaultPragma      , _      , Axiom{}   ) -> tag <$> compilePostulate def
-    (DefaultPragma      , _      , Function{}) -> tag <$> compileFun def
-    (DefaultPragma      , _      , Record{}  ) -> tag . single <$> compileRecord ToRecord def
-    _                                         -> return []
+    (DefaultPragma  ds  , _      , Datatype{}) -> tag <$> compileData ds def
+    (DefaultPragma  ds  , _      , Record{}  ) -> tag . single <$> compileRecord (ToRecord ds) def
+    (DefaultPragma  _   , Just _ , _         ) -> tag . single <$> compileInstance def
+    (DefaultPragma  _   , _      , Axiom{}   ) -> tag <$> compilePostulate def
+    (DefaultPragma  _   , _      , Function{}) -> tag <$> compileFun def
+    _                                          -> return []
   where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
         single x = [x]
 
@@ -662,11 +660,11 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
         classDecls <- compileRecFields classDecl recFields fieldTel
         defaultDecls <- compileMinRecords def ms
         return $ Hs.ClassDecl () Nothing hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
-      ToRecord -> do
+      ToRecord ds -> do
         fieldDecls <- compileRecFields fieldDecl recFields fieldTel
         mapM_ checkFieldInScope (map unDom recFields)
         let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
-        return $ Hs.DataDecl () (Hs.DataType ()) Nothing hd [conDecl] []
+        return $ Hs.DataDecl () (Hs.DataType ()) Nothing hd [conDecl] ds
 
   where
     rName = prettyShow $ qnameName $ defName def
