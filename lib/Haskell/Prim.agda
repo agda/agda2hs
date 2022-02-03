@@ -16,9 +16,9 @@ open import Agda.Builtin.FromNeg    public
 open import Agda.Builtin.FromString public
 
 variable
-  ℓ : Level
-  a b c d e : Set
-  f m s t : Set → Set
+  @0 ℓ : Level
+  @0 a b c d e : Set
+  @0 f m s t : Set → Set
 
 
 --------------------------------------------------
@@ -50,7 +50,7 @@ case_of_ : a → (a → b) → b
 case x of f = f x
 
 infix -2 if_then_else_
-if_then_else_ : {a : Set ℓ} → Bool → a → a → a
+if_then_else_ : {@0 a : Set ℓ} → Bool → a → a → a
 if false then x else y = y
 if true  then x else y = x
 
@@ -102,5 +102,5 @@ data NonEmpty {a : Set} : List a → Set where
 
 data TypeError (err : String) : Set where
 
-it : ∀ {ℓ} {a : Set ℓ} → ⦃ a ⦄ → a
+it : ∀ {@0 ℓ} {@0 a : Set ℓ} → ⦃ a ⦄ → a
 it ⦃ x ⦄ = x

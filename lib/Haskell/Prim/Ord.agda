@@ -117,7 +117,7 @@ instance
   iOrdTuple₀ : Ord (Tuple [])
   iOrdTuple₀ = ordFromCompare λ _ _ → EQ
 
-  iOrdTuple : ∀ {as} → ⦃ Ord a ⦄ → ⦃ Ord (Tuple as) ⦄ → Ord (Tuple (a ∷ as))
+  iOrdTuple : ⦃ Ord a ⦄ → ⦃ Ord (Tuple as) ⦄ → Ord (Tuple (a ∷ as))
   iOrdTuple = ordFromCompare λ where (x ∷ xs) (y ∷ ys) → compare x y <> compare xs ys
 
 compareList : ⦃ Ord a ⦄ → List a → List a → Ordering

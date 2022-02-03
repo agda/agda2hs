@@ -61,7 +61,7 @@ instance
   iEqTuple₀ : Eq (Tuple [])
   iEqTuple₀ ._==_ _ _ = true
 
-  iEqTuple : ∀ {as} → ⦃ Eq a ⦄ → ⦃ Eq (Tuple as) ⦄ → Eq (Tuple (a ∷ as))
+  iEqTuple : ⦃ Eq a ⦄ → ⦃ Eq (Tuple as) ⦄ → Eq (Tuple (a ∷ as))
   iEqTuple ._==_ (x ∷ xs) (y ∷ ys) = x == y && xs == ys
 
   iEqList : ⦃ Eq a ⦄ → Eq (List a)

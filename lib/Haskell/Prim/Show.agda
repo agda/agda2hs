@@ -107,11 +107,11 @@ instance
 
 private
   -- Minus the parens
-  showTuple : ∀ {as} → ⦃ All Show as ⦄ → Tuple as → ShowS
+  showTuple : ⦃ All Show as ⦄ → Tuple as → ShowS
   showTuple             []       = showString ""
   showTuple ⦃ allCons ⦄ (x ∷ []) = shows x
   showTuple ⦃ allCons ⦄ (x ∷ xs) = shows x ∘ showString "," ∘ showTuple xs
 
 instance
-  iShowTuple : ∀ {as} → ⦃ All Show as ⦄ → Show (Tuple as)
+  iShowTuple : ⦃ All Show as ⦄ → Show (Tuple as)
   iShowTuple = makeShowsPrec λ _ → showParen true ∘ showTuple

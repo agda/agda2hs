@@ -18,7 +18,7 @@ map f []       = []
 map f (x ∷ xs) = f x ∷ map f xs
 
 infixr 5 _++_
-_++_ : ∀ {ℓ} {a : Set ℓ} → List a → List a → List a
+_++_ : ∀ {@0 ℓ} {@0 a : Set ℓ} → List a → List a → List a
 []       ++ ys = ys
 (x ∷ xs) ++ ys = x ∷ xs ++ ys
 

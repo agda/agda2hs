@@ -5,9 +5,8 @@ open import Agda.Builtin.List
 
 open import Haskell.Prim
 
-private
-  variable
-    as : List Set
+variable
+  @0 as : List Set
 
 --------------------------------------------------
 -- Tuples

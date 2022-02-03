@@ -112,7 +112,7 @@ instance
   iNumDouble .fromInteger (negsuc n) = fromNeg (suc n)
 
 MonoidSum : ⦃ iNum : Num a ⦄ → Monoid a
-MonoidSum .mempty      = 0
+MonoidSum {a = a} .mempty      = 0
 MonoidSum .super ._<>_ = _+_
 
 MonoidProduct : ⦃ iNum : Num a ⦄ → Monoid a

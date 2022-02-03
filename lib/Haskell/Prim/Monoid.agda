@@ -44,7 +44,7 @@ instance
   iSemigroupTuple₀ : Semigroup (Tuple [])
   iSemigroupTuple₀ ._<>_ _ _ = []
 
-  iSemigroupTuple : ∀ {as} → ⦃ Semigroup a ⦄ → ⦃ Semigroup (Tuple as) ⦄ → Semigroup (Tuple (a ∷ as))
+  iSemigroupTuple : ⦃ Semigroup a ⦄ → ⦃ Semigroup (Tuple as) ⦄ → Semigroup (Tuple (a ∷ as))
   iSemigroupTuple ._<>_ (x ∷ xs) (y ∷ ys) = x <> y ∷ xs <> ys
 
 
@@ -83,7 +83,7 @@ instance
   iMonoidTuple₀ : Monoid (Tuple [])
   iMonoidTuple₀ .mempty = []
 
-  iMonoidTuple : ∀ {as} → ⦃ Monoid a ⦄ → ⦃ Monoid (Tuple as) ⦄ → Monoid (Tuple (a ∷ as))
+  iMonoidTuple : ⦃ Monoid a ⦄ → ⦃ Monoid (Tuple as) ⦄ → Monoid (Tuple (a ∷ as))
   iMonoidTuple .mempty = mempty ∷ mempty
 
 MonoidEndo : Monoid (a → a)
