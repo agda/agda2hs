@@ -166,7 +166,7 @@ makeList' nil cons err v = do
       | [x, xs] <- vis es, conName c ~~ cons -> (x :) <$> makeList' nil cons err xs
     _ -> genericDocError =<< err
   where
-    vis es = [ unArg a | Apply a <- es, keepArg a ]
+    vis es = [ unArg a | Apply a <- es, visible a ]
 
 makeListP' :: String -> String -> C Doc -> DeBruijnPattern -> C [DeBruijnPattern]
 makeListP' nil cons err p = do
@@ -176,7 +176,7 @@ makeListP' nil cons err p = do
       | [x, xs] <- vis ps, conName c ~~ cons -> (x :) <$> makeListP' nil cons err xs
     _ -> genericDocError =<< err
   where
-    vis ps = [ namedArg p | p <- ps, keepArg p ]
+    vis ps = [ namedArg p | p <- ps, visible p ]
 
 underAbstr  :: Subst a => Dom Type -> Abs a -> (a -> C b) -> C b
 underAbstr a b ret
@@ -651,8 +651,9 @@ compileRecord :: RecordTarget -> Definition -> C (Hs.Decl ())
 compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
   TelV tel _ <- telViewUpTo recPars (defType def)
   addContext tel $ do
-    let params = teleArgs tel :: [Arg Term]
-    pars <- mapM (showTCM . unArg) $ filter keepArg params
+    let params = filter keepArg (teleArgs tel) :: [Arg Term]
+    mapM_ ensureVisible params
+    pars <- mapM (showTCM . unArg) params
     let hd = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
                    (Hs.DHead () (hsName rName))
                    pars
@@ -714,8 +715,9 @@ compileData ds def = do
       TelV tel t <- telViewUpTo n (defType def)
       allIndicesErased t
       addContext tel $ do
-        let params = teleArgs tel :: [Arg Term]
-        pars <- mapM (showTCM . unArg) $ filter keepArg params
+        let params = filter keepArg (teleArgs tel) :: [Arg Term]
+        mapM_ ensureVisible params
+        pars <- mapM (showTCM . unArg) params
         cs   <- mapM (compileConstructor params) cs
         let hd   = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
                          (Hs.DHead () d) pars
@@ -884,14 +886,6 @@ bindVar i = do
   x <- nameOfBV i
   liftTCM $ bindVariable LambdaBound (nameConcrete x) x
 
--- | Instance arguments that depend on arguments that are kept in the Haskell
---   code should not be turned into type class constraints. These are proof objects that only exist
---   on the Agda side.
-dependsOnKeptVar :: Free t => t -> C Bool
-dependsOnKeptVar t = do
-  vis <- Set.fromList . map fst . filter (keepArg . snd) . zip [0..] <$> getContext
-  return $ any (`Set.member` vis) $ (freeVars t :: [Int])
-
 compileType :: Term -> C (Hs.Type ())
 compileType t = do
   case t of
@@ -917,10 +911,9 @@ compileType t = do
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
 -- Determine whether an argument should be kept or dropped.
--- Currently we drop all arguments that are not visibile or
--- have quantity 0 (= run-time erased).
+-- We drop all arguments that have quantity 0 (= run-time erased).
 keepArg :: (LensHiding a, LensQuantity a) => a -> Bool
-keepArg x = visible x && usableQuantity x
+keepArg x = usableQuantity x
 
 -- Currently we can compile an Agda "Dom Type" in three ways:
 -- - To a type in Haskell
@@ -933,10 +926,16 @@ data CompiledDom
 
 compileDom :: Dom Type -> C CompiledDom
 compileDom a
-  | keepArg a    = DomType <$> compileType (unEl $ unDom a)
-  | isInstance a && usableQuantity a = ifM (dependsOnKeptVar a) (return DomDropped) $
+  | keepArg a, isInstance a =
       DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
+  | keepArg a = do
+      ensureVisible a
+      DomType <$> compileType (unEl $ unDom a)
   | otherwise    = return DomDropped
+
+ensureVisible :: LensHiding a => a -> C ()
+ensureVisible x = unless (visible x) $
+  genericDocError =<< text "Haskell does not support implicit arguments"
 
 -- Exploits the fact that the name of the record type and the name of the record module are the
 -- same, including the unique name ids.
@@ -987,10 +986,12 @@ compileTerm v = do
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName (conName h)
     Lit l -> compileLiteral l
     Lam v b | keepArg v, getOrigin v == UserWritten -> do
+      ensureVisible v
       hsLambda (absName b) <$> underAbstr_ b compileTerm
     Lam v b | keepArg v ->
       -- System-inserted lambda, no need to preserve the name.
       underAbstraction_ b $ \ body -> do
+        ensureVisible v
         x <- showTCM (Var 0 [])
         let hsx = hsVar x
         body <- compileTerm body
@@ -999,7 +1000,7 @@ compileTerm v = do
             | a == hsx -> Hs.RightSection () op b -- System-inserted visible lambdas can only come from sections
           _            -> hsLambda x body         -- so we know x is not free in b.
     Lam v b ->
-      -- Drop non-visible lambdas (#65)
+      -- Drop erased lambdas (#65)
       underAbstraction_ b $ \ body -> compileTerm body
     t -> genericDocError =<< text "bad term:" <?> prettyTCM t
   where
