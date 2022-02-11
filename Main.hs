@@ -425,7 +425,8 @@ liftTCM1 :: (TCM a -> TCM b) -> C a -> C b
 liftTCM1 k m = ReaderT (k . runReaderT m)
 
 compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
-compile _ m _ def = withCurrentModule m $ runC $ processPragma (defName def) >>= \ p ->
+compile _ m _ def = withCurrentModule m $ runC $ processPragma (defName def) >>= \ p -> do
+  reportSDoc "agda2hs.compile" 5 $ text "Compiling definition: " <+> prettyTCM (defName def)
   case (p , defInstance def , theDef def) of
     (NoPragma           , _      , _         ) -> return []
     (ExistingClassPragma, _      , _         ) -> return [] -- No code generation, but affects how projections are compiled
@@ -713,6 +714,7 @@ compileData ds def = do
   case theDef def of
     Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} -> do
       TelV tel t <- telViewUpTo n (defType def)
+      reportSDoc "agda2hs.data" 10 $ text "Datatype telescope:" <+> prettyTCM tel
       allIndicesErased t
       addContext tel $ do
         let params = filter keepArg (teleArgs tel) :: [Arg Term]
@@ -1160,6 +1162,7 @@ moduleFileName opts name =
 
 moduleSetup :: Options -> IsMain -> ModuleName -> filepath -> TCM (Recompile ModuleEnv ModuleRes)
 moduleSetup _ _ m _ = do
+  reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
   setScope . iInsideScope =<< curIF
   return $ Recompile m
 
