@@ -52,6 +52,7 @@ import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad hiding (withCurrentModule)
 import Agda.TheTypeChecker
 import Agda.TypeChecking.Free
+import Agda.TypeChecking.Level (isLevelType)
 import Agda.TypeChecking.Rules.Term (isType_)
 import Agda.TypeChecking.Reduce
 import Agda.TypeChecking.Substitute
@@ -467,7 +468,7 @@ compileInstRule cs ty = case unSpine  $ ty of
           pars t@(Hs.TyVar () _) = t
           pars t@(Hs.TyCon () _) = t
           pars t = Hs.TyParen () t
-  Pi a b -> compileDom a >>= \case
+  Pi a b -> compileDom (absName b) a >>= \case
     DomDropped -> underAbstr a b (compileInstRule cs . unEl)
     DomConstraint hsA ->
       underAbstraction a b (compileInstRule (cs ++ [hsA]) . unEl)
@@ -651,9 +652,8 @@ compileMinRecords def sls = do
 compileRecord :: RecordTarget -> Definition -> C (Hs.Decl ())
 compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
   TelV tel _ <- telViewUpTo recPars (defType def)
+  params <- compileTele tel
   addContext tel $ do
-    let params = filter keepArg (teleArgs tel) :: [Arg Term]
-    mapM_ ensureVisible params
     pars <- mapM (showTCM . unArg) params
     let hd = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
                    (Hs.DHead () (hsName rName))
@@ -697,7 +697,7 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
     compileRecFields decl ns tel = case (ns, tel) of
       (_   , EmptyTel          ) -> return []
       (n:ns, ExtendTel dom tel') -> do
-        hsDom <- compileDom dom
+        hsDom <- compileDom (absName tel') dom
         hsFields <- underAbstraction dom tel' $ compileRecFields decl ns
         case hsDom of
           DomType hsA -> do
@@ -716,9 +716,8 @@ compileData ds def = do
       TelV tel t <- telViewUpTo n (defType def)
       reportSDoc "agda2hs.data" 10 $ text "Datatype telescope:" <+> prettyTCM tel
       allIndicesErased t
+      params <- compileTele tel
       addContext tel $ do
-        let params = filter keepArg (teleArgs tel) :: [Arg Term]
-        mapM_ ensureVisible params
         pars <- mapM (showTCM . unArg) params
         cs   <- mapM (compileConstructor params) cs
         let hd   = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
@@ -728,7 +727,7 @@ compileData ds def = do
   where
     allIndicesErased :: Type -> C ()
     allIndicesErased t = reduce (unEl t) >>= \case
-      Pi dom t -> compileDom dom >>= \case
+      Pi dom t -> compileDom (absName t) dom >>= \case
         DomDropped      -> allIndicesErased (unAbs t)
         DomType{}       -> genericDocError =<< text "Not supported: indexed datatypes"
         DomConstraint{} -> genericDocError =<< text "Not supported: constraints in types"
@@ -744,7 +743,7 @@ compileConstructor params c = do
 
 compileConstructorArgs :: Telescope -> C [Hs.Type ()]
 compileConstructorArgs EmptyTel = return []
-compileConstructorArgs (ExtendTel a tel) = compileDom a >>= \case
+compileConstructorArgs (ExtendTel a tel) = compileDom (absName tel) a >>= \case
   DomType hsA       -> (hsA :) <$> underAbstraction a tel compileConstructorArgs
   DomConstraint hsA -> genericDocError =<< text "Not supported: constructors with class constraints"
   DomDropped        -> underAbstraction a tel compileConstructorArgs
@@ -891,7 +890,7 @@ bindVar i = do
 compileType :: Term -> C (Hs.Type ())
 compileType t = do
   case t of
-    Pi a b -> compileDom a >>= \case
+    Pi a b -> compileDom (absName b) a >>= \case
       DomType hsA -> do
         hsB <- underAbstraction a b $ compileType . unEl
         return $ Hs.TyFun () hsA hsB
@@ -914,8 +913,9 @@ compileType t = do
 
 -- Determine whether an argument should be kept or dropped.
 -- We drop all arguments that have quantity 0 (= run-time erased).
+-- We also drop hidden non-erased arguments (which should all be of type Level).
 keepArg :: (LensHiding a, LensQuantity a) => a -> Bool
-keepArg x = usableQuantity x
+keepArg x = usableQuantity x && visible x
 
 -- Currently we can compile an Agda "Dom Type" in three ways:
 -- - To a type in Haskell
@@ -926,18 +926,24 @@ data CompiledDom
   | DomConstraint (Hs.Asst ())
   | DomDropped
 
-compileDom :: Dom Type -> C CompiledDom
-compileDom a
-  | keepArg a, isInstance a =
-      DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
-  | keepArg a = do
-      ensureVisible a
-      DomType <$> compileType (unEl $ unDom a)
+compileDom :: ArgName -> Dom Type -> C CompiledDom
+compileDom x a
+  | usableQuantity a = case getHiding a of
+      Instance{} -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
+      NotHidden  -> DomType <$> compileType (unEl $ unDom a)
+      Hidden     -> do
+        ifM (isLevelType (unDom a))
+            (return DomDropped)
+            (genericDocError =<< do text "Implicit type argument not supported: " <+> prettyTCM x)
   | otherwise    = return DomDropped
 
-ensureVisible :: LensHiding a => a -> C ()
-ensureVisible x = unless (visible x) $
-  genericDocError =<< text "Haskell does not support implicit arguments"
+compileTele :: Telescope -> C [Arg Term]
+compileTele tel = addContext tel $ do
+  forMaybeM (zip3 (downFrom $ size tel) (teleNames tel) (flattenTel tel)) $ \(i,x,a) -> do
+    compileDom x a >>= \case
+      DomType{}       -> return $ Just $ argFromDom a $> var i
+      DomConstraint{} -> genericDocError =<< text "Not supported: type-level constraints"
+      DomDropped{}    -> return Nothing
 
 -- Exploits the fact that the name of the record type and the name of the record module are the
 -- same, including the unique name ids.
@@ -987,13 +993,15 @@ compileTerm v = do
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName (conName h)
     Lit l -> compileLiteral l
-    Lam v b | keepArg v, getOrigin v == UserWritten -> do
-      ensureVisible v
+    Lam v b | usableQuantity v, getOrigin v == UserWritten -> do
+      unless (visible v) $ genericDocError =<< do
+        text "Implicit lambda not supported: " <+> prettyTCM (absName b)
       hsLambda (absName b) <$> underAbstr_ b compileTerm
-    Lam v b | keepArg v ->
+    Lam v b | usableQuantity v ->
       -- System-inserted lambda, no need to preserve the name.
       underAbstraction_ b $ \ body -> do
-        ensureVisible v
+        unless (visible v) $ genericDocError =<< do
+          text "Implicit lambda not supported: " <+> prettyTCM (absName b)
         x <- showTCM (Var 0 [])
         let hsx = hsVar x
         body <- compileTerm body
