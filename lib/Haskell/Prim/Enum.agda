@@ -83,21 +83,21 @@ open Enum ⦃ ... ⦄ public
 {-# COMPILE AGDA2HS Enum existing-class #-}
 
 private
-  divNat : Natural → Natural → Natural
+  divNat : Nat → Nat → Nat
   divNat a 0       = 0
   divNat a (suc b) = div-helper 0 b a b
 
-  diff : Integer → Integer → Maybe Natural
+  diff : Integer → Integer → Maybe Nat
   diff a b =
     case a - b of λ where
       (pos n)    → Just n
       (negsuc _) → Nothing
 
-  unsafeIntegerToNat : Integer → Natural
+  unsafeIntegerToNat : Integer → Nat
   unsafeIntegerToNat (pos n) = n
   unsafeIntegerToNat (negsuc _) = 0
 
-  integerFromCount : Integer → Integer → Natural → List Integer
+  integerFromCount : Integer → Integer → Nat → List Integer
   integerFromCount a step 0       = []
   integerFromCount a step (suc n) = a ∷ integerFromCount (a + step) step n
 
@@ -176,8 +176,8 @@ module _ (from : a → Integer) (to : Integer → a) where
               else fromThenTo a a₁ minBound
 
 instance
-  iEnumNatural : Enum Natural
-  iEnumNatural = boundedBelowEnumViaInteger pos unsafeIntegerToNat
+  iEnumNat : Enum Nat
+  iEnumNat = boundedBelowEnumViaInteger pos unsafeIntegerToNat
 
   iEnumInt : Enum Int
   iEnumInt = boundedEnumViaInteger intToInteger integerToInt

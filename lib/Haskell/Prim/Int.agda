@@ -20,7 +20,7 @@ data Int : Set where
 intToWord : Int → Word64
 intToWord (int64 a) = a
 
-unsafeIntToNat : Int → Natural
+unsafeIntToNat : Int → Nat
 unsafeIntToNat a = w2n (intToWord a)
 
 
@@ -28,13 +28,13 @@ unsafeIntToNat a = w2n (intToWord a)
 -- Literals
 
 private
-  2⁶⁴ : Natural
+  2⁶⁴ : Nat
   2⁶⁴ = 18446744073709551616
 
-  2⁶³ : Natural
+  2⁶³ : Nat
   2⁶³ = 9223372036854775808
 
-  maxInt : Natural
+  maxInt : Nat
   maxInt = monusNat 2⁶³ 1
 
 instance
@@ -106,5 +106,5 @@ IsNonNegativeInt a@(int64 _) =
   if isNegativeInt a then TypeError (primStringAppend (primStringFromList (showInt a)) " is negative")
                      else ⊤
 
-intToNat : (a : Int) → @0 ⦃ IsNonNegativeInt a ⦄ → Natural
+intToNat : (a : Int) → @0 ⦃ IsNonNegativeInt a ⦄ → Nat
 intToNat a = unsafeIntToNat a

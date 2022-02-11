@@ -36,8 +36,8 @@ instance
   iBounded .Bounded.above = it
 
 instance
-  iBoundedBelowNatural : BoundedBelow Natural
-  iBoundedBelowNatural .minBound = 0
+  iBoundedBelowNat : BoundedBelow Nat
+  iBoundedBelowNat .minBound = 0
 
   iBoundedBelowWord : BoundedBelow Word
   iBoundedBelowWord .minBound = 0

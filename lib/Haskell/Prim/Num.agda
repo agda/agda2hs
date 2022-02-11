@@ -37,7 +37,7 @@ open Num ⦃ ... ⦄ public hiding (FromIntegerOK; number)
 {-# COMPILE AGDA2HS Num existing-class #-}
 
 instance
-  iNumNat : Num Natural
+  iNumNat : Num Nat
   iNumNat .MinusOK n m      = IsFalse (ltNat n m)
   iNumNat .NegateOK 0       = ⊤
   iNumNat .NegateOK (suc _) = ⊥

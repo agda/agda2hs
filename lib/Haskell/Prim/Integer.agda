@@ -9,7 +9,7 @@ open import Haskell.Prim.Bool
 -- Literals
 
 private
-  negNat : Natural → Integer
+  negNat : Nat → Integer
   negNat 0       = pos 0
   negNat (suc n) = negsuc n
 
@@ -27,7 +27,7 @@ instance
 -- Arithmetic
 
 private
-  subNat : Natural → Natural → Integer
+  subNat : Nat → Nat → Integer
   subNat n m = if (ltNat n m) then negsuc (monusNat m (suc n)) else pos (monusNat n m)
 
 negateInteger : Integer → Integer

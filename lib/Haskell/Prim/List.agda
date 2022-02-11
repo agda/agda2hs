@@ -89,7 +89,7 @@ unzip3 ((x , y , z) ∷ xyzs) =
   case unzip3 xyzs of λ where
     (xs , ys , zs) → x ∷ xs , y ∷ ys , z ∷ zs
 
-takeNat : Natural → List a → List a
+takeNat : Nat → List a → List a
 takeNat n       [] = []
 takeNat zero    xs = []
 takeNat (suc n) (x ∷ xs) = x ∷ takeNat n xs
@@ -97,7 +97,7 @@ takeNat (suc n) (x ∷ xs) = x ∷ takeNat n xs
 take : (n : Int) → @0 ⦃ IsNonNegativeInt n ⦄ → List a → List a
 take n xs = takeNat (intToNat n) xs
 
-dropNat : Natural → List a → List a
+dropNat : Nat → List a → List a
 dropNat n       [] = []
 dropNat zero    xs = xs
 dropNat (suc n) (_ ∷ xs) = dropNat n xs
@@ -105,7 +105,7 @@ dropNat (suc n) (_ ∷ xs) = dropNat n xs
 drop : (n : Int) → @0 ⦃ IsNonNegativeInt n ⦄ → List a → List a
 drop n xs = dropNat (intToNat n) xs
 
-splitAtNat : (n : Natural) → List a → List a × List a
+splitAtNat : (n : Nat) → List a → List a × List a
 splitAtNat _       []       = [] , []
 splitAtNat 0       xs       = [] , xs
 splitAtNat (suc n) (x ∷ xs) = first (x ∷_) (splitAtNat n xs)

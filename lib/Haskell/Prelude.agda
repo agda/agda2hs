@@ -1,21 +1,17 @@
 {-# OPTIONS --no-auto-inline #-}
 module Haskell.Prelude where
 
-open import Agda.Builtin.Nat as Nat   public hiding (_==_; _<_; _+_; _*_; _-_)
-open import Agda.Builtin.Bool         public
-open import Agda.Builtin.Char         public
-open import Agda.Builtin.Equality     public
-
 open import Haskell.Prim
 open Haskell.Prim public using
   ( Bool; True; False; Char; Integer;
-    List; []; _∷_; Natural; ⊤; tt;
+    List; []; _∷_; Nat; ⊤; tt;
     TypeError; ⊥; iNumberNat; IsTrue; IsFalse;
     All; allNil; allCons; NonEmpty; lengthNat;
     id; _∘_; _$_; flip; const;
     if_then_else_; case_of_;
     Number; fromNat; Negative; fromNeg;
     IsString; fromString;
+    _≡_; refl;
     a; b; c; d; e; f; m; s; t )
 
 open import Haskell.Prim.Absurd      public

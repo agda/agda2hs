@@ -119,7 +119,7 @@ instance
 {-# COMPILE AGDA2HS OrdBool₆ #-}
 
 instance
-  Ordℕ : Ord Natural
+  Ordℕ : Ord Nat
   Ordℕ = record {Ord₁ (λ where .Ord₁._<_ → ltNat)}
 -- {-# COMPILE AGDA2HS Ordℕ #-}
 
@@ -144,12 +144,12 @@ defaultShowList shows (x ∷ xs) = showString "[" ∘ foldl (λ s x → s ∘ sh
 record Show (a : Set) : Set where
   field
     show : a → String
-    showPrec : Natural → a → ShowS
+    showPrec : Nat → a → ShowS
     showList : List a → ShowS
 
 record Show₁ (a : Set) : Set where
   field
-    showPrec : Natural → a → ShowS
+    showPrec : Nat → a → ShowS
 
   show : a → String
   show x = showPrec 0 x ""
@@ -161,7 +161,7 @@ record Show₂ (a : Set) : Set where
   field
     show : a → String
 
-  showPrec : Natural → a → ShowS
+  showPrec : Nat → a → ShowS
   showPrec _ x s = show x ++ s
 
   showList : List a → ShowS

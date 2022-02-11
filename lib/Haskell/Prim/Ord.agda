@@ -87,7 +87,7 @@ private
   compareFromLt _<_ x y = if x < y then LT else if x == y then EQ else GT
 
 instance
-  iOrdNat : Ord Natural
+  iOrdNat : Ord Nat
   iOrdNat = ordFromLessThan ltNat
 
   iOrdInteger : Ord Integer

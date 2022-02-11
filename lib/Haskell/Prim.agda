@@ -10,7 +10,7 @@ module Haskell.Prim where
 open import Agda.Primitive          public
 open import Agda.Builtin.Bool       public renaming (true to True; false to False)
 open import Agda.Builtin.Int        public renaming (Int to Integer)
-open import Agda.Builtin.Nat        public renaming (Nat to Natural; _==_ to eqNat; _<_ to ltNat; _+_ to addNat; _-_ to monusNat; _*_ to mulNat)
+open import Agda.Builtin.Nat        public renaming (_==_ to eqNat; _<_ to ltNat; _+_ to addNat; _-_ to monusNat; _*_ to mulNat)
 open import Agda.Builtin.Char       public
 open import Agda.Builtin.Unit       public
 open import Agda.Builtin.Equality   public
@@ -74,7 +74,7 @@ instance
 -- Numbers
 
 instance
-  iNumberNat : Number Natural
+  iNumberNat : Number Nat
   iNumberNat .Number.Constraint _ = ⊤
   iNumberNat .fromNat n = n
 
@@ -82,7 +82,7 @@ instance
 --------------------------------------------------
 -- Lists
 
-lengthNat : List a → Natural
+lengthNat : List a → Nat
 lengthNat []       = 0
 lengthNat (_ ∷ xs) = addNat 1 (lengthNat xs)
 

@@ -9,11 +9,11 @@ private
 
   pattern vArg x = arg (arg-info visible (modality relevant quantity-ω)) x
 
-  refute : Natural → Term
+  refute : Nat → Term
   refute i = def (quote _$_) ( vArg (pat-lam (absurd-clause [] (vArg (absurdP 0) ∷ []) ∷ []) [])
                              ∷ vArg (var i []) ∷ [])
 
-  tryRefute : Natural → Term → TC ⊤
+  tryRefute : Nat → Term → TC ⊤
   tryRefute 0       _    = typeError (strErr "No variable of empty type found in the context" ∷ [])
   tryRefute (suc n) hole = catchTC (unify hole (refute n)) (tryRefute n hole)
 

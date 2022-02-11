@@ -62,7 +62,7 @@ private
   makeShowsPrec shp .showList = defaultShowList (shp 0)
 
 instance
-  iShowNat : Show Natural
+  iShowNat : Show Nat
   iShowNat = makeShow (primStringToList ∘ primShowNat)
 
   iShowInteger : Show Integer

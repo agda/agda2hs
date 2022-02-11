@@ -12,7 +12,7 @@ open Agda.Builtin.Word public using (Word)
 -- Literals
 
 private
-  2⁶⁴ : Natural
+  2⁶⁴ : Nat
   2⁶⁴ = 18446744073709551616
 
 instance

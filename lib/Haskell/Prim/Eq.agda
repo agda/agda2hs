@@ -27,7 +27,7 @@ open Eq ⦃ ... ⦄ public
 {-# COMPILE AGDA2HS Eq existing-class #-}
 
 instance
-  iEqNat : Eq Natural
+  iEqNat : Eq Nat
   iEqNat ._==_ = eqNat
 
   iEqInteger : Eq Integer
