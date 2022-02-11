@@ -4,7 +4,7 @@ module Haskell.Prelude where
 open import Haskell.Prim
 open Haskell.Prim public using
   ( Bool; True; False; Char; Integer;
-    List; []; _∷_; Nat; ⊤; tt;
+    List; []; _∷_; Nat; zero; suc; ⊤; tt;
     TypeError; ⊥; iNumberNat; IsTrue; IsFalse;
     All; allNil; allCons; NonEmpty; lengthNat;
     id; _∘_; _$_; flip; const;
