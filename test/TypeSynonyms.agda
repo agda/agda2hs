@@ -32,7 +32,7 @@ ListList : Set → Set
 ListList a = List (List a)
 {-# COMPILE AGDA2HS ListList #-}
 
-flatten : ∀ {a} → ListList a → List a
+flatten : ∀ {@0 a} → ListList a → List a
 flatten Nil = Nil
 flatten (Cons Nil xss) = flatten xss
 flatten (Cons (Cons x xs) xss) = Cons x (flatten (Cons xs xss))

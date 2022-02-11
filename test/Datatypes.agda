@@ -2,7 +2,7 @@
 open import Agda.Builtin.Bool
 
 data Test : Set where
-  CTest : Bool -> {Bool} -> Test
+  CTest : Bool -> @0 {Bool} -> Test
 {-# COMPILE AGDA2HS Test #-}
 
 getTest : Test → Bool

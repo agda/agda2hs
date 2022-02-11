@@ -1,13 +1,6 @@
 
 module Haskell.Prim.Enum where
 
-open import Agda.Builtin.Nat as Nat hiding (_==_; _<_; _+_; _*_; _-_)
-open import Agda.Builtin.Char
-open import Agda.Builtin.Equality
-open import Agda.Builtin.List
-open import Agda.Builtin.Unit
-open import Agda.Builtin.Int using (pos; negsuc)
-
 open import Haskell.Prim
 open import Haskell.Prim.Bool
 open import Haskell.Prim.Bounded
@@ -90,21 +83,21 @@ open Enum ⦃ ... ⦄ public
 {-# COMPILE AGDA2HS Enum existing-class #-}
 
 private
-  divNat : Nat → Nat → Nat
+  divNat : Natural → Natural → Natural
   divNat a 0       = 0
   divNat a (suc b) = div-helper 0 b a b
 
-  diff : Integer → Integer → Maybe Nat
+  diff : Integer → Integer → Maybe Natural
   diff a b =
     case a - b of λ where
       (pos n)    → Just n
       (negsuc _) → Nothing
 
-  unsafeIntegerToNat : Integer → Nat
+  unsafeIntegerToNat : Integer → Natural
   unsafeIntegerToNat (pos n) = n
   unsafeIntegerToNat (negsuc _) = 0
 
-  integerFromCount : Integer → Integer → Nat → List Integer
+  integerFromCount : Integer → Integer → Natural → List Integer
   integerFromCount a step 0       = []
   integerFromCount a step (suc n) = a ∷ integerFromCount (a + step) step n
 
@@ -183,7 +176,7 @@ module _ (from : a → Integer) (to : Integer → a) where
               else fromThenTo a a₁ minBound
 
 instance
-  iEnumNatural : Enum Nat
+  iEnumNatural : Enum Natural
   iEnumNatural = boundedBelowEnumViaInteger pos unsafeIntegerToNat
 
   iEnumInt : Enum Int

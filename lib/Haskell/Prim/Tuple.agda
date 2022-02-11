@@ -1,8 +1,6 @@
 
 module Haskell.Prim.Tuple where
 
-open import Agda.Builtin.List
-
 open import Haskell.Prim
 
 variable

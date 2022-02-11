@@ -1,11 +1,9 @@
 
 module Haskell.Prim.Double where
 
-open import Agda.Builtin.Nat
-open import Agda.Builtin.Unit
 open import Agda.Builtin.Float public renaming (Float to Double)
-open import Agda.Builtin.FromNat
-open import Agda.Builtin.FromNeg
+
+open import Haskell.Prim
 
 instance
   iNumberDouble : Number Double

@@ -1,11 +1,6 @@
 
 module Haskell.Prim.Eq where
 
-open import Agda.Builtin.Nat as Nat hiding (_==_)
-open import Agda.Builtin.Char
-open import Agda.Builtin.Unit
-open import Agda.Builtin.List
-
 open import Haskell.Prim
 open import Haskell.Prim.Bool
 open import Haskell.Prim.Integer
@@ -32,8 +27,8 @@ open Eq ⦃ ... ⦄ public
 {-# COMPILE AGDA2HS Eq existing-class #-}
 
 instance
-  iEqNat : Eq Nat
-  iEqNat ._==_ = Nat._==_
+  iEqNat : Eq Natural
+  iEqNat ._==_ = eqNat
 
   iEqInteger : Eq Integer
   iEqInteger ._==_ = eqInteger
@@ -48,33 +43,33 @@ instance
   iEqDouble ._==_ = primFloatEquality
 
   iEqBool : Eq Bool
-  iEqBool ._==_ false false = true
-  iEqBool ._==_ true  true  = true
-  iEqBool ._==_ _     _     = false
+  iEqBool ._==_ False False = True
+  iEqBool ._==_ True  True  = True
+  iEqBool ._==_ _     _     = False
 
   iEqChar : Eq Char
   iEqChar ._==_ = primCharEquality
 
   iEqUnit : Eq ⊤
-  iEqUnit ._==_ _ _ = true
+  iEqUnit ._==_ _ _ = True
 
   iEqTuple₀ : Eq (Tuple [])
-  iEqTuple₀ ._==_ _ _ = true
+  iEqTuple₀ ._==_ _ _ = True
 
   iEqTuple : ⦃ Eq a ⦄ → ⦃ Eq (Tuple as) ⦄ → Eq (Tuple (a ∷ as))
   iEqTuple ._==_ (x ∷ xs) (y ∷ ys) = x == y && xs == ys
 
   iEqList : ⦃ Eq a ⦄ → Eq (List a)
-  iEqList ._==_ []       []       = true
+  iEqList ._==_ []       []       = True
   iEqList ._==_ (x ∷ xs) (y ∷ ys) = x == y && xs == ys
-  iEqList ._==_ _        _        = false
+  iEqList ._==_ _        _        = False
 
   iEqMaybe : ⦃ Eq a ⦄ → Eq (Maybe a)
-  iEqMaybe ._==_ Nothing  Nothing  = true
+  iEqMaybe ._==_ Nothing  Nothing  = True
   iEqMaybe ._==_ (Just x) (Just y) = x == y
-  iEqMaybe ._==_ _        _        = false
+  iEqMaybe ._==_ _        _        = False
 
   iEqEither : ⦃ Eq a ⦄ → ⦃ Eq b ⦄ → Eq (Either a b)
   iEqEither ._==_ (Left  x) (Left  y) = x == y
   iEqEither ._==_ (Right x) (Right y) = x == y
-  iEqEither ._==_ _        _          = false
+  iEqEither ._==_ _        _          = False

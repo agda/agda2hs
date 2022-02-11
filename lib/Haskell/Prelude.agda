@@ -1,24 +1,22 @@
 {-# OPTIONS --no-auto-inline #-}
 module Haskell.Prelude where
 
-open import Agda.Builtin.Unit         public
 open import Agda.Builtin.Nat as Nat   public hiding (_==_; _<_; _+_; _*_; _-_)
-open import Agda.Builtin.List         public
 open import Agda.Builtin.Bool         public
 open import Agda.Builtin.Char         public
-open import Agda.Builtin.FromString   public
-import Agda.Builtin.String as Str
-open import Agda.Builtin.Strict
 open import Agda.Builtin.Equality     public
-open import Agda.Builtin.Int using (pos; negsuc)
 
 open import Haskell.Prim
-open Haskell.Prim public using ( TypeError; ⊥; iNumberNat; IsTrue; IsFalse;
-                                 All; allNil; allCons; NonEmpty; lengthNat;
-                                 id; _∘_; _$_; flip; const;
-                                 if_then_else_; case_of_;
-                                 Number; fromNat; Negative; fromNeg;
-                                 a; b; c; d; e; f; m; s; t )
+open Haskell.Prim public using
+  ( Bool; True; False; Char; Integer;
+    List; []; _∷_; Natural; ⊤; tt;
+    TypeError; ⊥; iNumberNat; IsTrue; IsFalse;
+    All; allNil; allCons; NonEmpty; lengthNat;
+    id; _∘_; _$_; flip; const;
+    if_then_else_; case_of_;
+    Number; fromNat; Negative; fromNeg;
+    IsString; fromString;
+    a; b; c; d; e; f; m; s; t )
 
 open import Haskell.Prim.Absurd      public
 open import Haskell.Prim.Applicative public
@@ -85,23 +83,25 @@ open import Haskell.Prim.Word        public
 --------------------------------------------------
 -- Functions
 
+-- a and b should really be erased here, but this requires a change to
+-- the type of the Agda builtin `primForce`.
 infixr 0 _$!_
-_$!_ : (a → b) → a → b
+_$!_ : {a b : Set} → (a → b) → a → b
 f $! x = primForce x f
 
-seq : a → b → b
+seq : {a b : Set} → a → b → b
 seq x y = const y $! x
 
 asTypeOf : a → a → a
 asTypeOf x _ = x
 
-undefined : {@(tactic absurd) i : ⊥} → a
+undefined : {@0 @(tactic absurd) i : ⊥} → a
 undefined {i = ()}
 
-error : {@(tactic absurd) i : ⊥} → String → a
+error : {@0 @(tactic absurd) i : ⊥} → String → a
 error {i = ()} err
 
-errorWithoutStackTrace : {@(tactic absurd) i : ⊥} → String → a
+errorWithoutStackTrace : {@0 @(tactic absurd) i : ⊥} → String → a
 errorWithoutStackTrace {i = ()} err
 
 
@@ -115,11 +115,13 @@ reverse = foldl (flip _∷_) []
 
 infixl 9 _!!_ _!!ᴺ_
 
-_!!ᴺ_ : (xs : List a) (n : Nat) → ⦃ IsTrue (n < lengthNat xs) ⦄ → a
+_!!ᴺ_ : (xs : List a) (n : Nat) → @0 ⦃ IsTrue (n < lengthNat xs) ⦄ → a
 (x ∷ xs) !!ᴺ zero  = x
 (x ∷ xs) !!ᴺ suc n = xs !!ᴺ n
 
-_!!_ : (xs : List a) (n : Int) ⦃ nn : IsNonNegativeInt n ⦄ → ⦃ IsTrue (intToNat n < lengthNat xs) ⦄ → a
+_!!_ : (xs : List a) (n : Int)
+     → ⦃ @0 nn : IsNonNegativeInt n ⦄
+     → ⦃ @0 _  : IsTrue (intToNat n {{nn}} < lengthNat xs) ⦄ → a
 xs !! n = xs !!ᴺ intToNat n
 
 lookup : ⦃ Eq a ⦄ → a → List (a × b) → Maybe b

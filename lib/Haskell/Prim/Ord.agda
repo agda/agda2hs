@@ -1,9 +1,6 @@
 
 module Haskell.Prim.Ord where
 
-open import Agda.Builtin.Nat as Nat hiding (_==_; _<_)
-open import Agda.Builtin.Char
-
 open import Haskell.Prim
 open import Haskell.Prim.Eq
 open import Haskell.Prim.Bool
@@ -25,10 +22,10 @@ data Ordering : Set where
 
 instance
   iEqOrdering : Eq Ordering
-  iEqOrdering ._==_ LT LT = true
-  iEqOrdering ._==_ EQ EQ = true
-  iEqOrdering ._==_ GT GT = true
-  iEqOrdering ._==_ _  _  = false
+  iEqOrdering ._==_ LT LT = True
+  iEqOrdering ._==_ EQ EQ = True
+  iEqOrdering ._==_ GT GT = True
+  iEqOrdering ._==_ _  _  = False
 
   iSemigroupOrdering : Semigroup Ordering
   iSemigroupOrdering ._<>_ LT _ = LT
@@ -90,8 +87,8 @@ private
   compareFromLt _<_ x y = if x < y then LT else if x == y then EQ else GT
 
 instance
-  iOrdNat : Ord Nat
-  iOrdNat = ordFromLessThan Nat._<_
+  iOrdNat : Ord Natural
+  iOrdNat = ordFromLessThan ltNat
 
   iOrdInteger : Ord Integer
   iOrdInteger = ordFromLessThan ltInteger
@@ -110,8 +107,8 @@ instance
 
   iOrdBool : Ord Bool
   iOrdBool = ordFromCompare λ where
-    false true  → LT
-    true  false → GT
+    False True  → LT
+    True  False → GT
     _     _     → EQ
 
   iOrdTuple₀ : Ord (Tuple [])

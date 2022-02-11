@@ -1,8 +1,6 @@
 
 module Haskell.Prim.Monoid where
 
-open import Agda.Builtin.Unit
-
 open import Haskell.Prim
 open import Haskell.Prim.Bool
 open import Haskell.Prim.List
@@ -95,9 +93,9 @@ MonoidEndoᵒᵖ .mempty      = id
 MonoidEndoᵒᵖ .super ._<>_ = flip _∘_
 
 MonoidConj : Monoid Bool
-MonoidConj .mempty      = true
+MonoidConj .mempty      = True
 MonoidConj .super ._<>_ = _&&_
 
 MonoidDisj : Monoid Bool
-MonoidDisj .mempty      = false
+MonoidDisj .mempty      = False
 MonoidDisj .super ._<>_ = _||_

@@ -1,11 +1,6 @@
 
 module Haskell.Prim.String where
 
-open import Agda.Builtin.Char
-open import Agda.Builtin.Unit
-open import Agda.Builtin.FromString
-import Agda.Builtin.String as Str
-
 open import Haskell.Prim
 open import Haskell.Prim.List
 open import Haskell.Prim.Foldable
@@ -18,7 +13,7 @@ String = List Char
 instance
   iIsStringString : IsString String
   iIsStringString .IsString.Constraint _ = ⊤
-  iIsStringString .fromString s = Str.primStringToList s
+  iIsStringString .fromString s = primStringToList s
 
 private
   cons : Char → List String → List String

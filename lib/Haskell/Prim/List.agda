@@ -1,9 +1,6 @@
 
 module Haskell.Prim.List where
 
-open import Agda.Builtin.List public
-open import Agda.Builtin.Nat
-
 open import Haskell.Prim
 open import Haskell.Prim.Tuple
 open import Haskell.Prim.Bool
@@ -92,40 +89,40 @@ unzip3 ((x , y , z) ∷ xyzs) =
   case unzip3 xyzs of λ where
     (xs , ys , zs) → x ∷ xs , y ∷ ys , z ∷ zs
 
-takeNat : Nat → List a → List a
+takeNat : Natural → List a → List a
 takeNat n       [] = []
 takeNat zero    xs = []
 takeNat (suc n) (x ∷ xs) = x ∷ takeNat n xs
 
-take : (n : Int) → ⦃ IsNonNegativeInt n ⦄ → List a → List a
+take : (n : Int) → @0 ⦃ IsNonNegativeInt n ⦄ → List a → List a
 take n xs = takeNat (intToNat n) xs
 
-dropNat : Nat → List a → List a
+dropNat : Natural → List a → List a
 dropNat n       [] = []
 dropNat zero    xs = xs
 dropNat (suc n) (_ ∷ xs) = dropNat n xs
 
-drop : (n : Int) → ⦃ IsNonNegativeInt n ⦄ → List a → List a
+drop : (n : Int) → @0 ⦃ IsNonNegativeInt n ⦄ → List a → List a
 drop n xs = dropNat (intToNat n) xs
 
-splitAtNat : (n : Nat) → List a → List a × List a
+splitAtNat : (n : Natural) → List a → List a × List a
 splitAtNat _       []       = [] , []
 splitAtNat 0       xs       = [] , xs
 splitAtNat (suc n) (x ∷ xs) = first (x ∷_) (splitAtNat n xs)
 
-splitAt : (n : Int) → ⦃ IsNonNegativeInt n ⦄ → List a → List a × List a
+splitAt : (n : Int) → @0 ⦃ IsNonNegativeInt n ⦄ → List a → List a × List a
 splitAt n xs = splitAtNat (intToNat n) xs
 
-head : (xs : List a) → ⦃ NonEmpty xs ⦄ → a
+head : (xs : List a) → @0 ⦃ NonEmpty xs ⦄ → a
 head (x ∷ _) = x
 
-tail : (xs : List a) → ⦃ NonEmpty xs ⦄ → List a
+tail : (xs : List a) → @0 ⦃ NonEmpty xs ⦄ → List a
 tail (_ ∷ xs) = xs
 
-last : (xs : List a) → ⦃ NonEmpty xs ⦄ → a
+last : (xs : List a) → @0 ⦃ NonEmpty xs ⦄ → a
 last (x ∷ [])         = x
 last (_ ∷ xs@(_ ∷ _)) = last xs
 
-init : (xs : List a) → ⦃ NonEmpty xs ⦄ → List a
+init : (xs : List a) → @0 ⦃ NonEmpty xs ⦄ → List a
 init (x ∷ [])         = []
 init (x ∷ xs@(_ ∷ _)) = x ∷ init xs

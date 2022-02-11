@@ -1,12 +1,6 @@
 
 module Haskell.Prim.Bounded where
 
-open import Agda.Builtin.Nat
-open import Agda.Builtin.Bool
-open import Agda.Builtin.Char
-open import Agda.Builtin.Equality
-open import Agda.Builtin.List
-
 open import Haskell.Prim
 open import Haskell.Prim.Eq
 open import Haskell.Prim.Int
@@ -42,7 +36,7 @@ instance
   iBounded .Bounded.above = it
 
 instance
-  iBoundedBelowNatural : BoundedBelow Nat
+  iBoundedBelowNatural : BoundedBelow Natural
   iBoundedBelowNatural .minBound = 0
 
   iBoundedBelowWord : BoundedBelow Word
@@ -56,9 +50,9 @@ instance
   iBoundedAboveInt .maxBound = 9223372036854775807
 
   iBoundedBelowBool : BoundedBelow Bool
-  iBoundedBelowBool .minBound = false
+  iBoundedBelowBool .minBound = False
   iBoundedAboveBool : BoundedAbove Bool
-  iBoundedAboveBool .maxBound = true
+  iBoundedAboveBool .maxBound = True
 
   iBoundedBelowChar : BoundedBelow Char
   iBoundedBelowChar .minBound = '\0'

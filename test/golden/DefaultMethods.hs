@@ -95,8 +95,8 @@ class Show a where
     showPrec _ x s = show x ++ s
 
 instance Show Bool where
-    show True = "true"
-    show False = "false"
+    show True = "True"
+    show False = "False"
     showList [] = showString ""
     showList (True : bs) = showString "1" . showList bs
     showList (False : bs) = showString "0" . showList bs

@@ -2,12 +2,6 @@
 
 module Haskell.Prim.Num where
 
-open import Agda.Builtin.Nat as Nat hiding (_+_; _-_; _*_; _<_; _==_)
-open import Agda.Builtin.Int using (pos; negsuc)
-open import Agda.Builtin.FromNat
-open import Agda.Builtin.FromNeg
-open import Agda.Builtin.Unit
-
 open import Haskell.Prim
 open import Haskell.Prim.Word
 open import Haskell.Prim.Int
@@ -43,15 +37,15 @@ open Num ⦃ ... ⦄ public hiding (FromIntegerOK; number)
 {-# COMPILE AGDA2HS Num existing-class #-}
 
 instance
-  iNumNat : Num Nat
-  iNumNat .MinusOK n m      = IsFalse (n Nat.< m)
+  iNumNat : Num Natural
+  iNumNat .MinusOK n m      = IsFalse (ltNat n m)
   iNumNat .NegateOK 0       = ⊤
   iNumNat .NegateOK (suc _) = ⊥
   iNumNat .Num.FromIntegerOK (negsuc _) = ⊥
   iNumNat .Num.FromIntegerOK (pos _) = ⊤
-  iNumNat ._+_ n m = n Nat.+ m
-  iNumNat ._-_ n m = n Nat.- m
-  iNumNat ._*_ n m = n Nat.* m
+  iNumNat ._+_ n m = addNat n m
+  iNumNat ._-_ n m = monusNat n m
+  iNumNat ._*_ n m = mulNat n m
   iNumNat .negate n = n
   iNumNat .abs    n = n
   iNumNat .signum 0       = 0

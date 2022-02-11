@@ -1,23 +1,19 @@
 
 module Haskell.Prim.Absurd where
 
-open import Agda.Builtin.Nat
-open import Agda.Builtin.List
-open import Agda.Builtin.Unit
-open import Agda.Builtin.Reflection renaming (bindTC to _>>=_; absurd to absurdP)
-open import Agda.Builtin.Equality
-
 open import Haskell.Prim
+
+open import Agda.Builtin.Reflection renaming (bindTC to _>>=_; absurd to absurdP)
 
 private
 
   pattern vArg x = arg (arg-info visible (modality relevant quantity-ω)) x
 
-  refute : Nat → Term
+  refute : Natural → Term
   refute i = def (quote _$_) ( vArg (pat-lam (absurd-clause [] (vArg (absurdP 0) ∷ []) ∷ []) [])
                              ∷ vArg (var i []) ∷ [])
 
-  tryRefute : Nat → Term → TC ⊤
+  tryRefute : Natural → Term → TC ⊤
   tryRefute 0       _    = typeError (strErr "No variable of empty type found in the context" ∷ [])
   tryRefute (suc n) hole = catchTC (unify hole (refute n)) (tryRefute n hole)
 
