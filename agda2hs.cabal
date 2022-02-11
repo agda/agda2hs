@@ -22,7 +22,7 @@ executable agda2hs
   main-is:             Main.hs
   other-modules:       HsUtils
   build-depends:       base >= 4.10 && < 4.16,
-                       Agda >= 2.6.2 && < 2.6.3,
+                       Agda >= 2.6.3 && < 2.6.4,
                        containers >= 0.6 && < 0.7,
                        unordered-containers >= 0.2,
                        mtl >= 2.2,
@@ -36,8 +36,4 @@ executable agda2hs
   default-extensions:  LambdaCase,
                        RecordWildCards,
                        FlexibleContexts
-
-  -- Agda-2.6.1.2 does not work with ghc-8.10.3 (see https://github.com/agda/agda/issues/5136)
-  if impl(ghc == 8.10.3)
-    build-depends: Agda < 2.6.1.2 || > 2.6.1.2
 

@@ -3,4 +3,4 @@ packages: ./agda2hs.cabal
 source-repository-package
         type: git
         location: https://github.com/jespercockx/agda
-        tag: bf2efc9629c1c211e03f25a2492a8912ada6b8a0
+        tag: 0a7040555f1d4e60b434afe4a60aaaa8747d35ce
