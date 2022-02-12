@@ -1,5 +1,5 @@
 
-open import Agda.Builtin.Nat
+open import Haskell.Prelude
 
 {- Old style using implicit arguments (no longer supported)
 data Vec (a : Set) : {n : Nat} → Set where

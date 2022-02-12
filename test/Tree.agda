@@ -1,5 +1,4 @@
-open import Haskell.Prim
-open import Agda.Builtin.Nat
+open import Haskell.Prelude
 
 data _≤_ : Nat → Nat → Set where
   instance
