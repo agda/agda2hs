@@ -4,6 +4,7 @@ module Main where
 import Control.Applicative
 import Control.Arrow ((>>>), (***), (&&&), first, second)
 import Control.Monad
+import Control.Monad.Error
 import Control.Monad.Fail (MonadFail)
 import Control.Monad.Reader
 import Control.Monad.IO.Class
@@ -51,8 +52,13 @@ import Agda.Syntax.Translation.AbstractToConcrete
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad hiding (withCurrentModule)
 import Agda.TheTypeChecker
+import Agda.TypeChecking.CheckInternal (infer)
+import Agda.TypeChecking.Constraints (noConstraints)
+import Agda.TypeChecking.Conversion (equalTerm)
 import Agda.TypeChecking.Free
+import Agda.TypeChecking.InstanceArguments (findInstance)
 import Agda.TypeChecking.Level (isLevelType)
+import Agda.TypeChecking.MetaVars (newInstanceMeta)
 import Agda.TypeChecking.Rules.Term (isType_)
 import Agda.TypeChecking.Reduce
 import Agda.TypeChecking.Substitute
@@ -769,10 +775,12 @@ compileFun d = do
 
 compileFun' :: Definition -> LocalDecls -> C [Hs.Decl ()]
 compileFun' def@(Defn {..}) locals = do
-  let n = qnameName defName
+  let m = qnameModule defName
+      n = qnameName defName
       x = hsName $ prettyShow n
       go = foldM $ \(ds, ms) -> compileClause ds x >=> return . fmap (ms `snoc`)
-  setCurrentRange (nameBindingSite n) $ do
+  reportSDoc "agda2hs.compile" 6 $ text "compiling function: " <+> prettyTCM defName
+  withCurrentModule m $ setCurrentRange (nameBindingSite n) $ do
     ifM (endsInSort defType) (compileTypeDef x def locals) $ do
       ty <- compileType (unEl defType)
       cs <- snd <$> go (locals, []) funClauses
@@ -975,6 +983,8 @@ compileLiteral l               = genericDocError =<< text "bad term:" <?> pretty
 
 compileTerm :: Term -> C (Hs.Exp ())
 compileTerm v = do
+  reportSDoc "agda2hs.compile" 7 $ text "compiling term:" <+> prettyTCM v
+  reportSDoc "agda2hs.compile" 27 $ text "compiling term:" <+> pure (P.pretty v)
   case unSpine v of
     Var x es   -> (`app` es) . hsVar =<< showTCM (Var x [])
     -- v currently we assume all record projections are instance
@@ -982,12 +992,7 @@ compileTerm v = do
     Def f es
       | Just semantics <- isSpecialTerm f -> semantics f es
       | otherwise -> isClassFunction f >>= \ case
-        True -> do
-          -- v not sure why this fails to strip the name
-          --f <- hsQName builtins (qualify_ (qnameName f))
-          -- here's a horrible way to strip the module prefix off the name
-          let uf = prettyShow (nameConcrete (qnameName f))
-          (`appStrip` es) (hsVar uf)
+        True  -> compileClassFunApp f es
         False -> (`app` es) . Hs.Var () =<< hsQName f
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
@@ -1017,16 +1022,6 @@ compileTerm v = do
     app :: Hs.Exp () -> Elims -> C (Hs.Exp ())
     app hd es = eApp <$> pure hd <*> compileArgs es
 
-    -- `appStrip` is used when we have a record projection and we want to
-    -- drop the first visible arg (the record)
-    appStrip :: Hs.Exp () -> Elims -> C (Hs.Exp ())
-    appStrip hd es = do
-      let Just args = allApplyElims es
-      args <- mapM (compileTerm . unArg) $ filter keepArg $ tail $ dropWhile notVisible args
-      return $ eApp hd args
-
-
-
 compilePats :: NAPs -> C [Hs.Pat ()]
 compilePats ps = mapM (compilePat . namedArg) $ filter keepArg ps
 
@@ -1046,10 +1041,64 @@ compilePat (ProjP _ q) = do
   return $ Hs.PVar () x
 compilePat p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
 
+-- `compileClassFunApp` is used when we have a record projection and we want to
+-- drop the first visible arg (the record)
+compileClassFunApp :: QName -> Elims -> C (Hs.Exp ())
+compileClassFunApp f es = do
+  -- v not sure why this fails to strip the name
+  --f <- hsQName builtins (qualify_ (qnameName f))
+  -- here's a horrible way to strip the module prefix off the name
+  let uf = prettyShow (nameConcrete (qnameName f))
+  case dropWhile notVisible (fromMaybe __IMPOSSIBLE__ $ allApplyElims es) of
+    []     -> __IMPOSSIBLE__
+    (x:xs) -> do
+      curMod <- currentModule
+      reportSDoc "agda2hs.compile" 15 $ nest 2 $ vcat
+        [ text "symbol module:  " <+> prettyTCM (qnameModule f)
+        , text "current module: " <+> prettyTCM curMod
+        ]
+      unless (curMod `isLeChildModuleOf` qnameModule f) $ checkInstance $ unArg x
+      args <- mapMaybeM compileArg xs
+      return $ hsVar uf `eApp` args
+
 compileArgs :: Elims -> C [Hs.Exp ()]
-compileArgs es = do
-  let Just args = allApplyElims es
-  mapM (compileTerm . unArg) $ filter keepArg args
+compileArgs es =
+  let args = fromMaybe __IMPOSSIBLE__ $ allApplyElims es
+  in  mapMaybeM compileArg args
+
+compileArg :: Arg Term -> C (Maybe (Hs.Exp ()))
+compileArg x = do
+  reportSDoc "agda2hs.compile" 8 $ text "compiling argument" <+> prettyTCM x
+  if | keepArg x -> Just <$> compileTerm (unArg x)
+     | isInstance x, usableModality x -> Nothing <$ checkInstance (unArg $ x)
+     | otherwise -> return Nothing
+
+checkInstance :: Term -> C ()
+checkInstance u | varOrDef u = liftTCM $ noConstraints $ do
+  reportSDoc "agda2hs.checkInstance" 5 $ text "checkInstance" <+> prettyTCM u
+  t <- infer u
+  reportSDoc "agda2hs.checkInstance" 15 $ text "  inferred type:" <+> prettyTCM t
+  (m, v) <- newInstanceMeta "" t
+  reportSDoc "agda2hs.checkInstance" 15 $ text "  instance meta:" <+> prettyTCM m
+  findInstance m Nothing
+  -- this should really not be necessary, but somehow things break if I don't do it
+  v <- unSpine <$> instantiate v
+  reportSDoc "agda2hs.checkInstance" 15 $ text "  inferred instance:" <+> (prettyTCM =<< instantiate v)
+  equalTerm t u v `catchError` \_ ->
+    genericDocError =<< text "illegal instance: " <+> prettyTCM u
+  where
+    varOrDef Var{} = True
+    varOrDef Def{} = True
+    varOrDef _     = False
+-- We need to compile applications of `fromNat`, `fromNeg`, and
+-- `fromString` where the constraint type is ⊤ or IsTrue .... Ideally
+-- this constraint would be marked as erased but this would involve
+-- changing Agda builtins.
+checkInstance u@(Con c _ _)
+  | prettyShow (conName c) == "Agda.Builtin.Unit.tt" ||
+    prettyShow (conName c) == "Haskell.Prim.IsTrue.itsTrue" ||
+    prettyShow (conName c) == "Haskell.Prim.IsFalse.itsFalse" = return ()
+checkInstance u = genericDocError =<< text "illegal instance: " <+> prettyTCM u
 
 -- FOREIGN pragmas --------------------------------------------------------
 
