@@ -213,23 +213,23 @@ five = hd (5 ∷ 3 ∷ [])
 -- ** Booleans
 
 ex_bool : Bool
-ex_bool = true
+ex_bool = True
 {-# COMPILE AGDA2HS ex_bool #-}
 
 ex_if : Nat
-ex_if = if true then 1 else 0
+ex_if = if True then 1 else 0
 {-# COMPILE AGDA2HS ex_if #-}
 
 if_over : Nat
-if_over = (if true then (λ x → x) else (λ x → x + 1)) 0
+if_over = (if True then (λ x → x) else (λ x → x + 1)) 0
 {-# COMPILE AGDA2HS if_over #-}
 
 if_partial₁ : List Nat → List Nat
-if_partial₁ = map (if true then 1 else_)
+if_partial₁ = map (if True then 1 else_)
 {-# COMPILE AGDA2HS if_partial₁ #-}
 
 if_partial₂ : List Nat → List (Nat → Nat)
-if_partial₂ = map (if true then_else_)
+if_partial₂ = map (if True then_else_)
 {-# COMPILE AGDA2HS if_partial₂ #-}
 
 if_partial₃ : List Bool → List (Nat → Nat → Nat)

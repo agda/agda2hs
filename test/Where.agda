@@ -9,7 +9,7 @@ postulate
 
 -- no outer arguments
 ex1 : Nat
-ex1 = mult num + bool2nat true
+ex1 = mult num + bool2nat True
   where
     num : Nat
     num = 42
@@ -19,7 +19,7 @@ ex1 = mult num + bool2nat true
 
 -- nested where
 ex2 : Nat
-ex2 = mult num + bool2nat true
+ex2 = mult num + bool2nat True
   where
     num : Nat
     num = 42
@@ -91,7 +91,7 @@ ex6 (n ∷ ns) b = mult (num ∷ 1 ∷ [])
         bump : Nat → Nat → Nat
         bump x y = x * y + (m - n)
 
-    num = 42 + ex6 ns true
+    num = 42 + ex6 ns True
 
 ex7 : Nat → Nat
 ex7 n₀ = go₁ n₀
