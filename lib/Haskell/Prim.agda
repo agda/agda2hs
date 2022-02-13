@@ -23,7 +23,7 @@ open import Agda.Builtin.Strict     public
 open import Agda.Builtin.List       public
 
 variable
-  ℓ : Level
+  @0 ℓ : Level
   @0 a b c d e : Set
   @0 f m s t : Set → Set
 
@@ -93,7 +93,7 @@ lengthNat (_ ∷ xs) = addNat 1 (lengthNat xs)
 data ⊥ : Set where
 
 -- Use to bundle up constraints
-data All {a b} {A : Set a} (B : A → Set b) : List A → Set (a ⊔ b) where
+data All {@0 a b} {@0 A : Set a} (@0 B : A → Set b) : List A → Set (a ⊔ b) where
   instance
     allNil  : All B []
     allCons : ∀ {x xs} ⦃ i : B x ⦄ ⦃ is : All B xs ⦄ → All B (x ∷ xs)
@@ -104,10 +104,10 @@ data IsTrue : Bool → Set where
 data IsFalse : Bool → Set where
   instance itsFalse : IsFalse False
 
-data NonEmpty {a : Set} : List a → Set where
+data NonEmpty {@0 a : Set} : List a → Set where
   instance itsNonEmpty : ∀ {x xs} → NonEmpty (x ∷ xs)
 
 data TypeError (err : AgdaString) : Set where
 
-it : ∀ {ℓ} {@0 a : Set ℓ} → ⦃ a ⦄ → a
+it : ∀ {@0 ℓ} {@0 a : Set ℓ} → ⦃ a ⦄ → a
 it ⦃ x ⦄ = x

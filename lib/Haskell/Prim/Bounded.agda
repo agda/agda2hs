@@ -64,9 +64,9 @@ instance
   iBoundedAboveTuple₀ : BoundedAbove (Tuple [])
   iBoundedAboveTuple₀ .maxBound = []
 
-  iBoundedBelowTuple : ∀ {as} → ⦃ BoundedBelow a ⦄ → ⦃ BoundedBelow (Tuple as) ⦄ → BoundedBelow (Tuple (a ∷ as))
+  iBoundedBelowTuple : ⦃ BoundedBelow a ⦄ → ⦃ BoundedBelow (Tuple as) ⦄ → BoundedBelow (Tuple (a ∷ as))
   iBoundedBelowTuple .minBound = minBound ∷ minBound
-  iBoundedAboveTuple : ∀ {as} → ⦃ BoundedAbove a ⦄ → ⦃ BoundedAbove (Tuple as) ⦄ → BoundedAbove (Tuple (a ∷ as))
+  iBoundedAboveTuple : ⦃ BoundedAbove a ⦄ → ⦃ BoundedAbove (Tuple as) ⦄ → BoundedAbove (Tuple (a ∷ as))
   iBoundedAboveTuple .maxBound = maxBound ∷ maxBound
 
   iBoundedBelowOrdering : BoundedBelow Ordering
