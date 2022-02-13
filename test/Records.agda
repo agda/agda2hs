@@ -1,7 +1,7 @@
 module Records where
 
 variable
-  @0 a b : Set
+  a b : Set
 
 -- parametrized record type exported as an Haskell record
 record Pair (a b : Set) : Set where

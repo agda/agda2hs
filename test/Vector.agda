@@ -23,11 +23,11 @@ data Vec (a : Set) : (@0 n : Nat) → Set where
   Cons : {@0 n : Nat} → a → Vec a n → Vec a (suc n)
 {-# COMPILE AGDA2HS Vec #-}
 
-mapV : {@0 a b : Set} {@0 n : Nat} (f : a → b) → Vec a n → Vec b n
+mapV : {a b : Set} {@0 n : Nat} (f : a → b) → Vec a n → Vec b n
 mapV f Nil = Nil
 mapV f (Cons x xs) = Cons (f x) (mapV f xs)
 {-# COMPILE AGDA2HS mapV #-}
 
-tailV : {@0 a : Set} {@0 n : Nat} → Vec a (suc n) → Vec a n
+tailV : {a : Set} {@0 n : Nat} → Vec a (suc n) → Vec a n
 tailV (Cons x xs) = xs
 {-# COMPILE AGDA2HS tailV #-}
