@@ -935,13 +935,21 @@ data CompiledDom
   | DomConstraint (Hs.Asst ())
   | DomDropped
 
+-- Determine whether it is ok to erase arguments of this type,
+-- even in the absence of an erasure annotation.
+canErase :: Type -> C Bool
+canErase a = do
+  TelV tel b <- telView a
+  addContext tel $
+    isLevelType b `or2M` ((isJust . isSort) <$> reduce (unEl b))
+
 compileDom :: ArgName -> Dom Type -> C CompiledDom
 compileDom x a
   | usableModality a = case getHiding a of
       Instance{} -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
       NotHidden  -> DomType <$> compileType (unEl $ unDom a)
       Hidden     -> do
-        ifM (isLevelType (unDom a))
+        ifM (canErase $ unDom a)
             (return DomDropped)
             (genericDocError =<< do text "Implicit type argument not supported: " <+> prettyTCM x)
   | otherwise    = return DomDropped
