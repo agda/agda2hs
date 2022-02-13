@@ -921,9 +921,10 @@ compileType t = do
 
 -- Determine whether an argument should be kept or dropped.
 -- We drop all arguments that have quantity 0 (= run-time erased).
--- We also drop hidden non-erased arguments (which should all be of type Level).
-keepArg :: (LensHiding a, LensQuantity a) => a -> Bool
-keepArg x = usableQuantity x && visible x
+-- We also drop hidden non-erased arguments (which should all be of
+-- type Level or Set l).
+keepArg :: (LensHiding a, LensModality a) => a -> Bool
+keepArg x = usableModality x && visible x
 
 -- Currently we can compile an Agda "Dom Type" in three ways:
 -- - To a type in Haskell
@@ -936,7 +937,7 @@ data CompiledDom
 
 compileDom :: ArgName -> Dom Type -> C CompiledDom
 compileDom x a
-  | usableQuantity a = case getHiding a of
+  | usableModality a = case getHiding a of
       Instance{} -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
       NotHidden  -> DomType <$> compileType (unEl $ unDom a)
       Hidden     -> do
@@ -998,11 +999,11 @@ compileTerm v = do
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> (`app` es) . Hs.Con () =<< hsQName (conName h)
     Lit l -> compileLiteral l
-    Lam v b | usableQuantity v, getOrigin v == UserWritten -> do
+    Lam v b | usableModality v, getOrigin v == UserWritten -> do
       unless (visible v) $ genericDocError =<< do
         text "Implicit lambda not supported: " <+> prettyTCM (absName b)
       hsLambda (absName b) <$> underAbstr_ b compileTerm
-    Lam v b | usableQuantity v ->
+    Lam v b | usableModality v ->
       -- System-inserted lambda, no need to preserve the name.
       underAbstraction_ b $ \ body -> do
         unless (visible v) $ genericDocError =<< do
