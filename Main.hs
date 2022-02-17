@@ -667,11 +667,16 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
     let fieldTel = snd $ splitTelescopeAt recPars recTel
     case target of
       ToClass ms -> do
-        classDecls <- compileRecFields classDecl recFields fieldTel
+        (classConstraints, classDecls) <- compileRecFields classDecl recFields fieldTel
+        let context = case classConstraints of
+              []     -> Nothing
+              [asst] -> Just (Hs.CxSingle () asst)
+              assts  -> Just (Hs.CxTuple () assts)
         defaultDecls <- compileMinRecords def ms
-        return $ Hs.ClassDecl () Nothing hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
+        return $ Hs.ClassDecl () context hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
       ToRecord -> do
-        fieldDecls <- compileRecFields fieldDecl recFields fieldTel
+        (constraints, fieldDecls) <- compileRecFields fieldDecl recFields fieldTel
+        unless (null constraints) __IMPOSSIBLE__ -- no constraints for records
         mapM_ checkFieldInScope (map unDom recFields)
         let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
         return $ Hs.DataDecl () (Hs.DataType ()) Nothing hd [conDecl] []
@@ -699,19 +704,21 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
     fieldDecl n = Hs.FieldDecl () [n]
 
     compileRecFields :: (Hs.Name () -> Hs.Type () -> b)
-                     -> [Dom QName] -> Telescope -> C [b]
+                     -> [Dom QName] -> Telescope -> C ([Hs.Asst ()], [b])
     compileRecFields decl ns tel = case (ns, tel) of
-      (_   , EmptyTel          ) -> return []
+      (_   , EmptyTel          ) -> return ([], [])
       (n:ns, ExtendTel dom tel') -> do
         hsDom <- compileDom (absName tel') dom
-        hsFields <- underAbstraction dom tel' $ compileRecFields decl ns
+        (hsAssts, hsFields) <- underAbstraction dom tel' $ compileRecFields decl ns
         case hsDom of
           DomType hsA -> do
             let fieldName = hsName $ prettyShow $ qnameName $ unDom n
-            return (decl fieldName hsA : hsFields)
-          DomConstraint hsA -> genericError $
-            "Not supported: record/class with constraint fields"
-          DomDropped -> return hsFields
+            return (hsAssts, decl fieldName hsA : hsFields)
+          DomConstraint hsA -> case target of
+            ToClass{} -> return (hsA : hsAssts , hsFields)
+            ToRecord{} -> genericError $
+              "Not supported: record/class with constraint fields"
+          DomDropped -> return (hsAssts , hsFields)
       (_, _) -> __IMPOSSIBLE__
 
 compileData :: [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
