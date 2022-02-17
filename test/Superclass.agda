@@ -34,3 +34,34 @@ open Subber {{...}}
 bar : {{Subber a}} → a → a
 bar = myFun ∘ id
 {-# COMPILE AGDA2HS bar #-}
+
+instance
+  iSuperInt : Super Int
+  iSuperInt .myFun = 1 +_
+{-# COMPILE AGDA2HS iSuperInt #-}
+
+instance
+  iSubInt : Sub Int
+  iSubInt = record{}
+{-# COMPILE AGDA2HS iSubInt #-}
+
+-- Defining a subclass of an existing class from Prelude
+
+record DiscreteOrd (a : Set) : Set where
+  field
+    overlap {{super}} : Ord a
+open DiscreteOrd {{...}}
+{-# COMPILE AGDA2HS DiscreteOrd class #-}
+
+instance
+  iDiscreteOrdBool : DiscreteOrd Bool
+  iDiscreteOrdBool = record {}
+{-# COMPILE AGDA2HS iDiscreteOrdBool #-}
+
+baz : {{DiscreteOrd a}} → a → Bool
+baz x = x < x
+
+usebaz : Bool
+usebaz = baz True
+{-# COMPILE AGDA2HS baz #-}
+{-# COMPILE AGDA2HS usebaz #-}

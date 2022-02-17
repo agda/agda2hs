@@ -511,6 +511,8 @@ compileInstanceClause ls c = do
   -- 1. drop any patterns before record projection to suppress the instance arg
   -- 2. use record proj. as function name
   -- 3. process remaing patterns as usual
+
+  -- TODO: check that the things we drop here are not doing any matching
   case dropWhile (isNothing . isProjP) (namedClausePats c) of
     [] ->
       concatUnzip <$> (mapM (compileInstanceClause ls) =<< etaExpandClause c)
@@ -541,6 +543,14 @@ compileInstanceClause ls c = do
             _ -> return d
 
       if
+        | isInstance arg, usableModality arg -> do
+            unless (null ps) $ genericDocError =<< text "not allowed: explicitly giving superclass"
+            body <- case clauseBody c' of
+              Nothing -> genericDocError =<< text "not allowed: absurd clause for superclass"
+              Just b  -> return b
+            addContext (clauseTel c') $ checkInstance body
+            return ([], [])
+        | not (keepArg arg) -> return ([], [])
         -- Projection of a primitive field: chase down definition and inline as instance clause.
         | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
         , [(_, f)] <- mapMaybe isProjElim es
@@ -549,7 +559,7 @@ compileInstanceClause ls c = do
               fc <- drop 1 <$> compileFun d
               let hd = hsName $ prettyShow $ nameConcrete $ qnameName $ defName d
               let fc' = dropPatterns 1 $ replaceName hd uf fc
-              return (if keepArg arg then map (Hs.InsDecl ()) fc' else [], [n])
+              return (map (Hs.InsDecl ()) fc', [n])
 
          -- Projection of a default implementation: drop while making sure these are drawn from the
          -- same (minimal) dictionary as the primitive fields.
@@ -562,7 +572,7 @@ compileInstanceClause ls c = do
          -- No minimal dictionary used, proceed with compiling as a regular clause.
          | otherwise
          -> do (_ , x) <- compileClause ls uf c'
-               return ([Hs.InsDecl () (Hs.FunBind () [x]) | keepArg arg], [])
+               return ([Hs.InsDecl () (Hs.FunBind () [x])], [])
 
 fieldArgInfo :: QName -> C ArgInfo
 fieldArgInfo f = do
