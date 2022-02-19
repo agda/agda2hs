@@ -210,6 +210,23 @@ applyNoBodies d args = revert $ d `apply` args
 concatUnzip :: [([a], [b])] -> ([a], [b])
 concatUnzip = (concat *** concat) . unzip
 
+-- | Convert the final 'Proj' projection elimination into a
+--   'Def' projection application.
+unSpine1 :: Term -> Term
+unSpine1 v =
+  case hasElims v of
+    Just (h, es) -> fromMaybe v $ loop h [] es
+    Nothing      -> v
+  where
+    loop :: (Elims -> Term) -> Elims -> Elims -> Maybe Term
+    loop h res es =
+      case es of
+        []             -> Nothing
+        Proj o f : es' -> Just $ fromMaybe (Def f (Apply (defaultArg v) : es')) $ loop h (Proj o f : res) es'
+        e        : es' -> loop h (e : res) es'
+      where v = h $ reverse res
+
+
 -- Builtins ---------------------------------------------------------------
 
 isSpecialTerm :: QName -> Maybe (QName -> Elims -> C (Hs.Exp ()))
@@ -461,7 +478,7 @@ compileInstance def = setCurrentRange (nameBindingSite $ qnameName $ defName def
   where Function{..} = theDef def
 
 compileInstRule :: [Hs.Asst ()] -> Term -> C (Hs.InstRule ())
-compileInstRule cs ty = case unSpine  $ ty of
+compileInstRule cs ty = case unSpine1 ty of
   Def f es | Just args <- allApplyElims es -> do
     vs <- mapM (compileType . unArg) $ filter keepArg args
     f <- hsQName f
@@ -1011,7 +1028,7 @@ compileTerm :: Term -> C (Hs.Exp ())
 compileTerm v = do
   reportSDoc "agda2hs.compile" 7 $ text "compiling term:" <+> prettyTCM v
   reportSDoc "agda2hs.compile" 27 $ text "compiling term:" <+> pure (P.pretty v)
-  case unSpine v of
+  case unSpine1 v of
     Var x es   -> (`app` es) . hsVar =<< showTCM (Var x [])
     -- v currently we assume all record projections are instance
     -- args that need attention
@@ -1107,9 +1124,9 @@ checkInstance u | varOrDef u = liftTCM $ noConstraints $ do
   (m, v) <- newInstanceMeta "" t
   reportSDoc "agda2hs.checkInstance" 15 $ text "  instance meta:" <+> prettyTCM m
   findInstance m Nothing
-  -- this should really not be necessary, but somehow things break if I don't do it
-  v <- unSpine <$> instantiate v
   reportSDoc "agda2hs.checkInstance" 15 $ text "  inferred instance:" <+> (prettyTCM =<< instantiate v)
+  reportSDoc "agda2hs.checkInstance" 65 $ text "  inferred instance:" <+> (pure . P.pretty =<< instantiate v)
+  reportSDoc "agda2hs.checkInstance" 65 $ text "  checking instance:" <+> (pure . P.pretty =<< instantiate u)
   equalTerm t u v `catchError` \_ ->
     genericDocError =<< text "illegal instance: " <+> prettyTCM u
   where

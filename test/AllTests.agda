@@ -15,6 +15,7 @@ import Tree
 import Tuples
 import Where
 import TypeSynonyms
+import CanonicalInstance
 import ConstrainedInstance
 import Datatypes
 import Records
@@ -38,6 +39,7 @@ import Tree
 import Tuples
 import Where
 import TypeSynonyms
+import CanonicalInstance
 import ConstrainedInstance
 import Datatypes
 import Records
