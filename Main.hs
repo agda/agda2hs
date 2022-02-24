@@ -47,7 +47,7 @@ import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Literal
 import Agda.Syntax.Internal
 import Agda.Syntax.Position
-import Agda.Syntax.Translation.ConcreteToAbstract
+import Agda.Syntax.Translation.ConcreteToAbstract hiding (topLevelModuleName)
 import Agda.Syntax.Translation.AbstractToConcrete
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad hiding (withCurrentModule)
@@ -139,8 +139,12 @@ hsQName f
       _                                       -> mkname f
   where
     mkname x = do
-      m <- currentModule
+      reportSDoc "agda2hs" 14 $ text "Compiling name: " <+> prettyTCM x
+      m <- topLevelModuleName =<< currentModule
+      reportSDoc "agda2hs" 19 $ text "Current module: " <+> prettyTCM m
       s <- showTCM x
+      reportSDoc "agda2hs" 54 $ text "Raw name:   " <+> pure (P.pretty x)
+      reportSDoc "agda2hs" 59 $ text "Raw module: " <+> pure (P.pretty m)
       return $
         case break (== '.') $ reverse s of
           (_, "")      -> Hs.UnQual () (hsName s)

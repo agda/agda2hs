@@ -22,6 +22,7 @@ import Records
 import Default
 import DefaultMethods
 import Vector
+import QualifiedModule
 import Superclass
 
 {-# FOREIGN AGDA2HS
@@ -46,5 +47,6 @@ import Records
 import Default
 import DefaultMethods
 import Vector
+import QualifiedModule
 import Superclass
 #-}

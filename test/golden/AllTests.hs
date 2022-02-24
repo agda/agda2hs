@@ -21,5 +21,6 @@ import Records
 import Default
 import DefaultMethods
 import Vector
+import QualifiedModule
 import Superclass
 
