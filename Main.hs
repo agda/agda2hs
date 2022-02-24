@@ -777,9 +777,9 @@ compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl ())
 compileConstructor params c = do
   ty <- (`piApplyM` params) . defType =<< getConstInfo c
   TelV tel _ <- telView ty
-  c <- showTCM c
+  let conName = hsName $ prettyShow $ qnameName c
   args <- compileConstructorArgs tel
-  return $ Hs.QualConDecl () Nothing Nothing $ Hs.ConDecl () (hsName c) args
+  return $ Hs.QualConDecl () Nothing Nothing $ Hs.ConDecl () conName args
 
 compileConstructorArgs :: Telescope -> C [Hs.Type ()]
 compileConstructorArgs EmptyTel = return []
