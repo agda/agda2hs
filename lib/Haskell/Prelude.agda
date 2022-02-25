@@ -79,14 +79,13 @@ open import Haskell.Prim.Word        public
 --------------------------------------------------
 -- Functions
 
--- a and b should really be erased here, but this requires a change to
--- the type of the Agda builtin `primForce`.
 infixr 0 _$!_
-_$!_ : {a b : Set} → (a → b) → a → b
-f $! x = primForce x f
 
-seq : {a b : Set} → a → b → b
-seq x y = const y $! x
+_$!_ : (a → b) → a → b
+_$!_ = _$_
+
+seq : a → b → b
+seq = const id
 
 asTypeOf : a → a → a
 asTypeOf x _ = x

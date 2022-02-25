@@ -279,6 +279,8 @@ isSpecialName = prettyShow >>> \ case
     "Agda.Builtin.Unit.tt"         -> special Hs.UnitCon
     "Haskell.Prim.Tuple.Tuple.[]"  -> special Hs.UnitCon
     "Haskell.Prim._∘_"             -> unqual "_._"
+    "Haskell.Prim.seq"             -> unqual "seq"
+    "Haskell.Prim._$!_"            -> unqual "_$!_"
     _ -> Nothing
   where
     unqual n  = Just $ Hs.UnQual () $ hsName n
