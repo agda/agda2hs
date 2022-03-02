@@ -1,6 +1,7 @@
 .PHONY : test install repl
 
 install :
+	cabal new-install Agda --program-suffix=-erased --overwrite-policy=always
 	cabal new-install --overwrite-policy=always
 
 repl :
