@@ -22,12 +22,12 @@ record Num (a : Set) : Set₁ where
     NegateOK      : a → Set
     FromIntegerOK : Integer → Set
     _+_           : a → a → a
-    _-_           : (x y : a) → ⦃ MinusOK x y ⦄ → a
+    _-_           : (x y : a) → @0 ⦃ MinusOK x y ⦄ → a
     _*_           : a → a → a
-    negate        : (x : a) → ⦃ NegateOK x ⦄ → a
+    negate        : (x : a) → @0 ⦃ NegateOK x ⦄ → a
     abs           : a → a
     signum        : a → a
-    fromInteger   : (n : Integer) → ⦃ FromIntegerOK n ⦄ → a
+    fromInteger   : (n : Integer) → @0 ⦃ FromIntegerOK n ⦄ → a
     overlap ⦃ number ⦄  : Number a
     overlap ⦃ numZero ⦄ : number .Number.Constraint 0
     overlap ⦃ numOne ⦄  : number .Number.Constraint 1
