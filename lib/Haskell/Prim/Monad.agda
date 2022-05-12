@@ -62,9 +62,9 @@ instance
 
   iMonadTuple₄ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → ⦃ Monoid c ⦄ →
                  Monad (λ d → Tuple (a ∷ b ∷ c ∷ d ∷ []))
-  iMonadTuple₄ ._>>=_ (a ∷ b ∷ c ∷ x ∷ []) k =
+  iMonadTuple₄ ._>>=_ (a ; b ; c ; x ; tt) k =
     case k x of λ where
-      (a₁ ∷ b₁ ∷ c₁ ∷ y ∷ []) → a <> a₁ ∷ b <> b₁ ∷ c <> c₁ ∷ y ∷ []
+      (a₁ ; b₁ ; c₁ ; y ; tt) → a <> a₁ ; b <> b₁ ; c <> c₁ ; y ; tt
 
 record MonadFail (m : Set → Set) : Set₁ where
   field

@@ -40,10 +40,10 @@ instance
   iSemigroupUnit ._<>_ _ _ = tt
 
   iSemigroupTuple₀ : Semigroup (Tuple [])
-  iSemigroupTuple₀ ._<>_ _ _ = []
+  iSemigroupTuple₀ ._<>_ _ _ = tt
 
   iSemigroupTuple : ⦃ Semigroup a ⦄ → ⦃ Semigroup (Tuple as) ⦄ → Semigroup (Tuple (a ∷ as))
-  iSemigroupTuple ._<>_ (x ∷ xs) (y ∷ ys) = x <> y ∷ xs <> ys
+  iSemigroupTuple ._<>_ (x ; xs) (y ; ys) = x <> y ; xs <> ys
 
 
 --------------------------------------------------
@@ -79,10 +79,10 @@ instance
   iMonoidUnit .mempty = tt
 
   iMonoidTuple₀ : Monoid (Tuple [])
-  iMonoidTuple₀ .mempty = []
+  iMonoidTuple₀ .mempty = tt 
 
   iMonoidTuple : ⦃ Monoid a ⦄ → ⦃ Monoid (Tuple as) ⦄ → Monoid (Tuple (a ∷ as))
-  iMonoidTuple .mempty = mempty ∷ mempty
+  iMonoidTuple .mempty = mempty ; mempty
 
 MonoidEndo : Monoid (a → a)
 MonoidEndo .mempty      = id

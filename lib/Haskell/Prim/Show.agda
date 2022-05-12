@@ -104,9 +104,9 @@ instance
 private
   -- Minus the parens
   showTuple : ⦃ All Show as ⦄ → Tuple as → ShowS
-  showTuple             []       = showString ""
-  showTuple ⦃ allCons ⦄ (x ∷ []) = shows x
-  showTuple ⦃ allCons ⦄ (x ∷ xs) = shows x ∘ showString "," ∘ showTuple xs
+  showTuple {_} ⦃ allNil  ⦄                   _        = showString ""
+  showTuple {_} ⦃ allCons ⦃ _ ⦄ ⦃ allNil ⦄ ⦄ (x ; tt) = shows x
+  showTuple {_} ⦃ allCons ⦄                   (x ; xs) = shows x ∘ showString ", " ∘ showTuple xs
 
 instance
   iShowTuple : ⦃ All Show as ⦄ → Show (Tuple as)

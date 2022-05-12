@@ -192,8 +192,8 @@ instance
   iEnumOrdering = boundedEnumViaInteger (λ where LT → 0; EQ → 1; GT → 2)
                                         (λ where (pos 0) → LT; (pos 1) → EQ; _ → GT)
 
-  iEnumUnit : Enum (Tuple [])
-  iEnumUnit = boundedEnumViaInteger (λ _ → 0) (λ _ → [])
+  iEnumUnit : Enum ⊤ 
+  iEnumUnit = boundedEnumViaInteger (λ _ → 0) λ _ → tt
 
   iEnumChar : Enum Char
   iEnumChar = boundedEnumViaInteger (pos ∘ primCharToNat)
