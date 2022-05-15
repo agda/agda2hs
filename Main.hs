@@ -9,7 +9,7 @@ import Control.Monad.Reader
 import Control.Monad.IO.Class
 import Control.DeepSeq
 import Data.Data
-import Data.Generics (mkT, everywhere, listify, extT, everything, mkQ, Data)
+import Data.Generics (mkT, everywhere, listify, Data)
 import Data.Function
 import Data.List
 import Data.List.NonEmpty (NonEmpty(..))
@@ -36,7 +36,7 @@ import qualified Language.Haskell.Exts.Extension  as Hs
 import qualified Language.Haskell.Exts.Comments   as Hs
 
 import Agda.Main (runAgda)
-import Agda.Compiler.Backend
+import Agda.Compiler.Backend hiding (Args)
 import Agda.Compiler.Common
 import Agda.Interaction.BasicOps
 import Agda.TypeChecking.Monad
@@ -70,6 +70,7 @@ import Agda.Utils.Size
 import Agda.Utils.Functor
 
 import HsUtils
+import AgdaInternals
 
 data Options = Options { optOutDir     :: FilePath,
                          optExtensions :: [Hs.Extension] }
@@ -116,6 +117,14 @@ backend = Backend'
   }
 
 -- Helpers ---------------------------------------------------------------
+
+concatUnzip :: [([a], [b])] -> ([a], [b])
+concatUnzip = (concat *** concat) . unzip
+
+infixr 0 /\, \/
+(/\), (\/) :: (a -> Bool) -> (a -> Bool) -> a -> Bool
+f /\ g = \x -> f x && g x
+f \/ g = \x -> f x || g x
 
 showTCM :: PrettyTCM a => a -> C String
 showTCM x = lift $ show <$> prettyTCM x
@@ -187,21 +196,24 @@ underAbstr a b ret
 underAbstr_ :: Subst a => Abs a -> (a -> C b) -> C b
 underAbstr_ = underAbstr __DUMMY_DOM__
 
-applyNoBodies :: Definition -> [Arg Term] -> Definition
-applyNoBodies d args = revert $ d `apply` args
-  where
-    bodies :: [Maybe Term]
-    bodies = map clauseBody $ funClauses $ theDef d
+-- | Check whether a module is an *immediate* parent of another.
+isFatherModuleOf :: ModuleName -> ModuleName -> Bool
+isFatherModuleOf m = maybe False (mnameToList m ==) . initMaybe . mnameToList
 
-    setBody cl b = cl { clauseBody = b }
+-- | Apply a clause's telescope arguments to a local where definition.
+-- i.e. reverse Agda's λ-lifting
+applyUnderTele :: Definition -> Args -> Definition
+applyUnderTele d as = raise (length as) d `apply` as
 
-    revert :: Definition -> Definition
-    revert d@(Defn {theDef = f@(Function {funClauses = cls})}) =
-      d {theDef = f {funClauses = zipWith setBody cls bodies}}
-    revert _ = __IMPOSSIBLE__
+-- ** Generic functions that operate on any syntactic Agda construct.
 
-concatUnzip :: [([a], [b])] -> ([a], [b])
-concatUnzip = (concat *** concat) . unzip
+-- | Check whether an extended lambda is used anywhere inside given argument.
+extLamUsedIn :: Data a => QName -> a -> Bool
+extLamUsedIn n = (n `elem`) . listify isExtendedLambdaName
+
+-- | All mentions of local definitions that occur anywhere inside the argument.
+getLocalUses :: Data a => LocalDecls -> a -> [QName]
+getLocalUses ls = listify (`elem` map fst ls)
 
 -- Builtins ---------------------------------------------------------------
 
@@ -305,14 +317,25 @@ caseOf _ es = compileArgs es >>= \ case
   -- unapplied
   []          -> return $ eApp (hsVar "flip") [hsVar "_$_"]
 
+-- | Lookup definition first locally in the (possibly instantiated) locals,
+-- otherwise get it from the global context with@getConstInfo@.
+getConstInfoC :: QName -> C Definition
+getConstInfoC q = do
+  ls <- asks locals
+  case lookup q ls of
+    Just d  -> return d
+    Nothing -> getConstInfo q
+
 lambdaCase :: QName -> Elims -> C (Hs.Exp ())
 lambdaCase q es = setCurrentRange (nameBindingSite $ qnameName q) $ do
-  def@Function{ funExtLam = Just ExtLamInfo{extLamModule = mname} } <- theDef <$> getConstInfo q
+  Function{funClauses = cls, funExtLam = Just ExtLamInfo {extLamModule = mname}}
+    <- theDef <$> getConstInfoC q
   npars <- size <$> lookupSection mname
   let (pars, rest) = splitAt npars es
-      cs           = applyE (funClauses def) pars
-  cs   <- mapM (compileClause [] $ hsName "(lambdaCase)") cs
-  alts <- mapM clauseToAlt $ map snd cs -- Pattern lambdas cannot have where blocks
+      cs           = applyE cls pars
+  ls   <- filter ((`extLamUsedIn` cs) . fst) <$> asks locals
+  cs   <- withLocals ls $ mapM (compileClause (qnameModule q) $ hsName "(lambdaCase)") cs
+  alts <- mapM clauseToAlt cs -- Pattern lambdas cannot have where blocks
   args <- compileArgs rest
   return $ eApp (Hs.LCase () alts) args
 
@@ -374,6 +397,48 @@ tuplePat cons i ps = do
   qs <- mapM compilePat xs
   return $ Hs.PTuple () Hs.Boxed qs
 
+-- Local (where) declarations ---------------------------------------------
+
+type LocalDecls = [(QName, Definition)]
+
+ensureNoLocals :: String -> C ()
+ensureNoLocals msg = unlessM (null <$> asks locals) $ genericError msg
+
+withLocals :: LocalDecls -> C a -> C a
+withLocals ls = local $ \e -> e { locals = ls }
+
+-- | Before checking a function, grab all of its local declarations.
+-- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
+withFunctionLocals :: QName -> C a -> C a
+withFunctionLocals q k = do
+  ls <- takeWhile (isAnonymousModuleName . qnameModule . fst)
+      . dropWhile ((<= q) . fst)
+      . sortDefs <$> liftTCM curDefs
+  withLocals ls k
+
+-- | Retain only those local declarations that belong to current clause's module.
+zoomLocals :: ModuleName -> LocalDecls -> LocalDecls
+zoomLocals mname = filter ((mname `isLeParentModuleOf`) . qnameModule . fst)
+
+-- | Before checking a clause, grab all of its local declarationaas.
+-- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
+withClauseLocals :: ModuleName -> Clause -> C a -> C a
+withClauseLocals curModule c@Clause{..} k = do
+  ls <- asks locals
+  let
+    uses = filter
+      (  (curModule `isFatherModuleOf`) . qnameModule
+      \/ (`extLamUsedIn` c) )
+      (getLocalUses ls c)
+    nonExtLamUses = qnameModule <$> filter (not . isExtendedLambdaName) uses
+    whereModuleName
+      | null uses = Nothing
+      | otherwise = Just $ head (nonExtLamUses ++ [curModule])
+    ls' = case whereModuleName of
+      Nothing -> []
+      Just m  -> zoomLocals m ls
+  withLocals ls' k
+
 -- Compiling things -------------------------------------------------------
 
 data RecordTarget = ToRecord | ToClass [String]
@@ -411,10 +476,12 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
 
 data CompileEnv = CompileEnv
   { minRecordName :: Maybe ModuleName
+  -- ^ keeps track of the current minimal record we are compiling
+  , locals :: LocalDecls
+  -- ^ keeps track of the current clause's where declarations
   }
 
-initCompileEnv :: CompileEnv
-initCompileEnv = CompileEnv { minRecordName = Nothing }
+initCompileEnv = CompileEnv { minRecordName = Nothing, locals = [] }
 
 type C = ReaderT CompileEnv TCM
 
@@ -441,16 +508,14 @@ compile _ m _ def = withCurrentModule m $ runC $ processPragma (defName def) >>=
         single x = [x]
 
 compileInstance :: Definition -> C (Hs.Decl ())
-compileInstance def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
-  ir <- compileInstRule [] (unEl . defType $ def)
-  locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
-          . dropWhile ((<= defName def) . fst)
-          . sortDefs <$> liftTCM curDefs
-  (ds, rs) <- concatUnzip <$> mapM (compileInstanceClause locals) funClauses
-  when (length (nub rs) > 1) $
-    genericDocError =<< fsep (pwords "More than one minimal record used.")
-  return $ Hs.InstDecl () Nothing ir (Just ds)
-  where Function{..} = theDef def
+compileInstance def@Defn{..} = setCurrentRange (nameBindingSite $ qnameName defName) $ do
+  ir <- compileInstRule [] (unEl defType)
+  withFunctionLocals defName $ do
+    (ds, rs) <- concatUnzip <$> mapM (compileInstanceClause (qnameModule defName)) funClauses
+    when (length (nub rs) > 1) $
+      genericDocError =<< fsep (pwords "More than one minimal record used.")
+    return $ Hs.InstDecl () Nothing ir (Just ds)
+  where Function{..} = theDef
 
 compileInstRule :: [Hs.Asst ()] -> Term -> C (Hs.InstRule ())
 compileInstRule cs ty = case unSpine  $ ty of
@@ -497,15 +562,15 @@ etaExpandClause cl@Clause{namedClausePats = ps, clauseBody = Just t} = do
       genericDocError =<< fsep (pwords $ "Type class instances must be defined using copatterns (or top-level" ++
                                          " records) and cannot be defined using helper functions.")
 
-compileInstanceClause :: LocalDecls -> Clause -> C ([Hs.InstDecl ()], [QName])
-compileInstanceClause ls c = do
+compileInstanceClause :: ModuleName -> Clause -> C ([Hs.InstDecl ()], [QName])
+compileInstanceClause curModule c = withClauseLocals curModule c $ do
   -- abuse compileClause:
   -- 1. drop any patterns before record projection to suppress the instance arg
   -- 2. use record proj. as function name
   -- 3. process remaing patterns as usual
   case dropWhile (isNothing . isProjP) (namedClausePats c) of
     [] ->
-      concatUnzip <$> (mapM (compileInstanceClause ls) =<< etaExpandClause c)
+      concatUnzip <$> (mapM (compileInstanceClause curModule) =<< etaExpandClause c)
     p : ps -> do
       let c' = c {namedClausePats = ps}
           ProjP _ q = namedArg p
@@ -553,8 +618,8 @@ compileInstanceClause ls c = do
 
          -- No minimal dictionary used, proceed with compiling as a regular clause.
          | otherwise
-         -> do (_ , x) <- compileClause ls uf c'
-               return ([Hs.InsDecl () (Hs.FunBind () [x]) | keepArg arg], [])
+         -> do ms <- compileClause curModule uf c'
+               return ([Hs.InsDecl () (Hs.FunBind () [ms]) | keepArg arg], [])
 
 fieldArgInfo :: QName -> C ArgInfo
 fieldArgInfo f = do
@@ -594,7 +659,7 @@ classMemberNames def =
     Record{recFields = fs} -> fmap unQual <$> traverse hsQName (map unDom fs)
     _ -> genericDocError =<< text "Not a record:" <+> prettyTCM (defName def)
 
--- Primitive fields and default implementations
+-- | Primitive fields and default implementations
 type MinRecord = ([Hs.Name ()], Map (Hs.Name ()) (Hs.Decl ()))
 
 withMinRecord :: QName -> C a -> C a
@@ -755,46 +820,35 @@ compilePostulate def = do
     return [ Hs.TypeSig () [x] ty
            , Hs.FunBind () [Hs.Match () x [] (Hs.UnGuardedRhs () body) Nothing] ]
 
-type LocalDecls = [(QName, Definition)]
-
-compileFun :: Definition -> C [Hs.Decl ()]
-compileFun d = do
-  locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
-          . dropWhile ((<= defName d) . fst)
-          . sortDefs <$> liftTCM curDefs
-  compileFun' d locals
-
-compileFun' :: Definition -> LocalDecls -> C [Hs.Decl ()]
-compileFun' def@(Defn {..}) locals = do
+compileFun, compileFun' :: Definition -> C [Hs.Decl ()]
+-- initialize locals when first stepping into a function
+compileFun def@Defn{..} = withFunctionLocals defName $ compileFun' def
+-- inherit existing (instantiated) locals
+compileFun' def@Defn{..} = do
   let n = qnameName defName
       x = hsName $ prettyShow n
-      go = foldM $ \(ds, ms) -> compileClause ds x >=> return . fmap (ms `snoc`)
   setCurrentRange (nameBindingSite n) $ do
-    ifM (endsInSort defType) (compileTypeDef x def locals) $ do
+    ifM (endsInSort defType) (ensureNoLocals err >> compileTypeDef x def) $ do
       ty <- compileType (unEl defType)
-      cs <- snd <$> go (locals, []) funClauses
+      cs <- mapM (compileClause (qnameModule defName) x) funClauses
       return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
   where
     Function{..} = theDef
-
     endsInSort t = do
       TelV tel b <- telView t
       addContext tel $ ifIsSort b (\_ -> return True) (return False)
+    err = "Not supported: type definition with `where` clauses"
 
-compileTypeDef :: Hs.Name () -> Definition -> LocalDecls -> C [Hs.Decl ()]
-compileTypeDef name (Defn {..}) locals = do
-  noLocals locals
+compileTypeDef :: Hs.Name () -> Definition -> C [Hs.Decl ()]
+compileTypeDef name (Defn {..}) = do
   Clause{..} <- singleClause funClauses
   addContext (KeepNames clauseTel) $ liftTCM1 localScope $ do
     as <- compileTypeArgs namedClausePats
     let hd = foldl (Hs.DHApp ()) (Hs.DHead () name) as
     rhs <- compileType $ fromMaybe __IMPOSSIBLE__ clauseBody
     return [Hs.TypeDecl () hd rhs]
-
   where
     Function{..} = theDef
-    noLocals locals = unless (null locals) $
-      genericError "Not supported: type definition with `where` clauses"
     singleClause = \case
       [cl] -> return cl
       _    -> genericError "Not supported: type definition with several clauses"
@@ -814,57 +868,38 @@ mapDef f d = d{ theDef = mapDefn (theDef d) }
 
     mapClause c = c{ clauseBody = f <$> clauseBody c }
 
-compileClause :: LocalDecls -> Hs.Name () -> Clause -> C (LocalDecls, Hs.Match ())
-compileClause locals x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBody = body} = do
-  addContext (KeepNames tel) $ liftTCM1 localScope $ do
-    scopeBindPatternVariables ps'
-    ps <- compilePats ps'
-    -- Compile rhs and its @where@ clauses, making sure that:
-    --   * inner modules get instantiated
-    --   * references to inner modules get un-qualified (and instantiated)
-    let localUses = nub $ listify (`elem` map fst locals) body
-        belongs q@(QName m _) (QName m0 _) =
-          ((prettyShow m0 ++ "._") `isPrefixOf` prettyShow m) && (q `notElem` localUses)
-        splitDecls :: LocalDecls -> ([(Definition, LocalDecls)], LocalDecls)
-        splitDecls ds@((q,child):rest)
-          | any ((`elem` localUses) . fst) ds
-          , (grandchildren, outer) <- span ((`belongs` q) . fst) rest
-          , (groups, rest') <- splitDecls outer
-          = ((child, grandchildren) : groups, rest')
-          | otherwise = ([], ds)
-        splitDecls [] = ([], [])
-        (children, locals') = splitDecls locals
+compileClause :: ModuleName -> Hs.Name () -> Clause -> C (Hs.Match ())
+compileClause curModule x c@Clause{..} = withClauseLocals curModule c $ do
+  addContext (KeepNames clauseTel) $ liftTCM1 localScope $ do
+    scopeBindPatternVariables namedClausePats
+    ps <- compilePats namedClausePats
+    ls0 <- asks locals
+    let
+      tArgs = teleArgs clauseTel
+      shrinkDefs :: Data a => a -> a
+      shrinkDefs = everywhere $ mkT go
+        where go t | Def q es <- t, q `elem` map fst ls0
+                   = Def q (drop (length tArgs) es)
+                   | otherwise = t
+      body' = shrinkDefs <$> clauseBody
+      ls    = map (second (mapDef shrinkDefs . (`applyUnderTele` tArgs))) ls0
+      (children, ls') = partition
+        (   not . isExtendedLambdaName . fst
+         /\ (curModule `isFatherModuleOf`) . qnameModule . fst )
+        ls
+    withLocals ls' $ do
+      body <- fromMaybe (hsError $ pp x ++ ": impossible") <$> mapM compileTerm body'
+      whereDecls <- mapM compileFun' (snd <$> children)
+      let rhs = Hs.UnGuardedRhs () body
+          whereBinds | null whereDecls = Nothing
+                     | otherwise       = Just $ Hs.BDecls () (concat whereDecls)
+          match = case (x, ps) of
+            (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
+            _                         -> Hs.Match () x ps rhs whereBinds
+      return match
 
-        args   = teleArgs tel
-        argLen = length args
-
-
-        -- 1. apply current telescope to inner definitions
-        children' = mapDefs (`applyNoBodies` args) children
-          where mapDefs f = map (f *** map (second f))
-
-        -- 2. shrink calls to inner modules (unqualify + partially apply module parameters)
-        localNames = concatMap (\(d,ds) -> defName d : map fst ds) children
-        shrinkLocalDefs t | Def q es <- t, q `elem` localNames
-                          = Def (qualify_ $ qnameName q) (drop argLen es)
-                          | otherwise = t
-        (body', children'') = mapTerms (everywhere $ mkT shrinkLocalDefs) (body, children')
-          where mapTerms f = fmap f *** (map (mapDef f *** map (second (mapDef f))))
-
-    body' <- fromMaybe (hsError $ pp x ++ ": impossible") <$> mapM compileTerm body'
-    whereDecls <- concat <$> mapM (uncurry compileFun') children''
-
-    let rhs = Hs.UnGuardedRhs () body'
-        whereBinds | null whereDecls = Nothing
-                   | otherwise       = Just $ Hs.BDecls () whereDecls
-        match = case (x, ps) of
-          (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
-          _                         -> Hs.Match () x ps rhs whereBinds
-    return (locals', match)
-
--- When going under a binder we need to update the scope as well as the context in order to get
+-- | When going under a binder we need to update the scope as well as the context in order to get
 -- correct printing of variable names (Issue #14).
-
 scopeBindPatternVariables :: NAPs -> C ()
 scopeBindPatternVariables = mapM_ (scopeBind . namedArg)
   where
@@ -885,8 +920,8 @@ bindVar i = do
   liftTCM $ bindVariable LambdaBound (nameConcrete x) x
 
 -- | Instance arguments that depend on arguments that are kept in the Haskell
---   code should not be turned into type class constraints. These are proof objects that only exist
---   on the Agda side.
+-- code should not be turned into type class constraints. These are proof objects
+-- that only exist on the Agda side.
 dependsOnKeptVar :: Free t => t -> C Bool
 dependsOnKeptVar t = do
   vis <- Set.fromList . map fst . filter (keepArg . snd) . zip [0..] <$> getContext
@@ -916,13 +951,13 @@ compileType t = do
     Sort s -> return (Hs.TyStar ())
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
--- Determine whether an argument should be kept or dropped.
+-- | Determine whether an argument should be kept or dropped.
 -- Currently we drop all arguments that are not visibile or
 -- have quantity 0 (= run-time erased).
 keepArg :: (LensHiding a, LensQuantity a) => a -> Bool
 keepArg x = visible x && usableQuantity x
 
--- Currently we can compile an Agda "Dom Type" in three ways:
+-- | Currently we can compile an Agda "Dom Type" in three ways:
 -- - To a type in Haskell
 -- - To a typeclass constraint in Haskell
 -- - To nothing (e.g. for proofs)
@@ -938,8 +973,8 @@ compileDom a
       DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
   | otherwise    = return DomDropped
 
--- Exploits the fact that the name of the record type and the name of the record module are the
--- same, including the unique name ids.
+-- | Exploits the fact that the name of the record type and the name of the record
+-- module are the same, including the unique name ids.
 isClassFunction :: QName -> C Bool
 isClassFunction q
   | null $ mnameToList m = return False
@@ -1013,8 +1048,6 @@ compileTerm v = do
       let Just args = allApplyElims es
       args <- mapM (compileTerm . unArg) $ filter keepArg $ tail $ dropWhile notVisible args
       return $ eApp hd args
-
-
 
 compilePats :: NAPs -> C [Hs.Pat ()]
 compilePats ps = mapM (compilePat . namedArg) $ filter keepArg ps

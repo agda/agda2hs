@@ -18,6 +18,8 @@ import Datatypes
 import Records
 import DefaultMethods
 import Vector
+import Issue90
+import Issue93
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -37,4 +39,6 @@ import Datatypes
 import Records
 import DefaultMethods
 import Vector
+import Issue90
+import Issue93
 #-}

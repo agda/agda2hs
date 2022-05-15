@@ -17,4 +17,6 @@ import Datatypes
 import Records
 import DefaultMethods
 import Vector
+import Issue90
+import Issue93
 
