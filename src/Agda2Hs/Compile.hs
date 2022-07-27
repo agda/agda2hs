@@ -326,30 +326,6 @@ tuplePat cons i ps = do
 
 data RecordTarget = ToRecord | ToClass [String]
 
-data ParsedPragma
-  = NoPragma
-  | DefaultPragma
-  | ClassPragma [String]
-  | ExistingClassPragma
-  | DerivingPragma [Hs.Deriving ()]
-  deriving Show
-
-processPragma :: QName -> C ParsedPragma
-processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
-  Nothing -> return NoPragma
-  Just (CompilerPragma _ s)
-    | "class" `isPrefixOf` s    -> return $ ClassPragma (words $ drop 5 s)
-    | s == "existing-class"     -> return ExistingClassPragma
-    | "deriving" `isPrefixOf` s ->
-      -- parse a deriving clause for a datatype by tacking it onto a
-      -- dummy datatype and then only keeping the deriving part
-      case Hs.parseDecl ("data X = X " ++ s) of
-        Hs.ParseFailed loc msg ->
-          setCurrentRange (srcLocToRange loc) $ genericError msg
-        Hs.ParseOk (Hs.DataDecl _ _ _ _ _ ds) ->
-          return $ DerivingPragma (map (() <$) ds)
-        Hs.ParseOk _ -> return DefaultPragma
-  _ -> return DefaultPragma
 
 -- Main compile function
 ------------------------
