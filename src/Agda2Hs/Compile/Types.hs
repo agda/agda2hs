@@ -1,14 +1,15 @@
 module Agda2Hs.Compile.Types where
 
-import Control.Monad.Reader
-import Control.DeepSeq
+import Control.Monad.Reader ( ReaderT )
+import Control.DeepSeq ( NFData(..) )
+
 import qualified Language.Haskell.Exts.SrcLoc as Hs
 import qualified Language.Haskell.Exts.Syntax as Hs
 import qualified Language.Haskell.Exts.Extension as Hs
 import qualified Language.Haskell.Exts.Comments as Hs
 
-import Agda.Compiler.Backend
-import Agda.Syntax.Position
+import Agda.Compiler.Backend ( Definition, QName, ModuleName, TCM )
+import Agda.Syntax.Position ( Range )
 
 type ModuleEnv   = ModuleName
 type ModuleRes   = ()

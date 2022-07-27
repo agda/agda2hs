@@ -1,12 +1,14 @@
 module Agda2Hs.Render where
 
-import Control.Monad
-import Control.Monad.Except
-import Data.Function
-import Data.List
-import Data.Maybe
-import System.FilePath
-import System.Directory
+import Control.Monad ( unless )
+import Control.Monad.Except ( MonadIO(liftIO) )
+
+import Data.Function ( on )
+import Data.List ( sortBy )
+import Data.Maybe ( fromMaybe )
+
+import System.FilePath ( takeDirectory, (</>) )
+import System.Directory ( createDirectoryIfMissing )
 
 import qualified Language.Haskell.Exts.SrcLoc as Hs
 import qualified Language.Haskell.Exts.Syntax as Hs
@@ -14,16 +16,16 @@ import qualified Language.Haskell.Exts.Build as Hs
 import qualified Language.Haskell.Exts.ExactPrint as Hs
 
 import Agda.Compiler.Backend
-import Agda.Compiler.Common
+import Agda.Compiler.Common ( curIF )
+
 import Agda.TypeChecking.Pretty
 import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Position
 
 import Agda.Utils.Pretty ( prettyShow )
-
 import Agda2Hs.Compile.Types
 import Agda2Hs.HsUtils
-import Agda2Hs.Pragma
+import Agda2Hs.Pragma ( getForeignPragmas )
 
 -- Rendering --------------------------------------------------------------
 

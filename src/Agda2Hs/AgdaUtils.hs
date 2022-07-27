@@ -1,14 +1,17 @@
 module Agda2Hs.AgdaUtils where
 
-import Data.Maybe
+import Data.Maybe ( fromMaybe )
 
 import Agda.Compiler.Backend
-import Agda.TypeChecking.Pretty
-import Agda.Syntax.Common
+
+import Agda.Syntax.Common ( Arg, defaultArg )
 import Agda.Syntax.Internal
-import Agda.TypeChecking.Substitute
+
+import Agda.TypeChecking.Pretty ( Doc, text, vcat )
+import Agda.TypeChecking.Substitute ( Apply(apply) )
+
 import Agda.Utils.Pretty ( prettyShow )
-import Agda.Utils.Impossible
+import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 multilineText :: Monad m => String -> m Doc
 multilineText s = vcat $ map text $ lines s

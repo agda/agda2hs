@@ -1,7 +1,7 @@
 module Agda2Hs.Compile.Function where
 
-import qualified Language.Haskell.Exts.Syntax as Hs
-import Agda.Syntax.Internal
-import Agda2Hs.Compile.Types
+import qualified Language.Haskell.Exts.Syntax as Hs ( Match, Name )
+import Agda.Syntax.Internal ( Clause )
+import Agda2Hs.Compile.Types ( C, LocalDecls )
 
 compileClause :: LocalDecls -> Hs.Name () -> Clause -> C (LocalDecls, Hs.Match ())
