@@ -1,13 +1,13 @@
+cabal-version:       2.2
 name:                agda2hs
 version:             0.1
-license:             BSD3
+license:             BSD-3-Clause
 license-file:        LICENSE
 author:              Ulf Norell, Jesper Cockx, James Chapman, Orestis Melkonian, Lucas Escot
 maintainer:          ulf.norell@gmail.com
 copyright:           Ulf Norell, 2020
 category:            Language, Compiler
 build-type:          Simple
-cabal-version:       >=1.10
 synopsis:            Compiling Agda code to readable Haskell.
 description:
   Allows compiling Agda functions in a subset of Agda to readable Haskell code.
