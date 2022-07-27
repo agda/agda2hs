@@ -1,5 +1,4 @@
-{-# LANGUAGE MultiWayIf #-}
-module Main where
+module Agda2Hs.Compile where
 
 import Control.Applicative
 import Control.Arrow ((>>>), (***), (&&&), first, second)
@@ -76,14 +75,13 @@ import Agda.Utils.Monad
 import Agda.Utils.Size
 import Agda.Utils.Functor
 
-import HsUtils
+import Agda2Hs.AgdaUtils
+import Agda2Hs.Compile.Types
+import Agda2Hs.HsUtils
+import Agda2Hs.Pragma
 
-data Options = Options { optOutDir     :: FilePath,
-                         optExtensions :: [Hs.Extension] }
-
--- Required by Agda-2.6.2, but we don't really care.
-instance NFData Options where
-  rnf _ = ()
+-- Utility functions
+--------------------
 
 defaultOptions :: Options
 defaultOptions = Options{ optOutDir = ".", optExtensions = [] }
@@ -94,41 +92,17 @@ outdirOpt dir opts = return opts{ optOutDir = dir }
 extensionOpt :: Monad m => String -> Options -> m Options
 extensionOpt ext opts = return opts{ optExtensions = Hs.parseExtension ext : optExtensions opts }
 
-pragmaName :: String
-pragmaName = "AGDA2HS"
+initCompileEnv :: CompileEnv
+initCompileEnv = CompileEnv { minRecordName = Nothing }
 
-type Ranged a    = (Range, a)
-type ModuleEnv   = ModuleName
-type ModuleRes   = ()
-type CompiledDef = [Ranged [Hs.Decl ()]]
+runC :: C a -> TCM a
+runC m = runReaderT m initCompileEnv
 
-backend :: Backend' Options Options ModuleEnv ModuleRes CompiledDef
-backend = Backend'
-  { backendName           = "agda2hs"
-  , backendVersion        = Just "0.1"
-  , options               = defaultOptions
-  , commandLineFlags      = [ Option ['o'] ["out-dir"] (ReqArg outdirOpt "DIR")
-                              "Write Haskell code to DIR. Default: ."
-                            , Option ['X'] [] (ReqArg extensionOpt "EXTENSION")
-                              "Enable Haskell language EXTENSION. Affects parsing of Haskell code in FOREIGN blocks."
-                            ]
-  , isEnabled             = \ _ -> True
-  , preCompile            = return
-  , postCompile           = \ _ _ _ -> return ()
-  , preModule             = moduleSetup
-  , postModule            = writeModule
-  , compileDef            = compile
-  , scopeCheckingSuffices = False
-  , mayEraseType          = \ _ -> return True
-  }
-
--- Helpers ---------------------------------------------------------------
+liftTCM1 :: (TCM a -> TCM b) -> C a -> C b
+liftTCM1 k m = ReaderT (k . runReaderT m)
 
 showTCM :: PrettyTCM a => a -> C String
 showTCM x = lift $ show <$> prettyTCM x
-
-multilineText :: Monad m => String -> m Doc
-multilineText s = vcat $ map text $ lines s
 
 hsQName :: QName -> C (Hs.QName ())
 hsQName f
@@ -162,8 +136,8 @@ isInScopeUnqualified x = lift $ do
 freshString :: String -> C String
 freshString s = liftTCM (freshName_ s) >>= showTCM
 
-(~~) :: QName -> String -> Bool
-q ~~ s = prettyShow q == s
+concatUnzip :: [([a], [b])] -> ([a], [b])
+concatUnzip = (concat *** concat) . unzip
 
 makeList :: C Doc -> Term -> C [Term]
 makeList = makeList' "Agda.Builtin.List.List.[]" "Agda.Builtin.List.List._∷_"
@@ -198,40 +172,8 @@ underAbstr a b ret
 underAbstr_ :: Subst a => Abs a -> (a -> C b) -> C b
 underAbstr_ = underAbstr __DUMMY_DOM__
 
-applyNoBodies :: Definition -> [Arg Term] -> Definition
-applyNoBodies d args = revert $ d `apply` args
-  where
-    bodies :: [Maybe Term]
-    bodies = map clauseBody $ funClauses $ theDef d
-
-    setBody cl b = cl { clauseBody = b }
-
-    revert :: Definition -> Definition
-    revert d@(Defn {theDef = f@(Function {funClauses = cls})}) =
-      d {theDef = f {funClauses = zipWith setBody cls bodies}}
-    revert _ = __IMPOSSIBLE__
-
-concatUnzip :: [([a], [b])] -> ([a], [b])
-concatUnzip = (concat *** concat) . unzip
-
--- | Convert the final 'Proj' projection elimination into a
---   'Def' projection application.
-unSpine1 :: Term -> Term
-unSpine1 v =
-  case hasElims v of
-    Just (h, es) -> fromMaybe v $ loop h [] es
-    Nothing      -> v
-  where
-    loop :: (Elims -> Term) -> Elims -> Elims -> Maybe Term
-    loop h res es =
-      case es of
-        []             -> Nothing
-        Proj o f : es' -> Just $ fromMaybe (Def f (Apply (defaultArg v) : es')) $ loop h (Proj o f : res) es'
-        e        : es' -> loop h (e : res) es'
-      where v = h $ reverse res
-
-
--- Builtins ---------------------------------------------------------------
+-- Builtins
+-----------
 
 isSpecialTerm :: QName -> Maybe (QName -> Elims -> C (Hs.Exp ()))
 isSpecialTerm q = case prettyShow q of
@@ -285,6 +227,23 @@ isSpecialName = prettyShow >>> \ case
   where
     unqual n  = Just $ Hs.UnQual () $ hsName n
     special c = Just $ Hs.Special () $ c ()
+
+fromNat :: QName -> Elims -> C (Hs.Exp ())
+fromNat _ es = compileArgs es <&> \ case
+  _ : n@Hs.Lit{} : es' -> n `eApp` es'
+  es'                  -> hsVar "fromIntegral" `eApp` drop 1 es'
+
+fromNeg :: QName -> Elims -> C (Hs.Exp ())
+fromNeg _ es = compileArgs es <&> \ case
+  _ : n@Hs.Lit{} : es' -> Hs.NegApp () n `eApp` es'
+  es'                  -> (hsVar "negate" `o` hsVar "fromIntegral") `eApp` drop 1 es'
+  where
+    f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ Hs.UnQual () $ hsName "_._") g
+
+fromString :: QName -> Elims -> C (Hs.Exp ())
+fromString _ es = compileArgs es <&> \ case
+  _ : s@Hs.Lit{} : es' -> s `eApp` es'
+  es'                  -> hsVar "fromString" `eApp` drop 1 es'
 
 ifThenElse :: QName -> Elims -> C (Hs.Exp ())
 ifThenElse _ es = compileArgs es >>= \case
@@ -351,23 +310,6 @@ clauseToAlt (Hs.Match _ _ [p] rhs wh) = pure $ Hs.Alt () p rhs wh
 clauseToAlt (Hs.Match _ _ ps _ _)     = genericError $ "Pattern matching lambdas must take a single argument"
 clauseToAlt Hs.InfixMatch{}           = __IMPOSSIBLE__
 
-fromNat :: QName -> Elims -> C (Hs.Exp ())
-fromNat _ es = compileArgs es <&> \ case
-  _ : n@Hs.Lit{} : es' -> n `eApp` es'
-  es'                  -> hsVar "fromIntegral" `eApp` drop 1 es'
-
-fromNeg :: QName -> Elims -> C (Hs.Exp ())
-fromNeg _ es = compileArgs es <&> \ case
-  _ : n@Hs.Lit{} : es' -> Hs.NegApp () n `eApp` es'
-  es'                  -> (hsVar "negate" `o` hsVar "fromIntegral") `eApp` drop 1 es'
-  where
-    f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ Hs.UnQual () $ hsName "_._") g
-
-fromString :: QName -> Elims -> C (Hs.Exp ())
-fromString _ es = compileArgs es <&> \ case
-  _ : s@Hs.Lit{} : es' -> s `eApp` es'
-  es'                  -> hsVar "fromString" `eApp` drop 1 es'
-
 tupleType' :: QName -> Elims -> C (Hs.Type ())
 tupleType' q es = do
   Def tup es' <- reduce (Def q es)
@@ -404,8 +346,6 @@ tuplePat cons i ps = do
   qs <- mapM compilePat xs
   return $ Hs.PTuple () Hs.Boxed qs
 
--- Compiling things -------------------------------------------------------
-
 data RecordTarget = ToRecord | ToClass [String]
 
 data ParsedPragma
@@ -416,12 +356,6 @@ data ParsedPragma
   | DerivingPragma [Hs.Deriving ()]
   deriving Show
 
--- "class" is not being used usefully, any record with a pragma is
--- considered a typeclass
-
--- no pragma at all means no code is compiled
--- if the pragma contains extraneous stuff we treat it as default
--- using a class pragma currently leads to no code being compiled
 processPragma :: QName -> C ParsedPragma
 processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
   Nothing -> return NoPragma
@@ -439,20 +373,8 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
         Hs.ParseOk _ -> return DefaultPragma
   _ -> return DefaultPragma
 
-data CompileEnv = CompileEnv
-  { minRecordName :: Maybe ModuleName
-  }
-
-initCompileEnv :: CompileEnv
-initCompileEnv = CompileEnv { minRecordName = Nothing }
-
-type C = ReaderT CompileEnv TCM
-
-runC :: C a -> TCM a
-runC m = runReaderT m initCompileEnv
-
-liftTCM1 :: (TCM a -> TCM b) -> C a -> C b
-liftTCM1 k m = ReaderT (k . runReaderT m)
+-- Main compile function
+------------------------
 
 compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
 compile _ m _ def = withCurrentModule m $ runC $ processPragma (defName def) >>= \ p -> do
@@ -1148,154 +1070,3 @@ checkInstance u@(Con c _ _)
     prettyShow (conName c) == "Haskell.Prim.IsTrue.itsTrue" ||
     prettyShow (conName c) == "Haskell.Prim.IsFalse.itsFalse" = return ()
 checkInstance u = genericDocError =<< text "illegal instance: " <+> prettyTCM u
-
--- FOREIGN pragmas --------------------------------------------------------
-
-type Code = (Hs.Module Hs.SrcSpanInfo, [Hs.Comment])
-
-languagePragmas :: Code -> [Hs.Extension]
-languagePragmas (Hs.Module _ _ ps _ _, _) =
-  [ Hs.parseExtension s | Hs.LanguagePragma _ ss <- ps, Hs.Ident _ s <- ss ]
-languagePragmas _ = []
-
-getForeignPragmas :: [Hs.Extension] -> TCM [(Range, Code)]
-getForeignPragmas exts = do
-  pragmas <- fromMaybe [] . Map.lookup pragmaName . iForeignCode <$> curIF
-  getCode exts $ reverse pragmas
-  where
-    getCode :: [Hs.Extension] -> [ForeignCode] -> TCM [(Range, Code)]
-    getCode _ [] = return []
-    getCode exts (ForeignCode r code : pragmas) = do
-          let Just file = fmap filePath $ toLazy $ rangeFile r
-              pmode = Hs.defaultParseMode { Hs.parseFilename     = file,
-                                            Hs.ignoreLinePragmas = False,
-                                            Hs.extensions        = exts }
-              line = case posLine <$> rStart r of
-                       Just l  -> "{-# LINE " ++ show l ++ show file ++ " #-}\n"
-                       Nothing -> ""
-          case Hs.parseWithComments pmode (line ++ code) of
-            Hs.ParseFailed loc msg -> setCurrentRange (srcLocToRange loc) $ genericError msg
-            Hs.ParseOk m           -> ((r, m) :) <$> getCode (exts ++ languagePragmas m) pragmas
-
--- Rendering --------------------------------------------------------------
-
-type Block = Ranged [String]
-
-sortRanges :: [Ranged a] -> [a]
-sortRanges = map snd . sortBy (compare `on` rLine . fst)
-
-rLine :: Range -> Int
-rLine r = fromIntegral $ fromMaybe 0 $ posLine <$> rStart r
-
-renderBlocks :: [Block] -> String
-renderBlocks = unlines . map unlines . sortRanges . filter (not . null . snd)
-
-defBlock :: CompiledDef -> [Block]
-defBlock def = [ (r, map (pp . insertParens) ds) | (r, ds) <- def ]
-
-codePragmas :: [Ranged Code] -> [Block]
-codePragmas code = [ (r, map pp ps) | (r, (Hs.Module _ _ ps _ _, _)) <- code ]
-
-codeBlocks :: [Ranged Code] -> [Block]
-codeBlocks code = [(r, [uncurry Hs.exactPrint $ moveToTop $ noPragmas mcs]) | (r, mcs) <- code, nonempty mcs]
-  where noPragmas (Hs.Module l h _ is ds, cs) = (Hs.Module l h [] is ds, cs)
-        noPragmas m                           = m
-        nonempty (Hs.Module _ _ _ is ds, cs) = not $ null is && null ds && null cs
-        nonempty _                           = True
-
--- Checking imports -------------------------------------------------------
-
-imports :: [Ranged Code] -> [Hs.ImportDecl Hs.SrcSpanInfo]
-imports modules = concat [imps | (_, (Hs.Module _ _ _ imps _, _)) <- modules]
-
-autoImports :: [(String, String)]
-autoImports = [("Natural", "Numeric.Natural")]
-
-addImports :: [Hs.ImportDecl Hs.SrcSpanInfo] -> [CompiledDef] -> TCM [Hs.ImportDecl ()]
-addImports is defs = do
-  return [ doImport ty imp | (ty, imp) <- autoImports,
-                             uses ty defs && not (any (isImport ty imp) is)]
-  where
-    doImport :: String -> String -> Hs.ImportDecl ()
-    doImport ty imp = Hs.ImportDecl ()
-      (Hs.ModuleName () imp) False False False Nothing Nothing
-      (Just $ Hs.ImportSpecList () False [Hs.IVar () $ Hs.name ty])
-
-    isImport :: String -> String -> Hs.ImportDecl Hs.SrcSpanInfo -> Bool
-    isImport ty imp = \case
-      Hs.ImportDecl _ (Hs.ModuleName _ m) False _ _ _ _ specs | m == imp ->
-        case specs of
-          Just (Hs.ImportSpecList _ hiding specs) ->
-            not hiding && ty `elem` concatMap getExplicitImports specs
-          Nothing -> True
-      _ -> False
-
-checkImports :: [Hs.ImportDecl Hs.SrcSpanInfo] -> TCM ()
-checkImports is = do
-  case concatMap checkImport is of
-    []  -> return ()
-    bad@((r, _, _):_) -> setCurrentRange r $
-      genericDocError =<< vcat
-        [ text "Bad import of builtin type"
-        , nest 2 $ vcat [ text $ ty ++ " from module " ++ m ++ " (expected " ++ okm ++ ")"
-                        | (_, m, ty) <- bad, let Just okm = lookup ty autoImports ]
-        , text "Note: imports of builtin types are inserted automatically if omitted."
-        ]
-
-checkImport :: Hs.ImportDecl Hs.SrcSpanInfo -> [(Range, String, String)]
-checkImport i
-  | Just (Hs.ImportSpecList _ False specs) <- Hs.importSpecs i =
-    [ (r, mname, ty) | (r, ty) <- concatMap (checkImportSpec mname) specs ]
-  | otherwise = []
-  where
-    mname = pp (Hs.importModule i)
-    checkImportSpec :: String -> Hs.ImportSpec Hs.SrcSpanInfo -> [(Range, String)]
-    checkImportSpec mname = \case
-      Hs.IVar       loc   n    -> check loc n
-      Hs.IAbs       loc _ n    -> check loc n
-      Hs.IThingAll  loc   n    -> check loc n
-      Hs.IThingWith loc   n ns -> concat $ check loc n : map check' ns
-      where
-        check' cn = check (cloc cn) (cname cn)
-        check loc n = [(srcSpanInfoToRange loc, s) | let s = pp n, badImp s]
-        badImp s = maybe False (/= mname) $ lookup s autoImports
-
--- Generating the files -------------------------------------------------------
-
-moduleFileName :: Options -> ModuleName -> FilePath
-moduleFileName opts name =
-  optOutDir opts </> C.moduleNameToFileName (toTopLevelModuleName name) "hs"
-
-moduleSetup :: Options -> IsMain -> ModuleName -> filepath -> TCM (Recompile ModuleEnv ModuleRes)
-moduleSetup _ _ m _ = do
-  reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
-  setScope . iInsideScope =<< curIF
-  return $ Recompile m
-
-ensureDirectory :: FilePath -> IO ()
-ensureDirectory = createDirectoryIfMissing True . takeDirectory
-
-writeModule :: Options -> ModuleEnv -> IsMain -> ModuleName -> [CompiledDef] -> TCM ModuleRes
-writeModule opts _ isMain m defs0 = do
-  code <- getForeignPragmas (optExtensions opts)
-  let defs = concatMap defBlock defs0 ++ codeBlocks code
-  let imps = imports code
-  unless (null code && null defs) $ do
-    -- Check user-supplied imports
-    checkImports imps
-    -- Add automatic imports for builtin types (if any)
-    let unlines' [] = []
-        unlines' ss = unlines ss ++ "\n"
-    autoImports <- unlines' . map pp <$> addImports imps defs0
-    -- The comments makes it hard to generate and pretty print a full module
-    let hsFile = moduleFileName opts m
-        output = concat
-                 [ renderBlocks $ codePragmas code
-                 , "module " ++ prettyShow m ++ " where\n\n"
-                 , autoImports
-                 , renderBlocks defs ]
-    reportSLn "" 1 $ "Writing " ++ hsFile
-    liftIO $ ensureDirectory hsFile
-    liftIO $ writeFile hsFile output
-
-main = runAgda [Backend backend]

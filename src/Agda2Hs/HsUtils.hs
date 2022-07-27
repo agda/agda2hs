@@ -1,5 +1,5 @@
 
-module HsUtils where
+module Agda2Hs.HsUtils where
 
 import Data.Data (Data)
 import Data.Generics (listify, everywhere, mkT, extT)

@@ -19,8 +19,14 @@ source-repository head
   location: https://github.com/agda/agda2hs.git
 
 executable agda2hs
+  hs-source-dirs:      src
   main-is:             Main.hs
-  other-modules:       HsUtils
+  other-modules:       Agda2Hs.AgdaUtils,
+                       Agda2Hs.Compile,
+                       Agda2Hs.Compile.Types,
+                       Agda2Hs.HsUtils,
+                       Agda2Hs.Pragma
+                       Agda2Hs.Render
   build-depends:       base >= 4.10 && < 4.16,
                        Agda >= 2.6.3 && < 2.6.4,
                        containers >= 0.6 && < 0.7,
@@ -35,5 +41,6 @@ executable agda2hs
   default-language:    Haskell2010
   default-extensions:  LambdaCase,
                        RecordWildCards,
-                       FlexibleContexts
+                       FlexibleContexts,
+                       MultiWayIf
 
