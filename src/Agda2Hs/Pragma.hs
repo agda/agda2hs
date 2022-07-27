@@ -4,7 +4,7 @@ module Agda2Hs.Pragma where
 import Control.Applicative
 import Control.Arrow ((>>>), (***), (&&&), first, second)
 import Control.Monad
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.Monad.Fail (MonadFail)
 import Control.Monad.Reader
 import Control.Monad.IO.Class
