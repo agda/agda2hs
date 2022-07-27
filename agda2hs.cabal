@@ -43,4 +43,4 @@ executable agda2hs
                        RecordWildCards,
                        FlexibleContexts,
                        MultiWayIf
-
+  ghc-options:         -Werror
