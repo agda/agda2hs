@@ -2,7 +2,7 @@ name:                agda2hs
 version:             0.1
 license:             BSD3
 license-file:        LICENSE
-author:              Ulf Norell, Jesper Cockx, James Chapman, Orestis Melkonian
+author:              Ulf Norell, Jesper Cockx, James Chapman, Orestis Melkonian, Lucas Escot
 maintainer:          ulf.norell@gmail.com
 copyright:           Ulf Norell, 2020
 category:            Language, Compiler
