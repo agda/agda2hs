@@ -36,7 +36,17 @@ executable agda2hs
   main-is:             Main.hs
   other-modules:       Agda2Hs.AgdaUtils,
                        Agda2Hs.Compile,
+                       Agda2Hs.Compile.ClassInstance,
+                       Agda2Hs.Compile.Data,
+                       Agda2Hs.Compile.Function,
+                       Agda2Hs.Compile.Name,
+                       Agda2Hs.Compile.Postulate,
+                       Agda2Hs.Compile.Record,
+                       Agda2Hs.Compile.Term,
+                       Agda2Hs.Compile.Type,
+                       Agda2Hs.Compile.TypeDefinition,
                        Agda2Hs.Compile.Types,
+                       Agda2Hs.Compile.Utils,
                        Agda2Hs.HsUtils,
                        Agda2Hs.Pragma
                        Agda2Hs.Render

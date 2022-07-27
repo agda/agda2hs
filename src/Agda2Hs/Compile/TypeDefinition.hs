@@ -1,4 +1,4 @@
-module Agda2Hs.Compile where
+module Agda2Hs.Compile.TypeDefinition where
 
 import Control.Arrow ( (>>>), (***), (&&&), first, second )
 import Control.Monad
@@ -54,40 +54,34 @@ import Agda.Utils.Size
 import Agda.Utils.Functor
 
 import Agda2Hs.AgdaUtils
-import Agda2Hs.Compile.ClassInstance
-import Agda2Hs.Compile.Data
-import Agda2Hs.Compile.Function
 import Agda2Hs.Compile.Name
-import Agda2Hs.Compile.Postulate
-import Agda2Hs.Compile.Record
 import Agda2Hs.Compile.Type
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 import Agda2Hs.Pragma
 
-initCompileEnv :: CompileEnv
-initCompileEnv = CompileEnv { minRecordName = Nothing }
+compileTypeDef :: Hs.Name () -> Definition -> LocalDecls -> C [Hs.Decl ()]
+compileTypeDef name (Defn {..}) locals = do
+  noLocals locals
+  Clause{..} <- singleClause funClauses
+  addContext (KeepNames clauseTel) $ liftTCM1 localScope $ do
+    as <- compileTypeArgs namedClausePats
+    let hd = foldl (Hs.DHApp ()) (Hs.DHead () name) as
+    rhs <- compileType $ fromMaybe __IMPOSSIBLE__ clauseBody
+    return [Hs.TypeDecl () hd rhs]
 
-runC :: C a -> TCM a
-runC m = runReaderT m initCompileEnv
+  where
+    Function{..} = theDef
+    noLocals locals = unless (null locals) $
+      genericError "Not supported: type definition with `where` clauses"
+    singleClause = \case
+      [cl] -> return cl
+      _    -> genericError "Not supported: type definition with several clauses"
 
--- Main compile function
-------------------------
+compileTypeArgs :: NAPs -> C [Hs.TyVarBind ()]
+compileTypeArgs ps = mapM (compileTypeArg . namedArg) $ filter keepArg ps
 
-compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
-compile _ m _ def = withCurrentModule m $ runC $ processPragma (defName def) >>= \ p -> do
-  reportSDoc "agda2hs.compile" 5 $ text "Compiling definition: " <+> prettyTCM (defName def)
-  case (p , defInstance def , theDef def) of
-    (NoPragma           , _      , _         ) -> return []
-    (ExistingClassPragma, _      , _         ) -> return [] -- No code generation, but affects how projections are compiled
-    (ClassPragma ms     , _      , Record{}  ) -> tag . single <$> compileRecord (ToClass ms) def
-    (DerivingPragma ds  , _      , Datatype{}) -> tag <$> compileData ds def
-    (DefaultPragma      , _      , Datatype{}) -> tag <$> compileData [] def
-    (DefaultPragma      , Just _ , _         ) -> tag . single <$> compileInstance def
-    (DefaultPragma      , _      , Axiom{}   ) -> tag <$> compilePostulate def
-    (DefaultPragma      , _      , Function{}) -> tag <$> compileFun def
-    (DefaultPragma      , _      , Record{}  ) -> tag . single <$> compileRecord ToRecord def
-    _                                         -> return []
-  where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
-        single x = [x]
+compileTypeArg :: DeBruijnPattern -> C (Hs.TyVarBind ())
+compileTypeArg p@(VarP o _) = Hs.UnkindedVar () . hsName <$> showTCM p
+compileTypeArg _ = genericError "Not supported: type definition by pattern matching"

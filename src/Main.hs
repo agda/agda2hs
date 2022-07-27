@@ -1,13 +1,27 @@
 module Main where
 
-import System.Console.GetOpt ( ArgDescr(ReqArg), OptDescr(Option) )
-import Agda.Main ( runAgda )
-import Agda.Compiler.Backend ( Backend(Backend), Backend'(..) )
+import System.Console.GetOpt
+
+import qualified Language.Haskell.Exts.Syntax as Hs
+import qualified Language.Haskell.Exts.Build as Hs
+import qualified Language.Haskell.Exts.Parser as Hs
+import qualified Language.Haskell.Exts.Extension as Hs
+
+import Agda.Main
+import Agda.Compiler.Backend
+
 import Agda2Hs.Compile
-    ( defaultOptions, outdirOpt, extensionOpt, compile )
 import Agda2Hs.Compile.Types
-    ( Options, CompiledDef, ModuleRes, ModuleEnv )
-import Agda2Hs.Render ( moduleSetup, writeModule )
+import Agda2Hs.Render
+
+defaultOptions :: Options
+defaultOptions = Options{ optOutDir = ".", optExtensions = [] }
+
+outdirOpt :: Monad m => FilePath -> Options -> m Options
+outdirOpt dir opts = return opts{ optOutDir = dir }
+
+extensionOpt :: Monad m => String -> Options -> m Options
+extensionOpt ext opts = return opts{ optExtensions = Hs.parseExtension ext : optExtensions opts }
 
 backend :: Backend' Options Options ModuleEnv ModuleRes CompiledDef
 backend = Backend'

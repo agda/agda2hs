@@ -44,3 +44,11 @@ unSpine1 v =
         Proj o f : es' -> Just $ fromMaybe (Def f (Apply (defaultArg v) : es')) $ loop h (Proj o f : res) es'
         e        : es' -> loop h (e : res) es'
       where v = h $ reverse res
+
+mapDef :: (Term -> Term) -> Definition -> Definition
+mapDef f d = d{ theDef = mapDefn (theDef d) }
+  where
+    mapDefn def@Function{} = def{ funClauses = map mapClause (funClauses def) }
+    mapDefn defn = defn -- We only need this for Functions
+
+    mapClause c = c{ clauseBody = f <$> clauseBody c }

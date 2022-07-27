@@ -1,4 +1,4 @@
-module Agda2Hs.Compile where
+module Agda2Hs.Compile.Clause where
 
 import Control.Arrow ( (>>>), (***), (&&&), first, second )
 import Control.Monad
@@ -54,40 +54,11 @@ import Agda.Utils.Size
 import Agda.Utils.Functor
 
 import Agda2Hs.AgdaUtils
-import Agda2Hs.Compile.ClassInstance
-import Agda2Hs.Compile.Data
-import Agda2Hs.Compile.Function
 import Agda2Hs.Compile.Name
-import Agda2Hs.Compile.Postulate
-import Agda2Hs.Compile.Record
+import {-# SOURCE #-} Agda2Hs.Compile.Term
 import Agda2Hs.Compile.Type
+import Agda2Hs.Compile.TypeDefinition
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 import Agda2Hs.Pragma
-
-initCompileEnv :: CompileEnv
-initCompileEnv = CompileEnv { minRecordName = Nothing }
-
-runC :: C a -> TCM a
-runC m = runReaderT m initCompileEnv
-
--- Main compile function
-------------------------
-
-compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
-compile _ m _ def = withCurrentModule m $ runC $ processPragma (defName def) >>= \ p -> do
-  reportSDoc "agda2hs.compile" 5 $ text "Compiling definition: " <+> prettyTCM (defName def)
-  case (p , defInstance def , theDef def) of
-    (NoPragma           , _      , _         ) -> return []
-    (ExistingClassPragma, _      , _         ) -> return [] -- No code generation, but affects how projections are compiled
-    (ClassPragma ms     , _      , Record{}  ) -> tag . single <$> compileRecord (ToClass ms) def
-    (DerivingPragma ds  , _      , Datatype{}) -> tag <$> compileData ds def
-    (DefaultPragma      , _      , Datatype{}) -> tag <$> compileData [] def
-    (DefaultPragma      , Just _ , _         ) -> tag . single <$> compileInstance def
-    (DefaultPragma      , _      , Axiom{}   ) -> tag <$> compilePostulate def
-    (DefaultPragma      , _      , Function{}) -> tag <$> compileFun def
-    (DefaultPragma      , _      , Record{}  ) -> tag . single <$> compileRecord ToRecord def
-    _                                         -> return []
-  where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
-        single x = [x]

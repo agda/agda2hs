@@ -1,4 +1,4 @@
-module Agda2Hs.Compile where
+module Agda2Hs.Compile.Data where
 
 import Control.Arrow ( (>>>), (***), (&&&), first, second )
 import Control.Monad
@@ -55,39 +55,50 @@ import Agda.Utils.Functor
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.ClassInstance
-import Agda2Hs.Compile.Data
 import Agda2Hs.Compile.Function
 import Agda2Hs.Compile.Name
-import Agda2Hs.Compile.Postulate
-import Agda2Hs.Compile.Record
 import Agda2Hs.Compile.Type
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 import Agda2Hs.Pragma
 
-initCompileEnv :: CompileEnv
-initCompileEnv = CompileEnv { minRecordName = Nothing }
+compileData :: [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
+compileData ds def = do
+  let d = hsName $ prettyShow $ qnameName $ defName def
+  case theDef def of
+    Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} -> do
+      TelV tel t <- telViewUpTo n (defType def)
+      reportSDoc "agda2hs.data" 10 $ text "Datatype telescope:" <+> prettyTCM tel
+      allIndicesErased t
+      params <- compileTele tel
+      addContext tel $ do
+        pars <- mapM (showTCM . unArg) params
+        cs   <- mapM (compileConstructor params) cs
+        let hd   = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
+                         (Hs.DHead () d) pars
+        return [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs ds]
+    _ -> __IMPOSSIBLE__
+  where
+    allIndicesErased :: Type -> C ()
+    allIndicesErased t = reduce (unEl t) >>= \case
+      Pi dom t -> compileDom (absName t) dom >>= \case
+        DomDropped      -> allIndicesErased (unAbs t)
+        DomType{}       -> genericDocError =<< text "Not supported: indexed datatypes"
+        DomConstraint{} -> genericDocError =<< text "Not supported: constraints in types"
+      _ -> return ()
 
-runC :: C a -> TCM a
-runC m = runReaderT m initCompileEnv
+compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl ())
+compileConstructor params c = do
+  ty <- (`piApplyM` params) . defType =<< getConstInfo c
+  TelV tel _ <- telView ty
+  let conName = hsName $ prettyShow $ qnameName c
+  args <- compileConstructorArgs tel
+  return $ Hs.QualConDecl () Nothing Nothing $ Hs.ConDecl () conName args
 
--- Main compile function
-------------------------
-
-compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
-compile _ m _ def = withCurrentModule m $ runC $ processPragma (defName def) >>= \ p -> do
-  reportSDoc "agda2hs.compile" 5 $ text "Compiling definition: " <+> prettyTCM (defName def)
-  case (p , defInstance def , theDef def) of
-    (NoPragma           , _      , _         ) -> return []
-    (ExistingClassPragma, _      , _         ) -> return [] -- No code generation, but affects how projections are compiled
-    (ClassPragma ms     , _      , Record{}  ) -> tag . single <$> compileRecord (ToClass ms) def
-    (DerivingPragma ds  , _      , Datatype{}) -> tag <$> compileData ds def
-    (DefaultPragma      , _      , Datatype{}) -> tag <$> compileData [] def
-    (DefaultPragma      , Just _ , _         ) -> tag . single <$> compileInstance def
-    (DefaultPragma      , _      , Axiom{}   ) -> tag <$> compilePostulate def
-    (DefaultPragma      , _      , Function{}) -> tag <$> compileFun def
-    (DefaultPragma      , _      , Record{}  ) -> tag . single <$> compileRecord ToRecord def
-    _                                         -> return []
-  where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
-        single x = [x]
+compileConstructorArgs :: Telescope -> C [Hs.Type ()]
+compileConstructorArgs EmptyTel = return []
+compileConstructorArgs (ExtendTel a tel) = compileDom (absName tel) a >>= \case
+  DomType hsA       -> (hsA :) <$> underAbstraction a tel compileConstructorArgs
+  DomConstraint hsA -> genericDocError =<< text "Not supported: constructors with class constraints"
+  DomDropped        -> underAbstraction a tel compileConstructorArgs

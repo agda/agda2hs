@@ -29,3 +29,16 @@ data CompileEnv = CompileEnv
   }
 
 type C = ReaderT CompileEnv TCM
+
+-- Currently we can compile an Agda "Dom Type" in three ways:
+-- - To a type in Haskell
+-- - To a typeclass constraint in Haskell
+-- - To nothing (e.g. for proofs)
+data CompiledDom
+  = DomType (Hs.Type ())
+  | DomConstraint (Hs.Asst ())
+  | DomDropped
+
+type LocalDecls = [(QName, Definition)]
+
+data RecordTarget = ToRecord | ToClass [String]
