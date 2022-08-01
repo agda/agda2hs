@@ -11,7 +11,7 @@ data Colist (a : Set) (@0 i : Size) : Set where
 
 {-# COMPILE AGDA2HS Colist #-}
 
-repeater : ∀ {@0 a i} → a → Colist a i
+repeater : ∀ {a i} → a → Colist a i
 repeater x = Cons x λ where .force → repeater x
 
 {-# COMPILE AGDA2HS repeater #-}

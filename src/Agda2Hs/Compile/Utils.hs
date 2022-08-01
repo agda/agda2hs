@@ -20,6 +20,7 @@ import Agda.TypeChecking.Conversion ( equalTerm )
 import Agda.TypeChecking.InstanceArguments ( findInstance )
 import Agda.TypeChecking.Level ( isLevelType )
 import Agda.TypeChecking.MetaVars ( newInstanceMeta )
+import Agda.TypeChecking.Monad.SizedTypes ( isSizeType )
 import Agda.TypeChecking.Pretty ( Doc, (<+>), text, PrettyTCM(..) )
 import Agda.TypeChecking.Reduce ( instantiate, reduce )
 import Agda.TypeChecking.Substitute ( Subst, TelV(TelV) )
@@ -28,7 +29,7 @@ import Agda.TypeChecking.Telescope ( telView )
 import Agda.Utils.Lens ( (<&>) )
 import Agda.Utils.Pretty ( prettyShow )
 import qualified Agda.Utils.Pretty as P
-import Agda.Utils.Monad ( or2M )
+import Agda.Utils.Monad
 
 import Agda2Hs.AgdaUtils ( (~~) )
 import Agda2Hs.Compile.Types
@@ -103,8 +104,11 @@ keepArg x = usableModality x && visible x
 canErase :: Type -> C Bool
 canErase a = do
   TelV tel b <- telView a
-  addContext tel $
-    isLevelType b `or2M` ((isJust . isSort) <$> reduce (unEl b))
+  addContext tel $ orM
+    [ isLevelType b
+    , isJust <$> isSizeType b
+    , ((isJust . isSort) <$> reduce (unEl b))
+    ]
 
 -- Exploits the fact that the name of the record type and the name of the record module are the
 -- same, including the unique name ids.
