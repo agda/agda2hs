@@ -11,6 +11,7 @@ import Agda.Syntax.Internal
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Reduce ( reduce )
+import Agda.TypeChecking.Substitute ( applyE )
 import Agda.TypeChecking.Telescope ( flattenTel, teleNames )
 
 import Agda.Utils.Pretty ( prettyShow )
@@ -29,6 +30,7 @@ isSpecialType = prettyShow >>> \ case
   "Haskell.Prim.Tuple.Tuple" -> Just tupleType
   "Haskell.Prim.Tuple._×_"   -> Just tupleType'
   "Haskell.Prim.Tuple._×_×_" -> Just tupleType'
+  "Haskell.Prim.Thunk.Thunk" -> Just thunkType
   _ -> Nothing
 
 tupleType' :: QName -> Elims -> C (Hs.Type ())
@@ -46,6 +48,13 @@ tupleType _ es | Just [as] <- allApplyElims es = do
   return $ Hs.TyTuple () Hs.Boxed ts
 tupleType _ es =
   genericDocError =<< text "Bad tuple arguments: " <?> prettyTCM es
+
+thunkType :: QName -> Elims -> C (Hs.Type ())
+thunkType _ es | Just (_:a:_:[]) <- allApplyElims es = do
+  let dummySize = setQuantity zeroQuantity $ defaultArg __DUMMY_TERM__
+  compileType $ unArg a `applyE` [ Apply dummySize ]
+thunkType _ es =
+  genericDocError =<< text "Bad arguments to Thunk: " <?> prettyTCM es
 
 compileType :: Term -> C (Hs.Type ())
 compileType t = do

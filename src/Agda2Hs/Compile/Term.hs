@@ -43,6 +43,8 @@ isSpecialTerm q = case prettyShow q of
   "Haskell.Prim.Enum.Enum.enumFromThen"         -> Just mkEnumFromThen
   "Haskell.Prim.Enum.Enum.enumFromThenTo"       -> Just mkEnumFromThenTo
   "Haskell.Prim.case_of_"                       -> Just caseOf
+  "Haskell.Prim.Thunk.Thunk.delay"              -> Just delay
+  "Haskell.Prim.Thunk.Thunk.force"              -> Just force
   "Agda.Builtin.FromNat.Number.fromNat"         -> Just fromNat
   "Agda.Builtin.FromNeg.Negative.fromNeg"       -> Just fromNeg
   "Agda.Builtin.FromString.IsString.fromString" -> Just fromString
@@ -110,6 +112,16 @@ mkEnumFromThenTo q es = compileArgs es >>= \case
   _ : a : a' : b : es' -> return $ Hs.EnumFromThenTo () a a' b `eApp` es'
   es'                  -> return $ hsVar "enumFromThenTo" `eApp` drop 1 es'
 
+delay :: QName -> Elims -> C (Hs.Exp ())
+delay _ es = compileArgs es >>= \case
+  a : es' -> return $ a `eApp` es'
+  []      -> return $ hsVar "id"
+
+force :: QName -> Elims -> C (Hs.Exp ())
+force _ es = compileArgs es >>= \case
+  a : es' -> return $ a `eApp` es'
+  []      -> return $ hsVar "id"
+
 caseOf :: QName -> Elims -> C (Hs.Exp ())
 caseOf _ es = compileArgs es >>= \ case
   -- applied to pattern lambda
@@ -136,9 +148,14 @@ lambdaCase q es = setCurrentRange (nameBindingSite $ qnameName q) $ do
   let (pars, rest) = splitAt npars es
       cs           = applyE (funClauses def) pars
   cs   <- mapM (compileClause [] $ hsName "(lambdaCase)") cs
-  alts <- mapM clauseToAlt $ map snd cs -- Pattern lambdas cannot have where blocks
-  args <- compileArgs rest
-  return $ eApp (Hs.LCase () alts) args
+  case cs of
+    -- If there is a single clause and all patterns got erased, we
+    -- simply return the body.
+    [(_, Hs.Match _ _ [] (Hs.UnGuardedRhs _ rhs) _)] -> return rhs
+    _ -> do
+      alts <- mapM clauseToAlt $ map snd cs -- Pattern lambdas cannot have where blocks
+      args <- compileArgs rest
+      return $ eApp (Hs.LCase () alts) args
 
 clauseToAlt :: Hs.Match () -> C (Hs.Alt ())
 clauseToAlt (Hs.Match _ _ [p] rhs wh) = pure $ Hs.Alt () p rhs wh

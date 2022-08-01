@@ -41,6 +41,10 @@ isSpecialPat = prettyShow >>> \ case
   "Haskell.Prim.Tuple.Tuple._∷_" -> Just tuplePat
   _ -> Nothing
 
+isForceCopattern :: DeBruijnPattern -> Bool
+isForceCopattern (ProjP _ q) = prettyShow q == "Haskell.Prim.Thunk.Thunk.force"
+isForceCopattern _           = False
+
 tuplePat :: ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ())
 tuplePat cons i ps = do
   let p = ConP cons i ps
@@ -141,7 +145,10 @@ scopeBindPatternVariables = mapM_ (scopeBind . namedArg)
       DefP{}      -> return ()
 
 compilePats :: NAPs -> C [Hs.Pat ()]
-compilePats ps = mapM (compilePat . namedArg) $ filter keepArg ps
+compilePats ps = mapM (compilePat . namedArg) $ filter keepPat ps
+  where
+    keepPat :: NamedArg DeBruijnPattern -> Bool
+    keepPat p = keepArg p && not (isForceCopattern $ namedArg p)
 
 compilePat :: DeBruijnPattern -> C (Hs.Pat ())
 compilePat p@(VarP o _)
@@ -155,6 +162,7 @@ compilePat (ConP h _ ps) = do
   return $ pApp c ps
 -- TODO: LitP
 compilePat (ProjP _ q) = do
+  reportSDoc "agda2hs.compile" 6 $ text "compiling copattern: " <+> text (prettyShow q)
   unlessM (asks isCompilingInstance) $
     genericDocError =<< text "not supported in Haskell: copatterns"
   let x = hsName $ prettyShow q

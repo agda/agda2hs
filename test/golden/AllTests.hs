@@ -15,6 +15,7 @@ import Tuples
 import Where
 import TypeSynonyms
 import CanonicalInstance
+import Coinduction
 import ConstrainedInstance
 import Datatypes
 import Records
