@@ -14,7 +14,10 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Pragma
 
 initCompileEnv :: CompileEnv
-initCompileEnv = CompileEnv { minRecordName = Nothing }
+initCompileEnv = CompileEnv
+  { minRecordName = Nothing
+  , isCompilingInstance = False
+  }
 
 runC :: C a -> TCM a
 runC m = runReaderT m initCompileEnv

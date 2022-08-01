@@ -2,6 +2,7 @@ module Agda2Hs.Compile.Function where
 
 import Control.Arrow ( Arrow((***), second), (>>>) )
 import Control.Monad ( (>=>), foldM )
+import Control.Monad.Reader ( asks )
 
 import Data.Generics ( mkT, everywhere, listify )
 import Data.List ( isPrefixOf, nub )
@@ -24,7 +25,7 @@ import Agda.TypeChecking.Sort ( ifIsSort )
 
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.List ( snoc )
-import Agda.Utils.Monad ( ifM )
+import Agda.Utils.Monad
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( hsQName )
@@ -154,6 +155,8 @@ compilePat (ConP h _ ps) = do
   return $ pApp c ps
 -- TODO: LitP
 compilePat (ProjP _ q) = do
+  unlessM (asks isCompilingInstance) $
+    genericDocError =<< text "not supported in Haskell: copatterns"
   let x = hsName $ prettyShow q
   return $ Hs.PVar () x
 compilePat p = genericDocError =<< text "bad pattern:" <?> prettyTCM p

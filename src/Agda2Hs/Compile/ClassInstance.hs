@@ -1,6 +1,7 @@
 module Agda2Hs.Compile.ClassInstance where
 
 import Control.Monad ( when, filterM, unless )
+import Control.Monad.Reader ( local )
 
 import Data.List ( nub )
 import Data.Maybe ( isNothing, mapMaybe )
@@ -35,8 +36,11 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
+compilingInstance :: C a -> C a
+compilingInstance = local $ \e -> e { isCompilingInstance = True }
+
 compileInstance :: Definition -> C (Hs.Decl ())
-compileInstance def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
+compileInstance def = compilingInstance $ setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
   ir <- compileInstRule [] (unEl . defType $ def)
   locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
           . dropWhile ((<= defName def) . fst)

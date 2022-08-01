@@ -27,6 +27,7 @@ instance NFData Options where
 
 data CompileEnv = CompileEnv
   { minRecordName :: Maybe ModuleName
+  , isCompilingInstance :: Bool
   }
 
 type C = ReaderT CompileEnv TCM
