@@ -4,16 +4,17 @@ import Control.Arrow ( (>>>) )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
 
-import Agda.Compiler.Backend
+import Agda.Compiler.Backend hiding ( Args )
 
 import Agda.Syntax.Common
 import Agda.Syntax.Internal
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Reduce ( reduce )
-import Agda.TypeChecking.Substitute ( applyE )
-import Agda.TypeChecking.Telescope ( flattenTel, teleNames )
+import Agda.TypeChecking.Substitute
+import Agda.TypeChecking.Telescope
 
+import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.List ( downFrom )
 import Agda.Utils.Monad ( forMaybeM, ifM )
@@ -69,16 +70,24 @@ compileType t = do
       DomDropped -> underAbstr a b (compileType . unEl)
     Def f es
       | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics f es
-      | Just args <- allApplyElims es -> do
-        vs <- mapM (compileType . unArg) $ filter keepArg args
-        f <- hsQName f
-        return $ tApp (Hs.TyCon () f) vs
+      | Just args <- allApplyElims es ->
+        ifM (isUnboxRecord f) (compileUnboxType f args) $ do
+          vs <- mapM (compileType . unArg) $ filter keepArg args
+          f <- hsQName f
+          return $ tApp (Hs.TyCon () f) vs
     Var x es | Just args <- allApplyElims es -> do
       vs <- mapM (compileType . unArg) $ filter keepArg args
       x  <- hsName <$> showTCM (Var x [])
       return $ tApp (Hs.TyVar () x) vs
     Sort s -> return (Hs.TyStar ())
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
+
+compileUnboxType :: QName -> Args -> C (Hs.Type ())
+compileUnboxType r pars = do
+  def <- theDef <$> getConstInfo r
+  case recTel def `apply` pars of
+    EmptyTel        -> __IMPOSSIBLE__
+    (ExtendTel a _) -> compileType $ unEl $ unDom a
 
 compileDom :: ArgName -> Dom Type -> C CompiledDom
 compileDom x a

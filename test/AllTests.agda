@@ -25,6 +25,7 @@ import DefaultMethods
 import Vector
 import QualifiedModule
 import Superclass
+import UnboxPragma
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -51,4 +52,5 @@ import DefaultMethods
 import Vector
 import QualifiedModule
 import Superclass
+import UnboxPragma
 #-}

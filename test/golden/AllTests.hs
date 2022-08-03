@@ -24,4 +24,5 @@ import DefaultMethods
 import Vector
 import QualifiedModule
 import Superclass
+import UnboxPragma
 

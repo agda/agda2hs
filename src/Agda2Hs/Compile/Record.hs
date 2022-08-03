@@ -148,3 +148,9 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
               "Not supported: record/class with constraint fields"
           DomDropped -> return (hsAssts , hsFields)
       (_, _) -> __IMPOSSIBLE__
+
+checkUnboxPragma :: Defn -> C ()
+checkUnboxPragma Record{ recFields = (f:fs) }
+  | keepArg f && all (not . keepArg) fs = return ()
+checkUnboxPragma _ = genericError $
+  "An unboxed type must be a record type with exactly one non-erased field."

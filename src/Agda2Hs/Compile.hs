@@ -9,7 +9,7 @@ import Agda2Hs.Compile.ClassInstance ( compileInstance )
 import Agda2Hs.Compile.Data ( compileData )
 import Agda2Hs.Compile.Function ( compileFun )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
-import Agda2Hs.Compile.Record ( compileRecord )
+import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Pragma
 
@@ -31,6 +31,7 @@ compile _ m _ def = withCurrentModule m $ runC $ processPragma (defName def) >>=
   case (p , defInstance def , theDef def) of
     (NoPragma           , _      , _         ) -> return []
     (ExistingClassPragma, _      , _         ) -> return [] -- No code generation, but affects how projections are compiled
+    (UnboxPragma        , _      , defn      ) -> checkUnboxPragma defn >> return [] -- also no code generation
     (ClassPragma ms     , _      , Record{}  ) -> tag . single <$> compileRecord (ToClass ms) def
     (DerivingPragma ds  , _      , Datatype{}) -> tag <$> compileData ds def
     (DefaultPragma      , _      , Datatype{}) -> tag <$> compileData [] def

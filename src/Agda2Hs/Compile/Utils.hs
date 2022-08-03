@@ -6,7 +6,7 @@ import Control.Monad.Reader
 
 import Data.Maybe ( isJust )
 
-import Agda.Compiler.Backend
+import Agda.Compiler.Backend hiding ( Args )
 
 import Agda.Syntax.Common
 import qualified Agda.Syntax.Concrete.Name as C
@@ -22,6 +22,7 @@ import Agda.TypeChecking.Level ( isLevelType )
 import Agda.TypeChecking.MetaVars ( newInstanceMeta )
 import Agda.TypeChecking.Monad.SizedTypes ( isSizeType )
 import Agda.TypeChecking.Pretty ( Doc, (<+>), text, PrettyTCM(..) )
+import Agda.TypeChecking.Records ( isRecordConstructor, getRecordOfField )
 import Agda.TypeChecking.Reduce ( instantiate, reduce )
 import Agda.TypeChecking.Substitute ( Subst, TelV(TelV) )
 import Agda.TypeChecking.Telescope ( telView )
@@ -29,6 +30,7 @@ import Agda.TypeChecking.Telescope ( telView )
 import Agda.Utils.Lens ( (<&>) )
 import Agda.Utils.Pretty ( prettyShow )
 import qualified Agda.Utils.Pretty as P
+import Agda.Utils.Maybe
 import Agda.Utils.Monad
 
 import Agda2Hs.AgdaUtils ( (~~) )
@@ -128,6 +130,23 @@ isClassFunction q
       _                             -> return False
   where
     m = qnameModule q
+
+isUnboxRecord :: QName -> C Bool
+isUnboxRecord q = do
+  getConstInfo q >>= \case
+    Defn{defName = r, theDef = Record{}} ->
+      processPragma r <&> \case
+        UnboxPragma -> True
+        _           -> False
+    _ -> return False
+
+isUnboxConstructor :: QName -> C Bool
+isUnboxConstructor q =
+  caseMaybeM (isRecordConstructor q) (return False) $ isUnboxRecord . fst
+
+isUnboxProjection :: QName -> C Bool
+isUnboxProjection q =
+  caseMaybeM (liftTCM $ getRecordOfField q) (return False) isUnboxRecord
 
 checkInstance :: Term -> C ()
 checkInstance u | varOrDef u = liftTCM $ noConstraints $ do

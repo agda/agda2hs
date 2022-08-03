@@ -1,7 +1,7 @@
 module Agda2Hs.Compile.Function where
 
 import Control.Arrow ( Arrow((***), second), (>>>) )
-import Control.Monad ( (>=>), foldM )
+import Control.Monad ( (>=>), foldM, filterM )
 import Control.Monad.Reader ( asks )
 
 import Data.Generics ( mkT, everywhere, listify )
@@ -44,6 +44,10 @@ isSpecialPat = prettyShow >>> \ case
 isForceCopattern :: DeBruijnPattern -> Bool
 isForceCopattern (ProjP _ q) = prettyShow q == "Haskell.Prim.Thunk.Thunk.force"
 isForceCopattern _           = False
+
+isUnboxCopattern :: DeBruijnPattern -> C Bool
+isUnboxCopattern (ProjP _ q) = isUnboxProjection q
+isUnboxCopattern _           = return False
 
 tuplePat :: ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ())
 tuplePat cons i ps = do
@@ -146,10 +150,14 @@ scopeBindPatternVariables = mapM_ (scopeBind . namedArg)
       DefP{}      -> return ()
 
 compilePats :: NAPs -> C [Hs.Pat ()]
-compilePats ps = mapM (compilePat . namedArg) $ filter keepPat ps
+compilePats ps = mapM (compilePat . namedArg) =<< filterM keepPat ps
   where
-    keepPat :: NamedArg DeBruijnPattern -> Bool
-    keepPat p = keepArg p && not (isForceCopattern $ namedArg p)
+    keepPat :: NamedArg DeBruijnPattern -> C Bool
+    keepPat p = andM
+      [ return $ keepArg p
+      , return $ not (isForceCopattern $ namedArg p)
+      , not <$> isUnboxCopattern (namedArg p)
+      ]
 
 compilePat :: DeBruijnPattern -> C (Hs.Pat ())
 compilePat p@(VarP o _)

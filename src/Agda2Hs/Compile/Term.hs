@@ -113,14 +113,10 @@ mkEnumFromThenTo q es = compileArgs es >>= \case
   es'                  -> return $ hsVar "enumFromThenTo" `eApp` drop 1 es'
 
 delay :: QName -> Elims -> C (Hs.Exp ())
-delay _ es = compileArgs es >>= \case
-  a : es' -> return $ a `eApp` es'
-  []      -> return $ hsVar "id"
+delay _ = compileErasedApp
 
 force :: QName -> Elims -> C (Hs.Exp ())
-force _ es = compileArgs es >>= \case
-  a : es' -> return $ a `eApp` es'
-  []      -> return $ hsVar "id"
+force _ = compileErasedApp
 
 caseOf :: QName -> Elims -> C (Hs.Exp ())
 caseOf _ es = compileArgs es >>= \ case
@@ -184,10 +180,14 @@ compileTerm v = do
       | Just semantics <- isSpecialTerm f -> semantics f es
       | otherwise -> isClassFunction f >>= \ case
         True  -> compileClassFunApp f es
-        False -> (`app` es) . Hs.Var () =<< hsQName f
+        False -> isUnboxProjection f >>= \ case
+          True  -> compileErasedApp es
+          False -> (`app` es) . Hs.Var () =<< hsQName f
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
-    Con h i es -> (`app` es) . Hs.Con () =<< hsQName (conName h)
+    Con h i es -> isUnboxConstructor (conName h) >>= \ case
+      True  -> compileErasedApp es
+      False -> (`app` es) . Hs.Con () =<< hsQName (conName h)
     Lit l -> compileLiteral l
     Lam v b | usableModality v, getOrigin v == UserWritten -> do
       unless (visible v) $ genericDocError =<< do
@@ -212,6 +212,13 @@ compileTerm v = do
   where
     app :: Hs.Exp () -> Elims -> C (Hs.Exp ())
     app hd es = eApp <$> pure hd <*> compileArgs es
+
+-- `compileErasedApp` compiles an application of an erased constructor
+-- or projection.
+compileErasedApp :: Elims -> C (Hs.Exp ())
+compileErasedApp es = compileArgs es >>= \case
+  []     -> return $ hsVar "id"
+  (v:vs) -> return $ v `eApp` vs
 
 -- `compileClassFunApp` is used when we have a record projection and we want to
 -- drop the first visible arg (the record)
