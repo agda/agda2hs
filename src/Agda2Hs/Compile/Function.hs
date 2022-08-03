@@ -38,7 +38,7 @@ import Agda2Hs.HsUtils
 
 isSpecialPat :: QName -> Maybe (ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ()))
 isSpecialPat = prettyShow >>> \ case
-  "Haskell.Prim.Tuple.Tuple._∷_" -> Just tuplePat
+  "Haskell.Prim.Tuple._;_" -> Just tuplePat
   _ -> Nothing
 
 isUnboxCopattern :: DeBruijnPattern -> C Bool
@@ -51,7 +51,7 @@ tuplePat cons i ps = do
       err = sep [ text "Tuple pattern"
                 , nest 2 $ prettyTCM p
                 , text "does not have a known size." ]
-  xs <- makeListP' "Haskell.Prim.Tuple.Tuple.[]" "Haskell.Prim.Tuple.Tuple._∷_" err p
+  xs <- makeListP' "Agda.Builtin.Unit.tt" "Haskell.Prim.Tuple._;_" err p
   qs <- mapM compilePat xs
   return $ Hs.PTuple () Hs.Boxed qs
 

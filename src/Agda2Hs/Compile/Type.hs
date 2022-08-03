@@ -29,25 +29,33 @@ import Agda2Hs.HsUtils
 isSpecialType :: QName -> Maybe (QName -> Elims -> C (Hs.Type ()))
 isSpecialType = prettyShow >>> \ case
   "Haskell.Prim.Tuple.Tuple" -> Just tupleType
-  "Haskell.Prim.Tuple._×_"   -> Just tupleType'
-  "Haskell.Prim.Tuple._×_×_" -> Just tupleType'
+  "Haskell.Prim.Tuple._×_"   -> Just tupleType
+  "Haskell.Prim.Tuple._×_×_" -> Just tupleType
   _ -> Nothing
 
-tupleType' :: QName -> Elims -> C (Hs.Type ())
-tupleType' q es = do
-  Def tup es' <- reduce (Def q es)
-  tupleType tup es'
+tupleType' :: C Doc -> Term -> C [Term]
+tupleType' err xs =
+  reduce xs >>= \case
+    Def q es
+      | []    <- vis es, q ~~ "Agda.Builtin.Unit.⊤"     -> pure []
+      | [_,_] <- vis es, q ~~ "Haskell.Prim.Tuple.Pair" -> pairToTuple es
+    _ -> genericDocError =<< err
+  where
+    vis es = [ unArg a | Apply a <- es, visible a ]
+
+    pairToTuple :: Elims -> C [Term]
+    pairToTuple es
+      | Just [x, xs] <- allApplyElims es = (unArg x:) <$> tupleType' err (unArg xs)
+      | otherwise = genericDocError =<< text "Bad arguments for Pair: " <?> text (show es)
 
 tupleType :: QName -> Elims -> C (Hs.Type ())
-tupleType _ es | Just [as] <- allApplyElims es = do
-  let err = sep [ text "Argument"
-                , nest 2 $ prettyTCM as
-                , text "to Tuple is not a concrete list" ]
-  xs <- makeList err (unArg as)
+tupleType q es = do
+  let err = sep [ prettyTCM (Def q es)
+                , text "is not a concrete sequence of types."
+                ]
+  xs <- reduce (Def q es) >>= tupleType' err
   ts <- mapM compileType xs
   return $ Hs.TyTuple () Hs.Boxed ts
-tupleType _ es =
-  genericDocError =<< text "Bad tuple arguments: " <?> prettyTCM es
 
 compileType :: Term -> C (Hs.Type ())
 compileType t = do

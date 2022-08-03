@@ -30,7 +30,6 @@ isSpecialName = prettyShow >>> \ case
     "Agda.Builtin.List.List.[]"    -> special Hs.ListCon
     "Agda.Builtin.Unit.⊤"          -> special Hs.UnitCon
     "Agda.Builtin.Unit.tt"         -> special Hs.UnitCon
-    "Haskell.Prim.Tuple.Tuple.[]"  -> special Hs.UnitCon
     "Haskell.Prim._∘_"             -> unqual "_._"
     "Haskell.Prim.seq"             -> unqual "seq"
     "Haskell.Prim._$!_"            -> unqual "_$!_"

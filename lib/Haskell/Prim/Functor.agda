@@ -30,7 +30,7 @@ record Functor (f : Set → Set) : Set₁ where
   m $> x = x <$ m
 
   void : f a → f (Tuple [])
-  void = [] <$_
+  void = tt <$_
 
 open Functor ⦃ ... ⦄ public
 
@@ -58,4 +58,4 @@ instance
   iFunctorTuple₃ .fmap f (x , y , z) = x , y , f z
 
   iFunctorTuple₄ : Functor (λ d → Tuple (a ∷ b ∷ c ∷ d ∷ []))
-  iFunctorTuple₄ .fmap f (x ∷ y ∷ z ∷ w ∷ []) = x ∷ y ∷ z ∷ f w ∷ []
+  iFunctorTuple₄ .fmap f (x ; y ; z ; w ; tt) = x ; y ; z ; f w ; tt

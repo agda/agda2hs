@@ -60,14 +60,14 @@ instance
   iBoundedAboveChar .maxBound = '\1114111'
 
   iBoundedBelowTuple₀ : BoundedBelow (Tuple [])
-  iBoundedBelowTuple₀ .minBound = []
+  iBoundedBelowTuple₀ .minBound = tt
   iBoundedAboveTuple₀ : BoundedAbove (Tuple [])
-  iBoundedAboveTuple₀ .maxBound = []
+  iBoundedAboveTuple₀ .maxBound = tt
 
   iBoundedBelowTuple : ⦃ BoundedBelow a ⦄ → ⦃ BoundedBelow (Tuple as) ⦄ → BoundedBelow (Tuple (a ∷ as))
-  iBoundedBelowTuple .minBound = minBound ∷ minBound
+  iBoundedBelowTuple .minBound = minBound ; minBound
   iBoundedAboveTuple : ⦃ BoundedAbove a ⦄ → ⦃ BoundedAbove (Tuple as) ⦄ → BoundedAbove (Tuple (a ∷ as))
-  iBoundedAboveTuple .maxBound = maxBound ∷ maxBound
+  iBoundedAboveTuple .maxBound = maxBound ; maxBound
 
   iBoundedBelowOrdering : BoundedBelow Ordering
   iBoundedBelowOrdering .minBound = LT
