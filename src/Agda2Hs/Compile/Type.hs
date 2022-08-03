@@ -24,6 +24,7 @@ import Agda.Utils.Functor ( ($>) )
 import Agda2Hs.Compile.Name ( hsQName )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
+import Agda2Hs.AgdaUtils
 import Agda2Hs.HsUtils
 
 isSpecialType :: QName -> Maybe (QName -> Elims -> C (Hs.Type ()))
