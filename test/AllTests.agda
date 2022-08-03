@@ -38,6 +38,7 @@ import BangPatterns
 import Issue94
 import Issue107
 import Importer
+import DoNotation
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -76,4 +77,5 @@ import Issue115
 import BangPatterns
 import Issue94
 import Importer
+import DoNotation
 #-}
