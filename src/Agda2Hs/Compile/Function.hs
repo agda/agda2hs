@@ -69,10 +69,11 @@ compileFun' def@(Defn {..}) locals = do
       x = hsName $ prettyShow n
       go = foldM $ \(ds, ms) -> compileClause ds x >=> return . fmap (ms `snoc`)
   reportSDoc "agda2hs.compile" 6 $ text "compiling function: " <+> prettyTCM defName
+  let keepClause = maybe False keepArg . clauseType
   withCurrentModule m $ setCurrentRange (nameBindingSite n) $ do
     ifM (endsInSort defType) (compileTypeDef x def locals) $ do
       ty <- compileType (unEl defType)
-      cs <- snd <$> go (locals, []) funClauses
+      cs <- snd <$> go (locals, []) (filter keepClause funClauses)
       return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
   where
     Function{..} = theDef
