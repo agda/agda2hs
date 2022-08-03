@@ -120,22 +120,28 @@ force :: QName -> Elims -> C (Hs.Exp ())
 force _ = compileErasedApp
 
 bind :: QName -> Elims -> C (Hs.Exp ())
-bind q es = compileElims (drop 1 es) >>= \case
-  (u : Hs.Lambda _ [p] v : vs) -> do
-    let stmt1 = Hs.Generator () p u
-    case v of
-      Hs.Do _ stmts -> return $ Hs.Do () (stmt1 : stmts)
-      _             -> return $ Hs.Do () [stmt1, Hs.Qualifier () v]
-  vs     -> return $ hsVar "_>>=_" `eApp` vs
+bind q (e:es) = do
+  checkInstance $ unArg $ isApplyElim' __IMPOSSIBLE__ e
+  compileElims es >>= \case
+    (u : Hs.Lambda _ [p] v : vs) -> do
+      let stmt1 = Hs.Generator () p u
+      case v of
+        Hs.Do _ stmts -> return $ Hs.Do () (stmt1 : stmts)
+        _             -> return $ Hs.Do () [stmt1, Hs.Qualifier () v]
+    vs -> return $ hsVar "_>>=_" `eApp` vs
+bind q [] = return $ hsVar "_>>=_"
 
 sequ :: QName -> Elims -> C (Hs.Exp ())
-sequ q es = compileElims es >>= \case
-  (u : v : vs) -> do
-    let stmt1 = Hs.Qualifier () u
-    case v of
-      Hs.Do _ stmts -> return $ Hs.Do () (stmt1 : stmts)
-      _             -> return $ Hs.Do () [stmt1, Hs.Qualifier () v]
-  vs -> return $ hsVar "_>>_" `eApp` vs
+sequ q (e:es) = do
+  checkInstance $ unArg $ isApplyElim' __IMPOSSIBLE__ e
+  compileElims es >>= \case
+    (u : v : vs) -> do
+      let stmt1 = Hs.Qualifier () u
+      case v of
+        Hs.Do _ stmts -> return $ Hs.Do () (stmt1 : stmts)
+        _             -> return $ Hs.Do () [stmt1, Hs.Qualifier () v]
+    vs -> return $ hsVar "_>>_" `eApp` vs
+sequ q [] = return $ hsVar "_>>_"
 
 caseOf :: QName -> Elims -> C (Hs.Exp ())
 caseOf _ es = compileElims es >>= \ case
