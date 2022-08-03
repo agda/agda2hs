@@ -41,10 +41,6 @@ isSpecialPat = prettyShow >>> \ case
   "Haskell.Prim.Tuple.Tuple._∷_" -> Just tuplePat
   _ -> Nothing
 
-isForceCopattern :: DeBruijnPattern -> Bool
-isForceCopattern (ProjP _ q) = prettyShow q == "Haskell.Prim.Thunk.Thunk.force"
-isForceCopattern _           = False
-
 isUnboxCopattern :: DeBruijnPattern -> C Bool
 isUnboxCopattern (ProjP _ q) = isUnboxProjection q
 isUnboxCopattern _           = return False
@@ -155,7 +151,6 @@ compilePats ps = mapM (compilePat . namedArg) =<< filterM keepPat ps
     keepPat :: NamedArg DeBruijnPattern -> C Bool
     keepPat p = andM
       [ return $ keepArg p
-      , return $ not (isForceCopattern $ namedArg p)
       , not <$> isUnboxCopattern (namedArg p)
       ]
 
