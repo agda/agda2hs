@@ -1,21 +1,22 @@
 
 module Haskell.Prim.Tuple where
 
-open import Agda.Builtin.List
-
 open import Haskell.Prim
 
-private
-  variable
-    as : List Set
+variable
+  @0 as : List Set
 
 --------------------------------------------------
 -- Tuples
 
-infixr 5 _∷_
-data Tuple : List Set → Set where
-  []  : Tuple []
-  _∷_ : a → Tuple as → Tuple (a ∷ as)
+infixr 5 _;_
+record Pair (A B : Set) : Set where
+  constructor _;_
+  field fst : A ; snd : B
+
+Tuple : List Set → Set
+Tuple [] = ⊤
+Tuple (A ∷ AS) = Pair A (Tuple AS)
 
 infix 3 _×_ _×_×_
 
@@ -27,8 +28,8 @@ a × b × c = Tuple (a ∷ b ∷ c ∷ [])
 
 infix -1 _,_ _,_,_
 
-pattern _,_     x y     = x Tuple.∷ y Tuple.∷ []
-pattern _,_,_   x y z   = x Tuple.∷ y Tuple.∷ z Tuple.∷ []
+pattern _,_     x y     = x ; y ; tt
+pattern _,_,_   x y z   = x ; y ; z ; tt
 
 uncurry : (a → b → c) → a × b → c
 uncurry f (x , y) = f x y

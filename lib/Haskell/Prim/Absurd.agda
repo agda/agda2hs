@@ -1,13 +1,9 @@
 
 module Haskell.Prim.Absurd where
 
-open import Agda.Builtin.Nat
-open import Agda.Builtin.List
-open import Agda.Builtin.Unit
-open import Agda.Builtin.Reflection renaming (bindTC to _>>=_; absurd to absurdP)
-open import Agda.Builtin.Equality
-
 open import Haskell.Prim
+
+open import Agda.Builtin.Reflection renaming (bindTC to _>>=_; absurd to absurdP)
 
 private
 

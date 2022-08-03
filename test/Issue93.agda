@@ -4,25 +4,25 @@ open import Haskell.Prelude
 
 fun : Bool → Bool
 fun x = case x of λ where
-          true  → false
-          false → y
+          True  → False
+          False → y
   where
     y : Bool
-    y = true
+    y = True
 {-# COMPILE AGDA2HS fun #-}
 
 nested : Maybe Bool → Bool
 nested x = case x of λ where
            (Just b) → (case y of λ where
-                     true →  b
-                     false → z)
+                     True →  b
+                     False → z)
            Nothing  → y
   where
     y : Bool
-    y = true
+    y = True
 
     z : Bool
     z = case y of λ where
-          true → y
-          false → true
+          True → y
+          False → True
 {-# COMPILE AGDA2HS nested #-}

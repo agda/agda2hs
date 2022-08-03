@@ -52,7 +52,7 @@ bad2 = bar
 {-# COMPILE AGDA2HS bad2 #-}
 
 test : Bool → Nat
-test true = bar
+test True = bar
   where
     foo : Nat
     foo = 42 + ted
@@ -64,7 +64,7 @@ test true = bar
 
     bar : Nat
     bar = foo
-test false = bar
+test False = bar
   where
     bar : Nat
     foo : Nat
@@ -76,4 +76,3 @@ test false = bar
         ted = nes + 1
     bar = foo
 {-# COMPILE AGDA2HS test #-}
-

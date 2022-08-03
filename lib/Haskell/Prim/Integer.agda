@@ -1,17 +1,6 @@
 
 module Haskell.Prim.Integer where
 
-open import Agda.Builtin.Nat
-open import Agda.Builtin.Bool
-open import Agda.Builtin.List
-open import Agda.Builtin.String
-open import Agda.Builtin.Char
-open import Agda.Builtin.Unit
-
-import Agda.Builtin.Int
-open Agda.Builtin.Int public using () renaming (Int to Integer)
-open Agda.Builtin.Int renaming (Int to Integer)
-
 open import Haskell.Prim
 open import Haskell.Prim.Bool
 
@@ -39,7 +28,7 @@ instance
 
 private
   subNat : Nat → Nat → Integer
-  subNat n m = if n < m then negsuc (m - suc n) else pos (n - m)
+  subNat n m = if (ltNat n m) then negsuc (monusNat m (suc n)) else pos (monusNat n m)
 
 negateInteger : Integer → Integer
 negateInteger (pos 0)       = pos 0
@@ -47,19 +36,19 @@ negateInteger (pos (suc n)) = negsuc n
 negateInteger (negsuc n)    = pos (suc n)
 
 addInteger : Integer → Integer → Integer
-addInteger (pos    n) (pos    m) = pos (n + m)
+addInteger (pos    n) (pos    m) = pos (addNat n m)
 addInteger (pos    n) (negsuc m) = subNat n (suc m)
 addInteger (negsuc n) (pos    m) = subNat m (suc n)
-addInteger (negsuc n) (negsuc m) = negsuc (n + m + 1)
+addInteger (negsuc n) (negsuc m) = negsuc (suc (addNat n m))
 
 subInteger : Integer → Integer → Integer
 subInteger n m = addInteger n (negateInteger m)
 
 mulInteger : Integer → Integer → Integer
-mulInteger (pos    n) (pos    m) = pos (n * m)
-mulInteger (pos    n) (negsuc m) = negNat (n * suc m)
-mulInteger (negsuc n) (pos    m) = negNat (suc n * m)
-mulInteger (negsuc n) (negsuc m) = pos (suc n * suc m)
+mulInteger (pos    n) (pos    m) = pos (mulNat n m)
+mulInteger (pos    n) (negsuc m) = negNat (mulNat n (suc m))
+mulInteger (negsuc n) (pos    m) = negNat (mulNat (suc n) m)
+mulInteger (negsuc n) (negsuc m) = pos (mulNat (suc n) (suc m))
 
 absInteger : Integer → Integer
 absInteger (pos    n) = pos n
@@ -75,15 +64,15 @@ signInteger (negsuc _)    = -1
 -- Comparisons
 
 eqInteger : Integer → Integer → Bool
-eqInteger (pos n)    (pos m)    = n == m
-eqInteger (negsuc n) (negsuc m) = n == m
-eqInteger _          _          = false
+eqInteger (pos n)    (pos m)    = eqNat n m
+eqInteger (negsuc n) (negsuc m) = eqNat n m
+eqInteger _          _          = False
 
 ltInteger : Integer → Integer → Bool
-ltInteger (pos    n) (pos    m) = n < m
-ltInteger (pos    n) (negsuc _) = false
-ltInteger (negsuc n) (pos    _) = true
-ltInteger (negsuc n) (negsuc m) = m < n
+ltInteger (pos    n) (pos    m) = ltNat n m
+ltInteger (pos    n) (negsuc _) = False
+ltInteger (negsuc n) (pos    _) = True
+ltInteger (negsuc n) (negsuc m) = ltNat m n
 
 
 --------------------------------------------------
@@ -97,8 +86,8 @@ showInteger n = primStringToList (primShowInteger n)
 -- Constraints
 
 isNegativeInteger : Integer → Bool
-isNegativeInteger (pos _)    = false
-isNegativeInteger (negsuc _) = true
+isNegativeInteger (pos _)    = False
+isNegativeInteger (negsuc _) = True
 
 IsNonNegativeInteger : Integer → Set
 IsNonNegativeInteger (pos _)      = ⊤

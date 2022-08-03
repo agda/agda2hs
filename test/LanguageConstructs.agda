@@ -52,7 +52,7 @@ len xs = case xs of length
 
 -- Underapplied
 applyToFalse : (Bool → a) → a
-applyToFalse = case false of_
+applyToFalse = case False of_
 {-# COMPILE AGDA2HS applyToFalse #-}
 
 caseOf : a → (a → b) → b
@@ -73,7 +73,7 @@ enum₂ = enumFromThenTo 10 20 100
 {-# COMPILE AGDA2HS enum₂ #-}
 
 enum₃ : List Bool
-enum₃ = enumFrom false
+enum₃ = enumFrom False
 {-# COMPILE AGDA2HS enum₃ #-}
 
 enum₄ : List Ordering

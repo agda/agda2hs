@@ -16,5 +16,5 @@ either f g (Left  x) = f x
 either f g (Right y) = g y
 
 testBool : (b : Bool) → Either (IsFalse b) (IsTrue b)
-testBool false = Left  itsFalse
-testBool true  = Right itsTrue
+testBool False = Left  itsFalse
+testBool True  = Right itsTrue

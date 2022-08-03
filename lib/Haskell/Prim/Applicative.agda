@@ -61,6 +61,6 @@ instance
 
   iApplicativeTuple₄ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → ⦃ Monoid c ⦄ →
                        Applicative (λ d → Tuple (a ∷ b ∷ c ∷ d ∷ []))
-  iApplicativeTuple₄ .pure x                          = mempty ∷ mempty ∷ mempty ∷ x ∷ []
-  iApplicativeTuple₄ ._<*>_ (a ∷ b ∷ c ∷ f ∷ []) (a₁ ∷ b₁ ∷ c₁ ∷ x ∷ []) =
-    a <> a₁ ∷ b <> b₁ ∷ c <> c₁ ∷ f x ∷ []
+  iApplicativeTuple₄ .pure x                          = mempty ; mempty ; mempty ; x ; tt
+  iApplicativeTuple₄ ._<*>_ (a ; b ; c ; f ; tt) (a₁ ; b₁ ; c₁ ; x ; tt) =
+    a <> a₁ ; b <> b₁ ; c <> c₁ ; f x ; tt

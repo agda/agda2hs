@@ -1,10 +1,6 @@
 
 module Haskell.Prim.Show where
 
-open import Agda.Builtin.Char
-open import Agda.Builtin.Nat
-import Agda.Builtin.String as Str
-
 open import Haskell.Prim
 open import Haskell.Prim.String
 open import Haskell.Prim.List
@@ -34,8 +30,8 @@ showString : String → ShowS
 showString = _++_
 
 showParen : Bool → ShowS → ShowS
-showParen false s = s
-showParen true  s = showString "(" ∘ s ∘ showString ")"
+showParen False s = s
+showParen True  s = showString "(" ∘ s ∘ showString ")"
 
 record Show (a : Set) : Set where
   field
@@ -67,7 +63,7 @@ private
 
 instance
   iShowNat : Show Nat
-  iShowNat = makeShow (Str.primStringToList ∘ Str.primShowNat)
+  iShowNat = makeShow (primStringToList ∘ primShowNat)
 
   iShowInteger : Show Integer
   iShowInteger = makeShow showInteger
@@ -79,14 +75,14 @@ instance
   iShowWord = makeShow showWord
 
   iShowDouble : Show Double
-  iShowDouble = makeShow (Str.primStringToList ∘ primShowFloat)
+  iShowDouble = makeShow (primStringToList ∘ primShowFloat)
 
   iShowBool : Show Bool
-  iShowBool = makeShow λ where false → "False"; true → "True"
+  iShowBool = makeShow λ where False → "False"; True → "True"
 
   iShowChar : Show Char
-  iShowChar .showsPrec _ = showString ∘ Str.primStringToList ∘ Str.primShowChar
-  iShowChar .showList    = showString ∘ Str.primStringToList ∘ Str.primShowString ∘ Str.primStringFromList
+  iShowChar .showsPrec _ = showString ∘ primStringToList ∘ primShowChar
+  iShowChar .showList    = showString ∘ primStringToList ∘ primShowString ∘ primStringFromList
 
   iShowList : ⦃ Show a ⦄ → Show (List a)
   iShowList .showsPrec _ = showList
@@ -107,11 +103,11 @@ instance
 
 private
   -- Minus the parens
-  showTuple : ∀ {as} → ⦃ All Show as ⦄ → Tuple as → ShowS
-  showTuple             []       = showString ""
-  showTuple ⦃ allCons ⦄ (x ∷ []) = shows x
-  showTuple ⦃ allCons ⦄ (x ∷ xs) = shows x ∘ showString "," ∘ showTuple xs
+  showTuple : ⦃ All Show as ⦄ → Tuple as → ShowS
+  showTuple {_} ⦃ allNil  ⦄                   _        = showString ""
+  showTuple {_} ⦃ allCons ⦃ _ ⦄ ⦃ allNil ⦄ ⦄ (x ; tt) = shows x
+  showTuple {_} ⦃ allCons ⦄                   (x ; xs) = shows x ∘ showString ", " ∘ showTuple xs
 
 instance
-  iShowTuple : ∀ {as} → ⦃ All Show as ⦄ → Show (Tuple as)
-  iShowTuple = makeShowsPrec λ _ → showParen true ∘ showTuple
+  iShowTuple : ⦃ All Show as ⦄ → Show (Tuple as)
+  iShowTuple = makeShowsPrec λ _ → showParen True ∘ showTuple

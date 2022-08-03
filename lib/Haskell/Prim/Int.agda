@@ -5,15 +5,6 @@
 
 module Haskell.Prim.Int where
 
-open import Agda.Builtin.Nat
-open import Agda.Builtin.Word renaming (primWord64ToNat to w2n; primWord64FromNat to n2w)
-open import Agda.Builtin.List
-open import Agda.Builtin.Char
-open import Agda.Builtin.String
-open import Agda.Builtin.Unit
-open import Agda.Builtin.Int using (pos; negsuc)
-open import Agda.Builtin.Equality
-
 open import Haskell.Prim
 open import Haskell.Prim.Word
 open import Haskell.Prim.Integer
@@ -44,32 +35,32 @@ private
   2⁶³ = 9223372036854775808
 
   maxInt : Nat
-  maxInt = 2⁶³ - 1
+  maxInt = monusNat 2⁶³ 1
 
 instance
   iNumberInt : Number Int
-  iNumberInt .Number.Constraint n = IsTrue (n < 2⁶³)
+  iNumberInt .Number.Constraint n = IsTrue (ltNat n 2⁶³)
   iNumberInt .fromNat n = int64 (n2w n)
 
   iNegativeInt : Negative Int
-  iNegativeInt .Negative.Constraint n = IsTrue (n < 1 + 2⁶³)
-  iNegativeInt .fromNeg n = int64 (n2w (2⁶⁴ - n))
+  iNegativeInt .Negative.Constraint n = IsTrue (ltNat n (addNat 1 2⁶³))
+  iNegativeInt .fromNeg n = int64 (n2w (monusNat 2⁶⁴ n))
 
 
 --------------------------------------------------
 -- Arithmetic
 
 isNegativeInt : Int → Bool
-isNegativeInt (int64 w) = maxInt < w2n w
+isNegativeInt (int64 w) = ltNat maxInt (w2n w)
 
 eqInt : Int → Int → Bool
-eqInt (int64 a) (int64 b) = w2n a == w2n b
+eqInt (int64 a) (int64 b) = eqNat (w2n a) (w2n b)
 
 negateInt : Int → Int
-negateInt (int64 a) = int64 (n2w (2⁶⁴ - w2n a))
+negateInt (int64 a) = int64 (n2w (monusNat 2⁶⁴ (w2n a)))
 
 intToInteger : Int → Integer
-intToInteger a = if isNegativeInt a then negsuc (unsafeIntToNat (negateInt a) - 1)
+intToInteger a = if isNegativeInt a then negsuc (monusNat (unsafeIntToNat (negateInt a)) 1)
                                     else pos (unsafeIntToNat a)
 
 integerToInt : Integer → Int
@@ -82,10 +73,10 @@ private
 
 ltInt : Int → Int → Bool
 ltInt a b with isNegativeInt a | isNegativeInt b
-... | true  | false = true
-... | false | true  = false
-... | true  | true  = ltPosInt (negateInt b) (negateInt a)
-... | false | false = ltPosInt a b
+... | True  | False = True
+... | False | True  = False
+... | True  | True  = ltPosInt (negateInt b) (negateInt a)
+... | False | False = ltPosInt a b
 
 addInt : Int → Int → Int
 addInt (int64 a) (int64 b) = int64 (addWord a b)
@@ -115,5 +106,5 @@ IsNonNegativeInt a@(int64 _) =
   if isNegativeInt a then TypeError (primStringAppend (primStringFromList (showInt a)) " is negative")
                      else ⊤
 
-intToNat : (a : Int) → ⦃ IsNonNegativeInt a ⦄ → Nat
+intToNat : (a : Int) → @0 ⦃ IsNonNegativeInt a ⦄ → Nat
 intToNat a = unsafeIntToNat a

@@ -1,13 +1,13 @@
+cabal-version:       2.2
 name:                agda2hs
 version:             0.1
-license:             BSD3
+license:             BSD-3-Clause
 license-file:        LICENSE
-author:              Ulf Norell, Jesper Cockx, James Chapman, Orestis Melkonian
+author:              Ulf Norell, Jesper Cockx, James Chapman, Orestis Melkonian, Lucas Escot
 maintainer:          ulf.norell@gmail.com
 copyright:           Ulf Norell, 2020
 category:            Language, Compiler
 build-type:          Simple
-cabal-version:       >=1.10
 synopsis:            Compiling Agda code to readable Haskell.
 description:
   Allows compiling Agda functions in a subset of Agda to readable Haskell code.
@@ -18,11 +18,41 @@ source-repository head
   type:     git
   location: https://github.com/agda/agda2hs.git
 
+flag smuggler2
+  description: Rewrite sources to cleanup imports, and create explicit exports
+  default:     False
+  manual:      True
+
+common smuggler-options
+  if flag(smuggler2)
+    ghc-options: -fplugin=Smuggler2.Plugin
+                 -fplugin-opt=Smuggler2.Plugin:MinimiseImports
+                 -fplugin-opt=Smuggler2.Plugin:NoExportProcessing
+    build-depends: smuggler2 >= 0.3 && < 0.4
+
 executable agda2hs
+  import:              smuggler-options
+  hs-source-dirs:      src
   main-is:             Main.hs
-  other-modules:       HsUtils, AgdaInternals
+  other-modules:       Agda2Hs.AgdaUtils,
+                       Agda2Hs.Compile,
+                       Agda2Hs.Compile.ClassInstance,
+                       Agda2Hs.Compile.Data,
+                       Agda2Hs.Compile.Function,
+                       Agda2Hs.Compile.Name,
+                       Agda2Hs.Compile.Postulate,
+                       Agda2Hs.Compile.Record,
+                       Agda2Hs.Compile.Term,
+                       Agda2Hs.Compile.Type,
+                       Agda2Hs.Compile.TypeDefinition,
+                       Agda2Hs.Compile.Types,
+                       Agda2Hs.Compile.Utils,
+                       Agda2Hs.HsUtils,
+                       Agda2Hs.Pragma
+                       Agda2Hs.Render
+                       AgdaInternals
   build-depends:       base >= 4.10 && < 4.16,
-                       Agda >= 2.6.2 && < 2.6.3,
+                       Agda >= 2.6.3 && < 2.6.4,
                        containers >= 0.6 && < 0.7,
                        unordered-containers >= 0.2,
                        mtl >= 2.2,
@@ -35,9 +65,6 @@ executable agda2hs
   default-language:    Haskell2010
   default-extensions:  LambdaCase,
                        RecordWildCards,
-                       FlexibleContexts
-
-  -- Agda-2.6.1.2 does not work with ghc-8.10.3 (see https://github.com/agda/agda/issues/5136)
-  if impl(ghc == 8.10.3)
-    build-depends: Agda < 2.6.1.2 || > 2.6.1.2
-
+                       FlexibleContexts,
+                       MultiWayIf
+  ghc-options:         -Werror

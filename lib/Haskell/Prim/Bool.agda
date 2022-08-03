@@ -1,29 +1,24 @@
 
 module Haskell.Prim.Bool where
 
-open import Agda.Primitive
-open import Agda.Builtin.Bool public
-
-private
-  variable
-    ℓ : Level
+open import Haskell.Prim
 
 --------------------------------------------------
 -- Booleans
 
 infixr 3 _&&_
 _&&_ : Bool → Bool → Bool
-false && _ = false
-true  && x = x
+False && _ = False
+True  && x = x
 
 infixr 2 _||_
 _||_ : Bool → Bool → Bool
-false || x = x
-true  || _ = true
+False || x = x
+True  || _ = True
 
 not : Bool → Bool
-not false = true
-not true  = false
+not False = True
+not True  = False
 
 otherwise : Bool
-otherwise = true
+otherwise = True

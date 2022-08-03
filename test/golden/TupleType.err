@@ -1,2 +1,2 @@
 test/Fail/TupleType.agda:6,1-4
-Argument as to Tuple is not a concrete list
+Tuple as is not a concrete sequence of types.

@@ -1,12 +1,6 @@
 
 module Haskell.Prim.Bounded where
 
-open import Agda.Builtin.Nat
-open import Agda.Builtin.Bool
-open import Agda.Builtin.Char
-open import Agda.Builtin.Equality
-open import Agda.Builtin.List
-
 open import Haskell.Prim
 open import Haskell.Prim.Eq
 open import Haskell.Prim.Int
@@ -42,8 +36,8 @@ instance
   iBounded .Bounded.above = it
 
 instance
-  iBoundedBelowNatural : BoundedBelow Nat
-  iBoundedBelowNatural .minBound = 0
+  iBoundedBelowNat : BoundedBelow Nat
+  iBoundedBelowNat .minBound = 0
 
   iBoundedBelowWord : BoundedBelow Word
   iBoundedBelowWord .minBound = 0
@@ -56,9 +50,9 @@ instance
   iBoundedAboveInt .maxBound = 9223372036854775807
 
   iBoundedBelowBool : BoundedBelow Bool
-  iBoundedBelowBool .minBound = false
+  iBoundedBelowBool .minBound = False
   iBoundedAboveBool : BoundedAbove Bool
-  iBoundedAboveBool .maxBound = true
+  iBoundedAboveBool .maxBound = True
 
   iBoundedBelowChar : BoundedBelow Char
   iBoundedBelowChar .minBound = '\0'
@@ -66,14 +60,14 @@ instance
   iBoundedAboveChar .maxBound = '\1114111'
 
   iBoundedBelowTuple₀ : BoundedBelow (Tuple [])
-  iBoundedBelowTuple₀ .minBound = []
+  iBoundedBelowTuple₀ .minBound = tt
   iBoundedAboveTuple₀ : BoundedAbove (Tuple [])
-  iBoundedAboveTuple₀ .maxBound = []
+  iBoundedAboveTuple₀ .maxBound = tt
 
-  iBoundedBelowTuple : ∀ {as} → ⦃ BoundedBelow a ⦄ → ⦃ BoundedBelow (Tuple as) ⦄ → BoundedBelow (Tuple (a ∷ as))
-  iBoundedBelowTuple .minBound = minBound ∷ minBound
-  iBoundedAboveTuple : ∀ {as} → ⦃ BoundedAbove a ⦄ → ⦃ BoundedAbove (Tuple as) ⦄ → BoundedAbove (Tuple (a ∷ as))
-  iBoundedAboveTuple .maxBound = maxBound ∷ maxBound
+  iBoundedBelowTuple : ⦃ BoundedBelow a ⦄ → ⦃ BoundedBelow (Tuple as) ⦄ → BoundedBelow (Tuple (a ∷ as))
+  iBoundedBelowTuple .minBound = minBound ; minBound
+  iBoundedAboveTuple : ⦃ BoundedAbove a ⦄ → ⦃ BoundedAbove (Tuple as) ⦄ → BoundedAbove (Tuple (a ∷ as))
+  iBoundedAboveTuple .maxBound = maxBound ; maxBound
 
   iBoundedBelowOrdering : BoundedBelow Ordering
   iBoundedBelowOrdering .minBound = LT

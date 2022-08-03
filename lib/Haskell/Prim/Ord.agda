@@ -1,9 +1,6 @@
 
 module Haskell.Prim.Ord where
 
-open import Agda.Builtin.Nat as Nat hiding (_==_; _<_)
-open import Agda.Builtin.Char
-
 open import Haskell.Prim
 open import Haskell.Prim.Eq
 open import Haskell.Prim.Bool
@@ -25,10 +22,10 @@ data Ordering : Set where
 
 instance
   iEqOrdering : Eq Ordering
-  iEqOrdering ._==_ LT LT = true
-  iEqOrdering ._==_ EQ EQ = true
-  iEqOrdering ._==_ GT GT = true
-  iEqOrdering ._==_ _  _  = false
+  iEqOrdering ._==_ LT LT = True
+  iEqOrdering ._==_ EQ EQ = True
+  iEqOrdering ._==_ GT GT = True
+  iEqOrdering ._==_ _  _  = False
 
   iSemigroupOrdering : Semigroup Ordering
   iSemigroupOrdering ._<>_ LT _ = LT
@@ -91,7 +88,7 @@ private
 
 instance
   iOrdNat : Ord Nat
-  iOrdNat = ordFromLessThan Nat._<_
+  iOrdNat = ordFromLessThan ltNat
 
   iOrdInteger : Ord Integer
   iOrdInteger = ordFromLessThan ltInteger
@@ -110,15 +107,15 @@ instance
 
   iOrdBool : Ord Bool
   iOrdBool = ordFromCompare λ where
-    false true  → LT
-    true  false → GT
+    False True  → LT
+    True  False → GT
     _     _     → EQ
 
   iOrdTuple₀ : Ord (Tuple [])
   iOrdTuple₀ = ordFromCompare λ _ _ → EQ
 
-  iOrdTuple : ∀ {as} → ⦃ Ord a ⦄ → ⦃ Ord (Tuple as) ⦄ → Ord (Tuple (a ∷ as))
-  iOrdTuple = ordFromCompare λ where (x ∷ xs) (y ∷ ys) → compare x y <> compare xs ys
+  iOrdTuple : ⦃ Ord a ⦄ → ⦃ Ord (Tuple as) ⦄ → Ord (Tuple (a ∷ as))
+  iOrdTuple = ordFromCompare λ where (x ; xs) (y ; ys) → compare x y <> compare xs ys
 
 compareList : ⦃ Ord a ⦄ → List a → List a → Ordering
 compareList []       []       = EQ

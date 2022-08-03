@@ -1,9 +1,10 @@
 
-module HsUtils where
+module Agda2Hs.HsUtils where
 
-import Data.Data (Data)
-import Data.Generics (listify, everywhere, mkT, extT)
-import Data.Map (Map)
+import Data.Data ( Data )
+import Data.Generics ( listify, everywhere, mkT, extT )
+import Data.Map ( Map )
+
 import qualified Data.Map as Map
 
 import Language.Haskell.Exts.SrcLoc
@@ -14,9 +15,10 @@ import Language.Haskell.Exts.Pretty
 import Language.Haskell.Exts.Fixity
 
 import Agda.Syntax.Position
-import Agda.Utils.FileName
-import Agda.Utils.List
-import Agda.Utils.Maybe.Strict (toStrict)
+
+import Agda.Utils.FileName ( mkAbsolute )
+import Agda.Utils.List ( initLast )
+import Agda.Utils.Maybe.Strict ( toStrict )
 
 -- Names ------------------------------------------------------------------
 

@@ -2,12 +2,6 @@
 
 module Haskell.Prim.Num where
 
-open import Agda.Builtin.Nat as Nat hiding (_+_; _-_; _*_; _<_; _==_)
-open import Agda.Builtin.Int using (pos; negsuc)
-open import Agda.Builtin.FromNat
-open import Agda.Builtin.FromNeg
-open import Agda.Builtin.Unit
-
 open import Haskell.Prim
 open import Haskell.Prim.Word
 open import Haskell.Prim.Int
@@ -28,12 +22,12 @@ record Num (a : Set) : Set₁ where
     NegateOK      : a → Set
     FromIntegerOK : Integer → Set
     _+_           : a → a → a
-    _-_           : (x y : a) → ⦃ MinusOK x y ⦄ → a
+    _-_           : (x y : a) → @0 ⦃ MinusOK x y ⦄ → a
     _*_           : a → a → a
-    negate        : (x : a) → ⦃ NegateOK x ⦄ → a
+    negate        : (x : a) → @0 ⦃ NegateOK x ⦄ → a
     abs           : a → a
     signum        : a → a
-    fromInteger   : (n : Integer) → ⦃ FromIntegerOK n ⦄ → a
+    fromInteger   : (n : Integer) → @0 ⦃ FromIntegerOK n ⦄ → a
     overlap ⦃ number ⦄  : Number a
     overlap ⦃ numZero ⦄ : number .Number.Constraint 0
     overlap ⦃ numOne ⦄  : number .Number.Constraint 1
@@ -44,14 +38,14 @@ open Num ⦃ ... ⦄ public hiding (FromIntegerOK; number)
 
 instance
   iNumNat : Num Nat
-  iNumNat .MinusOK n m      = IsFalse (n Nat.< m)
+  iNumNat .MinusOK n m      = IsFalse (ltNat n m)
   iNumNat .NegateOK 0       = ⊤
   iNumNat .NegateOK (suc _) = ⊥
   iNumNat .Num.FromIntegerOK (negsuc _) = ⊥
   iNumNat .Num.FromIntegerOK (pos _) = ⊤
-  iNumNat ._+_ n m = n Nat.+ m
-  iNumNat ._-_ n m = n Nat.- m
-  iNumNat ._*_ n m = n Nat.* m
+  iNumNat ._+_ n m = addNat n m
+  iNumNat ._-_ n m = monusNat n m
+  iNumNat ._*_ n m = mulNat n m
   iNumNat .negate n = n
   iNumNat .abs    n = n
   iNumNat .signum 0       = 0

@@ -2,7 +2,6 @@
 module Numbers where
 
 open import Haskell.Prelude
-open import Agda.Builtin.Nat
 
 posNatural : Nat
 posNatural = 14

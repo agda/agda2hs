@@ -1,13 +1,6 @@
 
 module Haskell.Prim.Enum where
 
-open import Agda.Builtin.Nat as Nat hiding (_==_; _<_; _+_; _*_; _-_)
-open import Agda.Builtin.Char
-open import Agda.Builtin.Equality
-open import Agda.Builtin.List
-open import Agda.Builtin.Unit
-open import Agda.Builtin.Int using (pos; negsuc)
-
 open import Haskell.Prim
 open import Haskell.Prim.Bool
 open import Haskell.Prim.Bounded
@@ -183,8 +176,8 @@ module _ (from : a → Integer) (to : Integer → a) where
               else fromThenTo a a₁ minBound
 
 instance
-  iEnumNatural : Enum Nat
-  iEnumNatural = boundedBelowEnumViaInteger pos unsafeIntegerToNat
+  iEnumNat : Enum Nat
+  iEnumNat = boundedBelowEnumViaInteger pos unsafeIntegerToNat
 
   iEnumInt : Enum Int
   iEnumInt = boundedEnumViaInteger intToInteger integerToInt
@@ -199,8 +192,8 @@ instance
   iEnumOrdering = boundedEnumViaInteger (λ where LT → 0; EQ → 1; GT → 2)
                                         (λ where (pos 0) → LT; (pos 1) → EQ; _ → GT)
 
-  iEnumUnit : Enum (Tuple [])
-  iEnumUnit = boundedEnumViaInteger (λ _ → 0) (λ _ → [])
+  iEnumUnit : Enum ⊤ 
+  iEnumUnit = boundedEnumViaInteger (λ _ → 0) λ _ → tt
 
   iEnumChar : Enum Char
   iEnumChar = boundedEnumViaInteger (pos ∘ primCharToNat)

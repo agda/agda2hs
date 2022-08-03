@@ -1,19 +1,12 @@
-{-# OPTIONS --no-auto-inline #-}
+{-# OPTIONS --no-auto-inline --erase-record-parameters #-}
 module DefaultMethods where
-
-open import Agda.Builtin.Equality
-open import Agda.Builtin.Bool
-open import Agda.Builtin.Nat using (Nat)
-import Agda.Builtin.Nat as Nat
-open import Agda.Builtin.List
-open import Agda.Builtin.String renaming (primStringAppend to _++_)
-open import Agda.Builtin.Char
-open import Agda.Builtin.Reflection renaming (bindTC to _>>=_)
 
 open import Haskell.Prim
 open import Haskell.Prim.Bool
 open import Haskell.Prim.Maybe
 open import Haskell.Prim.Foldable
+open import Haskell.Prim.List
+open import Haskell.Prim.String
 
 {-# FOREIGN AGDA2HS
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -45,8 +38,8 @@ open Ord ⦃ ... ⦄
 {-# COMPILE AGDA2HS Ord class Ord₁ Ord₂ #-}
 
 OB : Ord₁ Bool
-OB .Ord₁._<_ false b = b
-OB .Ord₁._<_ true  _ = false
+OB .Ord₁._<_ False b = b
+OB .Ord₁._<_ True  _ = False
 
 instance
   OrdBool₀ : Ord Bool
@@ -62,8 +55,8 @@ instance
   OrdBool₁ = record {Ord₁ ord₁}
     where
       ord₁ : Ord₁ Bool1
-      ord₁ .Ord₁._<_ (Mk1 false) (Mk1 b) = b
-      ord₁ .Ord₁._<_ (Mk1 true)  _       = false
+      ord₁ .Ord₁._<_ (Mk1 False) (Mk1 b) = b
+      ord₁ .Ord₁._<_ (Mk1 True)  _       = False
 {-# COMPILE AGDA2HS OrdBool₁ #-}
 
 data Bool2 : Set where
@@ -74,8 +67,8 @@ instance
   OrdBool₂ = record {_<_ = _<:_; _>_ = flip _<:_}
     where
       _<:_ : Bool2 → Bool2 → Bool
-      (Mk2 false) <: (Mk2 b) = b
-      (Mk2 true)  <: _       = false
+      (Mk2 False) <: (Mk2 b) = b
+      (Mk2 True)  <: _       = False
 {-# COMPILE AGDA2HS OrdBool₂ #-}
 
 data Bool3 : Set where
@@ -86,8 +79,8 @@ instance
   OrdBool₃ = record {Ord₁ (λ where .Ord₁._<_ → _<:_)}
     where
       _<:_ : Bool3 → Bool3 → Bool
-      (Mk3 false) <: (Mk3 b) = b
-      (Mk3 true)  <: _       = false
+      (Mk3 False) <: (Mk3 b) = b
+      (Mk3 True)  <: _       = False
 {-# COMPILE AGDA2HS OrdBool₃ #-}
 
 data Bool4 : Set where
@@ -109,8 +102,8 @@ instance
   OrdBool₅ = record {Ord₂ (λ where .Ord₂._>_ → _>:_)}
     where
       _>:_ : Bool5 → Bool5 → Bool
-      (Mk5 false) >: _       = false
-      (Mk5 true)  >: (Mk5 b) = not b
+      (Mk5 False) >: _       = False
+      (Mk5 True)  >: (Mk5 b) = not b
 {-# COMPILE AGDA2HS OrdBool₅ #-}
 
 data Bool6 : Set where
@@ -121,13 +114,13 @@ instance
   OrdBool₆ = record {Ord₂ (λ where .Ord₂._>_ → _>:_); _<_ = flip _>:_}
     where
       _>:_ : Bool6 → Bool6 → Bool
-      (Mk6 false) >: _       = false
-      (Mk6 true)  >: (Mk6 b) = not b
+      (Mk6 False) >: _       = False
+      (Mk6 True)  >: (Mk6 b) = not b
 {-# COMPILE AGDA2HS OrdBool₆ #-}
 
 instance
   Ordℕ : Ord Nat
-  Ordℕ = record {Ord₁ (λ where .Ord₁._<_ → Nat._<_)}
+  Ordℕ = record {Ord₁ (λ where .Ord₁._<_ → ltNat)}
 -- {-# COMPILE AGDA2HS Ordℕ #-}
 
 ShowS : Set
@@ -139,8 +132,8 @@ showString = _++_
 {-# COMPILE AGDA2HS showString #-}
 
 showParen : Bool → ShowS → ShowS
-showParen false s = s
-showParen true  s = showString "(" ∘ s ∘ showString ")"
+showParen False s = s
+showParen True  s = showString "(" ∘ s ∘ showString ")"
 {-# COMPILE AGDA2HS showParen #-}
 
 defaultShowList : (a → ShowS) → List a → ShowS
@@ -179,16 +172,16 @@ open Show ⦃ ... ⦄
 {-# COMPILE AGDA2HS Show class Show₁ Show₂ #-}
 
 SB : Show₂ Bool
-SB .Show₂.show true  = "true"
-SB .Show₂.show false = "false"
+SB .Show₂.show True  = "True"
+SB .Show₂.show False = "False"
 
 instance
   ShowBool : Show Bool
   ShowBool .show     = Show₂.show SB
   ShowBool .showPrec = Show₂.showPrec SB
   ShowBool .showList []       = showString ""
-  ShowBool .showList (true ∷ bs) = showString "1" ∘ showList bs
-  ShowBool .showList (false ∷ bs) = showString "0" ∘ showList bs
+  ShowBool .showList (True ∷ bs) = showString "1" ∘ showList bs
+  ShowBool .showList (False ∷ bs) = showString "0" ∘ showList bs
 {-# COMPILE AGDA2HS ShowBool #-}
 
 instance
@@ -197,7 +190,7 @@ instance
     where
       s₁ : Show₁ (Maybe a)
       s₁ .Show₁.showPrec n Nothing = showString "nothing"
-      s₁ .Show₁.showPrec n (Just x) = showParen true {-(9 < n)-} (showString "just " ∘ showPrec 10 x)
+      s₁ .Show₁.showPrec n (Just x) = showParen True {-(9 < n)-} (showString "just " ∘ showPrec 10 x)
 {-# COMPILE AGDA2HS ShowMaybe #-}
 
 instance

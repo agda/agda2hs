@@ -1,8 +1,6 @@
 
 module Haskell.Prim.Monoid where
 
-open import Agda.Builtin.Unit
-
 open import Haskell.Prim
 open import Haskell.Prim.Bool
 open import Haskell.Prim.List
@@ -42,10 +40,10 @@ instance
   iSemigroupUnit ._<>_ _ _ = tt
 
   iSemigroupTuple₀ : Semigroup (Tuple [])
-  iSemigroupTuple₀ ._<>_ _ _ = []
+  iSemigroupTuple₀ ._<>_ _ _ = tt
 
-  iSemigroupTuple : ∀ {as} → ⦃ Semigroup a ⦄ → ⦃ Semigroup (Tuple as) ⦄ → Semigroup (Tuple (a ∷ as))
-  iSemigroupTuple ._<>_ (x ∷ xs) (y ∷ ys) = x <> y ∷ xs <> ys
+  iSemigroupTuple : ⦃ Semigroup a ⦄ → ⦃ Semigroup (Tuple as) ⦄ → Semigroup (Tuple (a ∷ as))
+  iSemigroupTuple ._<>_ (x ; xs) (y ; ys) = x <> y ; xs <> ys
 
 
 --------------------------------------------------
@@ -81,10 +79,10 @@ instance
   iMonoidUnit .mempty = tt
 
   iMonoidTuple₀ : Monoid (Tuple [])
-  iMonoidTuple₀ .mempty = []
+  iMonoidTuple₀ .mempty = tt 
 
-  iMonoidTuple : ∀ {as} → ⦃ Monoid a ⦄ → ⦃ Monoid (Tuple as) ⦄ → Monoid (Tuple (a ∷ as))
-  iMonoidTuple .mempty = mempty ∷ mempty
+  iMonoidTuple : ⦃ Monoid a ⦄ → ⦃ Monoid (Tuple as) ⦄ → Monoid (Tuple (a ∷ as))
+  iMonoidTuple .mempty = mempty ; mempty
 
 MonoidEndo : Monoid (a → a)
 MonoidEndo .mempty      = id
@@ -95,9 +93,9 @@ MonoidEndoᵒᵖ .mempty      = id
 MonoidEndoᵒᵖ .super ._<>_ = flip _∘_
 
 MonoidConj : Monoid Bool
-MonoidConj .mempty      = true
+MonoidConj .mempty      = True
 MonoidConj .super ._<>_ = _&&_
 
 MonoidDisj : Monoid Bool
-MonoidDisj .mempty      = false
+MonoidDisj .mempty      = False
 MonoidDisj .super ._<>_ = _||_

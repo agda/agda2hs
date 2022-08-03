@@ -38,7 +38,7 @@ record Foldable (t : Set → Set) : Set₁ where
   or = any id
 
   null : t a → Bool
-  null = all (const false)
+  null = all (const False)
 
   concat : t (List a) → List a
   concat = foldMap id

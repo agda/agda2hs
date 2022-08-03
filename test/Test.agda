@@ -1,3 +1,5 @@
+{-# OPTIONS --erase-record-parameters #-}
+
 module _ where
 
 open import Haskell.Prelude
@@ -114,11 +116,11 @@ second : (b → c) → a × b → a × c
 second f (x , y) = x , f y
 {-# COMPILE AGDA2HS second #-}
 
-doubleTake : (n m : Int) → ⦃ IsNonNegativeInt n ⦄ → ⦃ IsNonNegativeInt m ⦄ → List a → List a × List a
+doubleTake : (n m : Int) → @0 ⦃ IsNonNegativeInt n ⦄ → @0 ⦃ IsNonNegativeInt m ⦄ → List a → List a × List a
 doubleTake n m = second (take m) ∘ splitAt n
 {-# COMPILE AGDA2HS doubleTake #-}
 
-initLast : (xs : List a) → ⦃ NonEmpty xs ⦄ → List a × a
+initLast : (xs : List a) → @0 ⦃ NonEmpty xs ⦄ → List a × a
 initLast xs = init xs , last xs
 {-# COMPILE AGDA2HS initLast #-}
 
@@ -151,24 +153,24 @@ instance
 
 
 instance
-  MonoidFunNat : {a : Set} → MonoidX (a → Nat)
+  MonoidFunNat : MonoidX (a → Nat)
   memptyX  {{MonoidFunNat}}     _ = memptyX
   mappendX {{MonoidFunNat}} f g x = mappendX (f x) (g x)
 
 {-# COMPILE AGDA2HS MonoidFunNat #-}
 
 instance
-  MonoidFun : {a b : Set} → {{MonoidX b}} → MonoidX (a → b)
+  MonoidFun : {{MonoidX b}} → MonoidX (a → b)
   memptyX  {{MonoidFun}}     _ = memptyX
   mappendX {{MonoidFun}} f g x = mappendX (f x) (g x)
 {-# COMPILE AGDA2HS MonoidFun #-}
 
-sumMonX : ∀{a} → {{MonoidX a}} → List a → a
+sumMonX : {{MonoidX a}} → List a → a
 sumMonX []       = memptyX
 sumMonX (x ∷ xs) = mappendX x (sumMonX xs)
 {-# COMPILE AGDA2HS sumMonX #-}
 
-sumMon : ∀{a} → {{Monoid a}} → List a → a
+sumMon : {{Monoid a}} → List a → a
 sumMon []       = mempty
 sumMon (x ∷ xs) = x <> sumMon xs
 {-# COMPILE AGDA2HS sumMon #-}
@@ -199,7 +201,7 @@ doubleSum = double
 {-# COMPILE AGDA2HS doubleSum       #-}
 
 -- Instance argument proof obligation that should not turn into a class constraint
-hd : (xs : List a) → ⦃ NonEmpty xs ⦄ → a
+hd : (xs : List a) → @0 ⦃ NonEmpty xs ⦄ → a
 hd []      = error "hd: empty list"
 hd (x ∷ _) = x
 {-# COMPILE AGDA2HS hd #-}
@@ -211,23 +213,23 @@ five = hd (5 ∷ 3 ∷ [])
 -- ** Booleans
 
 ex_bool : Bool
-ex_bool = true
+ex_bool = True
 {-# COMPILE AGDA2HS ex_bool #-}
 
 ex_if : Nat
-ex_if = if true then 1 else 0
+ex_if = if True then 1 else 0
 {-# COMPILE AGDA2HS ex_if #-}
 
 if_over : Nat
-if_over = (if true then (λ x → x) else (λ x → x + 1)) 0
+if_over = (if True then (λ x → x) else (λ x → x + 1)) 0
 {-# COMPILE AGDA2HS if_over #-}
 
 if_partial₁ : List Nat → List Nat
-if_partial₁ = map (if true then 1 else_)
+if_partial₁ = map (if True then 1 else_)
 {-# COMPILE AGDA2HS if_partial₁ #-}
 
 if_partial₂ : List Nat → List (Nat → Nat)
-if_partial₂ = map (if true then_else_)
+if_partial₂ = map (if True then_else_)
 {-# COMPILE AGDA2HS if_partial₂ #-}
 
 if_partial₃ : List Bool → List (Nat → Nat → Nat)
