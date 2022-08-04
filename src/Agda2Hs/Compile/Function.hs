@@ -31,7 +31,7 @@ import Agda.Utils.Monad
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( hsQName )
 import Agda2Hs.Compile.Term ( compileTerm )
-import Agda2Hs.Compile.Type ( compileType )
+import Agda2Hs.Compile.Type ( compileTopLevelType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
@@ -65,8 +65,7 @@ compileFun' def@(Defn {..}) = withCurrentModule m $ do
   let keepClause = maybe False keepArg . clauseType
   withCurrentModule m $ setCurrentRange (nameBindingSite n) $ do
     ifM (endsInSort defType) (ensureNoLocals err >> compileTypeDef x def) $ do
-      ctxArgs <- getContextArgs
-      ty <- compileType . unEl =<< defType `piApplyM` ctxArgs
+      ty <- compileTopLevelType defType
       -- Instantiate the clauses to the current module parameters
       pars <- getContextArgs
       reportSDoc "agda2hs.compile" 10 $ text "applying clauses to parameters: " <+> prettyTCM pars

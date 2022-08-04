@@ -58,6 +58,11 @@ tupleType q es = do
   ts <- mapM compileType xs
   return $ Hs.TyTuple () Hs.Boxed ts
 
+compileTopLevelType :: Type -> C (Hs.Type ())
+compileTopLevelType t = do
+  ctxArgs <- getContextArgs
+  compileType . unEl =<< t `piApplyM` ctxArgs
+
 compileType :: Term -> C (Hs.Type ())
 compileType t = do
   case t of
