@@ -65,13 +65,13 @@ compileFun' def@(Defn {..}) = do
   let keepClause = maybe False keepArg . clauseType
   withCurrentModule m $ setCurrentRange (nameBindingSite n) $ do
     ifM (endsInSort defType) (ensureNoLocals err >> compileTypeDef x def) $ do
-      ty <- compileTopLevelType defType
-      -- Instantiate the clauses to the current module parameters
-      pars <- getContextArgs
-      reportSDoc "agda2hs.compile" 10 $ text "applying clauses to parameters: " <+> prettyTCM pars
-      let clauses = filter keepClause funClauses `apply` pars
-      cs <- mapM (compileClause (qnameModule defName) x) clauses
-      return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
+      compileTopLevelType defType $ \ty -> do
+        -- Instantiate the clauses to the current module parameters
+        pars <- getContextArgs
+        reportSDoc "agda2hs.compile" 10 $ text "applying clauses to parameters: " <+> prettyTCM pars
+        let clauses = filter keepClause funClauses `apply` pars
+        cs <- mapM (compileClause (qnameModule defName) x) clauses
+        return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
   where
     Function{..} = theDef
     m = qnameModule defName

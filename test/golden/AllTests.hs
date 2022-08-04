@@ -27,4 +27,5 @@ import Issue93
 import QualifiedModule
 import Superclass
 import UnboxPragma
+import ScopedTypeVariables
 

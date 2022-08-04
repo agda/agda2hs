@@ -28,6 +28,7 @@ import Issue93
 import QualifiedModule
 import Superclass
 import UnboxPragma
+import ScopedTypeVariables
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -57,4 +58,5 @@ import Issue93
 import QualifiedModule
 import Superclass
 import UnboxPragma
+import ScopedTypeVariables
 #-}

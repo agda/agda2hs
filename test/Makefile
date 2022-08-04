@@ -12,7 +12,7 @@ alltests :
 	@echo == Compiling tests ==
 	./agda2hs AllTests.agda -o build
 	@echo == Running ghc ==
-	@(cd build; ghc -fno-code AllTests.hs)
+	@(cd build; ghc -fno-code -XScopedTypeVariables AllTests.hs)
 
 compare :
 	@echo == Comparing output ==
