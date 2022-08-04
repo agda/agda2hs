@@ -105,7 +105,7 @@ compileType t = do
         return $ Hs.TyFun () hsA hsB
       DomConstraint hsA -> do
         hsB <- underAbstraction a b (compileType . unEl)
-        return $ Hs.TyForall () Nothing (Just $ Hs.CxSingle () hsA) hsB
+        return $ constrainType hsA hsB
       DomDropped -> underAbstr a b (compileType . unEl)
     Def f es
       | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics f es
