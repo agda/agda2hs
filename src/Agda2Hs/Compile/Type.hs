@@ -59,10 +59,43 @@ tupleType q es = do
   ts <- mapM compileType xs
   return $ Hs.TyTuple () Hs.Boxed ts
 
-compileTopLevelType :: Type -> C (Hs.Type ())
-compileTopLevelType t = do
-  ctxArgs <- getContextArgs
-  compileType . unEl =<< t `piApplyM` ctxArgs
+constrainType :: Hs.Asst () -> Hs.Type () -> Hs.Type ()
+constrainType c = \case
+  Hs.TyForall _ as (Just (Hs.CxTuple _ cs)) t -> Hs.TyForall () as (Just (Hs.CxTuple () (c:cs))) t
+  Hs.TyForall _ as (Just (Hs.CxSingle _ c')) t -> Hs.TyForall () as (Just (Hs.CxTuple () [c,c'])) t
+  Hs.TyForall _ as _ t -> Hs.TyForall () as (Just (Hs.CxSingle () c)) t
+  t -> Hs.TyForall () Nothing (Just (Hs.CxSingle () c)) t
+
+qualifyType :: String -> Hs.Type () -> Hs.Type ()
+qualifyType s = \case
+    Hs.TyForall _ (Just as) cs t -> Hs.TyForall () (Just (a:as)) cs t
+    Hs.TyForall _ Nothing cs t -> Hs.TyForall () (Just [a]) cs t
+    t -> Hs.TyForall () (Just [a]) Nothing t
+  where
+    a = Hs.UnkindedVar () $ Hs.Ident () s
+
+-- Compile a top-level type that binds the current module parameters
+-- (if any) as explicitly bound type arguments.
+-- The continuation is called in an extended context with these type
+-- arguments bound.
+compileTopLevelType :: Type -> (Hs.Type () -> C a) -> C a
+compileTopLevelType t cont = do
+    ctxArgs <- getContextArgs
+    modTel <- lookupSection =<< currentModule
+    go (modTel `apply` ctxArgs) cont
+  where
+    go :: Telescope -> (Hs.Type () -> C a) -> C a
+    go EmptyTel cont = do
+      ctxArgs <- getContextArgs
+      ty <- compileType . unEl =<< t `piApplyM` ctxArgs
+      cont ty
+    go (ExtendTel a atel) cont
+      | isInstance a = do
+          c <- Hs.TypeA () <$> compileType (unEl $ unDom a)
+          underAbstraction a atel $ \tel ->
+             go tel (cont . constrainType c)
+      | otherwise = underAbstraction a atel $ \tel ->
+          go tel (cont . qualifyType (absName atel))
 
 compileType :: Term -> C (Hs.Type ())
 compileType t = do
