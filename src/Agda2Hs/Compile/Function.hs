@@ -60,7 +60,7 @@ compileFun, compileFun' :: Definition -> C [Hs.Decl ()]
 -- initialize locals when first stepping into a function
 compileFun def@Defn{..} = withFunctionLocals defName $ compileFun' def
 -- inherit existing (instantiated) locals
-compileFun' def@(Defn {..}) = withCurrentModule m $ do
+compileFun' def@(Defn {..}) = do
   reportSDoc "agda2hs.compile" 6 $ text "compiling function: " <+> prettyTCM defName
   let keepClause = maybe False keepArg . clauseType
   withCurrentModule m $ setCurrentRange (nameBindingSite n) $ do
