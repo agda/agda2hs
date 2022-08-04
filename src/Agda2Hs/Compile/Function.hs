@@ -92,12 +92,12 @@ compileClause curModule x c@Clause{..} = withClauseLocals curModule c $ do
     ls <- asks locals
     let
       (children, ls') = partition
-        (   not . isExtendedLambdaName . fst
-         /\ (curModule `isFatherModuleOf`) . qnameModule . fst )
+        (   not . isExtendedLambdaName
+         /\ (curModule `isFatherModuleOf`) . qnameModule )
         ls
     withLocals ls' $ do
       body <- compileTerm $ fromMaybe __IMPOSSIBLE__ clauseBody
-      whereDecls <- mapM compileFun' (snd <$> children)
+      whereDecls <- mapM (getConstInfo >=> compileFun') children
       let rhs = Hs.UnGuardedRhs () body
           whereBinds | null whereDecls = Nothing
                      | otherwise       = Just $ Hs.BDecls () (concat whereDecls)
@@ -156,14 +156,15 @@ compilePat p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
 -- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
 withFunctionLocals :: QName -> C a -> C a
 withFunctionLocals q k = do
-  ls <- takeWhile (isAnonymousModuleName . qnameModule . fst)
-      . dropWhile ((<= q) . fst)
+  ls <- takeWhile (isAnonymousModuleName . qnameModule)
+      . dropWhile (<= q)
+      . map fst
       . sortDefs <$> liftTCM curDefs
   withLocals ls k
 
 -- | Retain only those local declarations that belong to current clause's module.
 zoomLocals :: ModuleName -> LocalDecls -> LocalDecls
-zoomLocals mname = filter ((mname `isLeParentModuleOf`) . qnameModule . fst)
+zoomLocals mname = filter ((mname `isLeParentModuleOf`) . qnameModule)
 
 -- | Before checking a clause, grab all of its local declarationaas.
 -- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax

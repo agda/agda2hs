@@ -44,6 +44,6 @@ data CompiledDom
   | DomConstraint (Hs.Asst ())
   | DomDropped
 
-type LocalDecls = [(QName, Definition)]
+type LocalDecls = [QName]
 
 data RecordTarget = ToRecord | ToClass [String]

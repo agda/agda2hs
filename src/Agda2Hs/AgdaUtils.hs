@@ -38,8 +38,8 @@ extLamUsedIn :: Data a => QName -> a -> Bool
 extLamUsedIn n = (n `elem`) . listify isExtendedLambdaName
 
 -- | All mentions of local definitions that occur anywhere inside the argument.
-getLocalUses :: Data a => [(QName, Definition)] -> a -> [QName]
-getLocalUses ls = listify (`elem` map fst ls)
+getLocalUses :: Data a => [QName] -> a -> [QName]
+getLocalUses ls = listify (`elem` ls)
 
 -- | Convert the final 'Proj' projection elimination into a
 --   'Def' projection application.

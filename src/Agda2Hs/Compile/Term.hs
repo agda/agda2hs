@@ -136,23 +136,14 @@ caseOf _ es = compileArgs es >>= \ case
   -- unapplied
   []          -> return $ eApp (hsVar "flip") [hsVar "_$_"]
 
--- | Lookup definition first locally in the (possibly instantiated) locals,
--- otherwise get it from the global context with@getConstInfo@.
-getConstInfoC :: QName -> C Definition
-getConstInfoC q = do
-  ls <- asks locals
-  case lookup q ls of
-    Just d  -> return d
-    Nothing -> getConstInfo q
-
 lambdaCase :: QName -> Elims -> C (Hs.Exp ())
 lambdaCase q es = setCurrentRange (nameBindingSite $ qnameName q) $ do
   Function{funClauses = cls, funExtLam = Just ExtLamInfo {extLamModule = mname}}
-    <- theDef <$> getConstInfoC q
+    <- theDef <$> getConstInfo q
   npars <- size <$> lookupSection mname
   let (pars, rest) = splitAt npars es
       cs           = applyE cls pars
-  ls   <- filter ((`extLamUsedIn` cs) . fst) <$> asks locals
+  ls   <- filter (`extLamUsedIn` cs) <$> asks locals
   cs   <- withLocals ls $ mapM (compileClause (qnameModule q) $ hsName "(lambdaCase)") cs
   case cs of
     -- If there is a single clause and all patterns got erased, we
