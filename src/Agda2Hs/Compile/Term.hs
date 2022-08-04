@@ -192,7 +192,12 @@ compileTerm v = do
         True  -> compileClassFunApp f es
         False -> isUnboxProjection f >>= \ case
           True  -> compileErasedApp es
-          False -> (`app` es) . Hs.Var () =<< hsQName f
+          False -> do
+            -- Drop module parameters (unless projection-like)
+            n <- (theDef <$> getConstInfo f) >>= \case
+              Function{ funProjection = Just{} } -> return 0
+              _ -> size <$> lookupSection (qnameModule f)
+            (`app` drop n es) . Hs.Var () =<< hsQName f
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> isUnboxConstructor (conName h) >>= \ case

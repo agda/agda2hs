@@ -19,10 +19,11 @@ import Agda.Syntax.Scope.Base ( BindingSource(LambdaBound) )
 import Agda.Syntax.Scope.Monad ( bindVariable )
 
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Substitute ( TelV(TelV) )
-import Agda.TypeChecking.Telescope ( telView, teleArgs )
+import Agda.TypeChecking.Substitute
+import Agda.TypeChecking.Telescope ( telView, teleArgs, piApplyM )
 import Agda.TypeChecking.Sort ( ifIsSort )
 
+import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.List ( snoc )
 import Agda.Utils.Monad
@@ -59,19 +60,24 @@ compileFun, compileFun' :: Definition -> C [Hs.Decl ()]
 -- initialize locals when first stepping into a function
 compileFun def@Defn{..} = withFunctionLocals defName $ compileFun' def
 -- inherit existing (instantiated) locals
-compileFun' def@(Defn {..}) = do
-  let m = qnameModule defName
-      n = qnameName defName
-      x = hsName $ prettyShow n
+compileFun' def@(Defn {..}) = withCurrentModule m $ do
   reportSDoc "agda2hs.compile" 6 $ text "compiling function: " <+> prettyTCM defName
   let keepClause = maybe False keepArg . clauseType
   withCurrentModule m $ setCurrentRange (nameBindingSite n) $ do
     ifM (endsInSort defType) (ensureNoLocals err >> compileTypeDef x def) $ do
-      ty <- compileType (unEl defType)
-      cs <- mapM (compileClause (qnameModule defName) x) (filter keepClause funClauses)
+      ctxArgs <- getContextArgs
+      ty <- compileType . unEl =<< defType `piApplyM` ctxArgs
+      -- Instantiate the clauses to the current module parameters
+      pars <- getContextArgs
+      reportSDoc "agda2hs.compile" 10 $ text "applying clauses to parameters: " <+> prettyTCM pars
+      let clauses = filter keepClause funClauses `apply` pars
+      cs <- mapM (compileClause (qnameModule defName) x) clauses
       return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
   where
     Function{..} = theDef
+    m = qnameModule defName
+    n = qnameName defName
+    x = hsName $ prettyShow n
     endsInSort t = do
       TelV tel b <- telView t
       addContext tel $ ifIsSort b (\_ -> return True) (return False)
@@ -79,25 +85,18 @@ compileFun' def@(Defn {..}) = do
 
 compileClause :: ModuleName -> Hs.Name () -> Clause -> C (Hs.Match ())
 compileClause curModule x c@Clause{..} = withClauseLocals curModule c $ do
+  reportSDoc "agda2hs.compile" 7 $ text "compiling clause: " <+> prettyTCM c
   addContext (KeepNames clauseTel) $ liftTCM1 localScope $ do
     scopeBindPatternVariables namedClausePats
     ps <- compilePats namedClausePats
-    ls0 <- asks locals
+    ls <- asks locals
     let
-      tArgs = teleArgs clauseTel
-      shrinkDefs :: Data a => a -> a
-      shrinkDefs = everywhere $ mkT go
-        where go t | Def q es <- t, q `elem` map fst ls0
-                   = Def q (drop (length tArgs) es)
-                   | otherwise = t
-      body' = shrinkDefs <$> clauseBody
-      ls    = map (second (mapDef shrinkDefs . (`applyUnderTele` tArgs))) ls0
       (children, ls') = partition
         (   not . isExtendedLambdaName . fst
          /\ (curModule `isFatherModuleOf`) . qnameModule . fst )
         ls
     withLocals ls' $ do
-      body <- fromMaybe (hsError $ pp x ++ ": impossible") <$> mapM compileTerm body'
+      body <- compileTerm $ fromMaybe __IMPOSSIBLE__ clauseBody
       whereDecls <- mapM compileFun' (snd <$> children)
       let rhs = Hs.UnGuardedRhs () body
           whereBinds | null whereDecls = Nothing
