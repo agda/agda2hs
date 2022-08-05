@@ -7,14 +7,17 @@ import Control.Monad.Reader ( asks )
 import Data.Generics
 import Data.List
 import Data.Maybe ( fromMaybe )
+import qualified Data.Text as Text
 
 import qualified Language.Haskell.Exts.Syntax as Hs
+import qualified Language.Haskell.Exts.Build as Hs
 
 import Agda.Compiler.Backend
 import Agda.Compiler.Common
 
 import Agda.Syntax.Common ( NamedArg, namedArg )
 import Agda.Syntax.Internal
+import Agda.Syntax.Literal
 import Agda.Syntax.Scope.Base ( BindingSource(LambdaBound) )
 import Agda.Syntax.Scope.Monad ( bindVariable )
 
@@ -40,6 +43,8 @@ import Agda2Hs.HsUtils
 isSpecialPat :: QName -> Maybe (ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ()))
 isSpecialPat = prettyShow >>> \ case
   "Haskell.Prim.Tuple._;_" -> Just tuplePat
+  "Agda.Builtin.Int.Int.pos" -> Just posIntPat
+  "Agda.Builtin.Int.Int.negsuc" -> Just negSucIntPat
   _ -> Nothing
 
 isUnboxCopattern :: DeBruijnPattern -> C Bool
@@ -55,6 +60,30 @@ tuplePat cons i ps = do
   xs <- makeListP' "Agda.Builtin.Unit.tt" "Haskell.Prim.Tuple._;_" err p
   qs <- mapM compilePat xs
   return $ Hs.PTuple () Hs.Boxed qs
+
+-- Agda2Hs does not support natural number patterns directly (since
+-- they don't exist in Haskell), however they occur as part of
+-- patterns of type Integer, so we need to compile literal natural
+-- number patterns.
+compileLitNatPat :: DeBruijnPattern -> C Integer
+compileLitNatPat = \case
+  ConP ch _ ps
+    | prettyShow (conName ch) == "Agda.Builtin.Nat.Nat.zero" -> return 0
+    | prettyShow (conName ch) == "Agda.Builtin.Nat.Nat.suc"
+    , [p] <- ps -> (1+) <$> compileLitNatPat (namedArg p)
+  p -> genericDocError =<< text "not a literal natural number pattern:" <?> prettyTCM p
+
+posIntPat :: ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ())
+posIntPat c i [p] = do
+  n <- compileLitNatPat (namedArg p)
+  return $ Hs.PLit () (Hs.Signless ()) (Hs.Int () n (show n))
+posIntPat _ _ _ = __IMPOSSIBLE__
+
+negSucIntPat :: ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ())
+negSucIntPat c i [p] = do
+  n <- (1+) <$> compileLitNatPat (namedArg p)
+  return $ Hs.PLit () (Hs.Negative ()) (Hs.Int () n (show (negate n)))
+negSucIntPat _ _ _ = __IMPOSSIBLE__
 
 compileFun, compileFun' :: Definition -> C [Hs.Decl ()]
 -- initialize locals when first stepping into a function
@@ -140,7 +169,7 @@ compilePat (ConP h _ ps) = do
   ps <- compilePats ps
   c <- hsQName (conName h)
   return $ pApp c ps
--- TODO: LitP
+compilePat (LitP _ l) = compileLitPat l
 compilePat (ProjP _ q) = do
   reportSDoc "agda2hs.compile" 6 $ text "compiling copattern: " <+> text (prettyShow q)
   unlessM (asks isCompilingInstance) $
@@ -148,6 +177,11 @@ compilePat (ProjP _ q) = do
   let x = hsName $ prettyShow q
   return $ Hs.PVar () x
 compilePat p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
+
+compileLitPat :: Literal -> C (Hs.Pat ())
+compileLitPat = \case
+  LitChar c -> return $ Hs.charP c
+  l -> genericDocError =<< text "bad literal pattern:" <?> prettyTCM l
 
 -- Local (where) declarations ---------------------------------------------
 

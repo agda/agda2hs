@@ -29,6 +29,7 @@ import QualifiedModule
 import Superclass
 import UnboxPragma
 import ScopedTypeVariables
+import LiteralPatterns
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -59,4 +60,5 @@ import QualifiedModule
 import Superclass
 import UnboxPragma
 import ScopedTypeVariables
+import LiteralPatterns
 #-}

@@ -28,4 +28,5 @@ import QualifiedModule
 import Superclass
 import UnboxPragma
 import ScopedTypeVariables
+import LiteralPatterns
 
