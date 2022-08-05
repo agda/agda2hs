@@ -1,7 +1,7 @@
 module Agda2Hs.Compile.Function where
 
 import Control.Arrow ( Arrow((***), second), (>>>) )
-import Control.Monad ( (>=>), foldM, filterM )
+import Control.Monad ( (>=>), foldM, filterM, forM_ )
 import Control.Monad.Reader ( asks )
 
 import Data.Generics
@@ -116,6 +116,7 @@ compileClause curModule x c@Clause{..} = withClauseLocals curModule c $ do
   reportSDoc "agda2hs.compile" 7 $ text "compiling clause: " <+> prettyTCM c
   addContext (KeepNames clauseTel) $ liftTCM1 localScope $ do
     scopeBindPatternVariables namedClausePats
+    forM_ namedClausePats $ noAsPatterns . namedArg
     ps <- compilePats namedClausePats
     ls <- asks locals
     let
@@ -149,6 +150,23 @@ scopeBindPatternVariables = mapM_ (scopeBind . namedArg)
       ProjP{}     -> return ()
       IApplyP{}   -> return ()
       DefP{}      -> return ()
+
+noAsPatterns :: DeBruijnPattern -> C ()
+noAsPatterns = \case
+    VarP i _ -> checkPatternInfo i
+    DotP i _ -> checkPatternInfo i
+    ConP _ cpi ps -> do
+      checkPatternInfo $ conPInfo cpi
+      forM_ ps $ noAsPatterns . namedArg
+    LitP i _ -> checkPatternInfo i
+    ProjP{} -> return ()
+    IApplyP i _ _ _ -> checkPatternInfo i
+    DefP i _ ps -> do
+      checkPatternInfo i
+      forM_ ps $ noAsPatterns . namedArg
+  where
+    checkPatternInfo i = unless (null $ patAsNames i) $
+      genericDocError =<< text "not supported by Agda2Hs: as patterns"
 
 compilePats :: NAPs -> C [Hs.Pat ()]
 compilePats ps = mapM (compilePat . namedArg) =<< filterM keepPat ps
