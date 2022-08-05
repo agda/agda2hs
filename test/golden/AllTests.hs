@@ -29,4 +29,5 @@ import Superclass
 import UnboxPragma
 import ScopedTypeVariables
 import LiteralPatterns
+import Issue92
 

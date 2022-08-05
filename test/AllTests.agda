@@ -30,6 +30,7 @@ import Superclass
 import UnboxPragma
 import ScopedTypeVariables
 import LiteralPatterns
+import Issue92
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -61,4 +62,5 @@ import Superclass
 import UnboxPragma
 import ScopedTypeVariables
 import LiteralPatterns
+import Issue92
 #-}
