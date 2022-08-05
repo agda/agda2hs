@@ -30,7 +30,7 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
--- Primitive fields and default implementations
+-- | Primitive fields and default implementations
 type MinRecord = ([Hs.Name ()], Map (Hs.Name ()) (Hs.Decl ()))
 
 withMinRecord :: QName -> C a -> C a
@@ -40,13 +40,15 @@ compileMinRecord :: [Hs.Name ()] -> QName -> C MinRecord
 compileMinRecord fieldNames m = do
   rdef <- getConstInfo m
   definedFields <- classMemberNames rdef
-  let Record{recPars = npars} = theDef rdef
-      pars = map defaultArg [ Var i [] | i <- [npars, npars - 1..0] ]
+  let Record{recPars = npars, recTel = tel} = theDef rdef
+      pars = map Apply $ take npars $ teleArgs tel
+      rtype = El __DUMMY_SORT__ $ Def m pars
   defaults <- lookupDefaultImplementations m (fieldNames \\ definedFields)
   -- We can't simply compileFun here for two reasons:
   -- * it has an explicit dictionary argument
   -- * it's using the fields and definitions from the minimal record and not the parent record
-  compiled <- withMinRecord m $ fmap concat $ traverse (compileFun . (`apply` pars)) defaults
+  compiled <- withMinRecord m $ addContext (defaultDom rtype) $
+    fmap concat $ traverse compileFun defaults
   let declMap = Map.fromList [ (definedName c, def) | def@(Hs.FunBind _ (c : _)) <- compiled ]
   return (definedFields, declMap)
 

@@ -18,20 +18,16 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
-compileTypeDef :: Hs.Name () -> Definition -> LocalDecls -> C [Hs.Decl ()]
-compileTypeDef name (Defn {..}) locals = do
-  noLocals locals
+compileTypeDef :: Hs.Name () -> Definition -> C [Hs.Decl ()]
+compileTypeDef name (Defn {..}) = do
   Clause{..} <- singleClause funClauses
   addContext (KeepNames clauseTel) $ liftTCM1 localScope $ do
     as <- compileTypeArgs namedClausePats
     let hd = foldl (Hs.DHApp ()) (Hs.DHead () name) as
     rhs <- compileType $ fromMaybe __IMPOSSIBLE__ clauseBody
     return [Hs.TypeDecl () hd rhs]
-
   where
     Function{..} = theDef
-    noLocals locals = unless (null locals) $
-      genericError "Not supported: type definition with `where` clauses"
     singleClause = \case
       [cl] -> return cl
       _    -> genericError "Not supported: type definition with several clauses"

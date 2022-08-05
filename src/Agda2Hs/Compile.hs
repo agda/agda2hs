@@ -16,6 +16,7 @@ import Agda2Hs.Pragma
 initCompileEnv :: CompileEnv
 initCompileEnv = CompileEnv
   { minRecordName = Nothing
+  , locals = []
   , isCompilingInstance = False
   }
 

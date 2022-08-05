@@ -4,8 +4,8 @@ import Control.Arrow ( Arrow((***), second), (>>>) )
 import Control.Monad ( (>=>), foldM, filterM )
 import Control.Monad.Reader ( asks )
 
-import Data.Generics ( mkT, everywhere, listify )
-import Data.List ( isPrefixOf, nub )
+import Data.Generics
+import Data.List
 import Data.Maybe ( fromMaybe )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
@@ -19,10 +19,11 @@ import Agda.Syntax.Scope.Base ( BindingSource(LambdaBound) )
 import Agda.Syntax.Scope.Monad ( bindVariable )
 
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Substitute ( TelV(TelV) )
-import Agda.TypeChecking.Telescope ( telView, teleArgs )
+import Agda.TypeChecking.Substitute
+import Agda.TypeChecking.Telescope ( telView, teleArgs, piApplyM )
 import Agda.TypeChecking.Sort ( ifIsSort )
 
+import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.List ( snoc )
 import Agda.Utils.Monad
@@ -30,7 +31,7 @@ import Agda.Utils.Monad
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( hsQName )
 import Agda2Hs.Compile.Term ( compileTerm )
-import Agda2Hs.Compile.Type ( compileType )
+import Agda2Hs.Compile.Type ( compileTopLevelType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
@@ -55,82 +56,57 @@ tuplePat cons i ps = do
   qs <- mapM compilePat xs
   return $ Hs.PTuple () Hs.Boxed qs
 
-compileFun :: Definition -> C [Hs.Decl ()]
-compileFun d = do
-  locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
-          . dropWhile ((<= defName d) . fst)
-          . sortDefs <$> liftTCM curDefs
-  compileFun' d locals
-
-compileFun' :: Definition -> LocalDecls -> C [Hs.Decl ()]
-compileFun' def@(Defn {..}) locals = do
-  let m = qnameModule defName
-      n = qnameName defName
-      x = hsName $ prettyShow n
-      go = foldM $ \(ds, ms) -> compileClause ds x >=> return . fmap (ms `snoc`)
+compileFun, compileFun' :: Definition -> C [Hs.Decl ()]
+-- initialize locals when first stepping into a function
+compileFun def@Defn{..} = withFunctionLocals defName $ compileFun' def
+-- inherit existing (instantiated) locals
+compileFun' def@(Defn {..}) = do
   reportSDoc "agda2hs.compile" 6 $ text "compiling function: " <+> prettyTCM defName
   let keepClause = maybe False keepArg . clauseType
   withCurrentModule m $ setCurrentRange (nameBindingSite n) $ do
-    ifM (endsInSort defType) (compileTypeDef x def locals) $ do
-      ty <- compileType (unEl defType)
-      cs <- snd <$> go (locals, []) (filter keepClause funClauses)
+    ifM (endsInSort defType) (ensureNoLocals err >> compileTypeDef x def) $ do
+      ty <- compileTopLevelType defType
+      -- Instantiate the clauses to the current module parameters
+      pars <- getContextArgs
+      reportSDoc "agda2hs.compile" 10 $ text "applying clauses to parameters: " <+> prettyTCM pars
+      let clauses = filter keepClause funClauses `apply` pars
+      cs <- mapM (compileClause (qnameModule defName) x) clauses
       return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
   where
     Function{..} = theDef
-
+    m = qnameModule defName
+    n = qnameName defName
+    x = hsName $ prettyShow n
     endsInSort t = do
       TelV tel b <- telView t
       addContext tel $ ifIsSort b (\_ -> return True) (return False)
+    err = "Not supported: type definition with `where` clauses"
 
+compileClause :: ModuleName -> Hs.Name () -> Clause -> C (Hs.Match ())
+compileClause curModule x c@Clause{..} = withClauseLocals curModule c $ do
+  reportSDoc "agda2hs.compile" 7 $ text "compiling clause: " <+> prettyTCM c
+  addContext (KeepNames clauseTel) $ liftTCM1 localScope $ do
+    scopeBindPatternVariables namedClausePats
+    ps <- compilePats namedClausePats
+    ls <- asks locals
+    let
+      (children, ls') = partition
+        (   not . isExtendedLambdaName
+         /\ (curModule `isFatherModuleOf`) . qnameModule )
+        ls
+    withLocals ls' $ do
+      body <- compileTerm $ fromMaybe __IMPOSSIBLE__ clauseBody
+      whereDecls <- mapM (getConstInfo >=> compileFun') children
+      let rhs = Hs.UnGuardedRhs () body
+          whereBinds | null whereDecls = Nothing
+                     | otherwise       = Just $ Hs.BDecls () (concat whereDecls)
+          match = case (x, ps) of
+            (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
+            _                         -> Hs.Match () x ps rhs whereBinds
+      return match
 
-compileClause :: LocalDecls -> Hs.Name () -> Clause -> C (LocalDecls, Hs.Match ())
-compileClause locals x c@Clause{clauseTel = tel, namedClausePats = ps', clauseBody = body} = do
-  addContext (KeepNames tel) $ liftTCM1 localScope $ do
-    scopeBindPatternVariables ps'
-    ps <- compilePats ps'
-    -- Compile rhs and its @where@ clauses, making sure that:
-    --   * inner modules get instantiated
-    --   * references to inner modules get un-qualified (and instantiated)
-    let localUses = nub $ listify (`elem` map fst locals) body
-        belongs q@(QName m _) (QName m0 _) =
-          ((prettyShow m0 ++ "._") `isPrefixOf` prettyShow m) && (q `notElem` localUses)
-        splitDecls :: LocalDecls -> ([(Definition, LocalDecls)], LocalDecls)
-        splitDecls ds@((q,child):rest)
-          | any ((`elem` localUses) . fst) ds
-          , (grandchildren, outer) <- span ((`belongs` q) . fst) rest
-          , (groups, rest') <- splitDecls outer
-          = ((child, grandchildren) : groups, rest')
-          | otherwise = ([], ds)
-        splitDecls [] = ([], [])
-        (children, locals') = splitDecls locals
-
-        args   = teleArgs tel
-        argLen = length args
-
-
-        -- 1. apply current telescope to inner definitions
-        children' = mapDefs (`applyNoBodies` args) children
-          where mapDefs f = map (f *** map (second f))
-
-        -- 2. shrink calls to inner modules (unqualify + partially apply module parameters)
-        localNames = concatMap (\(d,ds) -> defName d : map fst ds) children
-        shrinkLocalDefs t | Def q es <- t, q `elem` localNames
-                          = Def (qualify_ $ qnameName q) (drop argLen es)
-                          | otherwise = t
-        (body', children'') = mapTerms (everywhere $ mkT shrinkLocalDefs) (body, children')
-          where mapTerms f = fmap f *** (map (mapDef f *** map (second (mapDef f))))
-
-    body' <- fromMaybe (hsError $ pp x ++ ": impossible") <$> mapM compileTerm body'
-    whereDecls <- concat <$> mapM (uncurry compileFun') children''
-
-    let rhs = Hs.UnGuardedRhs () body'
-        whereBinds | null whereDecls = Nothing
-                   | otherwise       = Just $ Hs.BDecls () whereDecls
-        match = case (x, ps) of
-          (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
-          _                         -> Hs.Match () x ps rhs whereBinds
-    return (locals', match)
-
+-- | When going under a binder we need to update the scope as well as the context in order to get
+-- correct printing of variable names (Issue #14).
 scopeBindPatternVariables :: NAPs -> C ()
 scopeBindPatternVariables = mapM_ (scopeBind . namedArg)
   where
@@ -172,3 +148,38 @@ compilePat (ProjP _ q) = do
   let x = hsName $ prettyShow q
   return $ Hs.PVar () x
 compilePat p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
+
+-- Local (where) declarations ---------------------------------------------
+
+-- | Before checking a function, grab all of its local declarations.
+-- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
+withFunctionLocals :: QName -> C a -> C a
+withFunctionLocals q k = do
+  ls <- takeWhile (isAnonymousModuleName . qnameModule)
+      . dropWhile (<= q)
+      . map fst
+      . sortDefs <$> liftTCM curDefs
+  withLocals ls k
+
+-- | Retain only those local declarations that belong to current clause's module.
+zoomLocals :: ModuleName -> LocalDecls -> LocalDecls
+zoomLocals mname = filter ((mname `isLeParentModuleOf`) . qnameModule)
+
+-- | Before checking a clause, grab all of its local declarationaas.
+-- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
+withClauseLocals :: ModuleName -> Clause -> C a -> C a
+withClauseLocals curModule c@Clause{..} k = do
+  ls <- asks locals
+  let
+    uses = filter
+      (  (curModule `isFatherModuleOf`) . qnameModule
+      \/ (`extLamUsedIn` c) )
+      (getLocalUses ls c)
+    nonExtLamUses = qnameModule <$> filter (not . isExtendedLambdaName) uses
+    whereModuleName
+      | null uses = Nothing
+      | otherwise = Just $ head (nonExtLamUses ++ [curModule])
+    ls' = case whereModuleName of
+      Nothing -> []
+      Just m  -> zoomLocals m ls
+  withLocals ls' k

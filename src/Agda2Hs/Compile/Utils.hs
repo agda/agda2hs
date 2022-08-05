@@ -40,6 +40,11 @@ import Agda2Hs.Pragma
 concatUnzip :: [([a], [b])] -> ([a], [b])
 concatUnzip = (concat *** concat) . unzip
 
+infixr 0 /\, \/
+(/\), (\/) :: (a -> Bool) -> (a -> Bool) -> a -> Bool
+f /\ g = \x -> f x && g x
+f \/ g = \x -> f x || g x
+
 liftTCM1 :: (TCM a -> TCM b) -> C a -> C b
 liftTCM1 k m = ReaderT (k . runReaderT m)
 
@@ -174,3 +179,9 @@ checkInstance u@(Con c _ _)
     prettyShow (conName c) == "Haskell.Prim.IsTrue.itsTrue" ||
     prettyShow (conName c) == "Haskell.Prim.IsFalse.itsFalse" = return ()
 checkInstance u = genericDocError =<< text "illegal instance: " <+> prettyTCM u
+
+ensureNoLocals :: String -> C ()
+ensureNoLocals msg = unlessM (null <$> asks locals) $ genericError msg
+
+withLocals :: LocalDecls -> C a -> C a
+withLocals ls = local $ \e -> e { locals = ls }

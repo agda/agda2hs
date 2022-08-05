@@ -21,6 +21,7 @@ import Agda.Utils.Monad ( forMaybeM, ifM )
 import Agda.Utils.Size ( Sized(size) )
 import Agda.Utils.Functor ( ($>) )
 
+import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( hsQName )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
@@ -57,6 +58,11 @@ tupleType q es = do
   xs <- reduce (Def q es) >>= tupleType' err
   ts <- mapM compileType xs
   return $ Hs.TyTuple () Hs.Boxed ts
+
+compileTopLevelType :: Type -> C (Hs.Type ())
+compileTopLevelType t = do
+  ctxArgs <- getContextArgs
+  compileType . unEl =<< t `piApplyM` ctxArgs
 
 compileType :: Term -> C (Hs.Type ())
 compileType t = do

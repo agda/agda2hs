@@ -2,6 +2,7 @@ module Agda2Hs.Compile.Term where
 
 import Control.Arrow ( (>>>) )
 import Control.Monad ( unless )
+import Control.Monad.Reader
 
 import Data.Maybe ( fromMaybe )
 import qualified Data.Text as Text ( unpack )
@@ -137,17 +138,19 @@ caseOf _ es = compileArgs es >>= \ case
 
 lambdaCase :: QName -> Elims -> C (Hs.Exp ())
 lambdaCase q es = setCurrentRange (nameBindingSite $ qnameName q) $ do
-  def@Function{ funExtLam = Just ExtLamInfo{extLamModule = mname} } <- theDef <$> getConstInfo q
+  Function{funClauses = cls, funExtLam = Just ExtLamInfo {extLamModule = mname}}
+    <- theDef <$> getConstInfo q
   npars <- size <$> lookupSection mname
   let (pars, rest) = splitAt npars es
-      cs           = applyE (funClauses def) pars
-  cs   <- mapM (compileClause [] $ hsName "(lambdaCase)") cs
+      cs           = applyE cls pars
+  ls   <- filter (`extLamUsedIn` cs) <$> asks locals
+  cs   <- withLocals ls $ mapM (compileClause (qnameModule q) $ hsName "(lambdaCase)") cs
   case cs of
     -- If there is a single clause and all patterns got erased, we
     -- simply return the body.
-    [(_, Hs.Match _ _ [] (Hs.UnGuardedRhs _ rhs) _)] -> return rhs
+    [Hs.Match _ _ [] (Hs.UnGuardedRhs _ rhs) _] -> return rhs
     _ -> do
-      alts <- mapM clauseToAlt $ map snd cs -- Pattern lambdas cannot have where blocks
+      alts <- mapM clauseToAlt cs -- Pattern lambdas cannot have where blocks
       args <- compileArgs rest
       return $ eApp (Hs.LCase () alts) args
 
@@ -180,7 +183,12 @@ compileTerm v = do
         True  -> compileClassFunApp f es
         False -> isUnboxProjection f >>= \ case
           True  -> compileErasedApp es
-          False -> (`app` es) . Hs.Var () =<< hsQName f
+          False -> do
+            -- Drop module parameters (unless projection-like)
+            n <- (theDef <$> getConstInfo f) >>= \case
+              Function{ funProjection = Just{} } -> return 0
+              _ -> size <$> lookupSection (qnameModule f)
+            (`app` drop n es) . Hs.Var () =<< hsQName f
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> isUnboxConstructor (conName h) >>= \ case

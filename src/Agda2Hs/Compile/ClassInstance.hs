@@ -39,17 +39,14 @@ import Agda2Hs.HsUtils
 compilingInstance :: C a -> C a
 compilingInstance = local $ \e -> e { isCompilingInstance = True }
 
-compileInstance :: Definition -> C (Hs.Decl ())
-compileInstance def = compilingInstance $ setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
-  ir <- compileInstRule [] (unEl . defType $ def)
-  locals <- takeWhile (isAnonymousModuleName . qnameModule . fst)
-          . dropWhile ((<= defName def) . fst)
-          . sortDefs <$> liftTCM curDefs
-  (ds, rs) <- concatUnzip <$> mapM (compileInstanceClause locals) funClauses
-  when (length (nub rs) > 1) $
-    genericDocError =<< fsep (pwords "More than one minimal record used.")
-  return $ Hs.InstDecl () Nothing ir (Just ds)
-  where Function{..} = theDef def
+compileInstance def@Defn{..} = compilingInstance $ setCurrentRange (nameBindingSite $ qnameName defName) $ do
+  ir <- compileInstRule [] (unEl defType)
+  withFunctionLocals defName $ do
+    (ds, rs) <- concatUnzip <$> mapM (compileInstanceClause (qnameModule defName)) funClauses
+    when (length (nub rs) > 1) $
+      genericDocError =<< fsep (pwords "More than one minimal record used.")
+    return $ Hs.InstDecl () Nothing ir (Just ds)
+  where Function{..} = theDef
 
 compileInstRule :: [Hs.Asst ()] -> Term -> C (Hs.InstRule ())
 compileInstRule cs ty = case unSpine1 ty of
@@ -96,8 +93,8 @@ etaExpandClause cl@Clause{namedClausePats = ps, clauseBody = Just t} = do
       genericDocError =<< fsep (pwords $ "Type class instances must be defined using copatterns (or top-level" ++
                                          " records) and cannot be defined using helper functions.")
 
-compileInstanceClause :: LocalDecls -> Clause -> C ([Hs.InstDecl ()], [QName])
-compileInstanceClause ls c = do
+compileInstanceClause :: ModuleName -> Clause -> C ([Hs.InstDecl ()], [QName])
+compileInstanceClause curModule c = withClauseLocals curModule c $ do
   -- abuse compileClause:
   -- 1. drop any patterns before record projection to suppress the instance arg
   -- 2. use record proj. as function name
@@ -106,7 +103,7 @@ compileInstanceClause ls c = do
   -- TODO: check that the things we drop here are not doing any matching
   case dropWhile (isNothing . isProjP) (namedClausePats c) of
     [] ->
-      concatUnzip <$> (mapM (compileInstanceClause ls) =<< etaExpandClause c)
+      concatUnzip <$> (mapM (compileInstanceClause curModule) =<< etaExpandClause c)
     p : ps -> do
       let c' = c {namedClausePats = ps}
           ProjP _ q = namedArg p
@@ -162,8 +159,8 @@ compileInstanceClause ls c = do
 
          -- No minimal dictionary used, proceed with compiling as a regular clause.
          | otherwise
-         -> do (_ , x) <- compileClause ls uf c'
-               return ([Hs.InsDecl () (Hs.FunBind () [x])], [])
+         -> do ms <- compileClause curModule uf c'
+               return ([Hs.InsDecl () (Hs.FunBind () [ms]) | keepArg arg], [])
 
 fieldArgInfo :: QName -> C ArgInfo
 fieldArgInfo f = do

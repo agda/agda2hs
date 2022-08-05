@@ -22,6 +22,8 @@ import Records
 import Default
 import DefaultMethods
 import Vector
+import Issue90
+import Issue93
 import QualifiedModule
 import Superclass
 import UnboxPragma

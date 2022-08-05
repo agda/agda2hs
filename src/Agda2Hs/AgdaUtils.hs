@@ -1,17 +1,22 @@
 module Agda2Hs.AgdaUtils where
 
+import Data.Data
+import Data.Generics ( listify )
 import Data.Maybe ( fromMaybe )
 
-import Agda.Compiler.Backend
+import Agda.Compiler.Backend hiding ( Args )
 
 import Agda.Syntax.Common ( Arg, defaultArg )
 import Agda.Syntax.Internal
 
 import Agda.TypeChecking.Pretty ( Doc, text, vcat )
-import Agda.TypeChecking.Substitute ( Apply(apply) )
+import Agda.TypeChecking.Substitute
 
+import Agda.Utils.List
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
+
+import AgdaInternals
 
 multilineText :: Monad m => String -> m Doc
 multilineText s = vcat $ map text $ lines s
@@ -19,18 +24,22 @@ multilineText s = vcat $ map text $ lines s
 (~~) :: QName -> String -> Bool
 q ~~ s = prettyShow q == s
 
-applyNoBodies :: Definition -> [Arg Term] -> Definition
-applyNoBodies d args = revert $ d `apply` args
-  where
-    bodies :: [Maybe Term]
-    bodies = map clauseBody $ funClauses $ theDef d
+-- | Check whether a module is an *immediate* parent of another.
+isFatherModuleOf :: ModuleName -> ModuleName -> Bool
+isFatherModuleOf m = maybe False (mnameToList m ==) . initMaybe . mnameToList
 
-    setBody cl b = cl { clauseBody = b }
+-- | Apply a clause's telescope arguments to a local where definition.
+-- i.e. reverse Agda's λ-lifting
+applyUnderTele :: Definition -> Args -> Definition
+applyUnderTele d as = raise (length as) d `apply` as
 
-    revert :: Definition -> Definition
-    revert d@(Defn {theDef = f@(Function {funClauses = cls})}) =
-      d {theDef = f {funClauses = zipWith setBody cls bodies}}
-    revert _ = __IMPOSSIBLE__
+-- | Check whether an extended lambda is used anywhere inside given argument.
+extLamUsedIn :: Data a => QName -> a -> Bool
+extLamUsedIn n = (n `elem`) . listify isExtendedLambdaName
+
+-- | All mentions of local definitions that occur anywhere inside the argument.
+getLocalUses :: Data a => [QName] -> a -> [QName]
+getLocalUses ls = listify (`elem` ls)
 
 -- | Convert the final 'Proj' projection elimination into a
 --   'Def' projection application.

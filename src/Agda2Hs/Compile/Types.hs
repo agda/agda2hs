@@ -27,6 +27,9 @@ instance NFData Options where
 
 data CompileEnv = CompileEnv
   { minRecordName :: Maybe ModuleName
+  -- ^ keeps track of the current minimal record we are compiling
+  , locals :: LocalDecls
+  -- ^ keeps track of the current clause's where declarations
   , isCompilingInstance :: Bool
   }
 
@@ -41,6 +44,6 @@ data CompiledDom
   | DomConstraint (Hs.Asst ())
   | DomDropped
 
-type LocalDecls = [(QName, Definition)]
+type LocalDecls = [QName]
 
 data RecordTarget = ToRecord | ToClass [String]
