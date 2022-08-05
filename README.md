@@ -40,8 +40,8 @@ Haskell code that you can show your Haskell colleagues without shame.
 ## Documentation
 
 At the moment there is no user manual yet. The best way to learn how
-to use agda2hs is by reading the [Haskell Symposium '22 paper
-'Reasonable Agda is Correct Haskell: Writing Verified Haskell using
+to use agda2hs is by reading the Haskell Symposium '22 paper
+[Reasonable Agda is Correct Haskell: Writing Verified Haskell using
 agda2hs](https://jesper.sikanda.be/files/reasonable-agda-is-correct-haskell.pdf).
 If you have been using agda2hs and want to contribute in some way,
 adding documentation or examples would be very welcome.
@@ -52,7 +52,7 @@ Currently agda2hs is under active development, please take a look at
 the [issue tracker](https://github.com/agda/agda2hs/issues). If you
 have a suggestion for a new feature that is not yet on the issue
 tracker, you are welcome to create a new issue or a PR. Feature
-requests should be of the form 'Add support for Haskell feature X',
-*not* 'Add support for Agda feature Y' (see 'Objective' above). If you
+requests should be of the form `Add support for Haskell feature X',
+*not* `Add support for Agda feature Y' (see `Objective' above). If you
 want to compile arbitrary Agda code to Haskell, you are advised to use
 Agda's built-in GHC backend instead.
