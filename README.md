@@ -52,7 +52,7 @@ Currently agda2hs is under active development, please take a look at
 the [issue tracker](https://github.com/agda/agda2hs/issues). If you
 have a suggestion for a new feature that is not yet on the issue
 tracker, you are welcome to create a new issue or a PR. Feature
-requests should be of the form `Add support for Haskell feature X',
-*not* `Add support for Agda feature Y' (see `Objective' above). If you
+requests should be of the form "Add support for Haskell feature X",
+*not* "Add support for Agda feature Y" (see "Objective" above). If you
 want to compile arbitrary Agda code to Haskell, you are advised to use
 Agda's built-in GHC backend instead.
