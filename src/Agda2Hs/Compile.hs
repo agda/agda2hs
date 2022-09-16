@@ -40,6 +40,7 @@ compile _ m _ def = withCurrentModule m $ runC $ processPragma (defName def) >>=
     (DefaultPragma _    , _      , Axiom{}   ) -> tag <$> compilePostulate def
     (DefaultPragma _    , _      , Function{}) -> tag <$> compileFun def
     (DefaultPragma ds   , _      , Record{}  ) -> tag . single <$> compileRecord (ToRecord ds) def
-    _                                          -> return []
+    _                                          -> genericDocError =<< do
+      text "Don't know how to compile" <+> prettyTCM (defName def)
   where tag code = [(nameBindingSite $ qnameName $ defName def, code)]
         single x = [x]
