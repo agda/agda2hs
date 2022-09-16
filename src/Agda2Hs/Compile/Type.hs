@@ -112,15 +112,18 @@ compileType t = do
       | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics f es
       | Just args <- allApplyElims es ->
         ifM (isUnboxRecord f) (compileUnboxType f args) $ do
-          vs <- mapM (compileType . unArg) $ filter keepArg args
+          vs <- compileTypeArgs args
           f <- hsQName f
           return $ tApp (Hs.TyCon () f) vs
     Var x es | Just args <- allApplyElims es -> do
-      vs <- mapM (compileType . unArg) $ filter keepArg args
+      vs <- compileTypeArgs args
       x  <- hsName <$> showTCM (Var x [])
       return $ tApp (Hs.TyVar () x) vs
     Sort s -> return (Hs.TyStar ())
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
+
+compileTypeArgs :: Args -> C [Hs.Type ()]
+compileTypeArgs args = mapM (compileType . unArg) $ filter keepArg args
 
 compileUnboxType :: QName -> Args -> C (Hs.Type ())
 compileUnboxType r pars = do
