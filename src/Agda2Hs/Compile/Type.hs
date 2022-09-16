@@ -111,7 +111,8 @@ compileType t = do
     Def f es
       | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics f es
       | Just args <- allApplyElims es ->
-        ifM (isUnboxRecord f) (compileUnboxType f args) $ do
+        ifM (isUnboxRecord f) (compileUnboxType f args) $
+        ifM (isTransparentFunction f) (compileTransparentType args) $ do
           vs <- compileTypeArgs args
           f <- hsQName f
           return $ tApp (Hs.TyCon () f) vs
@@ -131,6 +132,11 @@ compileUnboxType r pars = do
   case recTel def `apply` pars of
     EmptyTel        -> __IMPOSSIBLE__
     (ExtendTel a _) -> compileType $ unEl $ unDom a
+
+compileTransparentType :: Args -> C (Hs.Type ())
+compileTransparentType args = compileTypeArgs args >>= \case
+  [] -> genericError "Not supported: underapplied type synonyms"
+  (v:vs) -> return $ v `tApp` vs
 
 compileDom :: ArgName -> Dom Type -> C CompiledDom
 compileDom x a
