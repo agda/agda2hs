@@ -181,7 +181,7 @@ compileTerm v = do
       | Just semantics <- isSpecialTerm f -> semantics f es
       | otherwise -> isClassFunction f >>= \ case
         True  -> compileClassFunApp f es
-        False -> isUnboxProjection f >>= \ case
+        False -> isUnboxProjection f `or2M` isTransparentFunction f >>= \ case
           True  -> compileErasedApp es
           False -> do
             -- Drop module parameters (unless projection-like)

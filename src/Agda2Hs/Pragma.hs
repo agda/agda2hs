@@ -52,6 +52,7 @@ data ParsedPragma
   | ClassPragma [String]
   | ExistingClassPragma
   | UnboxPragma
+  | TransparentPragma
   deriving Show
 
 processPragma :: QName -> C ParsedPragma
@@ -61,6 +62,7 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
     | "class" `isPrefixOf` s    -> return $ ClassPragma (words $ drop 5 s)
     | s == "existing-class"     -> return ExistingClassPragma
     | s == "unboxed"            -> return UnboxPragma
+    | s == "transparent"        -> return TransparentPragma
     | "deriving" `isPrefixOf` s ->
       -- parse a deriving clause for a datatype by tacking it onto a
       -- dummy datatype and then only keeping the deriving part

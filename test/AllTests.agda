@@ -31,6 +31,7 @@ import UnboxPragma
 import ScopedTypeVariables
 import LiteralPatterns
 import Issue92
+import HeightMirror
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -63,4 +64,5 @@ import UnboxPragma
 import ScopedTypeVariables
 import LiteralPatterns
 import Issue92
+import HeightMirror
 #-}
