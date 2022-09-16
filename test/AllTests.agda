@@ -32,6 +32,7 @@ import ScopedTypeVariables
 import LiteralPatterns
 import Issue92
 import HeightMirror
+import TransparentFun
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -65,4 +66,5 @@ import ScopedTypeVariables
 import LiteralPatterns
 import Issue92
 import HeightMirror
+import TransparentFun
 #-}
