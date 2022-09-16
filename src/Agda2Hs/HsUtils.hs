@@ -3,6 +3,7 @@ module Agda2Hs.HsUtils where
 
 import Data.Data ( Data )
 import Data.Generics ( listify, everywhere, mkT, extT )
+import Data.List ( foldl' )
 import Data.Map ( Map )
 
 import qualified Data.Map as Map
@@ -213,3 +214,20 @@ insertPars fixs (InfixApp l e1 op e2) = InfixApp l (parL e1) op (parR e2)
       | need topFix (getFix op) = Paren () e
     par _ e = e
 insertPars _ e = e
+
+-- Patterns
+patToExp :: Pat l -> Maybe (Exp l)
+patToExp = \case
+  PVar l x            -> Just $ Var l (UnQual l x)
+  PLit l s v          -> Just $ Lit l v
+  PInfixApp l p f q   -> InfixApp l <$> patToExp p <*> pure (QConOp l f) <*> patToExp q
+  PApp l x ps         -> foldl' (App l) (Con l x) <$> traverse patToExp ps
+  PTuple l b ps       -> Tuple l b <$> traverse patToExp ps
+  PUnboxedSum l i j p -> UnboxedSum l i j <$> patToExp p
+  PList l ps          -> List l <$> traverse patToExp ps
+  PParen l p          -> Paren l <$> patToExp p
+  PAsPat _ _ p        -> patToExp p
+  PIrrPat _ p         -> patToExp p
+  PatTypeSig _ p _    -> patToExp p
+  PBangPat _ p        -> patToExp p
+  _                   -> Nothing
