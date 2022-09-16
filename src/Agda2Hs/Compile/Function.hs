@@ -252,7 +252,7 @@ checkTransparentPragma def = compileFun def >>= \case
 
     checkTransparentClause :: Hs.Match () -> C ()
     checkTransparentClause = \case
-      Hs.Match _ _ [Hs.PVar _ x] (Hs.UnGuardedRhs _ (Hs.Var _ (Hs.UnQual _ y))) _ | x == y -> return ()
+      Hs.Match _ _ [p] (Hs.UnGuardedRhs _ e) _ | patToExp p == Just e -> return ()
       _ -> errNotTransparent
 
     checkTransparentTypeDef :: Hs.DeclHead () -> Hs.Type () -> C ()
