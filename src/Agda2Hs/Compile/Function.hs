@@ -241,7 +241,8 @@ checkTransparentPragma def = compileFun def >>= \case
     [Hs.TypeSig _ _ ty, Hs.FunBind _ cls] -> do
       checkTransparentType ty
       mapM_ checkTransparentClause cls
-    [Hs.TypeDecl{}] -> genericError $ "Not yet supported: transparent type definitions"
+    [Hs.TypeDecl _ hd b] ->
+      checkTransparentTypeDef hd b
     _ -> __IMPOSSIBLE__
   where
     checkTransparentType :: Hs.Type () -> C ()
@@ -253,6 +254,10 @@ checkTransparentPragma def = compileFun def >>= \case
     checkTransparentClause = \case
       Hs.Match _ _ [Hs.PVar _ x] (Hs.UnGuardedRhs _ (Hs.Var _ (Hs.UnQual _ y))) _ | x == y -> return ()
       _ -> errNotTransparent
+
+    checkTransparentTypeDef :: Hs.DeclHead () -> Hs.Type () -> C ()
+    checkTransparentTypeDef (Hs.DHApp _ _ (Hs.UnkindedVar _ x)) (Hs.TyVar _ y) | x == y = return ()
+    checkTransparentTypeDef _ _ = errNotTransparent
 
     errNotTransparent = genericError $
       "A transparent function must have exactly one non-erased argument and return it unchanged."
