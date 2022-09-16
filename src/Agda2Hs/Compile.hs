@@ -29,6 +29,8 @@ runC m = runReaderT m initCompileEnv
 compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
 compile _ m _ def = withCurrentModule m $ runC $ processPragma (defName def) >>= \ p -> do
   reportSDoc "agda2hs.compile" 5 $ text "Compiling definition: " <+> prettyTCM (defName def)
+  reportSDoc "agda2hs.compile" 45 $ text "Pragma: " <+> text (show p)
+  reportSDoc "agda2hs.compile" 45 $ text "Compiling definition: " <+> pretty (theDef def)
   case (p , defInstance def , theDef def) of
     (NoPragma           , _      , _         ) -> return []
     (ExistingClassPragma, _      , _         ) -> return [] -- No code generation, but affects how projections are compiled
