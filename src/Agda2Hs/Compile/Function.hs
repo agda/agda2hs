@@ -235,3 +235,24 @@ withClauseLocals curModule c@Clause{..} k = do
       Nothing -> []
       Just m  -> zoomLocals m ls
   withLocals ls' k
+
+checkTransparentPragma :: Definition -> C ()
+checkTransparentPragma def = compileFun def >>= \case
+    [Hs.TypeSig _ _ ty, Hs.FunBind _ cls] -> do
+      checkTransparentType ty
+      mapM_ checkTransparentClause cls
+    [Hs.TypeDecl{}] -> genericError $ "Not yet supported: transparent type definitions"
+    _ -> __IMPOSSIBLE__
+  where
+    checkTransparentType :: Hs.Type () -> C ()
+    checkTransparentType = \case
+      Hs.TyFun () a b | a == b -> return ()
+      _                        -> errNotTransparent
+
+    checkTransparentClause :: Hs.Match () -> C ()
+    checkTransparentClause = \case
+      Hs.Match _ _ [Hs.PVar _ x] (Hs.UnGuardedRhs _ (Hs.Var _ (Hs.UnQual _ y))) _ | x == y -> return ()
+      _ -> errNotTransparent
+
+    errNotTransparent = genericError $
+      "A transparent function must have exactly one non-erased argument and return it unchanged."

@@ -153,6 +153,15 @@ isUnboxProjection :: QName -> C Bool
 isUnboxProjection q =
   caseMaybeM (liftTCM $ getRecordOfField q) (return False) isUnboxRecord
 
+isTransparentFunction :: QName -> C Bool
+isTransparentFunction q = do
+  getConstInfo q >>= \case
+    Defn{defName = r, theDef = Function{}} ->
+      processPragma r <&> \case
+        TransparentPragma -> True
+        _                 -> False
+    _ -> return False
+
 checkInstance :: Term -> C ()
 checkInstance u | varOrDef u = liftTCM $ noConstraints $ do
   reportSDoc "agda2hs.checkInstance" 5 $ text "checkInstance" <+> prettyTCM u

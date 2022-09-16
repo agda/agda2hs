@@ -7,7 +7,7 @@ import Agda.TypeChecking.Pretty
 
 import Agda2Hs.Compile.ClassInstance ( compileInstance )
 import Agda2Hs.Compile.Data ( compileData )
-import Agda2Hs.Compile.Function ( compileFun )
+import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
 import Agda2Hs.Compile.Types
@@ -33,6 +33,7 @@ compile _ m _ def = withCurrentModule m $ runC $ processPragma (defName def) >>=
     (NoPragma           , _      , _         ) -> return []
     (ExistingClassPragma, _      , _         ) -> return [] -- No code generation, but affects how projections are compiled
     (UnboxPragma        , _      , defn      ) -> checkUnboxPragma defn >> return [] -- also no code generation
+    (TransparentPragma  , _      , Function{}) -> checkTransparentPragma def >> return [] -- also no code generation
     (ClassPragma ms     , _      , Record{}  ) -> tag . single <$> compileRecord (ToClass ms) def
     (DefaultPragma ds   , _      , Datatype{}) -> tag <$> compileData ds def
     (DefaultPragma _    , Just _ , _         ) -> tag . single <$> compileInstance def
