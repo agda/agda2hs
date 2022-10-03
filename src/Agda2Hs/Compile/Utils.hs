@@ -102,7 +102,7 @@ underAbstr_ = underAbstr __DUMMY_DOM__
 -- Determine whether an argument should be kept or dropped.
 -- We drop all arguments that have quantity 0 (= run-time erased).
 -- We also drop hidden non-erased arguments (which should all be of
--- type Level or Set l).
+-- type Level, Set l, or Size).
 keepArg :: (LensHiding a, LensModality a) => a -> Bool
 keepArg x = usableModality x && visible x
 
