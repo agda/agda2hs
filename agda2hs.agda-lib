@@ -1,3 +1,4 @@
 name: agda2hs
 depend:
 include: lib
+flags: --without-K
