@@ -6,7 +6,7 @@ open import Agda.Builtin.Size public
 
 open import Haskell.Prim
 
-record Thunk {ℓ} (a : @0 Size → Set ℓ) (@0 i : Size) : Set ℓ where
+record Thunk {ℓ} (a : Size → Set ℓ) (i : Size) : Set ℓ where
   constructor delay
   coinductive
   field force : {j : Size< i} → a j
