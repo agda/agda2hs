@@ -60,9 +60,13 @@ instance
   iEqTuple ._==_ (x ; xs) (y ; ys) = x == y && xs == ys
 
   iEqList : ⦃ Eq a ⦄ → Eq (List a)
-  iEqList ._==_ []       []       = True
-  iEqList ._==_ (x ∷ xs) (y ∷ ys) = x == y && xs == ys
-  iEqList ._==_ _        _        = False
+  iEqList {a} ._==_ = eqList
+    where
+      eqList : List a → List a → Bool
+      eqList [] [] = True
+      eqList (x ∷ xs) (y ∷ ys) = x == y && eqList xs ys
+      eqList _ _ = False
+
 
   iEqMaybe : ⦃ Eq a ⦄ → Eq (Maybe a)
   iEqMaybe ._==_ Nothing  Nothing  = True

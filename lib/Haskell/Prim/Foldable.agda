@@ -70,8 +70,11 @@ open Foldable ⦃ ... ⦄ public
 
 instance
   iFoldableList : Foldable List
-  iFoldableList .foldMap f []       = mempty
-  iFoldableList .foldMap f (x ∷ xs) = f x <> foldMap f xs
+  iFoldableList .foldMap = foldMapList
+    where
+      foldMapList : ⦃ Monoid b ⦄ → (a → b) → List a → b
+      foldMapList f []       = mempty
+      foldMapList f (x ∷ xs) = f x <> foldMapList f xs
 
   iFoldableMaybe : Foldable Maybe
   iFoldableMaybe .foldMap _ Nothing  = mempty
