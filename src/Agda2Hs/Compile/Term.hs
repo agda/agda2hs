@@ -200,8 +200,6 @@ compileTerm v = do
     Lam v b | keepArg v ->
       -- System-inserted lambda, no need to preserve the name.
       underAbstraction_ b $ \ body -> do
-        unless (visible v) $ genericDocError =<< do
-          text "Implicit lambda not supported: " <+> prettyTCM (absName b)
         x <- showTCM (Var 0 [])
         let hsx = hsVar x
         body <- compileTerm body
