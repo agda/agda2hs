@@ -33,7 +33,6 @@ import LiteralPatterns
 import Issue92
 import HeightMirror
 import TransparentFun
--- import StreamFusion TODO: cannot import b/c of --erased-cubical flag
 
 {-# FOREIGN AGDA2HS
 import Issue14

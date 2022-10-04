@@ -1,9 +1,9 @@
 
-.PHONY : default clean golden alltests fail print-fail compare force-recompile
+.PHONY : default clean golden alltests cubicaltests fail print-fail compare force-recompile
 
 ROOT=$(shell cd ..; pwd)/
 
-default : clean alltests fail compare
+default : clean alltests cubicaltests fail compare
 
 clean :
 	@rm -rf build/*
@@ -13,6 +13,12 @@ alltests :
 	./agda2hs AllTests.agda -o build
 	@echo == Running ghc ==
 	@(cd build; ghc -fno-code -XScopedTypeVariables AllTests.hs)
+
+cubicaltests :
+	@echo == Compiling tests using cubical ==
+	./agda2hs CubicalTests.agda -o build
+	@echo == Running ghc ==
+	@(cd build; ghc -fno-code -XScopedTypeVariables CubicalTests.hs)
 
 compare :
 	@echo == Comparing output ==
