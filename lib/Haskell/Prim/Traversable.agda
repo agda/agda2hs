@@ -35,8 +35,11 @@ open Traversable ⦃ ... ⦄ public
 
 instance
   iTraversableList : Traversable List
-  iTraversableList .traverse f []       = pure []
-  iTraversableList .traverse f (x ∷ xs) = ⦇ f x ∷ traverse f xs ⦈
+  iTraversableList .traverse = traverseList
+    where
+      traverseList : ⦃ Applicative f ⦄ → (a → f b) → List a → f (List b)
+      traverseList f []       = pure []
+      traverseList f (x ∷ xs) = ⦇ f x ∷ traverseList f xs ⦈
 
   iTraversableMaybe : Traversable Maybe
   iTraversableMaybe .traverse f Nothing  = pure Nothing

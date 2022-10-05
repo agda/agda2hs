@@ -1,4 +1,4 @@
 name: agda2hs
 depend:
 include: lib
-flags: --erase-record-parameters
+flags: --without-K

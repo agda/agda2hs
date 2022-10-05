@@ -1,4 +1,3 @@
-{-# OPTIONS -v agda2hs:50 #-}
 
 open import Haskell.Prelude
 

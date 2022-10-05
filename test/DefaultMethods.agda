@@ -1,4 +1,4 @@
-{-# OPTIONS --no-auto-inline --erase-record-parameters #-}
+{-# OPTIONS --no-auto-inline #-}
 module DefaultMethods where
 
 open import Haskell.Prim

@@ -4,7 +4,7 @@ module Haskell.Prim.Tuple where
 open import Haskell.Prim
 
 variable
-  @0 as : List Set
+  as : List Set
 
 --------------------------------------------------
 -- Tuples
