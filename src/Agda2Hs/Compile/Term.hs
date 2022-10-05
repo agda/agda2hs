@@ -195,9 +195,11 @@ compileTerm v = do
       True  -> compileErasedApp es
       False -> (`app` es) . Hs.Con () =<< hsQName (conName h)
     Lit l -> compileLiteral l
-    Lam v b | keepArg v, getOrigin v == UserWritten -> do
+    Lam v b | usableModality v, getOrigin v == UserWritten -> do
+      unless (visible v) $ genericDocError =<< do
+        text "Implicit lambda not supported: " <+> prettyTCM (absName b)
       hsLambda (absName b) <$> underAbstr_ b compileTerm
-    Lam v b | keepArg v ->
+    Lam v b | usableModality v ->
       -- System-inserted lambda, no need to preserve the name.
       underAbstraction_ b $ \ body -> do
         x <- showTCM (Var 0 [])
