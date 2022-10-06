@@ -17,6 +17,7 @@ import Agda.Syntax.Literal
 import Agda.Syntax.Internal
 
 import Agda.TypeChecking.Pretty
+import Agda.TypeChecking.Reduce ( instantiate )
 import Agda.TypeChecking.Substitute ( Apply(applyE) )
 
 import Agda.Utils.Lens
@@ -240,6 +241,7 @@ compileClassFunApp f es = do
         [ text "symbol module:  " <+> prettyTCM (qnameModule f)
         , text "current module: " <+> prettyTCM curMod
         ]
+      x <- instantiate x
       unless (curMod `isLeChildModuleOf` qnameModule f) $ checkInstance $ unArg x
       args <- mapMaybeM compileArg xs
       return $ hsVar uf `eApp` args

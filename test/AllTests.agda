@@ -33,6 +33,7 @@ import LiteralPatterns
 import Issue92
 import HeightMirror
 import TransparentFun
+import Issue115
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -67,4 +68,5 @@ import LiteralPatterns
 import Issue92
 import HeightMirror
 import TransparentFun
+import Issue115
 #-}
