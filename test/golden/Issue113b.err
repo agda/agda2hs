@@ -1,0 +1,2 @@
+An unboxed type must be a non-recursive record type with exactly
+one non-erased field.

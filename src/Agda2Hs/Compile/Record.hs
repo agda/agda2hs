@@ -152,7 +152,7 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
       (_, _) -> __IMPOSSIBLE__
 
 checkUnboxPragma :: Defn -> C ()
-checkUnboxPragma Record{ recFields = (f:fs) }
-  | keepArg f && all (not . keepArg) fs = return ()
+checkUnboxPragma def@Record{ recFields = (f:fs) }
+  | keepArg f , all (not . keepArg) fs , not (recRecursive def) = return ()
 checkUnboxPragma _ = genericError $
-  "An unboxed type must be a record type with exactly one non-erased field."
+  "An unboxed type must be a non-recursive record type with exactly one non-erased field."

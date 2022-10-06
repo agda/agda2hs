@@ -93,8 +93,9 @@ bindVar i = do
 underAbstr  :: Subst a => Dom Type -> Abs a -> (a -> C b) -> C b
 underAbstr a b ret
   | absName b == "_" = underAbstraction' KeepNames a b ret
-  | otherwise        = underAbstraction' KeepNames a b $ \ body ->
-                         liftTCM1 localScope $ bindVar 0 >> ret body
+  | otherwise        = underAbstraction' KeepNames a b $ \ body -> case b of
+                         Abs{}   -> liftTCM1 localScope $ bindVar 0 >> ret body
+                         NoAbs{} -> ret body
 
 underAbstr_ :: Subst a => Abs a -> (a -> C b) -> C b
 underAbstr_ = underAbstr __DUMMY_DOM__
