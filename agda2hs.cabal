@@ -51,7 +51,7 @@ executable agda2hs
                        Agda2Hs.Pragma
                        Agda2Hs.Render
                        AgdaInternals
-  build-depends:       base >= 4.10 && < 4.16,
+  build-depends:       base >= 4.10 && < 4.17,
                        Agda >= 2.6.3 && < 2.6.4,
                        containers >= 0.6 && < 0.7,
                        unordered-containers >= 0.2,
