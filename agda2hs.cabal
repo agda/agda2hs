@@ -66,5 +66,6 @@ executable agda2hs
   default-extensions:  LambdaCase,
                        RecordWildCards,
                        FlexibleContexts,
-                       MultiWayIf
+                       MultiWayIf,
+                       TupleSections
   ghc-options:         -Werror

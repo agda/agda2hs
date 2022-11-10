@@ -231,3 +231,14 @@ patToExp = \case
   PatTypeSig _ p _    -> patToExp p
   PBangPat _ p        -> patToExp p
   _                   -> Nothing
+
+data Strictness = Lazy | Strict
+  deriving (Show)
+
+addPatBang :: Strictness -> Pat () -> Pat ()
+addPatBang Strict = PBangPat ()
+addPatBang Lazy   = id
+
+addTyBang :: Strictness -> Type () -> Type ()
+addTyBang Strict = TyBang () (BangedTy ()) (NoUnpackPragma ())
+addTyBang Lazy   = id

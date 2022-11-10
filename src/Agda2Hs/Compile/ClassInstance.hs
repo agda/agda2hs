@@ -66,7 +66,7 @@ compileInstRule cs ty = case unSpine1 ty of
     DomDropped -> underAbstr a b (compileInstRule cs . unEl)
     DomConstraint hsA ->
       underAbstraction a b (compileInstRule (cs ++ [hsA]) . unEl)
-    DomType t  -> __IMPOSSIBLE__
+    DomType _ t -> __IMPOSSIBLE__
   _ -> __IMPOSSIBLE__
 
 -- Plan:

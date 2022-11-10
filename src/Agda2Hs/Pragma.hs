@@ -51,7 +51,7 @@ data ParsedPragma
   | DefaultPragma [Hs.Deriving ()]
   | ClassPragma [String]
   | ExistingClassPragma
-  | UnboxPragma
+  | UnboxPragma Strictness
   | TransparentPragma
   deriving Show
 
@@ -61,7 +61,8 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
   Just (CompilerPragma _ s)
     | "class" `isPrefixOf` s    -> return $ ClassPragma (words $ drop 5 s)
     | s == "existing-class"     -> return ExistingClassPragma
-    | s == "unboxed"            -> return UnboxPragma
+    | s == "unboxed"            -> return $ UnboxPragma Lazy
+    | s == "unboxed-strict"     -> return $ UnboxPragma Strict
     | s == "transparent"        -> return TransparentPragma
     | "deriving" `isPrefixOf` s ->
       -- parse a deriving clause for a datatype by tacking it onto a

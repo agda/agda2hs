@@ -4,7 +4,7 @@ import Control.Arrow ( (>>>) )
 import Control.Monad ( unless )
 import Control.Monad.Reader
 
-import Data.Maybe ( fromMaybe )
+import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text ( unpack )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
@@ -182,7 +182,7 @@ compileTerm v = do
       | Just semantics <- isSpecialTerm f -> semantics f es
       | otherwise -> isClassFunction f >>= \ case
         True  -> compileClassFunApp f es
-        False -> isUnboxProjection f `or2M` isTransparentFunction f >>= \ case
+        False -> (isJust <$> isUnboxProjection f) `or2M` isTransparentFunction f >>= \ case
           True  -> compileErasedApp es
           False -> do
             -- Drop module parameters (unless projection-like)
@@ -193,8 +193,8 @@ compileTerm v = do
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> isUnboxConstructor (conName h) >>= \ case
-      True  -> compileErasedApp es
-      False -> (`app` es) . Hs.Con () =<< hsQName (conName h)
+      Just _  -> compileErasedApp es
+      Nothing -> (`app` es) . Hs.Con () =<< hsQName (conName h)
     Lit l -> compileLiteral l
     Lam v b | usableModality v, getOrigin v == UserWritten -> do
       unless (visible v) $ genericDocError =<< do

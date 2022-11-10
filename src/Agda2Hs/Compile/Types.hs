@@ -12,6 +12,8 @@ import Agda.Compiler.Backend ( Definition, QName, ModuleName, TCM )
 import Agda.Syntax.Position ( Range )
 import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
 
+import Agda2Hs.HsUtils ( Strictness )
+
 type ModuleEnv   = TopLevelModuleName
 type ModuleRes   = ()
 type CompiledDef = [Ranged [Hs.Decl ()]]
@@ -37,11 +39,11 @@ data CompileEnv = CompileEnv
 type C = ReaderT CompileEnv TCM
 
 -- Currently we can compile an Agda "Dom Type" in three ways:
--- - To a type in Haskell
+-- - To a type in Haskell (with perhaps a strictness annotation)
 -- - To a typeclass constraint in Haskell
 -- - To nothing (e.g. for proofs)
 data CompiledDom
-  = DomType (Hs.Type ())
+  = DomType Strictness (Hs.Type ())
   | DomConstraint (Hs.Asst ())
   | DomDropped
 

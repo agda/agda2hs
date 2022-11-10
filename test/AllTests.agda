@@ -34,6 +34,7 @@ import Issue92
 import HeightMirror
 import TransparentFun
 import Issue115
+import BangPatterns
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -69,4 +70,5 @@ import Issue92
 import HeightMirror
 import TransparentFun
 import Issue115
+import BangPatterns
 #-}

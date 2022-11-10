@@ -6,7 +6,7 @@ import Control.Monad.Reader ( asks )
 
 import Data.Generics
 import Data.List
-import Data.Maybe ( fromMaybe )
+import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text
 
 import qualified Language.Haskell.Exts.Syntax as Hs
@@ -26,6 +26,7 @@ import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope ( telView, teleArgs, piApplyM )
 import Agda.TypeChecking.Sort ( ifIsSort )
 
+import Agda.Utils.Functor ( (<&>) )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.List ( snoc )
@@ -48,7 +49,7 @@ isSpecialPat = prettyShow >>> \ case
   _ -> Nothing
 
 isUnboxCopattern :: DeBruijnPattern -> C Bool
-isUnboxCopattern (ProjP _ q) = isUnboxProjection q
+isUnboxCopattern (ProjP _ q) = isJust <$> isUnboxProjection q
 isUnboxCopattern _           = return False
 
 tuplePat :: ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ())
@@ -183,10 +184,12 @@ compilePat p@(VarP o _)
   | otherwise               = Hs.PVar () . hsName <$> showTCM p
 compilePat (ConP h i ps)
   | Just semantics <- isSpecialPat (conName h) = setCurrentRange h $ semantics h i ps
-compilePat (ConP h _ ps) = do
-  ps <- compilePats ps
-  c <- hsQName (conName h)
-  return $ pApp c ps
+compilePat (ConP h _ ps) = isUnboxConstructor (conName h) >>= \ case
+  Just s -> addPatBang s <$> compileErasedConP ps
+  Nothing -> do
+    ps <- compilePats ps
+    c <- hsQName (conName h)
+    return $ pApp c ps
 compilePat (LitP _ l) = compileLitPat l
 compilePat (ProjP _ q) = do
   reportSDoc "agda2hs.compile" 6 $ text "compiling copattern: " <+> text (prettyShow q)
@@ -195,6 +198,11 @@ compilePat (ProjP _ q) = do
   let x = hsName $ prettyShow q
   return $ Hs.PVar () x
 compilePat p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
+
+compileErasedConP :: NAPs -> C (Hs.Pat ())
+compileErasedConP ps = compilePats ps <&> \case
+  [p] -> p
+  _   -> __IMPOSSIBLE__
 
 compileLitPat :: Literal -> C (Hs.Pat ())
 compileLitPat = \case

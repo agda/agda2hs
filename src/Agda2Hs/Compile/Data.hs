@@ -45,7 +45,10 @@ compileData ds def = do
 
 compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl ())
 compileConstructor params c = do
+  reportSDoc "agda2hs.data.con" 15 $ text "compileConstructor" <+> prettyTCM c
+  reportSDoc "agda2hs.data.con" 20 $ text "  params = " <+> prettyTCM params
   ty <- (`piApplyM` params) . defType =<< getConstInfo c
+  reportSDoc "agda2hs.data.con" 20 $ text "  ty = " <+> prettyTCM ty
   TelV tel _ <- telView ty
   let conName = hsName $ prettyShow $ qnameName c
   args <- compileConstructorArgs tel
@@ -54,6 +57,6 @@ compileConstructor params c = do
 compileConstructorArgs :: Telescope -> C [Hs.Type ()]
 compileConstructorArgs EmptyTel = return []
 compileConstructorArgs (ExtendTel a tel) = compileDom (absName tel) a >>= \case
-  DomType hsA       -> (hsA :) <$> underAbstraction a tel compileConstructorArgs
+  DomType s hsA     -> (addTyBang s hsA :) <$> underAbstraction a tel compileConstructorArgs
   DomConstraint hsA -> genericDocError =<< text "Not supported: constructors with class constraints"
   DomDropped        -> underAbstraction a tel compileConstructorArgs

@@ -12,13 +12,13 @@ alltests :
 	@echo == Compiling tests ==
 	./agda2hs AllTests.agda -o build
 	@echo == Running ghc ==
-	@(cd build; ghc -fno-code -XScopedTypeVariables AllTests.hs)
+	@(cd build; ghc -fno-code -XScopedTypeVariables -XBangPatterns AllTests.hs)
 
 cubicaltests :
 	@echo == Compiling tests using cubical ==
 	./agda2hs CubicalTests.agda -o build
 	@echo == Running ghc ==
-	@(cd build; ghc -fno-code -XScopedTypeVariables CubicalTests.hs)
+	@(cd build; ghc -fno-code -XScopedTypeVariables -XBangPatterns CubicalTests.hs)
 
 compare :
 	@echo == Comparing output ==

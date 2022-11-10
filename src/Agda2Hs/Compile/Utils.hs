@@ -35,6 +35,7 @@ import Agda.Utils.Monad
 
 import Agda2Hs.AgdaUtils ( (~~) )
 import Agda2Hs.Compile.Types
+import Agda2Hs.HsUtils ( Strictness(..) )
 import Agda2Hs.Pragma
 
 concatUnzip :: [([a], [b])] -> ([a], [b])
@@ -137,22 +138,22 @@ isClassFunction q
   where
     m = qnameModule q
 
-isUnboxRecord :: QName -> C Bool
+isUnboxRecord :: QName -> C (Maybe Strictness)
 isUnboxRecord q = do
   getConstInfo q >>= \case
     Defn{defName = r, theDef = Record{}} ->
       processPragma r <&> \case
-        UnboxPragma -> True
-        _           -> False
-    _ -> return False
+        UnboxPragma s -> Just s
+        _             -> Nothing
+    _ -> return Nothing
 
-isUnboxConstructor :: QName -> C Bool
+isUnboxConstructor :: QName -> C (Maybe Strictness)
 isUnboxConstructor q =
-  caseMaybeM (isRecordConstructor q) (return False) $ isUnboxRecord . fst
+  caseMaybeM (isRecordConstructor q) (return Nothing) $ isUnboxRecord . fst
 
-isUnboxProjection :: QName -> C Bool
+isUnboxProjection :: QName -> C (Maybe Strictness)
 isUnboxProjection q =
-  caseMaybeM (liftTCM $ getRecordOfField q) (return False) isUnboxRecord
+  caseMaybeM (liftTCM $ getRecordOfField q) (return Nothing) isUnboxRecord
 
 isTransparentFunction :: QName -> C Bool
 isTransparentFunction q = do

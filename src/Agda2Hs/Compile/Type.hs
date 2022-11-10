@@ -17,6 +17,7 @@ import Agda.TypeChecking.Telescope
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.List ( downFrom )
+import Agda.Utils.Maybe ( ifJustM, fromMaybe )
 import Agda.Utils.Monad ( forMaybeM, ifM )
 import Agda.Utils.Size ( Sized(size) )
 import Agda.Utils.Functor ( ($>) )
@@ -97,11 +98,18 @@ compileTopLevelType t cont = do
       | otherwise = underAbstraction a atel $ \tel ->
           go tel (cont . qualifyType (absName atel))
 
+compileType' :: Term -> C (Strictness, Hs.Type ())
+compileType' t = do
+  s <- case t of
+    Def f es -> fromMaybe Lazy <$> isUnboxRecord f
+    _        -> return Lazy
+  (s,) <$> compileType t
+
 compileType :: Term -> C (Hs.Type ())
 compileType t = do
   case t of
     Pi a b -> compileDom (absName b) a >>= \case
-      DomType hsA -> do
+      DomType _ hsA -> do
         hsB <- underAbstraction a b $ compileType . unEl
         return $ Hs.TyFun () hsA hsB
       DomConstraint hsA -> do
@@ -111,7 +119,7 @@ compileType t = do
     Def f es
       | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics f es
       | Just args <- allApplyElims es ->
-        ifM (isUnboxRecord f) (compileUnboxType f args) $
+        ifJustM (isUnboxRecord f) (\_ -> compileUnboxType f args) $
         ifM (isTransparentFunction f) (compileTransparentType args) $ do
           vs <- compileTypeArgs args
           f <- hsQName f
@@ -142,7 +150,7 @@ compileDom :: ArgName -> Dom Type -> C CompiledDom
 compileDom x a
   | usableModality a = case getHiding a of
       Instance{} -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
-      NotHidden  -> DomType <$> compileType (unEl $ unDom a)
+      NotHidden  -> uncurry DomType <$> compileType' (unEl $ unDom a)
       Hidden     -> do
         ifM (canErase $ unDom a)
             (return DomDropped)

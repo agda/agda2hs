@@ -138,9 +138,10 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
         hsDom <- compileDom (absName tel') dom
         (hsAssts, hsFields) <- underAbstraction dom tel' $ compileRecFields decl ns
         case hsDom of
-          DomType hsA -> do
+          DomType s hsA -> do
             let fieldName = hsName $ prettyShow $ qnameName $ unDom n
-            return (hsAssts, decl fieldName hsA : hsFields)
+                fieldType = addTyBang s hsA
+            return (hsAssts, decl fieldName fieldType : hsFields)
           DomConstraint hsA -> case target of
             ToClass{} -> return (hsA : hsAssts , hsFields)
             ToRecord{} -> genericError $

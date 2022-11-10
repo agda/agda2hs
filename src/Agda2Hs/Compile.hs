@@ -34,7 +34,7 @@ compile _ _ _ def = withCurrentModule (qnameModule $ defName def) $ runC $ proce
   case (p , defInstance def , theDef def) of
     (NoPragma           , _      , _         ) -> return []
     (ExistingClassPragma, _      , _         ) -> return [] -- No code generation, but affects how projections are compiled
-    (UnboxPragma        , _      , defn      ) -> checkUnboxPragma defn >> return [] -- also no code generation
+    (UnboxPragma s      , _      , defn      ) -> checkUnboxPragma defn >> return [] -- also no code generation
     (TransparentPragma  , _      , Function{}) -> checkTransparentPragma def >> return [] -- also no code generation
     (ClassPragma ms     , _      , Record{}  ) -> tag . single <$> compileRecord (ToClass ms) def
     (DefaultPragma ds   , _      , Datatype{}) -> tag <$> compileData ds def
