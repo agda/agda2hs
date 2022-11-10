@@ -10,8 +10,9 @@ import qualified Language.Haskell.Exts.Comments as Hs
 
 import Agda.Compiler.Backend ( Definition, QName, ModuleName, TCM )
 import Agda.Syntax.Position ( Range )
+import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
 
-type ModuleEnv   = ModuleName
+type ModuleEnv   = TopLevelModuleName
 type ModuleRes   = ()
 type CompiledDef = [Ranged [Hs.Decl ()]]
 type Ranged a    = (Range, a)

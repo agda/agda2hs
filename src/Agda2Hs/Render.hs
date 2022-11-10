@@ -21,6 +21,7 @@ import Agda.Compiler.Common ( curIF )
 import Agda.TypeChecking.Pretty
 import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Position
+import Agda.Syntax.TopLevelModuleName
 
 import Agda.Utils.Pretty ( prettyShow )
 import Agda2Hs.Compile.Types
@@ -64,7 +65,7 @@ autoImports = [("Natural", "Numeric.Natural")]
 addImports :: [Hs.ImportDecl Hs.SrcSpanInfo] -> [CompiledDef] -> TCM [Hs.ImportDecl ()]
 addImports is defs = do
   return [ doImport ty imp | (ty, imp) <- autoImports,
-                             uses ty defs && not (any (isImport ty imp) is)]
+                             uses ty (map (map snd) defs) && not (any (isImport ty imp) is)]
   where
     doImport :: String -> String -> Hs.ImportDecl ()
     doImport ty imp = Hs.ImportDecl ()
@@ -112,11 +113,11 @@ checkImport i
 
 -- Generating the files -------------------------------------------------------
 
-moduleFileName :: Options -> ModuleName -> FilePath
+moduleFileName :: Options -> TopLevelModuleName -> FilePath
 moduleFileName opts name =
-  optOutDir opts </> C.moduleNameToFileName (toTopLevelModuleName name) "hs"
+  optOutDir opts </> moduleNameToFileName name "hs"
 
-moduleSetup :: Options -> IsMain -> ModuleName -> filepath -> TCM (Recompile ModuleEnv ModuleRes)
+moduleSetup :: Options -> IsMain -> TopLevelModuleName -> filepath -> TCM (Recompile ModuleEnv ModuleRes)
 moduleSetup _ _ m _ = do
   reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
   setScope . iInsideScope =<< curIF
@@ -125,7 +126,7 @@ moduleSetup _ _ m _ = do
 ensureDirectory :: FilePath -> IO ()
 ensureDirectory = createDirectoryIfMissing True . takeDirectory
 
-writeModule :: Options -> ModuleEnv -> IsMain -> ModuleName -> [CompiledDef] -> TCM ModuleRes
+writeModule :: Options -> ModuleEnv -> IsMain -> TopLevelModuleName -> [CompiledDef] -> TCM ModuleRes
 writeModule opts _ isMain m defs0 = do
   code <- getForeignPragmas (optExtensions opts)
   let defs = concatMap defBlock defs0 ++ codeBlocks code

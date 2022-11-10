@@ -35,7 +35,7 @@ getForeignPragmas exts = do
     getCode :: [Hs.Extension] -> [ForeignCode] -> TCM [(Range, Code)]
     getCode _ [] = return []
     getCode exts (ForeignCode r code : pragmas) = do
-          let Just file = fmap filePath $ toLazy $ rangeFile r
+          let Just file = fmap (filePath . rangeFilePath) $ toLazy $ rangeFile r
               pmode = Hs.defaultParseMode { Hs.parseFilename     = file,
                                             Hs.ignoreLinePragmas = False,
                                             Hs.extensions        = exts }

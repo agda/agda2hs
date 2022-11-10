@@ -187,7 +187,7 @@ compileTerm v = do
           False -> do
             -- Drop module parameters (unless projection-like)
             n <- (theDef <$> getConstInfo f) >>= \case
-              Function{ funProjection = Just{} } -> return 0
+              Function{ funProjection = Right{} } -> return 0
               _ -> size <$> lookupSection (qnameModule f)
             (`app` drop n es) . Hs.Var () =<< hsQName f
     Con h i es

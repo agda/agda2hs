@@ -4,7 +4,7 @@ import Control.Arrow ( (>>>) )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
 
-import Agda.Compiler.Backend
+import Agda.Compiler.Backend hiding ( topLevelModuleName )
 import Agda.Compiler.Common ( topLevelModuleName )
 
 import Agda.TypeChecking.Pretty
@@ -46,18 +46,10 @@ hsQName f
       Just (r, Record{ recNamedCon = False }) -> mkname r -- Use the record name if no named constructor
       _                                       -> mkname f
   where
+    -- TODO: this prints all names UNQUALIFIED. For names from
+    -- qualified imports, we need to add the proper qualification in
+    -- the Haskell code.
+    mkname :: QName -> C (Hs.QName ())
     mkname x = do
-      reportSDoc "agda2hs" 14 $ text "Compiling name: " <+> prettyTCM x
-      m <- topLevelModuleName =<< currentModule
-      reportSDoc "agda2hs" 19 $ text "Current module: " <+> prettyTCM m
-      s <- showTCM x
-      reportSDoc "agda2hs" 54 $ text "Raw name:   " <+> pure (P.pretty x)
-      reportSDoc "agda2hs" 59 $ text "Raw module: " <+> pure (P.pretty m)
-      return $
-        case break (== '.') $ reverse s of
-          (_, "")      -> Hs.UnQual () (hsName s)
-          (fr, _ : mr)
-            -- Agda 2.6.2 changed how functions in where clauses get qualified. To work around that
-            -- we never qualify things from the current module.
-            | x `isInModule` m -> Hs.UnQual () (hsName $ reverse fr)
-            | otherwise        -> Hs.Qual () (Hs.ModuleName () $ reverse mr) (hsName $ reverse fr)
+      s <- fmap show $ pretty $ nameConcrete $ qnameName x
+      return $ Hs.UnQual () (hsName s)

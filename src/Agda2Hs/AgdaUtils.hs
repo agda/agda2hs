@@ -1,6 +1,7 @@
 module Agda2Hs.AgdaUtils where
 
 import Data.Data
+import Data.Monoid ( Any(..) )
 import Data.Generics ( listify )
 import Data.Maybe ( fromMaybe )
 
@@ -8,6 +9,7 @@ import Agda.Compiler.Backend hiding ( Args )
 
 import Agda.Syntax.Common ( Arg, defaultArg )
 import Agda.Syntax.Internal
+import Agda.Syntax.Internal.Names
 
 import Agda.TypeChecking.Pretty ( Doc, text, vcat )
 import Agda.TypeChecking.Substitute
@@ -33,13 +35,14 @@ isFatherModuleOf m = maybe False (mnameToList m ==) . initMaybe . mnameToList
 applyUnderTele :: Definition -> Args -> Definition
 applyUnderTele d as = raise (length as) d `apply` as
 
--- | Check whether an extended lambda is used anywhere inside given argument.
-extLamUsedIn :: Data a => QName -> a -> Bool
-extLamUsedIn n = (n `elem`) . listify isExtendedLambdaName
+-- | Check whether the given name (1) is the name of an extended
+--   lambda and (2) is used anywhere inside the second argument.
+extLamUsedIn :: NamesIn a => QName -> a -> Bool
+extLamUsedIn n x = isExtendedLambdaName n && getAny (namesIn' (Any . (n ==)) x)
 
 -- | All mentions of local definitions that occur anywhere inside the argument.
-getLocalUses :: Data a => [QName] -> a -> [QName]
-getLocalUses ls = listify (`elem` ls)
+getLocalUses :: NamesIn a => [QName] -> a -> [QName]
+getLocalUses ls = namesIn' $ \q -> [ q | q `elem` ls ]
 
 -- | Convert the final 'Proj' projection elimination into a
 --   'Def' projection application.

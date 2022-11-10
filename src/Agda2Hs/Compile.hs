@@ -27,7 +27,7 @@ runC m = runReaderT m initCompileEnv
 ------------------------
 
 compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
-compile _ m _ def = withCurrentModule m $ runC $ processPragma (defName def) >>= \ p -> do
+compile _ _ _ def = withCurrentModule (qnameModule $ defName def) $ runC $ processPragma (defName def) >>= \ p -> do
   reportSDoc "agda2hs.compile" 5 $ text "Compiling definition: " <+> prettyTCM (defName def)
   reportSDoc "agda2hs.compile" 45 $ text "Pragma: " <+> text (show p)
   reportSDoc "agda2hs.compile" 45 $ text "Compiling definition: " <+> pretty (theDef def)
