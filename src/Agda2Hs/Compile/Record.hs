@@ -25,7 +25,7 @@ import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.ClassInstance
 import Agda2Hs.Compile.Function ( compileFun )
-import Agda2Hs.Compile.Type ( compileDom, compileTele )
+import Agda2Hs.Compile.Type ( compileDom, compileTeleBinds )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
@@ -88,12 +88,9 @@ compileMinRecords def sls = do
 compileRecord :: RecordTarget -> Definition -> C (Hs.Decl ())
 compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
   TelV tel _ <- telViewUpTo recPars (defType def)
-  params <- compileTele tel
   addContext tel $ do
-    pars <- mapM (showTCM . unArg) params
-    let hd = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
-                   (Hs.DHead () (hsName rName))
-                   pars
+    let binds = compileTeleBinds tel
+    let hd = foldl (Hs.DHApp ()) (Hs.DHead () (hsName rName)) binds
     let fieldTel = snd $ splitTelescopeAt recPars recTel
     case target of
       ToClass ms -> do

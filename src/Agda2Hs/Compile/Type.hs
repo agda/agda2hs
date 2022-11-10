@@ -149,10 +149,5 @@ compileDom x a
             (genericDocError =<< do text "Implicit type argument not supported: " <+> prettyTCM x)
   | otherwise    = return DomDropped
 
-compileTele :: Telescope -> C [Arg Term]
-compileTele tel = addContext tel $ do
-  forMaybeM (zip3 (downFrom $ size tel) (teleNames tel) (flattenTel tel)) $ \(i,x,a) -> do
-    compileDom x a >>= \case
-      DomType{}       -> return $ Just $ argFromDom a $> var i
-      DomConstraint{} -> genericDocError =<< text "Not supported: type-level constraints"
-      DomDropped{}    -> return Nothing
+compileTeleBinds :: Telescope -> [Hs.TyVarBind ()]
+compileTeleBinds = map (Hs.UnkindedVar () . hsName . unArg) . filter keepArg . teleArgNames

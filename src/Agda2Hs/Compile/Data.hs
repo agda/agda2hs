@@ -14,7 +14,7 @@ import Agda.TypeChecking.Telescope
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
-import Agda2Hs.Compile.Type ( compileDom, compileTele )
+import Agda2Hs.Compile.Type ( compileDom, compileTeleBinds )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
@@ -27,12 +27,11 @@ compileData ds def = do
       TelV tel t <- telViewUpTo n (defType def)
       reportSDoc "agda2hs.data" 10 $ text "Datatype telescope:" <+> prettyTCM tel
       allIndicesErased t
-      params <- compileTele tel
+      let params = teleArgs tel
       addContext tel $ do
-        pars <- mapM (showTCM . unArg) params
+        let binds = compileTeleBinds tel
         cs   <- mapM (compileConstructor params) cs
-        let hd   = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
-                         (Hs.DHead () d) pars
+        let hd   = foldl (Hs.DHApp ()) (Hs.DHead () d) binds
         return [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs ds]
     _ -> __IMPOSSIBLE__
   where
