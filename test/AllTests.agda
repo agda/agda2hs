@@ -36,6 +36,7 @@ import TransparentFun
 import Issue115
 import BangPatterns
 import Issue94
+import Issue107
 
 {-# FOREIGN AGDA2HS
 import Issue14
