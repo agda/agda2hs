@@ -8,7 +8,3 @@ caption: Contents
 introduction
 features
 ```
-
-<!-- - [Index](index.md)
-- [Introduction](introduction.md)
-- [Features](features.md) -->
