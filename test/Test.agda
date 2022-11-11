@@ -243,3 +243,7 @@ if_partial₄ = map (if_then 1 else_)
 if_partial₅ : Bool → Nat → List Nat → List Nat
 if_partial₅ b f = map (if b then f else_)
 {-# COMPILE AGDA2HS if_partial₅ #-}
+
+if_partial₆ : Bool → Nat → List Nat → List Nat
+if_partial₆ b f0 = map (if b then f0 else_)
+{-# COMPILE AGDA2HS if_partial₆ #-}

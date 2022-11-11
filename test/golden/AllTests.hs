@@ -34,4 +34,5 @@ import HeightMirror
 import TransparentFun
 import Issue115
 import BangPatterns
+import Issue94
 

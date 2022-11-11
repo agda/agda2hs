@@ -11,8 +11,9 @@ import Agda.Compiler.Backend hiding ( Args )
 import Agda.Syntax.Common
 import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Internal
+import Agda.Syntax.Position ( noRange )
 import Agda.Syntax.Scope.Base
-import Agda.Syntax.Scope.Monad ( bindVariable )
+import Agda.Syntax.Scope.Monad ( bindVariable, freshConcreteName )
 
 import Agda.TypeChecking.CheckInternal ( infer )
 import Agda.TypeChecking.Constraints ( noConstraints )
@@ -58,7 +59,7 @@ isInScopeUnqualified x = lift $ do
   return $ any (not . C.isQualified) ys
 
 freshString :: String -> C String
-freshString s = liftTCM (freshName_ s) >>= showTCM
+freshString s = liftTCM $ prettyShow <$> freshConcreteName noRange 0 s
 
 makeList :: C Doc -> Term -> C [Term]
 makeList = makeList' "Agda.Builtin.List.List.[]" "Agda.Builtin.List.List._∷_"

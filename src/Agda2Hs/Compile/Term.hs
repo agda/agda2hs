@@ -170,12 +170,17 @@ compileLiteral (LitString t) = return $ Hs.Lit () $ Hs.String () s s
   where s = Text.unpack t
 compileLiteral l               = genericDocError =<< text "bad term:" <?> prettyTCM (Lit l)
 
+compileVar :: Nat -> C String
+compileVar x = prettyShow . nameConcrete <$> nameOfBV x
+
 compileTerm :: Term -> C (Hs.Exp ())
 compileTerm v = do
   reportSDoc "agda2hs.compile" 7 $ text "compiling term:" <+> prettyTCM v
   reportSDoc "agda2hs.compile" 27 $ text "compiling term:" <+> pure (P.pretty v)
   case unSpine1 v of
-    Var x es   -> (`app` es) . hsVar =<< showTCM (Var x [])
+    Var x es   -> do
+      s <- compileVar x
+      hsVar s `app` es
     -- v currently we assume all record projections are instance
     -- args that need attention
     Def f es

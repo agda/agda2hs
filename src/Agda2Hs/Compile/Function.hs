@@ -34,7 +34,7 @@ import Agda.Utils.Monad
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( hsQName )
-import Agda2Hs.Compile.Term ( compileTerm )
+import Agda2Hs.Compile.Term ( compileTerm, compileVar )
 import Agda2Hs.Compile.Type ( compileTopLevelType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
@@ -179,9 +179,9 @@ compilePats ps = mapM (compilePat . namedArg) =<< filterM keepPat ps
       ]
 
 compilePat :: DeBruijnPattern -> C (Hs.Pat ())
-compilePat p@(VarP o _)
+compilePat p@(VarP o x)
   | PatOWild <- patOrigin o = return $ Hs.PWildCard ()
-  | otherwise               = Hs.PVar () . hsName <$> showTCM p
+  | otherwise               = Hs.PVar () . hsName <$> compileVar (dbPatVarIndex x)
 compilePat (ConP h i ps)
   | Just semantics <- isSpecialPat (conName h) = setCurrentRange h $ semantics h i ps
 compilePat (ConP h _ ps) = isUnboxConstructor (conName h) >>= \ case
