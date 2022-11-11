@@ -24,6 +24,7 @@ import Agda.Utils.Functor ( ($>) )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( hsQName )
+import Agda2Hs.Compile.Term ( compileVar )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.AgdaUtils
@@ -126,7 +127,7 @@ compileType t = do
           return $ tApp (Hs.TyCon () f) vs
     Var x es | Just args <- allApplyElims es -> do
       vs <- compileTypeArgs args
-      x  <- hsName <$> showTCM (Var x [])
+      x  <- hsName <$> compileVar x
       return $ tApp (Hs.TyVar () x) vs
     Sort s -> return (Hs.TyStar ())
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
