@@ -22,6 +22,7 @@ import Agda2Hs.HsUtils
 compileData :: [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
 compileData ds def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
+  checkValidTypeName d
   case theDef def of
     Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} -> do
       TelV tel t <- telViewUpTo n (defType def)
@@ -29,9 +30,9 @@ compileData ds def = do
       allIndicesErased t
       let params = teleArgs tel
       addContext tel $ do
-        let binds = compileTeleBinds tel
-        cs   <- mapM (compileConstructor params) cs
-        let hd   = foldl (Hs.DHApp ()) (Hs.DHead () d) binds
+        binds <- compileTeleBinds tel
+        cs <- mapM (compileConstructor params) cs
+        let hd = foldl (Hs.DHApp ()) (Hs.DHead () d) binds
         return [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs ds]
     _ -> __IMPOSSIBLE__
   where
@@ -51,6 +52,7 @@ compileConstructor params c = do
   reportSDoc "agda2hs.data.con" 20 $ text "  ty = " <+> prettyTCM ty
   TelV tel _ <- telView ty
   let conName = hsName $ prettyShow $ qnameName c
+  checkValidConName conName
   args <- compileConstructorArgs tel
   return $ Hs.QualConDecl () Nothing Nothing $ Hs.ConDecl () conName args
 

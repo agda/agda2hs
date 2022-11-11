@@ -40,7 +40,7 @@ compile _ _ _ def = withCurrentModule (qnameModule $ defName def) $ runC $ proce
     (DefaultPragma ds   , _      , Datatype{}) -> tag <$> compileData ds def
     (DefaultPragma _    , Just _ , _         ) -> tag . single <$> compileInstance def
     (DefaultPragma _    , _      , Axiom{}   ) -> tag <$> compilePostulate def
-    (DefaultPragma _    , _      , Function{}) -> tag <$> compileFun def
+    (DefaultPragma _    , _      , Function{}) -> tag <$> compileFun True def
     (DefaultPragma ds   , _      , Record{}  ) -> tag . single <$> compileRecord (ToRecord ds) def
     _                                          -> genericDocError =<< do
       text "Don't know how to compile" <+> prettyTCM (defName def)

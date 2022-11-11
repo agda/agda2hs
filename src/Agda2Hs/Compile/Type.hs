@@ -1,6 +1,7 @@
 module Agda2Hs.Compile.Type where
 
 import Control.Arrow ( (>>>) )
+import Control.Monad ( forM )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
 
@@ -158,5 +159,8 @@ compileDom x a
             (genericDocError =<< do text "Implicit type argument not supported: " <+> prettyTCM x)
   | otherwise    = return DomDropped
 
-compileTeleBinds :: Telescope -> [Hs.TyVarBind ()]
-compileTeleBinds = map (Hs.UnkindedVar () . hsName . unArg) . filter keepArg . teleArgNames
+compileTeleBinds :: Telescope -> C [Hs.TyVarBind ()]
+compileTeleBinds tel =
+  forM (map (hsName . unArg) $ filter keepArg $ teleArgNames tel) $ \x -> do
+    checkValidTyVar x
+    return $ Hs.UnkindedVar () x

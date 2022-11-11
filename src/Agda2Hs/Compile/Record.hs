@@ -8,7 +8,7 @@ import Data.List.NonEmpty ( NonEmpty(..) )
 import Data.Map ( Map )
 import qualified Data.Map as Map
 
-import qualified Language.Haskell.Exts.Syntax as Hs
+import qualified Language.Haskell.Exts as Hs
 
 import Agda.Compiler.Backend
 
@@ -48,7 +48,7 @@ compileMinRecord fieldNames m = do
   -- * it has an explicit dictionary argument
   -- * it's using the fields and definitions from the minimal record and not the parent record
   compiled <- withMinRecord m $ addContext (defaultDom rtype) $
-    fmap concat $ traverse compileFun defaults
+    fmap concat $ traverse (compileFun False) defaults
   let declMap = Map.fromList [ (definedName c, def) | def@(Hs.FunBind _ (c : _)) <- compiled ]
   return (definedFields, declMap)
 
@@ -89,8 +89,9 @@ compileRecord :: RecordTarget -> Definition -> C (Hs.Decl ())
 compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
   TelV tel _ <- telViewUpTo recPars (defType def)
   addContext tel $ do
-    let binds = compileTeleBinds tel
-    let hd = foldl (Hs.DHApp ()) (Hs.DHead () (hsName rName)) binds
+    checkValidTypeName rName
+    binds <- compileTeleBinds tel
+    let hd = foldl (Hs.DHApp ()) (Hs.DHead () rName) binds
     let fieldTel = snd $ splitTelescopeAt recPars recTel
     case target of
       ToClass ms -> do
@@ -102,6 +103,7 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
         defaultDecls <- compileMinRecords def ms
         return $ Hs.ClassDecl () context hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
       ToRecord ds -> do
+        checkValidConName cName
         (constraints, fieldDecls) <- compileRecFields fieldDecl recFields fieldTel
         unless (null constraints) __IMPOSSIBLE__ -- no constraints for records
         mapM_ checkFieldInScope (map unDom recFields)
@@ -109,9 +111,9 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
         return $ Hs.DataDecl () (Hs.DataType ()) Nothing hd [conDecl] ds
 
   where
-    rName = prettyShow $ qnameName $ defName def
+    rName = hsName $ prettyShow $ qnameName $ defName def
     cName | recNamedCon = hsName $ prettyShow $ qnameName $ conName recConHead
-          | otherwise   = hsName rName   -- Reuse record name for constructor if no given name
+          | otherwise   = rName   -- Reuse record name for constructor if no given name
 
 
     -- In Haskell, projections live in the same scope as the record type, so check here that the
@@ -120,7 +122,7 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
       True  -> return ()
       False -> setCurrentRange (nameBindingSite $ qnameName f) $ genericError $
         "Record projections (`" ++ prettyShow (qnameName f) ++ "` in this case) must be brought into scope when compiling to Haskell record types. " ++
-        "Add `open " ++ rName ++ " public` after the record declaration to fix this."
+        "Add `open " ++ Hs.prettyPrint rName ++ " public` after the record declaration to fix this."
 
     Record{..} = theDef def
 
@@ -141,6 +143,7 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
           DomType s hsA -> do
             let fieldName = hsName $ prettyShow $ qnameName $ unDom n
                 fieldType = addTyBang s hsA
+            checkValidFunName fieldName
             return (hsAssts, decl fieldName fieldType : hsFields)
           DomConstraint hsA -> case target of
             ToClass{} -> return (hsA : hsAssts , hsFields)

@@ -86,22 +86,24 @@ negSucIntPat c i [p] = do
   return $ Hs.PLit () (Hs.Negative ()) (Hs.Int () n (show (negate n)))
 negSucIntPat _ _ _ = __IMPOSSIBLE__
 
-compileFun, compileFun' :: Definition -> C [Hs.Decl ()]
+-- The bool argument says whether we also want the type signature or just the body
+compileFun, compileFun' :: Bool -> Definition -> C [Hs.Decl ()]
 -- initialize locals when first stepping into a function
-compileFun def@Defn{..} = withFunctionLocals defName $ compileFun' def
+compileFun withSig def@Defn{..} = withFunctionLocals defName $ compileFun' withSig def
 -- inherit existing (instantiated) locals
-compileFun' def@(Defn {..}) = do
+compileFun' withSig def@(Defn {..}) = do
   reportSDoc "agda2hs.compile" 6 $ text "compiling function: " <+> prettyTCM defName
   let keepClause = maybe False keepArg . clauseType
   withCurrentModule m $ setCurrentRange (nameBindingSite n) $ do
     ifM (endsInSort defType) (ensureNoLocals err >> compileTypeDef x def) $ do
+      when withSig $ checkValidFunName x
       compileTopLevelType defType $ \ty -> do
         -- Instantiate the clauses to the current module parameters
         pars <- getContextArgs
         reportSDoc "agda2hs.compile" 10 $ text "applying clauses to parameters: " <+> prettyTCM pars
         let clauses = filter keepClause funClauses `apply` pars
         cs <- mapM (compileClause (qnameModule defName) x) clauses
-        return [Hs.TypeSig () [x] ty, Hs.FunBind () cs]
+        return $ [Hs.TypeSig () [x] ty | withSig ] ++ [ Hs.FunBind () cs]
   where
     Function{..} = theDef
     m = qnameModule defName
@@ -127,7 +129,7 @@ compileClause curModule x c@Clause{..} = withClauseLocals curModule c $ do
         ls
     withLocals ls' $ do
       body <- compileTerm $ fromMaybe __IMPOSSIBLE__ clauseBody
-      whereDecls <- mapM (getConstInfo >=> compileFun') children
+      whereDecls <- mapM (getConstInfo >=> compileFun' True) children
       let rhs = Hs.UnGuardedRhs () body
           whereBinds | null whereDecls = Nothing
                      | otherwise       = Just $ Hs.BDecls () (concat whereDecls)
@@ -181,7 +183,10 @@ compilePats ps = mapM (compilePat . namedArg) =<< filterM keepPat ps
 compilePat :: DeBruijnPattern -> C (Hs.Pat ())
 compilePat p@(VarP o x)
   | PatOWild <- patOrigin o = return $ Hs.PWildCard ()
-  | otherwise               = Hs.PVar () . hsName <$> compileVar (dbPatVarIndex x)
+  | otherwise               = do
+      n <- hsName <$> compileVar (dbPatVarIndex x)
+      checkValidVarName n
+      return $ Hs.PVar () n
 compilePat (ConP h i ps)
   | Just semantics <- isSpecialPat (conName h) = setCurrentRange h $ semantics h i ps
 compilePat (ConP h _ ps) = isUnboxConstructor (conName h) >>= \ case
@@ -245,19 +250,13 @@ withClauseLocals curModule c@Clause{..} k = do
   withLocals ls' k
 
 checkTransparentPragma :: Definition -> C ()
-checkTransparentPragma def = compileFun def >>= \case
-    [Hs.TypeSig _ _ ty, Hs.FunBind _ cls] -> do
-      checkTransparentType ty
+checkTransparentPragma def = compileFun False def >>= \case
+    [Hs.FunBind _ cls] ->
       mapM_ checkTransparentClause cls
     [Hs.TypeDecl _ hd b] ->
       checkTransparentTypeDef hd b
     _ -> __IMPOSSIBLE__
   where
-    checkTransparentType :: Hs.Type () -> C ()
-    checkTransparentType = \case
-      Hs.TyFun () a b | a == b -> return ()
-      _                        -> errNotTransparent
-
     checkTransparentClause :: Hs.Match () -> C ()
     checkTransparentClause = \case
       Hs.Match _ _ [p] (Hs.UnGuardedRhs _ e) _ | patToExp p == Just e -> return ()

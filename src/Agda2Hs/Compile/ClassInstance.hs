@@ -144,7 +144,7 @@ compileInstanceClause curModule c = withClauseLocals curModule c $ do
         , [(_, f)] <- mapMaybe isProjElim es
         , f .~ q
         -> do d <- chaseDef n
-              fc <- drop 1 <$> compileFun d
+              fc <- compileFun False d
               let hd = hsName $ prettyShow $ nameConcrete $ qnameName $ defName d
               let fc' = dropPatterns 1 $ replaceName hd uf fc
               return (map (Hs.InsDecl ()) fc', [n])

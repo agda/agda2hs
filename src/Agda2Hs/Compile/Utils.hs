@@ -6,6 +6,8 @@ import Control.Monad.Reader
 
 import Data.Maybe ( isJust )
 
+import qualified Language.Haskell.Exts as Hs
+
 import Agda.Compiler.Backend hiding ( Args )
 
 import Agda.Syntax.Common
@@ -36,7 +38,7 @@ import Agda.Utils.Monad
 
 import Agda2Hs.AgdaUtils ( (~~) )
 import Agda2Hs.Compile.Types
-import Agda2Hs.HsUtils ( Strictness(..) )
+import Agda2Hs.HsUtils
 import Agda2Hs.Pragma
 
 concatUnzip :: [([a], [b])] -> ([a], [b])
@@ -197,3 +199,23 @@ ensureNoLocals msg = unlessM (null <$> asks locals) $ genericError msg
 
 withLocals :: LocalDecls -> C a -> C a
 withLocals ls = local $ \e -> e { locals = ls }
+
+checkValidVarName :: Hs.Name () -> C ()
+checkValidVarName x = unless (validVarName x) $ genericDocError =<< do
+  text "Invalid name for Haskell variable: " <+> text (Hs.prettyPrint x)
+
+checkValidTyVar :: Hs.Name () -> C ()
+checkValidTyVar x = unless (validVarName x) $ genericDocError =<< do
+  text "Invalid name for Haskell type variable: " <+> text (Hs.prettyPrint x)
+
+checkValidFunName :: Hs.Name () -> C ()
+checkValidFunName x = unless (validVarName x) $ genericDocError =<< do
+  text "Invalid name for Haskell function: " <+> text (Hs.prettyPrint x)
+
+checkValidTypeName :: Hs.Name () -> C ()
+checkValidTypeName x = unless (validConName x) $ genericDocError =<< do
+  text "Invalid name for Haskell type: " <+> text (Hs.prettyPrint x)
+
+checkValidConName :: Hs.Name () -> C ()
+checkValidConName x = unless (validConName x) $ genericDocError =<< do
+  text "Invalid name for Haskell constructor: " <+> text (Hs.prettyPrint x)
