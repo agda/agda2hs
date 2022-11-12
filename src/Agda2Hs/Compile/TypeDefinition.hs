@@ -24,7 +24,7 @@ compileTypeDef :: Hs.Name () -> Definition -> C [Hs.Decl ()]
 compileTypeDef name (Defn {..}) = do
   unlessM (isTransparentFunction defName) $ checkValidTypeName name
   Clause{..} <- singleClause funClauses
-  addContext (KeepNames clauseTel) $ liftTCM1 localScope $ do
+  addContext (KeepNames clauseTel) $ do
     as <- compileTypeArgs namedClausePats
     let hd = foldl (Hs.DHApp ()) (Hs.DHead () name) as
     rhs <- compileType $ fromMaybe __IMPOSSIBLE__ clauseBody

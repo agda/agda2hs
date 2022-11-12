@@ -117,8 +117,7 @@ compileFun' withSig def@(Defn {..}) = do
 compileClause :: ModuleName -> Hs.Name () -> Clause -> C (Hs.Match ())
 compileClause curModule x c@Clause{..} = withClauseLocals curModule c $ do
   reportSDoc "agda2hs.compile" 7 $ text "compiling clause: " <+> prettyTCM c
-  addContext (KeepNames clauseTel) $ liftTCM1 localScope $ do
-    scopeBindPatternVariables namedClausePats
+  addContext (KeepNames clauseTel) $ do
     forM_ namedClausePats $ noAsPatterns . namedArg
     ps <- compilePats namedClausePats
     ls <- asks locals
@@ -137,22 +136,6 @@ compileClause curModule x c@Clause{..} = withClauseLocals curModule c $ do
             (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
             _                         -> Hs.Match () x ps rhs whereBinds
       return match
-
--- | When going under a binder we need to update the scope as well as the context in order to get
--- correct printing of variable names (Issue #14).
-scopeBindPatternVariables :: NAPs -> C ()
-scopeBindPatternVariables = mapM_ (scopeBind . namedArg)
-  where
-    scopeBind :: DeBruijnPattern -> C ()
-    scopeBind = \ case
-      VarP o i | PatOVar x <- patOrigin o -> liftTCM $ bindVariable LambdaBound (nameConcrete x) x
-               | otherwise                -> return ()
-      ConP _ _ ps -> scopeBindPatternVariables ps
-      DotP{}      -> return ()
-      LitP{}      -> return ()
-      ProjP{}     -> return ()
-      IApplyP{}   -> return ()
-      DefP{}      -> return ()
 
 noAsPatterns :: DeBruijnPattern -> C ()
 noAsPatterns = \case

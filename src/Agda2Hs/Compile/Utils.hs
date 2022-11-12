@@ -35,6 +35,7 @@ import Agda.Utils.Pretty ( prettyShow )
 import qualified Agda.Utils.Pretty as P
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
+import Agda.Utils.Singleton
 
 import Agda2Hs.AgdaUtils ( (~~) )
 import Agda2Hs.Compile.Types
@@ -49,9 +50,6 @@ infixr 0 /\, \/
 f /\ g = \x -> f x && g x
 f \/ g = \x -> f x || g x
 
-liftTCM1 :: (TCM a -> TCM b) -> C a -> C b
-liftTCM1 k m = ReaderT (k . runReaderT m)
-
 showTCM :: PrettyTCM a => a -> C String
 showTCM x = lift $ show <$> prettyTCM x
 
@@ -61,7 +59,15 @@ isInScopeUnqualified x = lift $ do
   return $ any (not . C.isQualified) ys
 
 freshString :: String -> C String
-freshString s = liftTCM $ prettyShow <$> freshConcreteName noRange 0 s
+freshString s = liftTCM $ do
+  scope <- getScope
+  ctxNames <- map (prettyShow . nameConcrete) <$> getContextNames
+  return $ head $ filter (isFresh scope ctxNames) $ s : map (\i -> s ++ show i) [0..]
+  where
+    dummyName s = C.QName $ C.Name noRange C.NotInScope $ singleton $ C.Id s
+    isFresh scope ctxNames s =
+      null (scopeLookup (dummyName s) scope :: [AbstractName]) &&
+      not (s `elem` ctxNames)
 
 makeList :: C Doc -> Term -> C [Term]
 makeList = makeList' "Agda.Builtin.List.List.[]" "Agda.Builtin.List.List._∷_"
@@ -95,11 +101,7 @@ bindVar i = do
   liftTCM $ bindVariable LambdaBound (nameConcrete x) x
 
 underAbstr  :: Subst a => Dom Type -> Abs a -> (a -> C b) -> C b
-underAbstr a b ret
-  | absName b == "_" = underAbstraction' KeepNames a b ret
-  | otherwise        = underAbstraction' KeepNames a b $ \ body -> case b of
-                         Abs{}   -> liftTCM1 localScope $ bindVar 0 >> ret body
-                         NoAbs{} -> ret body
+underAbstr = underAbstraction' KeepNames
 
 underAbstr_ :: Subst a => Abs a -> (a -> C b) -> C b
 underAbstr_ = underAbstr __DUMMY_DOM__
