@@ -175,13 +175,6 @@ hsUndefined = hsVar "undefined"
 hsError :: String -> Exp ()
 hsError s = hsVar "error" `eApp` [strE s]
 
-getExplicitImports :: ImportSpec l -> [String]
-getExplicitImports = map pp . \case
-  IVar _ n -> [n]
-  IAbs _ _ n -> [n]
-  IThingAll _ n -> [n]
-  IThingWith _ n ns -> n : map cname ns
-
 cname :: CName l -> Name l
 cname (VarName _ n) = n
 cname (ConName _ n) = n
