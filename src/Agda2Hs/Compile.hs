@@ -1,9 +1,11 @@
 module Agda2Hs.Compile where
 
 import Control.Monad.Reader ( ReaderT(runReaderT) )
+import Control.Monad.Writer ( WriterT(runWriterT) )
 
 import Agda.Compiler.Backend
 import Agda.TypeChecking.Pretty
+import Agda.Utils.Null
 
 import Agda2Hs.Compile.ClassInstance ( compileInstance )
 import Agda2Hs.Compile.Data ( compileData )
@@ -20,13 +22,13 @@ initCompileEnv = CompileEnv
   , isCompilingInstance = False
   }
 
-runC :: C a -> TCM a
-runC m = runReaderT m initCompileEnv
+runC :: C a -> TCM (a, Imports)
+runC m = runWriterT $ runReaderT m initCompileEnv
 
 -- Main compile function
 ------------------------
 
-compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM CompiledDef
+compile :: Options -> ModuleEnv -> IsMain -> Definition -> TCM (CompiledDef, Imports)
 compile _ _ _ def = withCurrentModule (qnameModule $ defName def) $ runC $ processPragma (defName def) >>= \ p -> do
   reportSDoc "agda2hs.compile" 5 $ text "Compiling definition: " <+> prettyTCM (defName def)
   reportSDoc "agda2hs.compile" 45 $ text "Pragma: " <+> text (show p)

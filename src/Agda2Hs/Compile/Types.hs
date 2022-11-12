@@ -1,7 +1,10 @@
 module Agda2Hs.Compile.Types where
 
 import Control.Monad.Reader ( ReaderT )
+import Control.Monad.Writer ( WriterT )
 import Control.DeepSeq ( NFData(..) )
+
+import Data.Set ( Set )
 
 import qualified Language.Haskell.Exts.SrcLoc as Hs
 import qualified Language.Haskell.Exts.Syntax as Hs
@@ -36,7 +39,10 @@ data CompileEnv = CompileEnv
   , isCompilingInstance :: Bool
   }
 
-type C = ReaderT CompileEnv TCM
+type Import = (Hs.ModuleName (), Hs.QName ())
+type Imports = [Import]
+
+type C = ReaderT CompileEnv (WriterT Imports TCM)
 
 -- Currently we can compile an Agda "Dom Type" in three ways:
 -- - To a type in Haskell (with perhaps a strictness annotation)

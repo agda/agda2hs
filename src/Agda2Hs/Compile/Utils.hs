@@ -37,6 +37,7 @@ import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Singleton
 
+import AgdaInternals
 import Agda2Hs.AgdaUtils ( (~~) )
 import Agda2Hs.Compile.Types
 import Agda2Hs.HsUtils
@@ -51,7 +52,7 @@ f /\ g = \x -> f x && g x
 f \/ g = \x -> f x || g x
 
 showTCM :: PrettyTCM a => a -> C String
-showTCM x = lift $ show <$> prettyTCM x
+showTCM x = liftTCM $ show <$> prettyTCM x
 
 isInScopeUnqualified :: QName -> C Bool
 isInScopeUnqualified x = lift $ do

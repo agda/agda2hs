@@ -52,7 +52,7 @@ compileInstRule :: [Hs.Asst ()] -> Term -> C (Hs.InstRule ())
 compileInstRule cs ty = case unSpine1 ty of
   Def f es | Just args <- allApplyElims es -> do
     vs <- mapM (compileType . unArg) $ filter keepArg args
-    f <- hsQName f
+    f <- compileQName f
     return $
       Hs.IRule () Nothing (ctx cs) $ foldl (Hs.IHApp ()) (Hs.IHCon () f) (map pars vs)
     where ctx [] = Nothing
@@ -191,11 +191,11 @@ resolveStringName s = do
 lookupDefaultImplementations :: QName -> [Hs.Name ()] -> C [Definition]
 lookupDefaultImplementations recName fields = do
   let modName = qnameToMName recName
-      isField f _ = (`elem` fields) . unQual <$> hsQName f
+      isField f _ = (`elem` fields) . unQual <$> compileQName f
   findDefinitions isField modName
 
 classMemberNames :: Definition -> C [Hs.Name ()]
 classMemberNames def =
   case theDef def of
-    Record{recFields = fs} -> fmap unQual <$> traverse hsQName (map unDom fs)
+    Record{recFields = fs} -> fmap unQual <$> traverse compileQName (map unDom fs)
     _ -> genericDocError =<< text "Not a record:" <+> prettyTCM (defName def)

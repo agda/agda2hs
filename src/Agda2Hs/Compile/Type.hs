@@ -24,7 +24,7 @@ import Agda.Utils.Size ( Sized(size) )
 import Agda.Utils.Functor ( ($>) )
 
 import Agda2Hs.AgdaUtils
-import Agda2Hs.Compile.Name ( hsQName )
+import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Term ( compileVar )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
@@ -124,7 +124,7 @@ compileType t = do
         ifJustM (isUnboxRecord f) (\_ -> compileUnboxType f args) $
         ifM (isTransparentFunction f) (compileTransparentType args) $ do
           vs <- compileTypeArgs args
-          f <- hsQName f
+          f <- compileQName f
           return $ tApp (Hs.TyCon () f) vs
     Var x es | Just args <- allApplyElims es -> do
       vs <- compileTypeArgs args

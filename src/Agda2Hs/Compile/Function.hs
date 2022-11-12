@@ -33,7 +33,7 @@ import Agda.Utils.List ( snoc )
 import Agda.Utils.Monad
 
 import Agda2Hs.AgdaUtils
-import Agda2Hs.Compile.Name ( hsQName )
+import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Term ( compileTerm, compileVar )
 import Agda2Hs.Compile.Type ( compileTopLevelType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
@@ -176,7 +176,7 @@ compilePat (ConP h _ ps) = isUnboxConstructor (conName h) >>= \ case
   Just s -> addPatBang s <$> compileErasedConP ps
   Nothing -> do
     ps <- compilePats ps
-    c <- hsQName (conName h)
+    c <- compileQName (conName h)
     return $ pApp c ps
 compilePat (LitP _ l) = compileLitPat l
 compilePat (ProjP _ q) = do

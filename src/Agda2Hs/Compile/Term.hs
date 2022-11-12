@@ -29,7 +29,7 @@ import Agda.Utils.Monad
 import Agda.Utils.Size
 
 import Agda2Hs.AgdaUtils
-import Agda2Hs.Compile.Name ( hsQName )
+import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
@@ -194,12 +194,12 @@ compileTerm v = do
             n <- (theDef <$> getConstInfo f) >>= \case
               Function{ funProjection = Right{} } -> return 0
               _ -> size <$> lookupSection (qnameModule f)
-            (`app` drop n es) . Hs.Var () =<< hsQName f
+            (`app` drop n es) . Hs.Var () =<< compileQName f
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> isUnboxConstructor (conName h) >>= \ case
       Just _  -> compileErasedApp es
-      Nothing -> (`app` es) . Hs.Con () =<< hsQName (conName h)
+      Nothing -> (`app` es) . Hs.Con () =<< compileQName (conName h)
     Lit l -> compileLiteral l
     Lam v b | usableModality v, getOrigin v == UserWritten -> do
       unless (visible v) $ genericDocError =<< do
