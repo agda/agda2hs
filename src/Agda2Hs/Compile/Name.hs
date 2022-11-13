@@ -11,10 +11,12 @@ import qualified Language.Haskell.Exts as Hs
 import Agda.Compiler.Backend hiding ( topLevelModuleName )
 import Agda.Compiler.Common ( topLevelModuleName )
 
+import Agda.Syntax.Common
+
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Records ( isRecordConstructor )
 
-import Agda.Utils.Maybe ( whenJust )
+import Agda.Utils.Maybe ( whenJust, fromMaybe )
 import Agda.Utils.Pretty ( prettyShow )
 import qualified Agda.Utils.Pretty as P ( Pretty(pretty) )
 
@@ -22,7 +24,7 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
-isSpecialName :: QName -> Maybe (Hs.QName (), Maybe (Hs.ModuleName ()))
+isSpecialName :: QName -> Maybe (Hs.QName (), Maybe Import)
 isSpecialName = prettyShow >>> \ case
     "Agda.Builtin.Nat.Nat"         -> withImport "Numeric.Natural" $ unqual "Natural"
     "Agda.Builtin.Int.Int"         -> noImport $ unqual "Integer"
@@ -41,7 +43,7 @@ isSpecialName = prettyShow >>> \ case
     _ -> Nothing
   where
     noImport x = Just (x, Nothing)
-    withImport mod x = Just (x, Just (Hs.ModuleName () mod))
+    withImport mod x = Just (x, Just (Import (Hs.ModuleName () mod) Nothing (unQual x)))
     unqual n  = Hs.UnQual () $ hsName n
     special c = Hs.Special () $ c ()
 
@@ -50,27 +52,36 @@ compileName n = hsName . show <$> pretty (nameConcrete n)
 
 compileQName :: QName -> C (Hs.QName ())
 compileQName f
-  | Just (x, mmod) <- isSpecialName f = do
-      whenJust mmod $ \mod -> tell [(mod,x)]
+  | Just (x, mimp) <- isSpecialName f = do
+      whenJust mimp $ \imp -> tell [imp]
       return x
   | otherwise = do
+    reportSDoc "agda2hs.name" 25 $ text $ "compiling name: " ++ prettyShow f
+    parent <- parentName f
     f <- isRecordConstructor f >>= \ case
       Just (r, Record{ recNamedCon = False }) -> return r -- Use the record name if no named constructor
       _                                       -> return f
-    reportSDoc "agda2hs.name" 25 $ text $ "compiling name: " ++ prettyShow f
+    hf  <- compileName (qnameName f)
+    mod <- compileModuleName $ qnameModule $ fromMaybe f parent
+    par <- traverse (compileName . qnameName) parent
+    unless (skipImport mod) $ tell [Import mod par hf]
     -- TODO: this prints all names UNQUALIFIED. For names from
     -- qualified imports, we need to add the proper qualification in
     -- the Haskell code.
-    hf <- Hs.UnQual () <$> compileName (qnameName f)
-    mod <- compileModuleName $ qnameModule f
-    unless (skipImport mod) $ tell [(mod , hf)]
-    return hf
+    return $ Hs.UnQual () hf
 
   where
     skipImport mod =
       "Agda.Builtin" `isPrefixOf` Hs.prettyPrint mod ||
       "Haskell.Prim" `isPrefixOf` Hs.prettyPrint mod ||
       "Haskell.Prelude" `isPrefixOf` Hs.prettyPrint mod
+
+    parentName :: QName -> C (Maybe QName)
+    parentName q = (theDef <$> getConstInfo q) >>= \case
+      Constructor { conData = dt } -> return $ Just dt
+      Function { funProjection = Right (Projection { projProper = Just{} , projFromType = rt }) }
+        -> return $ Just $ unArg rt
+      _ -> return Nothing
 
 compileModuleName :: Monad m => ModuleName -> m (Hs.ModuleName ())
 compileModuleName m = do

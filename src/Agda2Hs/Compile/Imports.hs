@@ -1,6 +1,7 @@
 
-module Agda2Hs.Compile.Imports where
+module Agda2Hs.Compile.Imports ( compileImports ) where
 
+import Data.Char ( isUpper )
 import Data.List ( isPrefixOf )
 import Data.Map ( Map )
 import qualified Data.Map as Map
@@ -17,18 +18,43 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
-compileImports :: String -> [(Hs.ModuleName (), Hs.QName ())] -> TCM [Hs.ImportDecl ()]
-compileImports top qs = do
-  let qs' = filter (not . (top `isPrefixOf`) . Hs.prettyPrint . fst) qs
-  let imps = Map.toList $ groupModules qs'
-  traverse (uncurry makeImport) imps
+type ImportSpecMap = Map (Hs.Name ()) (Set (Hs.Name ()))
+type ImportDeclMap = Map (Hs.ModuleName ()) ImportSpecMap
+
+compileImports :: String -> Imports -> TCM [Hs.ImportDecl ()]
+compileImports top is0 = do
+  let is = filter (not . (top `isPrefixOf`) . Hs.prettyPrint . importModule) is0
+  let imps = Map.toList $ groupModules is
+  return $ map (uncurry makeImportDecl) imps
 
   where
-    groupModules :: [(Hs.ModuleName (), Hs.QName ())] -> Map (Hs.ModuleName ()) (Set (Hs.QName ()))
-    groupModules = foldr (\(mod, q) -> Map.insertWith Set.union mod (Set.singleton q)) Map.empty
+    mergeChildren :: ImportSpecMap -> ImportSpecMap -> ImportSpecMap
+    mergeChildren = Map.unionWith Set.union
 
-    makeImport :: Hs.ModuleName () -> Set (Hs.QName ()) -> TCM (Hs.ImportDecl ())
-    makeImport mod names = do
-      return $ Hs.ImportDecl ()
-        mod False False False Nothing Nothing
-        (Just $ Hs.ImportSpecList () False (map (Hs.IVar ()) $ map unQual $ Set.toList names))
+    makeSingle :: Maybe (Hs.Name ()) -> Hs.Name () -> ImportSpecMap
+    makeSingle Nothing  q = Map.singleton q Set.empty
+    makeSingle (Just p) q = Map.singleton p $ Set.singleton q
+
+    groupModules :: [Import] -> ImportDeclMap
+    groupModules = foldr
+      (\(Import mod p q) -> Map.insertWith mergeChildren mod (makeSingle p q)) Map.empty
+
+    -- TODO: avoid having to do this by having a CName instead of a
+    -- Name in the Import datatype
+    makeCName :: Hs.Name () -> Hs.CName ()
+    makeCName n@(Hs.Ident _ s)
+      | isUpper (head s) = Hs.ConName () n
+      | otherwise        = Hs.VarName () n
+    makeCName n@(Hs.Symbol _ s)
+      | head s == ':' = Hs.ConName () n
+      | otherwise     = Hs.VarName () n
+
+    makeImportSpec :: Hs.Name () -> Set (Hs.Name ()) -> Hs.ImportSpec ()
+    makeImportSpec q qs
+      | Set.null qs = Hs.IVar () q
+      | otherwise   = Hs.IThingWith () q $ map makeCName $ Set.toList qs
+
+    makeImportDecl :: Hs.ModuleName () -> ImportSpecMap -> Hs.ImportDecl ()
+    makeImportDecl mod specs = Hs.ImportDecl ()
+      mod False False False Nothing Nothing
+      (Just $ Hs.ImportSpecList () False $ map (uncurry makeImportSpec) $ Map.toList specs)

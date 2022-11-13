@@ -39,7 +39,11 @@ data CompileEnv = CompileEnv
   , isCompilingInstance :: Bool
   }
 
-type Import = (Hs.ModuleName (), Hs.QName ())
+data Import = Import
+  { importModule :: Hs.ModuleName ()
+  , importParent :: Maybe (Hs.Name ())
+  , importName   :: Hs.CName ()
+  }
 type Imports = [Import]
 
 type C = ReaderT CompileEnv (WriterT Imports TCM)
