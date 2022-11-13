@@ -1,6 +1,7 @@
 module Importer where
 
 import Importee (Foo(MkFoo), Fooable(doTheFoo), foo, (!#))
+import SecondImportee (anotherFoo)
 
 bar :: Int
 bar = foo
@@ -13,4 +14,7 @@ myFoo = MkFoo
 
 myOtherFoo :: Foo
 myOtherFoo = doTheFoo
+
+otherBar :: Int
+otherBar = anotherFoo
 

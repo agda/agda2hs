@@ -27,3 +27,5 @@ instance
   FF .doTheFoo = MkFoo
 
 {-# COMPILE AGDA2HS FF #-}
+
+open import SecondImportee public

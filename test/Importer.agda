@@ -21,3 +21,8 @@ myOtherFoo : Foo
 myOtherFoo = doTheFoo
 
 {-# COMPILE AGDA2HS myOtherFoo #-}
+
+otherBar : Int
+otherBar = anotherFoo
+
+{-# COMPILE AGDA2HS otherBar #-}
