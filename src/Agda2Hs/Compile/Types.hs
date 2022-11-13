@@ -42,7 +42,7 @@ data CompileEnv = CompileEnv
 data Import = Import
   { importModule :: Hs.ModuleName ()
   , importParent :: Maybe (Hs.Name ())
-  , importName   :: Hs.CName ()
+  , importName   :: Hs.Name ()
   }
 type Imports = [Import]
 
