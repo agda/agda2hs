@@ -103,7 +103,7 @@ compileFun' withSig def@(Defn {..}) = do
         reportSDoc "agda2hs.compile" 10 $ text "applying clauses to parameters: " <+> prettyTCM pars
         let clauses = filter keepClause funClauses `apply` pars
         cs <- mapM (compileClause (qnameModule defName) x) clauses
-        return $ [Hs.TypeSig () [x] ty | withSig ] ++ [ Hs.FunBind () cs]
+        return $ [Hs.TypeSig () [x] ty | withSig ] ++ [Hs.FunBind () cs]
   where
     Function{..} = theDef
     m = qnameModule defName
@@ -173,7 +173,7 @@ compilePat p@(VarP o x)
 compilePat (ConP h i ps)
   | Just semantics <- isSpecialPat (conName h) = setCurrentRange h $ semantics h i ps
 compilePat (ConP h _ ps) = isUnboxConstructor (conName h) >>= \ case
-  Just s -> addPatBang s <$> compileErasedConP ps
+  Just s -> compileErasedConP ps >>= addPatBang s
   Nothing -> do
     ps <- compilePats ps
     c <- compileQName (conName h)

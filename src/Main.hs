@@ -23,7 +23,7 @@ outdirOpt dir opts = return opts{ optOutDir = dir }
 extensionOpt :: Monad m => String -> Options -> m Options
 extensionOpt ext opts = return opts{ optExtensions = Hs.parseExtension ext : optExtensions opts }
 
-backend :: Backend' Options Options ModuleEnv ModuleRes (CompiledDef, Imports)
+backend :: Backend' Options Options ModuleEnv ModuleRes (CompiledDef, CompileOutput)
 backend = Backend'
   { backendName           = "agda2hs"
   , backendVersion        = Just "0.1"

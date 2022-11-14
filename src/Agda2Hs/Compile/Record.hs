@@ -142,7 +142,7 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
         case hsDom of
           DomType s hsA -> do
             let fieldName = hsName $ prettyShow $ qnameName $ unDom n
-                fieldType = addTyBang s hsA
+            fieldType <- addTyBang s hsA
             checkValidFunName fieldName
             return (hsAssts, decl fieldName fieldType : hsFields)
           DomConstraint hsA -> case target of

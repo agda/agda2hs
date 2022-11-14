@@ -66,6 +66,9 @@ hsName x
     underscore '₋' = '_'
     underscore c   = c
 
+extToName :: KnownExtension -> Name ()
+extToName = Ident () . show
+
 isOp :: QName () -> Bool
 isOp (UnQual _ Symbol{}) = True
 isOp (Special _ Cons{})  = True
@@ -253,12 +256,4 @@ patToExp = \case
   _                   -> Nothing
 
 data Strictness = Lazy | Strict
-  deriving (Show)
-
-addPatBang :: Strictness -> Pat () -> Pat ()
-addPatBang Strict = PBangPat ()
-addPatBang Lazy   = id
-
-addTyBang :: Strictness -> Type () -> Type ()
-addTyBang Strict = TyBang () (BangedTy ()) (NoUnpackPragma ())
-addTyBang Lazy   = id
+  deriving Show

@@ -2,7 +2,6 @@ module Agda2Hs.Compile.Name where
 
 import Control.Arrow ( (>>>) )
 import Control.Monad
-import Control.Monad.Writer ( tell )
 
 import Data.List ( intercalate, isPrefixOf )
 
@@ -53,7 +52,7 @@ compileName n = hsName . show <$> pretty (nameConcrete n)
 compileQName :: QName -> C (Hs.QName ())
 compileQName f
   | Just (x, mimp) <- isSpecialName f = do
-      whenJust mimp $ \imp -> tell [imp]
+      whenJust mimp tellImport
       return x
   | otherwise = do
     reportSDoc "agda2hs.name" 25 $ text $ "compiling name: " ++ prettyShow f
@@ -64,7 +63,7 @@ compileQName f
     hf  <- compileName (qnameName f)
     mod <- compileModuleName $ qnameModule $ fromMaybe f parent
     par <- traverse (compileName . qnameName) parent
-    unless (skipImport mod) $ tell [Import mod par hf]
+    unless (skipImport mod) $ tellImport (Import mod par hf)
     -- TODO: this prints all names UNQUALIFIED. For names from
     -- qualified imports, we need to add the proper qualification in
     -- the Haskell code.

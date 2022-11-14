@@ -59,6 +59,8 @@ compileConstructor params c = do
 compileConstructorArgs :: Telescope -> C [Hs.Type ()]
 compileConstructorArgs EmptyTel = return []
 compileConstructorArgs (ExtendTel a tel) = compileDom (absName tel) a >>= \case
-  DomType s hsA     -> (addTyBang s hsA :) <$> underAbstraction a tel compileConstructorArgs
+  DomType s hsA     -> do
+    ty <- addTyBang s hsA
+    (ty :) <$> underAbstraction a tel compileConstructorArgs
   DomConstraint hsA -> genericDocError =<< text "Not supported: constructors with class constraints"
   DomDropped        -> underAbstraction a tel compileConstructorArgs

@@ -2,8 +2,10 @@ module Agda2Hs.Compile.Type where
 
 import Control.Arrow ( (>>>) )
 import Control.Monad ( forM )
+import Control.Monad.Reader ( asks )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
+import qualified Language.Haskell.Exts.Extension as Hs
 
 import Agda.Compiler.Backend hiding ( Args )
 
@@ -19,7 +21,7 @@ import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.List ( downFrom )
 import Agda.Utils.Maybe ( ifJustM, fromMaybe )
-import Agda.Utils.Monad ( forMaybeM, ifM )
+import Agda.Utils.Monad ( forMaybeM, ifM, unlessM )
 import Agda.Utils.Size ( Sized(size) )
 import Agda.Utils.Functor ( ($>) )
 
@@ -96,8 +98,10 @@ compileTopLevelType t cont = do
       | isInstance a = do
           c <- Hs.TypeA () <$> compileType (unEl $ unDom a)
           underAbstraction a atel $ \tel ->
-             go tel (cont . constrainType c)
-      | otherwise = underAbstraction a atel $ \tel ->
+            go tel (cont . constrainType c)
+      | otherwise = underAbstraction a atel $ \tel -> do
+          unlessM (asks isCompilingInstance) $
+            tellExtension Hs.ScopedTypeVariables
           go tel (cont . qualifyType (absName atel))
 
 compileType' :: Term -> C (Strictness, Hs.Type ())
