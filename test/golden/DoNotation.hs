@@ -20,3 +20,9 @@ routine
        first <- landLeft 2 start
        landRight 2 first >>= landLeft 1
 
+routineWithoutDo :: Maybe Pole
+routineWithoutDo
+  = return (0, 0) >>=
+      \ start ->
+        landLeft 2 start >>= \ first -> landRight 2 first >>= landLeft 1
+
