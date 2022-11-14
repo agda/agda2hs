@@ -3,6 +3,7 @@ module Agda2Hs.Compile.Utils where
 import Control.Arrow ( Arrow((***)) )
 import Control.Monad.Except
 import Control.Monad.Reader
+import Control.Monad.Writer ( tell )
 
 import Data.Maybe ( isJust )
 
@@ -222,3 +223,19 @@ checkValidTypeName x = unless (validConName x) $ genericDocError =<< do
 checkValidConName :: Hs.Name () -> C ()
 checkValidConName x = unless (validConName x) $ genericDocError =<< do
   text "Invalid name for Haskell constructor: " <+> text (Hs.prettyPrint x)
+
+tellImport :: Import -> C ()
+tellImport imp = tell $ CompileOutput [imp] []
+
+tellExtension :: Hs.KnownExtension -> C ()
+tellExtension pr = tell $ CompileOutput [] [pr]
+
+addPatBang :: Strictness -> Hs.Pat () -> C (Hs.Pat ())
+addPatBang Strict p = tellExtension Hs.BangPatterns >>
+  return (Hs.PBangPat () p)
+addPatBang Lazy   p = return p
+
+addTyBang :: Strictness -> Hs.Type () -> C (Hs.Type ())
+addTyBang Strict ty = tellExtension Hs.BangPatterns >>
+  return (Hs.TyBang () (Hs.BangedTy ()) (Hs.NoUnpackPragma ()) ty)
+addTyBang Lazy   ty = return ty

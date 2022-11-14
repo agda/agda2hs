@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 module BangPatterns where
 
 strictId :: a -> a

@@ -46,7 +46,21 @@ data Import = Import
   }
 type Imports = [Import]
 
-type C = ReaderT CompileEnv (WriterT Imports TCM)
+data CompileOutput = CompileOutput
+  { imports :: Imports
+  -- ^ Information we generate during compilation related to import statements.
+  , haskellExtensions :: [Hs.KnownExtension]
+  -- ^ Necessary language extensions to be automatically inserted.
+  }
+
+instance Semigroup CompileOutput where
+  CompileOutput imps exts <> CompileOutput imps' exts' =
+    CompileOutput (imps ++ imps') (exts ++ exts')
+
+instance Monoid CompileOutput where
+  mempty = CompileOutput [] []
+
+type C = ReaderT CompileEnv (WriterT CompileOutput TCM)
 
 -- Currently we can compile an Agda "Dom Type" in three ways:
 -- - To a type in Haskell (with perhaps a strictness annotation)

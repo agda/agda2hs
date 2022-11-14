@@ -4,7 +4,7 @@ import Control.Monad ( unless )
 import Control.Monad.Except ( MonadIO(liftIO) )
 
 import Data.Function ( on )
-import Data.List ( sortBy )
+import Data.List ( sortBy, nub )
 import Data.Maybe ( fromMaybe )
 import Data.Set ( Set )
 import qualified Data.Set as Set
@@ -16,6 +16,7 @@ import qualified Language.Haskell.Exts.SrcLoc as Hs
 import qualified Language.Haskell.Exts.Syntax as Hs
 import qualified Language.Haskell.Exts.Build as Hs
 import qualified Language.Haskell.Exts.ExactPrint as Hs
+import qualified Language.Haskell.Exts.Extension as Hs
 
 import Agda.Compiler.Backend
 import Agda.Compiler.Common ( curIF )
@@ -48,6 +49,11 @@ renderBlocks = unlines . map unlines . sortRanges . filter (not . null . snd)
 defBlock :: [Ranged [Hs.Decl ()]] -> [Block]
 defBlock def = [ (r, map (pp . insertParens) ds) | (r, ds) <- def ]
 
+renderLangExts :: [Hs.KnownExtension] -> String
+renderLangExts exts
+  | null exts = ""
+  | otherwise = pp (Hs.LanguagePragma () $ nub $ map extToName exts) ++ "\n"
+
 codePragmas :: [Ranged Code] -> [Block]
 codePragmas code = [ (r, map pp ps) | (r, (Hs.Module _ _ ps _ _, _)) <- code ]
 
@@ -73,12 +79,16 @@ moduleSetup _ _ m _ = do
 ensureDirectory :: FilePath -> IO ()
 ensureDirectory = createDirectoryIfMissing True . takeDirectory
 
-writeModule :: Options -> ModuleEnv -> IsMain -> TopLevelModuleName -> [(CompiledDef,Imports)] -> TCM ModuleRes
-writeModule opts _ isMain m defsAndImps = do
+writeModule :: Options -> ModuleEnv -> IsMain -> TopLevelModuleName
+            -> [(CompiledDef, CompileOutput)] -> TCM ModuleRes
+writeModule opts _ isMain m outs = do
   code <- getForeignPragmas (optExtensions opts)
   let mod  = prettyShow m
-      defs = concatMap defBlock (map fst defsAndImps) ++ codeBlocks code
-      imps = concatMap snd defsAndImps
+      (cdefs, impss, extss) = unzip3 $ flip map outs $
+        \(cdef, CompileOutput imps exts) -> (cdef, imps, exts)
+      defs = concatMap defBlock cdefs ++ codeBlocks code
+      imps = concat impss
+      exts = concat extss
   unless (null code && null defs && isMain == NotMain) $ do
     -- Add automatic imports
     let unlines' [] = []
@@ -87,7 +97,8 @@ writeModule opts _ isMain m defsAndImps = do
     -- The comments makes it hard to generate and pretty print a full module
     let hsFile = moduleFileName opts m
         output = concat
-                 [ renderBlocks $ codePragmas code
+                 [ renderLangExts exts
+                 , renderBlocks $ codePragmas code
                  , "module " ++ mod ++ " where\n\n"
                  , autoImports
                  , renderBlocks defs ]
