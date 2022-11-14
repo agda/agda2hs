@@ -29,6 +29,15 @@ record Monad (m : Set → Set) : Set₁ where
   _=<<_ : (a → m b) → m a → m b
   _=<<_ = flip _>>=_
 
+-- Use `Dont._>>=_` and `Dont._>>_` if you do not want agda2hs to use
+-- do-notation.
+module Dont where
+  _>>=_ : ⦃ Monad m ⦄ → m a → (a → m b) → m b
+  _>>=_ = Monad._>>=_ it
+
+  _>>_ : ⦃ Monad m ⦄ → m a → m b → m b
+  _>>_ = Monad._>>_ it
+
 open Monad ⦃ ... ⦄ public
 
 {-# COMPILE AGDA2HS Monad existing-class #-}

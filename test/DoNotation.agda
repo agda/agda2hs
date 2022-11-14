@@ -34,3 +34,12 @@ routine = do
     landLeft 1 second
 
 {-# COMPILE AGDA2HS routine #-}
+
+routineWithoutDo : Maybe Pole
+routineWithoutDo =
+    return (0 , 0) Dont.>>= λ start →
+    landLeft 2 start Dont.>>= λ first →
+    landRight 2 first Dont.>>= λ second →
+    landLeft 1 second
+
+{-# COMPILE AGDA2HS routineWithoutDo #-}
