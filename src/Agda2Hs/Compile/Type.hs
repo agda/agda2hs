@@ -165,6 +165,9 @@ compileDom x a
 
 compileTeleBinds :: Telescope -> C [Hs.TyVarBind ()]
 compileTeleBinds tel =
-  forM (map (hsName . unArg) $ filter keepArg $ teleArgNames tel) $ \x -> do
-    checkValidTyVar x
-    return $ Hs.UnkindedVar () x
+  -- forM (map (hsName . unArg) $ filter keepArg $ teleArgNames tel) $ \x -> do
+  --   checkValidTyVarName x
+  --   return $ Hs.UnkindedVar () x
+  forM (filter keepArg $ teleArgNames tel) $ \x -> do 
+      checkValidTyVarName undefined -- x
+      return $ Hs.UnkindedVar () undefined -- x 

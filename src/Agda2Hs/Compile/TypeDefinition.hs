@@ -41,6 +41,6 @@ compileTypeArgs ps = mapM (compileTypeArg . namedArg) $ filter keepArg ps
 compileTypeArg :: DeBruijnPattern -> C (Hs.TyVarBind ())
 compileTypeArg p@(VarP o i) = do
   name <- hsName <$> compileVar (dbPatVarIndex i)
-  checkValidTyVar name
+  checkValidTyVarName name
   return $ Hs.UnkindedVar () name
 compileTypeArg _ = genericError "Not supported: type definition by pattern matching"
