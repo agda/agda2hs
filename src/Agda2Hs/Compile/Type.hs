@@ -6,6 +6,7 @@ import Control.Monad.Reader ( asks )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
 import qualified Language.Haskell.Exts.Extension as Hs
+import qualified Language.Haskell.Exts.Pretty as Hs
 
 import Agda.Compiler.Backend hiding ( Args )
 
@@ -165,9 +166,14 @@ compileDom x a
 
 compileTeleBinds :: Telescope -> C [Hs.TyVarBind ()]
 compileTeleBinds tel =
-  -- forM (map (hsName . unArg) $ filter keepArg $ teleArgNames tel) $ \x -> do
-  --   checkValidTyVarName x
-  --   return $ Hs.UnkindedVar () x
-  forM (filter keepArg $ teleArgNames tel) $ \x -> do 
-      checkValidTyVarName undefined -- x
-      return $ Hs.UnkindedVar () undefined -- x 
+  forM
+    ( fmap (\(argName, domType) -> (hsName . unArg $ argName, unDom domType))
+    . filter (\(argName, _domType) -> keepArg argName)
+    $ teleArgNames tel `zip` (flattenTel tel :: [Dom Type]) )
+    $ \(x, t) -> do
+      checkValidTyVarName x
+      case unEl t of
+        Sort (Type _) -> return $ Hs.UnkindedVar () x
+        _ -> genericDocError =<< do
+          text "Kind of bound argument not supported:" <+>
+            parens (text (Hs.prettyPrint x) <+> text ":" <+> prettyTCM t)
