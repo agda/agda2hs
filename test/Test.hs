@@ -147,3 +147,6 @@ if_partial₄ = map (\ section f -> if section then 1 else f)
 if_partial₅ :: Bool -> Natural -> [Natural] -> [Natural]
 if_partial₅ b f = map (\ f₁ -> if b then f else f₁)
 
+if_partial₆ :: Bool -> Natural -> [Natural] -> [Natural]
+if_partial₆ b f0 = map (\ f -> if b then f0 else f)
+
