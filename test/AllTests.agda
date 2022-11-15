@@ -39,6 +39,7 @@ import Issue94
 import Issue107
 import Importer
 import DoNotation
+import NatLitPat
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -78,4 +79,5 @@ import BangPatterns
 import Issue94
 import Importer
 import DoNotation
+import NatLitPat
 #-}

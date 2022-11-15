@@ -46,6 +46,8 @@ isSpecialPat = prettyShow >>> \ case
   "Haskell.Prim.Tuple._;_" -> Just tuplePat
   "Agda.Builtin.Int.Int.pos" -> Just posIntPat
   "Agda.Builtin.Int.Int.negsuc" -> Just negSucIntPat
+  "Agda.Builtin.Nat.Nat.zero" -> Just zeroNatPat
+  "Agda.Builtin.Nat.Nat.suc" -> Just sucNatPat
   _ -> Nothing
 
 isUnboxCopattern :: DeBruijnPattern -> C Bool
@@ -85,6 +87,15 @@ negSucIntPat c i [p] = do
   n <- (1+) <$> compileLitNatPat (namedArg p)
   return $ Hs.PLit () (Hs.Negative ()) (Hs.Int () n (show (negate n)))
 negSucIntPat _ _ _ = __IMPOSSIBLE__
+
+zeroNatPat :: ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ())
+zeroNatPat _ _ _ = return $ Hs.PLit () (Hs.Signless ()) (Hs.Int () 0 "0")
+
+sucNatPat :: ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ())
+sucNatPat _ _ [p] = do
+  n <- (1+) <$> compileLitNatPat (namedArg p)
+  return $ Hs.PLit () (Hs.Signless ()) (Hs.Int () n (show n))
+sucNatPat _ _ _ = __IMPOSSIBLE__
 
 -- The bool argument says whether we also want the type signature or just the body
 compileFun, compileFun' :: Bool -> Definition -> C [Hs.Decl ()]
