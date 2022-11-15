@@ -349,6 +349,8 @@ class ImplicitField a where
 
 ## If-then-else
 
+Agda2Hs implicitly converts the  knows about the Haskell syntax for `ifThenElse`.
+
 Agda
 ```agda
 ifThenElse : Int → String
@@ -363,6 +365,10 @@ ifThenElse n = if n >= 10 then "big" else "small"
 ```
 
 ## Haskell Language Extensions
+
+Required haskell lengauge extensions will be automatically inferred and enabled.
+
+A Haskell language extension can also be enabled manually as follows:
 
 Agda
 ```agda
