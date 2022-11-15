@@ -1,3 +1,5 @@
+module Fail.NonStarDatatypeIndex where
+
 open import Haskell.Prelude
 
 data T (n : Nat) : Set where
