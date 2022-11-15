@@ -176,4 +176,4 @@ compileTeleBinds tel =
         Sort (Type _) -> return $ Hs.UnkindedVar () x
         _ -> genericDocError =<< do
           text "Kind of bound argument not supported:" <+>
-            parens (text (Hs.prettyPrint x) <+> text ":" <+> prettyTCM t)
+            parens (text (Hs.prettyPrint x) <> text " : " <> prettyTCM t)
