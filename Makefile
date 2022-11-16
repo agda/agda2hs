@@ -15,3 +15,6 @@ test :
 
 golden :
 	make -C test golden
+
+docs :
+	cd docs && make html
