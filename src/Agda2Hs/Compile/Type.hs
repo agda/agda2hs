@@ -1,8 +1,11 @@
+{-# LANGUAGE TypeApplications #-}
+
 module Agda2Hs.Compile.Type where
 
 import Control.Arrow ( (>>>) )
 import Control.Monad ( forM )
 import Control.Monad.Reader ( asks )
+import Data.Maybe ( mapMaybe )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
 import qualified Language.Haskell.Exts.Extension as Hs
@@ -167,13 +170,30 @@ compileDom x a
 compileTeleBinds :: Telescope -> C [Hs.TyVarBind ()]
 compileTeleBinds tel =
   forM
-    ( fmap (\(argName, domType) -> (hsName . unArg $ argName, unDom domType))
-    . filter (\(argName, _domType) -> keepArg argName)
-    $ teleArgNames tel `zip` (flattenTel tel :: [Dom Type]) )
-    $ \(x, t) -> do
-      checkValidTyVarName x
-      case unEl t of
-        Sort (Type _) -> return $ Hs.UnkindedVar () x
-        _ -> genericDocError =<< do
-          text "Kind of bound argument not supported:" <+>
-            parens (text (Hs.prettyPrint x) <> text " : " <> prettyTCM t)
+    (mapMaybe
+      (fmap unArgDom . checkArgDom)
+      (teleArgNames tel `zip` flattenTel @Type tel))
+    (uncurry compileKeptTeleBind)
+  where
+    checkArgDom (argName, argDom) | keepArg argName = Just (argName, argDom)
+    checkArgDom _ | otherwise = Nothing
+
+    unArgDom (argName, argDom) = (hsName . unArg $ argName, unDom argDom)
+
+compileKeptTeleBind :: Hs.Name () -> Type -> C (Hs.TyVarBind ())
+compileKeptTeleBind x t = do
+  checkValidTyVarName x
+  k <- compileKind t
+  case k of
+    Hs.TyStar _ ->
+      -- TyStar is Haskell's default kind annotation
+      return $ Hs.UnkindedVar () x
+    _ -> genericDocError =<< do
+      text "Kind of bound argument not supported:" <+>
+        parens (text (Hs.prettyPrint x) <> text " : " <> prettyTCM t)
+
+compileKind :: Type -> C (Hs.Kind ())
+compileKind t = case unEl t of
+  Sort (Type _) -> return (Hs.TyStar ())
+  _ -> genericDocError =<< do
+    text "Kind not supported:" <+> prettyTCM t
