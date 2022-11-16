@@ -43,6 +43,7 @@ jobs:
 
     - name: Build User Manual in HTML
       run: |
+        cd docs
         make html
 
 # TODO: is something like this necessary?
