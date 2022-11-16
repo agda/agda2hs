@@ -24,7 +24,7 @@ jobs:
       matrix:
         python-version: ["3.10.8"]
 
-    environment:
+    env:
       DOCS_DIR: docs/
       DOCS_BUILD_DIR: docs/build
     
@@ -46,19 +46,19 @@ jobs:
 
     - name: Build User Manual in HTML
       run: |
-        cd ${{ environment.DOCS_DIR }}
+        cd ${{ env.DOCS_DIR }}
         make html
 
     - name: Upload HTML
       uses: actions/upload-artifact@v2
       with:
-        path: ${{ environment.DOCS_BUILD_DIR }}
+        path: ${{ env.DOCS_BUILD_DIR }}
         name: docs
 
     - name: Deploy docs
       uses: JamesIves/github-pages-deploy-action@v4
       with:
-        folder: ${{ environment.DOCS_BUILD_DIR }}
+        folder: ${{ env.DOCS_BUILD_DIR }}
 
 # TODO: is something like this necessary?
 # export PATH=$HOME/texlive/bin/x86_64-linux:$PATH
