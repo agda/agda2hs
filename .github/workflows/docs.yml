@@ -4,14 +4,11 @@ on:
   push:
     branches:
     - master
-    - ci-*
     - release*
     - docs
-  #   paths: &trigger_path_list
-  #   - 'docs/**'
-  #   - '.github/workflows/docs.yml'
-  # pull_request:
-  #   paths: *trigger_path_list
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -22,9 +19,15 @@ jobs:
       && !contains(github.event.head_commit.message, '[skip github]')
 
     runs-on: ubuntu-20.04
+    
     strategy:
       matrix:
-        python-version: [3.7]
+        python-version: ["3.10.8"]
+
+    environment:
+      DOCS_DIR: docs/
+      DOCS_BUILD_DIR: docs/build
+    
     steps:
 
     - name: Checkout
@@ -43,8 +46,19 @@ jobs:
 
     - name: Build User Manual in HTML
       run: |
-        cd docs
+        cd ${{ environment.DOCS_DIR }}
         make html
+
+    - name: Upload HTML
+      uses: actions/upload-artifact@v2
+      with:
+        path: ${{ environment.DOCS_BUILD_DIR }}
+        name: docs
+
+    - name: Deploy docs
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        folder: ${{ environment.DOCS_BUILD_DIR }}
 
 # TODO: is something like this necessary?
 # export PATH=$HOME/texlive/bin/x86_64-linux:$PATH
