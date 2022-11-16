@@ -1,5 +1,3 @@
-⦃→
-
 # Features
 
 By default, all of the following Agda examples are implicitly prefixed (if
