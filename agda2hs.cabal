@@ -39,6 +39,7 @@ executable agda2hs
                        Agda2Hs.Compile.ClassInstance,
                        Agda2Hs.Compile.Data,
                        Agda2Hs.Compile.Function,
+                       Agda2Hs.Compile.Imports,
                        Agda2Hs.Compile.Name,
                        Agda2Hs.Compile.Postulate,
                        Agda2Hs.Compile.Record,
@@ -66,5 +67,6 @@ executable agda2hs
   default-extensions:  LambdaCase,
                        RecordWildCards,
                        FlexibleContexts,
-                       MultiWayIf
+                       MultiWayIf,
+                       TupleSections
   ghc-options:         -Werror

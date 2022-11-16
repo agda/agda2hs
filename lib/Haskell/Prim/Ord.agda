@@ -86,9 +86,23 @@ private
   compareFromLt : ⦃ Eq a ⦄ → (a → a → Bool) → a → a → Ordering
   compareFromLt _<_ x y = if x < y then LT else if x == y then EQ else GT
 
+private
+  maxNat : Nat → Nat → Nat
+  maxNat zero    y       = y
+  maxNat (suc x) zero    = suc x
+  maxNat (suc x) (suc y) = suc (maxNat x y)
+
+  minNat : Nat → Nat → Nat
+  minNat zero    y       = zero
+  minNat (suc x) zero    = zero
+  minNat (suc x) (suc y) = suc (minNat x y)
+
 instance
   iOrdNat : Ord Nat
-  iOrdNat = ordFromLessThan ltNat
+  iOrdNat = record (ordFromLessThan ltNat)
+    { max = maxNat
+    ; min = minNat
+    }
 
   iOrdInteger : Ord Integer
   iOrdInteger = ordFromLessThan ltInteger

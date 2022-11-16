@@ -133,17 +133,20 @@ if_over :: Natural
 if_over = (if True then \ x -> x else \ x -> x + 1) 0
 
 if_partial₁ :: [Natural] -> [Natural]
-if_partial₁ = map (\ f -> if True then 1 else f)
+if_partial₁ = map (\ f0 -> if True then 1 else f0)
 
 if_partial₂ :: [Natural] -> [Natural -> Natural]
-if_partial₂ = map (\ t f -> if True then t else f)
+if_partial₂ = map (\ t0 f0 -> if True then t0 else f0)
 
 if_partial₃ :: [Bool] -> [Natural -> Natural -> Natural]
-if_partial₃ = map (\ b t f -> if b then t else f)
+if_partial₃ = map (\ b0 t0 f0 -> if b0 then t0 else f0)
 
 if_partial₄ :: [Bool] -> [Natural -> Natural]
-if_partial₄ = map (\ section f -> if section then 1 else f)
+if_partial₄ = map (\ section f0 -> if section then 1 else f0)
 
 if_partial₅ :: Bool -> Natural -> [Natural] -> [Natural]
-if_partial₅ b f = map (\ f₁ -> if b then f else f₁)
+if_partial₅ b f = map (\ f0 -> if b then f else f0)
+
+if_partial₆ :: Bool -> Natural -> [Natural] -> [Natural]
+if_partial₆ b f0 = map (\ f1 -> if b then f0 else f1)
 

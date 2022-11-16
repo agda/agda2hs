@@ -1,6 +1,8 @@
 
 module Agda2Hs.HsUtils where
 
+import Control.Monad ( guard )
+
 import Data.Data ( Data )
 import Data.Generics ( listify, everywhere, mkT, extT )
 import Data.List ( foldl' )
@@ -8,12 +10,7 @@ import Data.Map ( Map )
 
 import qualified Data.Map as Map
 
-import Language.Haskell.Exts.SrcLoc
-import Language.Haskell.Exts.Syntax
-import Language.Haskell.Exts.Build
-import Language.Haskell.Exts.Comments
-import Language.Haskell.Exts.Pretty
-import Language.Haskell.Exts.Fixity
+import Language.Haskell.Exts hiding ( Strict, Lazy )
 
 import Agda.Syntax.Position
 
@@ -23,9 +20,39 @@ import Agda.Utils.Maybe.Strict ( toStrict )
 
 -- Names ------------------------------------------------------------------
 
+
+validVarId :: String -> Bool
+validVarId s = case lexTokenStream s of
+  ParseOk [Loc _ VarId{}] -> True
+  _ -> False
+
+validConId :: String -> Bool
+validConId s = case lexTokenStream s of
+  ParseOk [Loc _ ConId{}] -> True
+  _ -> False
+
+validVarSym :: String -> Bool
+validVarSym s = case lexTokenStream s of
+  ParseOk [Loc _ VarSym{}] -> True
+  _ -> False
+
+validConSym :: String -> Bool
+validConSym s = case lexTokenStream s of
+  ParseOk [Loc _ ConSym{}] -> True
+  _ -> False
+
+validVarName :: Name () -> Bool
+validVarName (Ident _ s)  = validVarId s
+validVarName (Symbol _ s) = validVarSym s
+
+validConName :: Name () -> Bool
+validConName (Ident _ s)  = validConId s
+validConName (Symbol _ s) = validConSym s
+
 isInfix :: String -> Maybe String
 isInfix ('_' : f) = do
   (op, '_') <- initLast f
+  guard $ not $ '_' `elem` op
   return op
 isInfix _ = Nothing
 
@@ -38,6 +65,9 @@ hsName x
     -- without getting ambiguities. To work around this we translate subscript '-' to underscore.
     underscore '₋' = '_'
     underscore c   = c
+
+extToName :: KnownExtension -> Name ()
+extToName = Ident () . show
 
 isOp :: QName () -> Bool
 isOp (UnQual _ Symbol{}) = True
@@ -148,13 +178,6 @@ hsUndefined = hsVar "undefined"
 hsError :: String -> Exp ()
 hsError s = hsVar "error" `eApp` [strE s]
 
-getExplicitImports :: ImportSpec l -> [String]
-getExplicitImports = map pp . \case
-  IVar _ n -> [n]
-  IAbs _ _ n -> [n]
-  IThingAll _ n -> [n]
-  IThingWith _ n ns -> n : map cname ns
-
 cname :: CName l -> Name l
 cname (VarName _ n) = n
 cname (ConName _ n) = n
@@ -231,3 +254,6 @@ patToExp = \case
   PatTypeSig _ p _    -> patToExp p
   PBangPat _ p        -> patToExp p
   _                   -> Nothing
+
+data Strictness = Lazy | Strict
+  deriving Show

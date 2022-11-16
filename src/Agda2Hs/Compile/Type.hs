@@ -1,8 +1,11 @@
 module Agda2Hs.Compile.Type where
 
 import Control.Arrow ( (>>>) )
+import Control.Monad ( forM )
+import Control.Monad.Reader ( asks )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
+import qualified Language.Haskell.Exts.Extension as Hs
 
 import Agda.Compiler.Backend hiding ( Args )
 
@@ -17,12 +20,14 @@ import Agda.TypeChecking.Telescope
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.List ( downFrom )
-import Agda.Utils.Monad ( forMaybeM, ifM )
+import Agda.Utils.Maybe ( ifJustM, fromMaybe )
+import Agda.Utils.Monad ( forMaybeM, ifM, unlessM )
 import Agda.Utils.Size ( Sized(size) )
 import Agda.Utils.Functor ( ($>) )
 
 import Agda2Hs.AgdaUtils
-import Agda2Hs.Compile.Name ( hsQName )
+import Agda2Hs.Compile.Name ( compileQName )
+import Agda2Hs.Compile.Term ( compileVar )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.AgdaUtils
@@ -93,15 +98,24 @@ compileTopLevelType t cont = do
       | isInstance a = do
           c <- Hs.TypeA () <$> compileType (unEl $ unDom a)
           underAbstraction a atel $ \tel ->
-             go tel (cont . constrainType c)
-      | otherwise = underAbstraction a atel $ \tel ->
+            go tel (cont . constrainType c)
+      | otherwise = underAbstraction a atel $ \tel -> do
+          unlessM (asks isCompilingInstance) $
+            tellExtension Hs.ScopedTypeVariables
           go tel (cont . qualifyType (absName atel))
+
+compileType' :: Term -> C (Strictness, Hs.Type ())
+compileType' t = do
+  s <- case t of
+    Def f es -> fromMaybe Lazy <$> isUnboxRecord f
+    _        -> return Lazy
+  (s,) <$> compileType t
 
 compileType :: Term -> C (Hs.Type ())
 compileType t = do
   case t of
     Pi a b -> compileDom (absName b) a >>= \case
-      DomType hsA -> do
+      DomType _ hsA -> do
         hsB <- underAbstraction a b $ compileType . unEl
         return $ Hs.TyFun () hsA hsB
       DomConstraint hsA -> do
@@ -111,14 +125,14 @@ compileType t = do
     Def f es
       | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics f es
       | Just args <- allApplyElims es ->
-        ifM (isUnboxRecord f) (compileUnboxType f args) $
+        ifJustM (isUnboxRecord f) (\_ -> compileUnboxType f args) $
         ifM (isTransparentFunction f) (compileTransparentType args) $ do
           vs <- compileTypeArgs args
-          f <- hsQName f
+          f <- compileQName f
           return $ tApp (Hs.TyCon () f) vs
     Var x es | Just args <- allApplyElims es -> do
       vs <- compileTypeArgs args
-      x  <- hsName <$> showTCM (Var x [])
+      x  <- hsName <$> compileVar x
       return $ tApp (Hs.TyVar () x) vs
     Sort s -> return (Hs.TyStar ())
     t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
@@ -142,17 +156,15 @@ compileDom :: ArgName -> Dom Type -> C CompiledDom
 compileDom x a
   | usableModality a = case getHiding a of
       Instance{} -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
-      NotHidden  -> DomType <$> compileType (unEl $ unDom a)
+      NotHidden  -> uncurry DomType <$> compileType' (unEl $ unDom a)
       Hidden     -> do
         ifM (canErase $ unDom a)
             (return DomDropped)
             (genericDocError =<< do text "Implicit type argument not supported: " <+> prettyTCM x)
   | otherwise    = return DomDropped
 
-compileTele :: Telescope -> C [Arg Term]
-compileTele tel = addContext tel $ do
-  forMaybeM (zip3 (downFrom $ size tel) (teleNames tel) (flattenTel tel)) $ \(i,x,a) -> do
-    compileDom x a >>= \case
-      DomType{}       -> return $ Just $ argFromDom a $> var i
-      DomConstraint{} -> genericDocError =<< text "Not supported: type-level constraints"
-      DomDropped{}    -> return Nothing
+compileTeleBinds :: Telescope -> C [Hs.TyVarBind ()]
+compileTeleBinds tel =
+  forM (map (hsName . unArg) $ filter keepArg $ teleArgNames tel) $ \x -> do
+    checkValidTyVar x
+    return $ Hs.UnkindedVar () x

@@ -4,18 +4,17 @@ import Control.Arrow ( (>>>) )
 import Control.Monad ( unless )
 import Control.Monad.Reader
 
-import Data.Maybe ( fromMaybe )
+import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text ( unpack )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
 import qualified Language.Haskell.Exts.Build as Hs
 
-import Agda.Compiler.Backend
-
 import Agda.Syntax.Common
 import Agda.Syntax.Literal
 import Agda.Syntax.Internal
 
+import Agda.TypeChecking.Monad
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Reduce ( instantiate )
 import Agda.TypeChecking.Substitute ( Apply(applyE) )
@@ -29,7 +28,7 @@ import Agda.Utils.Monad
 import Agda.Utils.Size
 
 import Agda2Hs.AgdaUtils
-import Agda2Hs.Compile.Name ( hsQName )
+import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
@@ -45,6 +44,8 @@ isSpecialTerm q = case prettyShow q of
   "Haskell.Prim.Enum.Enum.enumFromThen"         -> Just mkEnumFromThen
   "Haskell.Prim.Enum.Enum.enumFromThenTo"       -> Just mkEnumFromThenTo
   "Haskell.Prim.case_of_"                       -> Just caseOf
+  "Haskell.Prim.Monad.Monad._>>=_"              -> Just bind
+  "Haskell.Prim.Monad.Monad._>>_"               -> Just sequ
   "Agda.Builtin.FromNat.Number.fromNat"         -> Just fromNat
   "Agda.Builtin.FromNeg.Negative.fromNeg"       -> Just fromNeg
   "Agda.Builtin.FromString.IsString.fromString" -> Just fromString
@@ -56,19 +57,19 @@ isSpecialCon = prettyShow >>> \ case
   _ -> Nothing
 
 fromNat :: QName -> Elims -> C (Hs.Exp ())
-fromNat _ es = compileArgs es <&> \ case
+fromNat _ es = compileElims es <&> \ case
   _ : n@Hs.Lit{} : es' -> n `eApp` es'
   es'                  -> hsVar "fromIntegral" `eApp` drop 1 es'
 
 fromNeg :: QName -> Elims -> C (Hs.Exp ())
-fromNeg _ es = compileArgs es <&> \ case
+fromNeg _ es = compileElims es <&> \ case
   _ : n@Hs.Lit{} : es' -> Hs.NegApp () n `eApp` es'
   es'                  -> (hsVar "negate" `o` hsVar "fromIntegral") `eApp` drop 1 es'
   where
     f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ Hs.UnQual () $ hsName "_._") g
 
 fromString :: QName -> Elims -> C (Hs.Exp ())
-fromString _ es = compileArgs es <&> \ case
+fromString _ es = compileElims es <&> \ case
   _ : s@Hs.Lit{} : es' -> s `eApp` es'
   es'                  -> hsVar "fromString" `eApp` drop 1 es'
 
@@ -83,7 +84,7 @@ tupleTerm cons i es = do
   return $ Hs.Tuple () Hs.Boxed ts
 
 ifThenElse :: QName -> Elims -> C (Hs.Exp ())
-ifThenElse _ es = compileArgs es >>= \case
+ifThenElse _ es = compileElims es >>= \case
   -- fully applied
   b : t : f : es' -> return $ Hs.If () b t f `eApp` es'
   -- partially applied -> eta-expand
@@ -93,22 +94,22 @@ ifThenElse _ es = compileArgs es >>= \case
     return $ Hs.lamE (Hs.pvar <$> xs) $ Hs.If () b t f
 
 mkEnumFrom :: QName -> Elims -> C (Hs.Exp ())
-mkEnumFrom q es = compileArgs es >>= \case
+mkEnumFrom q es = compileElims es >>= \case
   _ : a : es' -> return $ Hs.EnumFrom () a `eApp` es'
   es'         -> return $ hsVar "enumFrom" `eApp` drop 1 es'
 
 mkEnumFromTo :: QName -> Elims -> C (Hs.Exp ())
-mkEnumFromTo q es = compileArgs es >>= \case
+mkEnumFromTo q es = compileElims es >>= \case
   _ : a : b : es' -> return $ Hs.EnumFromTo () a b `eApp` es'
   es'             -> return $ hsVar "enumFromTo" `eApp` drop 1 es'
 
 mkEnumFromThen :: QName -> Elims -> C (Hs.Exp ())
-mkEnumFromThen q es = compileArgs es >>= \case
+mkEnumFromThen q es = compileElims es >>= \case
   _ : a : a' : es' -> return $ Hs.EnumFromThen () a a' `eApp` es'
   es'              -> return $ hsVar "enumFromThen" `eApp` drop 1 es'
 
 mkEnumFromThenTo :: QName -> Elims -> C (Hs.Exp ())
-mkEnumFromThenTo q es = compileArgs es >>= \case
+mkEnumFromThenTo q es = compileElims es >>= \case
   _ : a : a' : b : es' -> return $ Hs.EnumFromThenTo () a a' b `eApp` es'
   es'                  -> return $ hsVar "enumFromThenTo" `eApp` drop 1 es'
 
@@ -118,8 +119,32 @@ delay _ = compileErasedApp
 force :: QName -> Elims -> C (Hs.Exp ())
 force _ = compileErasedApp
 
+bind :: QName -> Elims -> C (Hs.Exp ())
+bind q (e:es) = do
+  checkInstance $ unArg $ isApplyElim' __IMPOSSIBLE__ e
+  compileElims es >>= \case
+    (u : Hs.Lambda _ [p] v : vs) -> do
+      let stmt1 = Hs.Generator () p u
+      case v of
+        Hs.Do _ stmts -> return $ Hs.Do () (stmt1 : stmts)
+        _             -> return $ Hs.Do () [stmt1, Hs.Qualifier () v]
+    vs -> return $ hsVar "_>>=_" `eApp` vs
+bind q [] = return $ hsVar "_>>=_"
+
+sequ :: QName -> Elims -> C (Hs.Exp ())
+sequ q (e:es) = do
+  checkInstance $ unArg $ isApplyElim' __IMPOSSIBLE__ e
+  compileElims es >>= \case
+    (u : v : vs) -> do
+      let stmt1 = Hs.Qualifier () u
+      case v of
+        Hs.Do _ stmts -> return $ Hs.Do () (stmt1 : stmts)
+        _             -> return $ Hs.Do () [stmt1, Hs.Qualifier () v]
+    vs -> return $ hsVar "_>>_" `eApp` vs
+sequ q [] = return $ hsVar "_>>_"
+
 caseOf :: QName -> Elims -> C (Hs.Exp ())
-caseOf _ es = compileArgs es >>= \ case
+caseOf _ es = compileElims es >>= \ case
   -- applied to pattern lambda
   e : Hs.LCase _ alts : es' ->
     return $ eApp (Hs.Case () e alts) es'
@@ -152,7 +177,7 @@ lambdaCase q es = setCurrentRange (nameBindingSite $ qnameName q) $ do
     [Hs.Match _ _ [] (Hs.UnGuardedRhs _ rhs) _] -> return rhs
     _ -> do
       alts <- mapM clauseToAlt cs -- Pattern lambdas cannot have where blocks
-      args <- compileArgs rest
+      args <- compileElims rest
       return $ eApp (Hs.LCase () alts) args
 
 clauseToAlt :: Hs.Match () -> C (Hs.Alt ())
@@ -170,31 +195,36 @@ compileLiteral (LitString t) = return $ Hs.Lit () $ Hs.String () s s
   where s = Text.unpack t
 compileLiteral l               = genericDocError =<< text "bad term:" <?> prettyTCM (Lit l)
 
+compileVar :: Nat -> C String
+compileVar x = prettyShow . nameConcrete <$> nameOfBV x
+
 compileTerm :: Term -> C (Hs.Exp ())
 compileTerm v = do
   reportSDoc "agda2hs.compile" 7 $ text "compiling term:" <+> prettyTCM v
   reportSDoc "agda2hs.compile" 27 $ text "compiling term:" <+> pure (P.pretty v)
   case unSpine1 v of
-    Var x es   -> (`app` es) . hsVar =<< showTCM (Var x [])
+    Var x es   -> do
+      s <- compileVar x
+      hsVar s `app` es
     -- v currently we assume all record projections are instance
     -- args that need attention
     Def f es
       | Just semantics <- isSpecialTerm f -> semantics f es
       | otherwise -> isClassFunction f >>= \ case
         True  -> compileClassFunApp f es
-        False -> isUnboxProjection f `or2M` isTransparentFunction f >>= \ case
+        False -> (isJust <$> isUnboxProjection f) `or2M` isTransparentFunction f >>= \ case
           True  -> compileErasedApp es
           False -> do
             -- Drop module parameters (unless projection-like)
             n <- (theDef <$> getConstInfo f) >>= \case
               Function{ funProjection = Right{} } -> return 0
               _ -> size <$> lookupSection (qnameModule f)
-            (`app` drop n es) . Hs.Var () =<< hsQName f
+            (`app` drop n es) . Hs.Var () =<< compileQName f
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> isUnboxConstructor (conName h) >>= \ case
-      True  -> compileErasedApp es
-      False -> (`app` es) . Hs.Con () =<< hsQName (conName h)
+      Just _  -> compileErasedApp es
+      Nothing -> (`app` es) . Hs.Con () =<< compileQName (conName h)
     Lit l -> compileLiteral l
     Lam v b | usableModality v, getOrigin v == UserWritten -> do
       unless (visible v) $ genericDocError =<< do
@@ -216,12 +246,12 @@ compileTerm v = do
     t -> genericDocError =<< text "bad term:" <?> prettyTCM t
   where
     app :: Hs.Exp () -> Elims -> C (Hs.Exp ())
-    app hd es = eApp <$> pure hd <*> compileArgs es
+    app hd es = eApp <$> pure hd <*> compileElims es
 
 -- `compileErasedApp` compiles an application of an erased constructor
 -- or projection.
 compileErasedApp :: Elims -> C (Hs.Exp ())
-compileErasedApp es = compileArgs es >>= \case
+compileErasedApp es = compileElims es >>= \case
   []     -> return $ hsVar "id"
   (v:vs) -> return $ v `eApp` vs
 
@@ -229,10 +259,7 @@ compileErasedApp es = compileArgs es >>= \case
 -- drop the first visible arg (the record)
 compileClassFunApp :: QName -> Elims -> C (Hs.Exp ())
 compileClassFunApp f es = do
-  -- v not sure why this fails to strip the name
-  --f <- hsQName builtins (qualify_ (qnameName f))
-  -- here's a horrible way to strip the module prefix off the name
-  let uf = prettyShow (nameConcrete (qnameName f))
+  hf <- compileQName f
   case dropWhile notVisible (fromMaybe __IMPOSSIBLE__ $ allApplyElims es) of
     []     -> __IMPOSSIBLE__
     (x:xs) -> do
@@ -241,15 +268,15 @@ compileClassFunApp f es = do
         [ text "symbol module:  " <+> prettyTCM (qnameModule f)
         , text "current module: " <+> prettyTCM curMod
         ]
-      x <- instantiate x
       unless (curMod `isLeChildModuleOf` qnameModule f) $ checkInstance $ unArg x
-      args <- mapMaybeM compileArg xs
-      return $ hsVar uf `eApp` args
+      args <- compileArgs xs
+      return $ Hs.Var () hf `eApp` args
 
-compileArgs :: Elims -> C [Hs.Exp ()]
-compileArgs es =
-  let args = fromMaybe __IMPOSSIBLE__ $ allApplyElims es
-  in  mapMaybeM compileArg args
+compileElims :: Elims -> C [Hs.Exp ()]
+compileElims es = compileArgs $ fromMaybe __IMPOSSIBLE__ $ allApplyElims es
+
+compileArgs :: Args -> C [Hs.Exp ()]
+compileArgs args = mapMaybeM compileArg args
 
 compileArg :: Arg Term -> C (Maybe (Hs.Exp ()))
 compileArg x = do

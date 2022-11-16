@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module ScopedTypeVariables where
 
 foo :: forall a . Eq a => a -> Bool

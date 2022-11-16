@@ -3,16 +3,20 @@ module Agda2Hs.Compile.Utils where
 import Control.Arrow ( Arrow((***)) )
 import Control.Monad.Except
 import Control.Monad.Reader
+import Control.Monad.Writer ( tell )
 
 import Data.Maybe ( isJust )
+
+import qualified Language.Haskell.Exts as Hs
 
 import Agda.Compiler.Backend hiding ( Args )
 
 import Agda.Syntax.Common
 import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Internal
+import Agda.Syntax.Position ( noRange )
 import Agda.Syntax.Scope.Base
-import Agda.Syntax.Scope.Monad ( bindVariable )
+import Agda.Syntax.Scope.Monad ( bindVariable, freshConcreteName )
 
 import Agda.TypeChecking.CheckInternal ( infer )
 import Agda.TypeChecking.Constraints ( noConstraints )
@@ -32,9 +36,12 @@ import Agda.Utils.Pretty ( prettyShow )
 import qualified Agda.Utils.Pretty as P
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
+import Agda.Utils.Singleton
 
+import AgdaInternals
 import Agda2Hs.AgdaUtils ( (~~) )
 import Agda2Hs.Compile.Types
+import Agda2Hs.HsUtils
 import Agda2Hs.Pragma
 
 concatUnzip :: [([a], [b])] -> ([a], [b])
@@ -45,11 +52,8 @@ infixr 0 /\, \/
 f /\ g = \x -> f x && g x
 f \/ g = \x -> f x || g x
 
-liftTCM1 :: (TCM a -> TCM b) -> C a -> C b
-liftTCM1 k m = ReaderT (k . runReaderT m)
-
 showTCM :: PrettyTCM a => a -> C String
-showTCM x = lift $ show <$> prettyTCM x
+showTCM x = liftTCM $ show <$> prettyTCM x
 
 isInScopeUnqualified :: QName -> C Bool
 isInScopeUnqualified x = lift $ do
@@ -57,7 +61,15 @@ isInScopeUnqualified x = lift $ do
   return $ any (not . C.isQualified) ys
 
 freshString :: String -> C String
-freshString s = liftTCM (freshName_ s) >>= showTCM
+freshString s = liftTCM $ do
+  scope <- getScope
+  ctxNames <- map (prettyShow . nameConcrete) <$> getContextNames
+  return $ head $ filter (isFresh scope ctxNames) $ s : map (\i -> s ++ show i) [0..]
+  where
+    dummyName s = C.QName $ C.Name noRange C.NotInScope $ singleton $ C.Id s
+    isFresh scope ctxNames s =
+      null (scopeLookup (dummyName s) scope :: [AbstractName]) &&
+      not (s `elem` ctxNames)
 
 makeList :: C Doc -> Term -> C [Term]
 makeList = makeList' "Agda.Builtin.List.List.[]" "Agda.Builtin.List.List._∷_"
@@ -91,11 +103,7 @@ bindVar i = do
   liftTCM $ bindVariable LambdaBound (nameConcrete x) x
 
 underAbstr  :: Subst a => Dom Type -> Abs a -> (a -> C b) -> C b
-underAbstr a b ret
-  | absName b == "_" = underAbstraction' KeepNames a b ret
-  | otherwise        = underAbstraction' KeepNames a b $ \ body -> case b of
-                         Abs{}   -> liftTCM1 localScope $ bindVar 0 >> ret body
-                         NoAbs{} -> ret body
+underAbstr = underAbstraction' KeepNames
 
 underAbstr_ :: Subst a => Abs a -> (a -> C b) -> C b
 underAbstr_ = underAbstr __DUMMY_DOM__
@@ -137,22 +145,22 @@ isClassFunction q
   where
     m = qnameModule q
 
-isUnboxRecord :: QName -> C Bool
+isUnboxRecord :: QName -> C (Maybe Strictness)
 isUnboxRecord q = do
   getConstInfo q >>= \case
     Defn{defName = r, theDef = Record{}} ->
       processPragma r <&> \case
-        UnboxPragma -> True
-        _           -> False
-    _ -> return False
+        UnboxPragma s -> Just s
+        _             -> Nothing
+    _ -> return Nothing
 
-isUnboxConstructor :: QName -> C Bool
+isUnboxConstructor :: QName -> C (Maybe Strictness)
 isUnboxConstructor q =
-  caseMaybeM (isRecordConstructor q) (return False) $ isUnboxRecord . fst
+  caseMaybeM (isRecordConstructor q) (return Nothing) $ isUnboxRecord . fst
 
-isUnboxProjection :: QName -> C Bool
+isUnboxProjection :: QName -> C (Maybe Strictness)
 isUnboxProjection q =
-  caseMaybeM (liftTCM $ getRecordOfField q) (return False) isUnboxRecord
+  caseMaybeM (liftTCM $ getRecordOfField q) (return Nothing) isUnboxRecord
 
 isTransparentFunction :: QName -> C Bool
 isTransparentFunction q = do
@@ -195,3 +203,39 @@ ensureNoLocals msg = unlessM (null <$> asks locals) $ genericError msg
 
 withLocals :: LocalDecls -> C a -> C a
 withLocals ls = local $ \e -> e { locals = ls }
+
+checkValidVarName :: Hs.Name () -> C ()
+checkValidVarName x = unless (validVarName x) $ genericDocError =<< do
+  text "Invalid name for Haskell variable: " <+> text (Hs.prettyPrint x)
+
+checkValidTyVar :: Hs.Name () -> C ()
+checkValidTyVar x = unless (validVarName x) $ genericDocError =<< do
+  text "Invalid name for Haskell type variable: " <+> text (Hs.prettyPrint x)
+
+checkValidFunName :: Hs.Name () -> C ()
+checkValidFunName x = unless (validVarName x) $ genericDocError =<< do
+  text "Invalid name for Haskell function: " <+> text (Hs.prettyPrint x)
+
+checkValidTypeName :: Hs.Name () -> C ()
+checkValidTypeName x = unless (validConName x) $ genericDocError =<< do
+  text "Invalid name for Haskell type: " <+> text (Hs.prettyPrint x)
+
+checkValidConName :: Hs.Name () -> C ()
+checkValidConName x = unless (validConName x) $ genericDocError =<< do
+  text "Invalid name for Haskell constructor: " <+> text (Hs.prettyPrint x)
+
+tellImport :: Import -> C ()
+tellImport imp = tell $ CompileOutput [imp] []
+
+tellExtension :: Hs.KnownExtension -> C ()
+tellExtension pr = tell $ CompileOutput [] [pr]
+
+addPatBang :: Strictness -> Hs.Pat () -> C (Hs.Pat ())
+addPatBang Strict p = tellExtension Hs.BangPatterns >>
+  return (Hs.PBangPat () p)
+addPatBang Lazy   p = return p
+
+addTyBang :: Strictness -> Hs.Type () -> C (Hs.Type ())
+addTyBang Strict ty = tellExtension Hs.BangPatterns >>
+  return (Hs.TyBang () (Hs.BangedTy ()) (Hs.NoUnpackPragma ()) ty)
+addTyBang Lazy   ty = return ty

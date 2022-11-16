@@ -14,7 +14,7 @@ import Agda.TypeChecking.Telescope
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
-import Agda2Hs.Compile.Type ( compileDom, compileTele )
+import Agda2Hs.Compile.Type ( compileDom, compileTeleBinds )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
@@ -22,17 +22,17 @@ import Agda2Hs.HsUtils
 compileData :: [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
 compileData ds def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
+  checkValidTypeName d
   case theDef def of
     Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} -> do
       TelV tel t <- telViewUpTo n (defType def)
       reportSDoc "agda2hs.data" 10 $ text "Datatype telescope:" <+> prettyTCM tel
       allIndicesErased t
-      params <- compileTele tel
+      let params = teleArgs tel
       addContext tel $ do
-        pars <- mapM (showTCM . unArg) params
-        cs   <- mapM (compileConstructor params) cs
-        let hd   = foldl (\ h p -> Hs.DHApp () h (Hs.UnkindedVar () $ hsName p))
-                         (Hs.DHead () d) pars
+        binds <- compileTeleBinds tel
+        cs <- mapM (compileConstructor params) cs
+        let hd = foldl (Hs.DHApp ()) (Hs.DHead () d) binds
         return [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs ds]
     _ -> __IMPOSSIBLE__
   where
@@ -46,15 +46,21 @@ compileData ds def = do
 
 compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl ())
 compileConstructor params c = do
+  reportSDoc "agda2hs.data.con" 15 $ text "compileConstructor" <+> prettyTCM c
+  reportSDoc "agda2hs.data.con" 20 $ text "  params = " <+> prettyTCM params
   ty <- (`piApplyM` params) . defType =<< getConstInfo c
+  reportSDoc "agda2hs.data.con" 20 $ text "  ty = " <+> prettyTCM ty
   TelV tel _ <- telView ty
   let conName = hsName $ prettyShow $ qnameName c
+  checkValidConName conName
   args <- compileConstructorArgs tel
   return $ Hs.QualConDecl () Nothing Nothing $ Hs.ConDecl () conName args
 
 compileConstructorArgs :: Telescope -> C [Hs.Type ()]
 compileConstructorArgs EmptyTel = return []
 compileConstructorArgs (ExtendTel a tel) = compileDom (absName tel) a >>= \case
-  DomType hsA       -> (hsA :) <$> underAbstraction a tel compileConstructorArgs
+  DomType s hsA     -> do
+    ty <- addTyBang s hsA
+    (ty :) <$> underAbstraction a tel compileConstructorArgs
   DomConstraint hsA -> genericDocError =<< text "Not supported: constructors with class constraints"
   DomDropped        -> underAbstraction a tel compileConstructorArgs

@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Issue92 where
 
 foo :: forall a . a -> a

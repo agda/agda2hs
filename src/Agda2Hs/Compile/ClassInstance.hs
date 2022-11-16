@@ -52,7 +52,7 @@ compileInstRule :: [Hs.Asst ()] -> Term -> C (Hs.InstRule ())
 compileInstRule cs ty = case unSpine1 ty of
   Def f es | Just args <- allApplyElims es -> do
     vs <- mapM (compileType . unArg) $ filter keepArg args
-    f <- hsQName f
+    f <- compileQName f
     return $
       Hs.IRule () Nothing (ctx cs) $ foldl (Hs.IHApp ()) (Hs.IHCon () f) (map pars vs)
     where ctx [] = Nothing
@@ -66,7 +66,7 @@ compileInstRule cs ty = case unSpine1 ty of
     DomDropped -> underAbstr a b (compileInstRule cs . unEl)
     DomConstraint hsA ->
       underAbstraction a b (compileInstRule (cs ++ [hsA]) . unEl)
-    DomType t  -> __IMPOSSIBLE__
+    DomType _ t -> __IMPOSSIBLE__
   _ -> __IMPOSSIBLE__
 
 -- Plan:
@@ -144,7 +144,7 @@ compileInstanceClause curModule c = withClauseLocals curModule c $ do
         , [(_, f)] <- mapMaybe isProjElim es
         , f .~ q
         -> do d <- chaseDef n
-              fc <- drop 1 <$> compileFun d
+              fc <- compileFun False d
               let hd = hsName $ prettyShow $ nameConcrete $ qnameName $ defName d
               let fc' = dropPatterns 1 $ replaceName hd uf fc
               return (map (Hs.InsDecl ()) fc', [n])
@@ -191,11 +191,11 @@ resolveStringName s = do
 lookupDefaultImplementations :: QName -> [Hs.Name ()] -> C [Definition]
 lookupDefaultImplementations recName fields = do
   let modName = qnameToMName recName
-      isField f _ = (`elem` fields) . unQual <$> hsQName f
+      isField f _ = (`elem` fields) . unQual <$> compileQName f
   findDefinitions isField modName
 
 classMemberNames :: Definition -> C [Hs.Name ()]
 classMemberNames def =
   case theDef def of
-    Record{recFields = fs} -> fmap unQual <$> traverse hsQName (map unDom fs)
+    Record{recFields = fs} -> fmap unQual <$> traverse compileQName (map unDom fs)
     _ -> genericDocError =<< text "Not a record:" <+> prettyTCM (defName def)
