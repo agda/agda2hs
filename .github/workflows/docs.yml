@@ -7,11 +7,11 @@ on:
     - ci-*
     - release*
     - docs
-    paths: &trigger_path_list
-    - 'docs/**'
-    - '.github/workflows/docs.yml'
-  pull_request:
-    paths: *trigger_path_list
+  #   paths: &trigger_path_list
+  #   - 'docs/**'
+  #   - '.github/workflows/docs.yml'
+  # pull_request:
+  #   paths: *trigger_path_list
 
 jobs:
   build:
