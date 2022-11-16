@@ -39,14 +39,16 @@ Haskell code that you can show your Haskell colleagues without shame.
 
 ## Documentation
 
-At the moment there is no user manual yet. The best way to learn how
-to use agda2hs is by reading the Haskell Symposium '22 paper
-[Reasonable Agda is Correct Haskell: Writing Verified Haskell using
+Documentation can be viewed at https://agda.github.io/agda2hs. You can also find
+examples in the `test` directory of this repository, in particular the file
+[Test.agda](https://github.com/agda/agda2hs/blob/master/test/Test.agda). The
+documentation is a work in progress, so if you have been using agda2hs and want
+to contribute in some way, adding documentation or examples would be very
+welcome.
+
+agda2hs was introduced in the Haskell Symposium '22 paper [Reasonable Agda is
+Correct Haskell: Writing Verified Haskell using
 agda2hs](https://jesper.sikanda.be/files/reasonable-agda-is-correct-haskell.pdf).
-You can also find examples in the `test` directory of this repository,
-in particular the file [Test.agda](https://github.com/agda/agda2hs/blob/master/test/Test.agda).
-If you have been using agda2hs and want to contribute in some way,
-adding documentation or examples would be very welcome.
 
 ## Future work
 
