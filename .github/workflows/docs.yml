@@ -32,8 +32,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     env:
       DOCS_DIR: docs
-      DOCS_BUILD_DIR: $DOCS_DIR/build
-      DOCS_BUILD_HTML_DIR: $DOCS_BUILD_DIR/html
+      DOCS_BUILD_DIR: docs/build
+      DOCS_BUILD_HTML_DIR: docs/build/html
 
     runs-on: ubuntu-latest
     steps:
