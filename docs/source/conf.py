@@ -13,7 +13,8 @@ author = "Jexper Cockx, Orestis Melkonian, Lucas Escot, James Chapman, Ulf Norel
 # -- General configuration -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["myst_parser", "sphinx_rtd_theme", "rtds_action"]
+# extensions = ["myst_parser", "sphinx_rtd_theme", "rtds_action"]
+extensions = ["myst_parser", "sphinx_rtd_theme"]
 
 templates_path = ["_templates"]
 exclude_patterns = []
