@@ -1,64 +1,121 @@
+# Simple workflow for deploying static content to GitHub Pages
 name: Docs
 
 on:
+  # Runs on pushes targeting the default branch
   push:
-    branches:
-    - master
-    - release*
-    - docs
+    branches: ["master", "docs"]
 
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
-  build:
-    if: |
-      !contains(github.event.head_commit.message, '[skip ci]')
-      && !contains(github.event.head_commit.message, '[ci skip]')
-      && !contains(github.event.head_commit.message, '[github skip]')
-      && !contains(github.event.head_commit.message, '[skip github]')
-
-    runs-on: ubuntu-20.04
-    
-    strategy:
-      matrix:
-        python-version: ["3.10.8"]
-
+  # Single deploy job since we're just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     env:
-      DOCS_DIR: docs/
+      DOCS_DIR: docs
       DOCS_BUILD_DIR: docs/build
-    
+
+    runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install -r ${{ env.DOCS_DIR }}/requirements.txt
+      - name: Build User Manual in HTML
+        run: |
+          cd ${{ env.DOCS_DIR }}
+          make html
+      - name: Setup Pages
+        uses: actions/configure-pages@v2
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: ${{ env.DOCS_BUILD_DIR }}
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
 
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive
+# name: Docs
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
+# on:
+#   push:
+#     branches:
+#     - master
+#     - release*
+#     - docs
 
-    - name: Install dependencies
-      run: |
-        pip install -r docs/requirements.txt
+# permissions:
+#   contents: write
 
-    - name: Build User Manual in HTML
-      run: |
-        cd ${{ env.DOCS_DIR }}
-        make html
+# jobs:
+#   build:
+#     if: |
+#       !contains(github.event.head_commit.message, '[skip ci]')
+#       && !contains(github.event.head_commit.message, '[ci skip]')
+#       && !contains(github.event.head_commit.message, '[github skip]')
+#       && !contains(github.event.head_commit.message, '[skip github]')
 
-    - name: Upload HTML
-      uses: actions/upload-artifact@v3
-      with:
-        path: ${{ env.DOCS_BUILD_DIR }}
-        name: docs
+#     runs-on: ubuntu-20.04
+    
+#     strategy:
+#       matrix:
+#         python-version: ["3.10.8"]
 
-    - name: Deploy docs
-      uses: JamesIves/github-pages-deploy-action@v4
-      with:
-        folder: ${{ env.DOCS_BUILD_DIR }}
+#     env:
+#       DOCS_DIR: docs/
+#       DOCS_BUILD_DIR: docs/build
+    
+#     steps:
 
-# TODO: is something like this necessary?
-# export PATH=$HOME/texlive/bin/x86_64-linux:$PATH
+#     - name: Checkout
+#       uses: actions/checkout@v3
+#       with:
+#         submodules: recursive
+
+#     - name: Set up Python ${{ matrix.python-version }}
+#       uses: actions/setup-python@v4
+#       with:
+#         python-version: ${{ matrix.python-version }}
+
+#     - name: Install dependencies
+#       run: |
+#         pip install -r docs/requirements.txt
+
+#     - name: Build User Manual in HTML
+#       run: |
+#         cd ${{ env.DOCS_DIR }}
+#         make html
+
+#     - name: Upload HTML
+#       uses: actions/upload-artifact@v3
+#       with:
+#         path: ${{ env.DOCS_BUILD_DIR }}
+#         name: docs
+
+#     - name: Deploy docs
+#       uses: JamesIves/github-pages-deploy-action@v4
+#       with:
+#         folder: ${{ env.DOCS_BUILD_DIR }}
+
+# # TODO: is something like this necessary?
+# # export PATH=$HOME/texlive/bin/x86_64-linux:$PATH
