@@ -1,0 +1,49 @@
+# Introduction
+
+## Getting Started
+
+### Requirements
+
+- [Haskell programming language](https://www.haskell.org)
+- [Haskell Cabal](https://www.haskell.org/cabal/)
+- [Agda programming language](https://github.com/agda/agda)
+  - version >= 2.6.3 && < 2.6.4
+- [Agda standard library](https://github.com/agda/agda-stdlib)
+- Agda library `agda2hs`
+  - this Agda library is include in the `agda2hs` repository; see
+    [`agda2hs.agda-lib`](https://github.com/agda/agda2hs/blob/master/agda2hs.agda-lib)
+
+### Installation
+
+Let `DIR` be the directory in which you start running these shell commands.
+```sh
+# clone the repository locally
+git clone git@github.com:agda/agda2hs.git
+
+# build agda2hs with cabal
+cd agda2hs
+cabal install
+
+# register the agda2hs Agda library
+echo $DIR/agda2hs/agda2hs.agda-lib >> ~/.agda/libraries
+# register the agda2hs Agda library as a default
+echo $DIR/agda2hs/agda2hs.agda-lib >> ~/.agda/defaults
+```
+
+### Running `agda2hs`
+
+To run agda2hs, run
+```
+agda2hs <path>/<name>.agda
+```
+which compiles and writes
+```
+<path>/<name>.hs
+```
+
+### Using agda2hs with Stack
+
+You can use agda2hs with the [Haskell
+Stack](https://docs.haskellstack.org/en/stable/) tool.
+
+TODO: integrate agda2hs as a preprocessor for stack
