@@ -25,20 +25,20 @@ cd agda2hs
 cabal install
 
 # register the agda2hs Agda library
-echo $DIR/agda2hs/agda2hs.agda-lib >> ~/.agda/libraries
+echo $(pwd)/agda2hs.agda-lib >> ~/.agda/libraries
 # register the agda2hs Agda library as a default
-echo $DIR/agda2hs/agda2hs.agda-lib >> ~/.agda/defaults
+echo agda2hs >> ~/.agda/defaults
 ```
 
 ### Running `agda2hs`
 
 To run agda2hs, run
 ```
-agda2hs <path>/<name>.agda
+agda2hs <path>/<name>.agda [-o <outputDir>]
 ```
-which compiles and writes
+which, for all dependencies of that Agda file, compiles and writes
 ```
-<path>/<name>.hs
+[<outputDir>/]<modulePath>.hs
 ```
 
 ### Using agda2hs with Stack
