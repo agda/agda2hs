@@ -15,32 +15,39 @@ open import Haskell.Prim.Tuple
 --------------------------------------------------
 -- Monad
 
-record Monad (m : Set → Set) : Set₁ where
-  field
-    _>>=_ : m a → (a → m b) → m b
-    overlap ⦃ super ⦄ : Applicative m
+module Do where
 
-  return : a → m a
+  record Monad (m : Set → Set) : Set₁ where
+    field
+      _>>=_ : m a → (a → m b) → m b
+      overlap ⦃ super ⦄ : Applicative m
+
+  open Monad ⦃ ... ⦄ public
+
+  {-# COMPILE AGDA2HS Monad existing-class #-}
+
+  return : ⦃ Monad m ⦄ → a → m a
   return = pure
 
-  _>>_ : m a → m b → m b
+  _>>_ : ⦃ Monad m ⦄ → m a → m b → m b
   m >> m₁ = m >>= λ _ → m₁
 
-  _=<<_ : (a → m b) → m a → m b
+  _=<<_ : ⦃ Monad m ⦄ → (a → m b) → m a → m b
   _=<<_ = flip _>>=_
 
 -- Use `Dont._>>=_` and `Dont._>>_` if you do not want agda2hs to use
 -- do-notation.
 module Dont where
+
+  open Do using (Monad)
+
   _>>=_ : ⦃ Monad m ⦄ → m a → (a → m b) → m b
-  _>>=_ = Monad._>>=_ it
+  _>>=_ = Do._>>=_
 
   _>>_ : ⦃ Monad m ⦄ → m a → m b → m b
-  _>>_ = Monad._>>_ it
+  _>>_ = Do._>>_
 
-open Monad ⦃ ... ⦄ public
-
-{-# COMPILE AGDA2HS Monad existing-class #-}
+open Do public
 
 mapM₋ : ⦃ Monad m ⦄ → ⦃ Foldable t ⦄ → (a → m b) → t a → m ⊤
 mapM₋ f = foldr (λ x k → f x >> k) (pure tt)
