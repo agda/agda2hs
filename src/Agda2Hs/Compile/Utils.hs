@@ -129,7 +129,10 @@ canErase a = do
 -- Exploits the fact that the name of the record type and the name of the record module are the
 -- same, including the unique name ids.
 isClassFunction :: QName -> C Bool
-isClassFunction q
+isClassFunction = isClassModule . qnameModule
+
+isClassModule :: ModuleName -> C Bool
+isClassModule m
   | null $ mnameToList m = return False
   | otherwise            = do
     minRec <- asks minRecordName
@@ -142,8 +145,12 @@ isClassFunction q
           ExistingClassPragma -> True
           _                   -> False
       _                             -> return False
-  where
-    m = qnameModule q
+
+-- Drops the last (record) module for typeclass methods
+dropClassModule :: ModuleName -> C ModuleName
+dropClassModule m@(MName ns) = isClassModule m >>= \case
+  True  -> dropClassModule $ MName $ init ns
+  False -> return m
 
 isUnboxRecord :: QName -> C (Maybe Strictness)
 isUnboxRecord q = do

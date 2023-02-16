@@ -69,6 +69,9 @@ hsName x
 extToName :: KnownExtension -> Name ()
 extToName = Ident () . show
 
+hsModuleName :: String -> ModuleName ()
+hsModuleName = ModuleName ()
+
 isOp :: QName () -> Bool
 isOp (UnQual _ Symbol{}) = True
 isOp (Special _ Cons{})  = True

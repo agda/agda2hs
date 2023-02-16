@@ -68,5 +68,6 @@ executable agda2hs
                        RecordWildCards,
                        FlexibleContexts,
                        MultiWayIf,
-                       TupleSections
+                       TupleSections,
+                       ScopedTypeVariables
   ghc-options:         -Werror

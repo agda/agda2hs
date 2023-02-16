@@ -4,6 +4,7 @@ import Control.Monad.Reader ( ReaderT(runReaderT) )
 import Control.Monad.Writer ( WriterT(runWriterT) )
 
 import Agda.Compiler.Backend
+import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
 import Agda.TypeChecking.Pretty
 import Agda.Utils.Null
 
@@ -15,22 +16,23 @@ import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Pragma
 
-initCompileEnv :: CompileEnv
-initCompileEnv = CompileEnv
-  { minRecordName = Nothing
+initCompileEnv :: TopLevelModuleName -> CompileEnv
+initCompileEnv tlmn = CompileEnv
+  { currModule = tlmn
+  , minRecordName = Nothing
   , locals = []
   , isCompilingInstance = False
   }
 
-runC :: C a -> TCM (a, CompileOutput)
-runC m = runWriterT $ runReaderT m initCompileEnv
+runC :: TopLevelModuleName -> C a -> TCM (a, CompileOutput)
+runC tlmn m = runWriterT $ runReaderT m $ initCompileEnv tlmn
 
 -- Main compile function
 ------------------------
 
 compile :: Options -> ModuleEnv -> IsMain -> Definition ->
   TCM (CompiledDef, CompileOutput)
-compile _ _ _ def = withCurrentModule (qnameModule $ defName def) $ runC $
+compile _ tlmn _ def = withCurrentModule (qnameModule $ defName def) $ runC tlmn $
   processPragma (defName def) >>= \ p -> do
     reportSDoc "agda2hs.compile" 5 $
       text "Compiling definition: " <+> prettyTCM (defName def)

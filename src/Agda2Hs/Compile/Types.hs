@@ -32,17 +32,26 @@ instance NFData Options where
   rnf _ = ()
 
 data CompileEnv = CompileEnv
-  { minRecordName :: Maybe ModuleName
+  { currModule :: TopLevelModuleName
+  -- ^ the current module we are compiling
+  , minRecordName :: Maybe ModuleName
   -- ^ keeps track of the current minimal record we are compiling
   , locals :: LocalDecls
   -- ^ keeps track of the current clause's where declarations
   , isCompilingInstance :: Bool
   }
 
+data IsQualified
+  = IsUnqualified
+  | IsQualified
+  | IsQualifiedAs (Hs.ModuleName ())
+  deriving (Show, Eq, Ord)
+
 data Import = Import
-  { importModule :: Hs.ModuleName ()
-  , importParent :: Maybe (Hs.Name ())
-  , importName   :: Hs.Name ()
+  { importModule    :: Hs.ModuleName ()
+  , importQualified :: IsQualified
+  , importParent    :: Maybe (Hs.Name ())
+  , importName      :: Hs.Name ()
   }
 type Imports = [Import]
 

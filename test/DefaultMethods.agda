@@ -1,12 +1,8 @@
 {-# OPTIONS --no-auto-inline #-}
 module DefaultMethods where
 
-open import Haskell.Prim
-open import Haskell.Prim.Bool
-open import Haskell.Prim.Maybe
-open import Haskell.Prim.Foldable
-open import Haskell.Prim.List
-open import Haskell.Prim.String
+open import Haskell.Prim using (ltNat)
+open import Haskell.Prelude hiding (Show; ShowS; show; showList; showString; showParen; Ord; _<_; _>_; defaultShowList)
 
 {-# FOREIGN AGDA2HS
 {-# LANGUAGE TypeSynonymInstances #-}

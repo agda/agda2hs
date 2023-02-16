@@ -19,13 +19,13 @@ import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
 type ImportSpecMap = Map (Hs.Name ()) (Set (Hs.Name ()))
-type ImportDeclMap = Map (Hs.ModuleName ()) ImportSpecMap
+type ImportDeclMap = Map (Hs.ModuleName (), IsQualified) ImportSpecMap
 
 compileImports :: String -> Imports -> TCM [Hs.ImportDecl ()]
 compileImports top is0 = do
   let is = filter (not . (top `isPrefixOf`) . Hs.prettyPrint . importModule) is0
   let imps = Map.toList $ groupModules is
-  return $ map (uncurry makeImportDecl) imps
+  return $ map (uncurry $ uncurry makeImportDecl) imps
 
   where
     mergeChildren :: ImportSpecMap -> ImportSpecMap -> ImportSpecMap
@@ -37,7 +37,7 @@ compileImports top is0 = do
 
     groupModules :: [Import] -> ImportDeclMap
     groupModules = foldr
-      (\(Import mod p q) -> Map.insertWith mergeChildren mod (makeSingle p q)) Map.empty
+      (\(Import mod as p q) -> Map.insertWith mergeChildren (mod,as) (makeSingle p q)) Map.empty
 
     -- TODO: avoid having to do this by having a CName instead of a
     -- Name in the Import datatype
@@ -54,7 +54,17 @@ compileImports top is0 = do
       | Set.null qs = Hs.IVar () q
       | otherwise   = Hs.IThingWith () q $ map makeCName $ Set.toList qs
 
-    makeImportDecl :: Hs.ModuleName () -> ImportSpecMap -> Hs.ImportDecl ()
-    makeImportDecl mod specs = Hs.ImportDecl ()
-      mod False False False Nothing Nothing
+    makeImportDecl :: Hs.ModuleName () -> IsQualified -> ImportSpecMap -> Hs.ImportDecl ()
+    makeImportDecl mod qual specs = Hs.ImportDecl ()
+      mod (isQualified qual) False False Nothing (qualifiedAs qual)
       (Just $ Hs.ImportSpecList () False $ map (uncurry makeImportSpec) $ Map.toList specs)
+
+    isQualified :: IsQualified -> Bool
+    isQualified IsQualified     = True
+    isQualified IsQualifiedAs{} = True
+    isQualified IsUnqualified   = False
+
+    qualifiedAs :: IsQualified -> Maybe (Hs.ModuleName ())
+    qualifiedAs IsQualified       = Nothing
+    qualifiedAs (IsQualifiedAs m) = Just m
+    qualifiedAs IsUnqualified     = Nothing

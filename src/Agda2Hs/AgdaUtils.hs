@@ -7,14 +7,20 @@ import Data.Maybe ( fromMaybe )
 
 import Agda.Compiler.Backend hiding ( Args )
 
+import Agda.Interaction.FindFile ( findFile' )
+
 import Agda.Syntax.Common ( Arg, defaultArg )
 import Agda.Syntax.Internal
 import Agda.Syntax.Internal.Names
+import Agda.Syntax.TopLevelModuleName
 
-import Agda.TypeChecking.Pretty ( Doc, text, vcat )
+import Agda.TypeChecking.Monad ( topLevelModuleName )
+import Agda.TypeChecking.Pretty 
 import Agda.TypeChecking.Substitute
 
+import Agda.Utils.Either
 import Agda.Utils.List
+import Agda.Utils.Monad
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
@@ -67,3 +73,22 @@ mapDef f d = d{ theDef = mapDefn (theDef d) }
     mapDefn defn = defn -- We only need this for Functions
 
     mapClause c = c{ clauseBody = f <$> clauseBody c }
+
+topLevelModuleNameForModuleName :: ModuleName -> TCM TopLevelModuleName
+topLevelModuleNameForModuleName = topLevelModuleName . rawTopLevelModuleNameForModuleName
+
+isTopLevelModule :: ModuleName -> TCM (Maybe TopLevelModuleName)
+isTopLevelModule m = do
+  tlm <- topLevelModuleNameForModuleName m
+  ifM (isRight <$> findFile' tlm) (return $ Just tlm) (return Nothing)
+
+getTopLevelModuleForModuleName :: ModuleName -> TCM TopLevelModuleName
+getTopLevelModuleForModuleName m = loop (mnameToList m)
+  where
+    loop [] = genericDocError =<< text "Non-existing module: " <+> prettyTCM m
+    loop ns = isTopLevelModule (MName ns) >>= \case
+      Nothing -> loop (init ns)
+      Just tlmn -> return tlmn
+
+getTopLevelModuleForQName :: QName -> TCM TopLevelModuleName
+getTopLevelModuleForQName = getTopLevelModuleForModuleName . qnameModule

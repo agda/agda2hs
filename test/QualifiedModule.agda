@@ -21,4 +21,4 @@ module A where
       h = C
   {-# COMPILE AGDA2HS g #-}
 
-open A
+open A public
