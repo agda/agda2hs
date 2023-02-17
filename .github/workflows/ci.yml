@@ -13,18 +13,21 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]   # macOS-latest, windows-latest
-        cabal: ["3.4"]
+        cabal: ["3.8"]
         ghc:
           - "8.6.5"
           - "8.8.4"
-          - "8.10.2"
+          - "8.10.7"
+          - "9.0.2"
+          - "9.2.5"
+          - "9.4.3"
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
 
-    # Takes care of ghc and cabal. See https://github.com/actions/setup-haskell.
-    - uses: actions/setup-haskell@v1
+    # Takes care of ghc and cabal. See https://github.com/haskell/actions.
+    - uses: haskell/actions/setup@v2
       id: setup-haskell-cabal
       name: Setup Haskell
       with:
@@ -41,7 +44,7 @@ jobs:
     # every build. `restore-keys` makes it use the latest cache even if the
     # fingerprint doesn't match, so we don't need to start from scratch every
     # time a dependency changes.
-    - uses: actions/cache@v2
+    - uses: actions/cache@v3
       name: Cache ~/.cabal/store
       with:
         path:         ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
