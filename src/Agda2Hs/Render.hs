@@ -19,7 +19,7 @@ import qualified Language.Haskell.Exts.ExactPrint as Hs
 import qualified Language.Haskell.Exts.Extension as Hs
 
 import Agda.Compiler.Backend
-import Agda.Compiler.Common ( curIF )
+import Agda.Compiler.Common ( curIF, compileDir )
 
 import Agda.TypeChecking.Pretty
 import qualified Agda.Syntax.Concrete.Name as C
@@ -66,11 +66,12 @@ codeBlocks code = [(r, [uncurry Hs.exactPrint $ moveToTop $ noPragmas mcs]) | (r
 
 -- Generating the files -------------------------------------------------------
 
-moduleFileName :: Options -> TopLevelModuleName -> FilePath
-moduleFileName opts name =
-  optOutDir opts </> moduleNameToFileName name "hs"
+moduleFileName :: Options -> TopLevelModuleName -> TCM FilePath
+moduleFileName opts name = do
+  outDir <- compileDir
+  return $ fromMaybe outDir (optOutDir opts) </> moduleNameToFileName name "hs"
 
-moduleSetup :: Options -> IsMain -> TopLevelModuleName -> filepath -> TCM (Recompile ModuleEnv ModuleRes)
+moduleSetup :: Options -> IsMain -> TopLevelModuleName -> Maybe FilePath -> TCM (Recompile ModuleEnv ModuleRes)
 moduleSetup _ _ m _ = do
   reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
   setScope . iInsideScope =<< curIF
@@ -95,13 +96,12 @@ writeModule opts _ isMain m outs = do
         unlines' ss = unlines ss ++ "\n"
     autoImports <- unlines' . map pp <$> compileImports mod imps
     -- The comments makes it hard to generate and pretty print a full module
-    let hsFile = moduleFileName opts m
-        output = concat
+    hsFile <- moduleFileName opts m
+    let output = concat
                  [ renderLangExts exts
                  , renderBlocks $ codePragmas code
                  , "module " ++ mod ++ " where\n\n"
                  , autoImports
                  , renderBlocks defs ]
     reportSLn "" 1 $ "Writing " ++ hsFile
-    liftIO $ ensureDirectory hsFile
-    liftIO $ writeFile hsFile output
+    liftIO $ ensureDirectory hsFile >> writeFile hsFile output

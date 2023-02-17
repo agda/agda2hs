@@ -15,10 +15,10 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Render
 
 defaultOptions :: Options
-defaultOptions = Options{ optOutDir = ".", optExtensions = [] }
+defaultOptions = Options{ optOutDir = Nothing, optExtensions = [] }
 
 outdirOpt :: Monad m => FilePath -> Options -> m Options
-outdirOpt dir opts = return opts{ optOutDir = dir }
+outdirOpt dir opts = return opts{ optOutDir = Just dir }
 
 extensionOpt :: Monad m => String -> Options -> m Options
 extensionOpt ext opts = return opts{ optExtensions = Hs.parseExtension ext : optExtensions opts }
@@ -28,11 +28,12 @@ backend = Backend'
   { backendName           = "agda2hs"
   , backendVersion        = Just "0.1"
   , options               = defaultOptions
-  , commandLineFlags      = [ Option ['o'] ["out-dir"] (ReqArg outdirOpt "DIR")
-                              "Write Haskell code to DIR. Default: ."
-                            , Option ['X'] [] (ReqArg extensionOpt "EXTENSION")
-                              "Enable Haskell language EXTENSION. Affects parsing of Haskell code in FOREIGN blocks."
-                            ]
+  , commandLineFlags      =
+      [ Option ['o'] ["out-dir"] (ReqArg outdirOpt "DIR")
+        "Write Haskell code to DIR. (default: project root)"
+      , Option ['X'] [] (ReqArg extensionOpt "EXTENSION")
+        "Enable Haskell language EXTENSION. Affects parsing of Haskell code in FOREIGN blocks."
+      ]
   , isEnabled             = \ _ -> True
   , preCompile            = return
   , postCompile           = \ _ _ _ -> return ()

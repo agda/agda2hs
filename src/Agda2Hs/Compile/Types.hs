@@ -24,7 +24,7 @@ type Ranged a    = (Range, a)
 
 type Code = (Hs.Module Hs.SrcSpanInfo, [Hs.Comment])
 
-data Options = Options { optOutDir     :: FilePath,
+data Options = Options { optOutDir     :: Maybe FilePath,
                          optExtensions :: [Hs.Extension] }
 
 -- Required by Agda-2.6.2, but we don't really care.
