@@ -2,7 +2,6 @@ module Agda2Hs.AgdaUtils where
 
 import Data.Data
 import Data.Monoid ( Any(..) )
-import Data.Generics ( listify )
 import Data.Maybe ( fromMaybe )
 
 import Agda.Compiler.Backend hiding ( Args )
@@ -18,9 +17,9 @@ import Agda.TypeChecking.Monad ( topLevelModuleName )
 import Agda.TypeChecking.Pretty 
 import Agda.TypeChecking.Substitute
 
-import Agda.Utils.Either
-import Agda.Utils.List
-import Agda.Utils.Monad
+import Agda.Utils.Either ( isRight )
+import Agda.Utils.List ( initMaybe )
+import Agda.Utils.Monad ( ifM )
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
@@ -82,13 +81,14 @@ isTopLevelModule m = do
   tlm <- topLevelModuleNameForModuleName m
   ifM (isRight <$> findFile' tlm) (return $ Just tlm) (return Nothing)
 
-getTopLevelModuleForModuleName :: ModuleName -> TCM TopLevelModuleName
-getTopLevelModuleForModuleName m = loop (mnameToList m)
+getTopLevelModuleForModuleName :: ModuleName -> TCM (Maybe TopLevelModuleName)
+getTopLevelModuleForModuleName = loop . mnameToList
   where
-    loop [] = genericDocError =<< text "Non-existing module: " <+> prettyTCM m
-    loop ns = isTopLevelModule (MName ns) >>= \case
-      Nothing -> loop (init ns)
-      Just tlmn -> return tlmn
+    loop ns
+      | null ns   = return Nothing
+      | otherwise = isTopLevelModule (MName ns) >>= \case
+        Nothing      -> loop (init ns)
+        tlm@(Just _) -> return tlm
 
-getTopLevelModuleForQName :: QName -> TCM TopLevelModuleName
+getTopLevelModuleForQName :: QName -> TCM (Maybe TopLevelModuleName)
 getTopLevelModuleForQName = getTopLevelModuleForModuleName . qnameModule

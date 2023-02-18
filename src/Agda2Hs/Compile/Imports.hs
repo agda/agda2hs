@@ -19,7 +19,7 @@ import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
 type ImportSpecMap = Map (Hs.Name ()) (Set (Hs.Name ()))
-type ImportDeclMap = Map (Hs.ModuleName (), IsQualified) ImportSpecMap
+type ImportDeclMap = Map (Hs.ModuleName (), Qualifier) ImportSpecMap
 
 compileImports :: String -> Imports -> TCM [Hs.ImportDecl ()]
 compileImports top is0 = do
@@ -54,17 +54,17 @@ compileImports top is0 = do
       | Set.null qs = Hs.IVar () q
       | otherwise   = Hs.IThingWith () q $ map makeCName $ Set.toList qs
 
-    makeImportDecl :: Hs.ModuleName () -> IsQualified -> ImportSpecMap -> Hs.ImportDecl ()
+    makeImportDecl :: Hs.ModuleName () -> Qualifier -> ImportSpecMap -> Hs.ImportDecl ()
     makeImportDecl mod qual specs = Hs.ImportDecl ()
       mod (isQualified qual) False False Nothing (qualifiedAs qual)
       (Just $ Hs.ImportSpecList () False $ map (uncurry makeImportSpec) $ Map.toList specs)
 
-    isQualified :: IsQualified -> Bool
-    isQualified IsQualified     = True
-    isQualified IsQualifiedAs{} = True
-    isQualified IsUnqualified   = False
+    isQualified :: Qualifier -> Bool
+    isQualified = \case
+      Unqualified     -> False
+      (QualifiedAs _) -> True
 
-    qualifiedAs :: IsQualified -> Maybe (Hs.ModuleName ())
-    qualifiedAs IsQualified       = Nothing
-    qualifiedAs (IsQualifiedAs m) = Just m
-    qualifiedAs IsUnqualified     = Nothing
+    qualifiedAs :: Qualifier -> Maybe (Hs.ModuleName ())
+    qualifiedAs = \case
+      Unqualified     -> Nothing
+      (QualifiedAs m) -> m

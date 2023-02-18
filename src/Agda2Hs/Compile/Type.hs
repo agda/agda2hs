@@ -38,7 +38,7 @@ import Agda2Hs.AgdaUtils
 import Agda2Hs.HsUtils
 
 isSpecialType :: QName -> Maybe (QName -> Elims -> C (Hs.Type ()))
-isSpecialType = prettyShow >>> \ case
+isSpecialType = prettyShow >>> \case
   "Haskell.Prim.Tuple.Tuple" -> Just tupleType
   "Haskell.Prim.Tuple._×_"   -> Just tupleType
   "Haskell.Prim.Tuple._×_×_" -> Just tupleType

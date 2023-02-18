@@ -17,22 +17,22 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Pragma
 
 initCompileEnv :: TopLevelModuleName -> CompileEnv
-initCompileEnv tlmn = CompileEnv
-  { currModule = tlmn
+initCompileEnv tlm = CompileEnv
+  { currModule = tlm
   , minRecordName = Nothing
   , locals = []
   , isCompilingInstance = False
   }
 
 runC :: TopLevelModuleName -> C a -> TCM (a, CompileOutput)
-runC tlmn m = runWriterT $ runReaderT m $ initCompileEnv tlmn
+runC tlm m = runWriterT $ runReaderT m $ initCompileEnv tlm
 
 -- Main compile function
 ------------------------
 
 compile :: Options -> ModuleEnv -> IsMain -> Definition ->
   TCM (CompiledDef, CompileOutput)
-compile _ tlmn _ def = withCurrentModule (qnameModule $ defName def) $ runC tlmn $
+compile _ tlm _ def = withCurrentModule (qnameModule $ defName def) $ runC tlm $
   processPragma (defName def) >>= \ p -> do
     reportSDoc "agda2hs.compile" 5 $
       text "Compiling definition: " <+> prettyTCM (defName def)

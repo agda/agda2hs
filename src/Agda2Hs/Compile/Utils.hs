@@ -136,11 +136,11 @@ isClassModule m
   | null $ mnameToList m = return False
   | otherwise            = do
     minRec <- asks minRecordName
-    getConstInfo' (mnameToQName m) >>= \ case
+    getConstInfo' (mnameToQName m) >>= \case
       _ | Just m == minRec -> return True
       Right Defn{defName = r, theDef = Record{}} ->
         -- It would be nicer if we remembered this from when we looked at the record the first time.
-        processPragma r <&> \ case
+        processPragma r <&> \case
           ClassPragma _       -> True
           ExistingClassPragma -> True
           _                   -> False

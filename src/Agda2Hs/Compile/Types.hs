@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternSynonyms #-}
 module Agda2Hs.Compile.Types where
 
 import Control.Monad.Reader ( ReaderT )
@@ -41,15 +42,13 @@ data CompileEnv = CompileEnv
   , isCompilingInstance :: Bool
   }
 
-data IsQualified
-  = IsUnqualified
-  | IsQualified
-  | IsQualifiedAs (Hs.ModuleName ())
-  deriving (Show, Eq, Ord)
+type Qualifier = Maybe (Maybe (Hs.ModuleName ()))
+pattern Unqualified   = Nothing
+pattern QualifiedAs m = Just m
 
 data Import = Import
   { importModule    :: Hs.ModuleName ()
-  , importQualified :: IsQualified
+  , importQualified :: Qualifier
   , importParent    :: Maybe (Hs.Name ())
   , importName      :: Hs.Name ()
   }
