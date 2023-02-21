@@ -19,8 +19,8 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
-compileData :: [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
-compileData ds def = do
+compileData :: DataTarget -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
+compileData target ds def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
   checkValidTypeName d
   case theDef def of
@@ -33,7 +33,12 @@ compileData ds def = do
         binds <- compileTeleBinds tel
         cs <- mapM (compileConstructor params) cs
         let hd = foldl (Hs.DHApp ()) (Hs.DHead () d) binds
-        return [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs ds]
+
+        case target of
+          ToData -> return [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs ds]
+          ToDataNewType -> do
+            checkSingleField d cs
+            return [Hs.DataDecl () (Hs.NewType ()) Nothing hd cs ds]
     _ -> __IMPOSSIBLE__
   where
     allIndicesErased :: Type -> C ()

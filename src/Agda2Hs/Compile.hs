@@ -49,8 +49,12 @@ compile _ _ _ def = withCurrentModule (qnameModule $ defName def) $ runC $
         checkTransparentPragma def >> return [] -- also no code generation
       (ClassPragma ms, _, Record{}) ->
         tag . single <$> compileRecord (ToClass ms) def
+      (NewTypePragma ds, _, Record{}) ->
+        tag . single <$> compileRecord (ToRecordNewType ds) def
+      (NewTypePragma ds, _, Datatype{}) ->
+        tag <$> compileData (ToDataNewType) ds def
       (DefaultPragma ds, _, Datatype{}) ->
-        tag <$> compileData ds def
+        tag <$> compileData (ToData) ds def
       (DefaultPragma _, Just _, _) ->
         tag . single <$> compileInstance def
       (DefaultPragma _, _, Axiom{}) ->
