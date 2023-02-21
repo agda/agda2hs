@@ -53,7 +53,22 @@ data ParsedPragma
   | ExistingClassPragma
   | UnboxPragma Strictness
   | TransparentPragma
+  | NewTypePragma [Hs.Deriving ()]
   deriving Show
+
+newtypePragma :: String
+newtypePragma = "newtype"
+
+processDeriving :: String -> ([Hs.Deriving ()] -> ParsedPragma) -> C ParsedPragma
+processDeriving d pragma =
+  -- parse a deriving clause for a datatype by tacking it onto a
+  -- dummy datatype and then only keeping the deriving part
+  case Hs.parseDecl ("data X = X " ++ d) of
+    Hs.ParseFailed loc msg ->
+      setCurrentRange (srcLocToRange loc) $ genericError msg
+    Hs.ParseOk (Hs.DataDecl _ _ _ _ _ ds) ->
+      return $ pragma (map (() <$) ds)
+    Hs.ParseOk _ -> return $ pragma []
 
 processPragma :: QName -> C ParsedPragma
 processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
@@ -64,13 +79,7 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
     | s == "unboxed"            -> return $ UnboxPragma Lazy
     | s == "unboxed-strict"     -> return $ UnboxPragma Strict
     | s == "transparent"        -> return TransparentPragma
-    | "deriving" `isPrefixOf` s ->
-      -- parse a deriving clause for a datatype by tacking it onto a
-      -- dummy datatype and then only keeping the deriving part
-      case Hs.parseDecl ("data X = X " ++ s) of
-        Hs.ParseFailed loc msg ->
-          setCurrentRange (srcLocToRange loc) $ genericError msg
-        Hs.ParseOk (Hs.DataDecl _ _ _ _ _ ds) ->
-          return $ DefaultPragma (map (() <$) ds)
-        Hs.ParseOk _ -> return $ DefaultPragma []
+    | s == newtypePragma        -> return $ NewTypePragma []
+    | "deriving" `isPrefixOf` s -> processDeriving s DefaultPragma
+    | (newtypePragma ++ " deriving") `isPrefixOf` s -> processDeriving (drop (length newtypePragma + 1) s) NewTypePragma
   _ -> return $ DefaultPragma []

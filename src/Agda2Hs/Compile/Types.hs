@@ -73,4 +73,6 @@ data CompiledDom
 
 type LocalDecls = [QName]
 
-data RecordTarget = ToRecord [Hs.Deriving ()] | ToClass [String]
+data DataTarget = ToData | ToDataNewType
+
+data RecordTarget = ToRecord [Hs.Deriving ()] | ToRecordNewType [Hs.Deriving ()] | ToClass [String]
