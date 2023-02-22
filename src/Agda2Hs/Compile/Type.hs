@@ -182,17 +182,15 @@ compileTeleBinds tel =
 compileKeptTeleBind :: Hs.Name () -> Type -> C (Hs.TyVarBind ())
 compileKeptTeleBind x t = do
   checkValidTyVarName x
-  k <- compileKind t
-  case k of
-    Hs.TyStar _ ->
-      -- TyStar is Haskell's default kind annotation
-      return $ Hs.UnkindedVar () x
-    _ -> genericDocError =<< do
-      text "Kind of bound argument not supported:" <+>
-        parens (text (Hs.prettyPrint x) <> text " : " <> prettyTCM t)
+  case compileKind t of
+    Just (Hs.TyStar ()) -> pure $ Hs.UnkindedVar () x
+    Just k              -> pure $ Hs.KindedVar () x k
+    _                   -> genericDocError =<<
+      text "Kind of bound argument not supported:"
+      <+> parens (text (Hs.prettyPrint x) <> text " : " <> prettyTCM t)
 
-compileKind :: Type -> C (Hs.Kind ())
+compileKind :: Type -> Maybe (Hs.Kind ())
 compileKind t = case unEl t of
-  Sort (Type _) -> return (Hs.TyStar ())
-  _ -> genericDocError =<< do
-    text "Kind not supported:" <+> prettyTCM t
+  Sort (Type _) -> pure (Hs.TyStar ())
+  Pi a b -> Hs.TyFun () <$> compileKind (unDom a) <*> compileKind (unAbs b)
+  _ -> Nothing
