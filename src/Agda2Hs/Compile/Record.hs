@@ -117,18 +117,12 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
       ToRecord ds -> do
         checkValidConName cName
         (constraints, fieldDecls) <- compileRecFields fieldDecl recFields fieldTel
-        unless (null constraints) __IMPOSSIBLE__ -- no constraints for records
-        mapM_ checkFieldInScope (map unDom recFields)
-        let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
-        return $ Hs.DataDecl () (Hs.DataType ()) Nothing hd [conDecl] ds
+        compileDataRecord constraints fieldDecls (Hs.DataType ()) hd ds
       ToRecordNewType ds -> do
         checkValidConName cName
         (constraints, fieldDecls) <- compileRecFields fieldDecl recFields fieldTel
         checkSingleField rName fieldDecls -- must have exactly 1 field
-        unless (null constraints) __IMPOSSIBLE__ -- no constraints for records
-        mapM_ checkFieldInScope (map unDom recFields)
-        let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
-        return $ Hs.DataDecl () (Hs.NewType ()) Nothing hd [conDecl] ds
+        compileDataRecord constraints fieldDecls (Hs.NewType ()) hd ds
 
   where
     rName = hsName $ prettyShow $ qnameName $ defName def
@@ -170,6 +164,17 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
               "Not supported: record/class with constraint fields"
           DomDropped -> return (hsAssts , hsFields)
       (_, _) -> __IMPOSSIBLE__
+
+    compileDataRecord :: [Hs.Asst ()] -> [Hs.FieldDecl ()] -- compiled rec fields
+                         -> Hs.DataOrNew () -- whether to compile to data or newtype
+                         -> Hs.DeclHead () -- the head of the type declaration
+                         -> [Hs.Deriving ()] -- data extracted from the pragma
+                         -> C (Hs.Decl ())
+    compileDataRecord constraints fieldDecls don hd ds = do
+      unless (null constraints) __IMPOSSIBLE__ -- no constraints for records
+      mapM_ checkFieldInScope (map unDom recFields)
+      let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
+      return $ Hs.DataDecl () (don) Nothing hd [conDecl] ds
 
 checkUnboxPragma :: Defn -> C ()
 checkUnboxPragma def@Record{ recFields = (f:fs) }
