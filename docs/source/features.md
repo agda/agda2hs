@@ -2,17 +2,39 @@
 
 By default, all of the following Agda examples are implicitly prefixed (if
 necessary) with the following snippet.
+
 ```agda
 open import Haskell.Prelude
 ```
 
-## Datatypes
+## Data & Type Declarations
+
+### Types
+
+Creating a type synonym using the `type` keyword requires only a simple declaration in Agda.
+
+Agda:
+```agda
+Entry = Int × List String
+
+{-# COMPILE AGDA2HS Entry #-}
+```
+
+Haskell:
+```hs
+type Entry = (Int, [String])
+```
+
+### Datatypes
+
+Standard data type declarations have a simple equivalent in Agda.
 
 Agda:
 ```agda
 data Nat : Set where
     Zero : Nat 
     Suc : Nat → Nat
+
 {-# COMPILE AGDA2HS Nat #-}
 ```
 
@@ -21,11 +43,108 @@ Haskell:
 data Nat = Zero | Suc Nat
 ```
 
+You can also use polymorphic types in the data declarations.
+
+Agda:
+```agda
+data Tree (a : Set) : Set where
+    Leaf   : a → Tree a
+    Branch : a → Tree a → Tree a → Tree a
+    
+{-# COMPILE AGDA2HS Tree #-}
+```
+
+Haskell:
+```hs
+data Tree a = Leaf a
+            | Branch a (Tree a) (Tree a)
+```
+
 **UNSUPPORTED: term-indexed datatypes**
+
+### Records
+
+Data definitions with fields are represented by records on the Agda side.
+
+Agda:
+```agda
+record Citation : Set where
+    field
+        id     : Int
+        author : String
+        title  : String
+        url    : String
+        year   : Int
+open Citation public
+
+{-# COMPILE AGDA2HS Citation #-}
+```
+
+Haskell:
+```hs
+data Citation = Citation{id :: Int, author :: String,
+                         title :: String, url :: String, year :: Int}
+```
+
+### Newtypes
+
+Data declaration using the `newtype` keyword can be created by adding a `newtype` annotation to the compile pragma.
+
+Agda:
+```agda
+-- data newtype
+data Indexed (a : Set) : Set where
+    MkIndexed : Int × a → Indexed a
+
+{-# COMPILE AGDA2HS Indexed newtype #-}
+
+-- data newtype with deriving
+data Pair (a b : Set) : Set where
+    MkPair : a × b → Pair a b
+
+{-# COMPILE AGDA2HS Pair newtype deriving ( Show, Eq ) #-}
+
+-- record newtype
+record Identity (a : Set) : Set where
+    constructor MkIdentity
+    field
+        runIdentity : a
+open Identity public
+
+{-# COMPILE AGDA2HS Identity newtype #-}
+
+-- record newtype with erased proof
+record Equal (a : Set) : Set where
+    constructor MkEqual
+    field
+        pair : a × a
+        @0 proof : (fst pair) ≡ (snd pair)
+open Equal public
+
+{-# COMPILE AGDA2HS Equal newtype #-}
+```
+
+Haskell:
+```hs
+-- data newtype
+newtype Indexed a = MkIndexed (Int, a)
+
+-- data newtype with deriving
+newtype Pair a b = MkPair (a, b)
+                     deriving (Show, Eq)
+
+-- record newtype
+newtype Identity a = MkIdentity{runIdentity :: a}
+
+-- record newtype with erased proof
+newtype Equal a = MkEqual{pair :: (a, a)}
+```
+
+_Note: Unfortunately, Agda does not allow the constructor name to be the same as the data/record name._
 
 ## Pattern Matching on Datatype Values
 
-Agda
+Agda:
 ```agda
 {-# FOREIGN AGDA2HS {-# LANGUAGE LambdaCase #-} #-}
 
