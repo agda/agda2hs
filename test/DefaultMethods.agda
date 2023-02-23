@@ -2,11 +2,14 @@
 module DefaultMethods where
 
 open import Haskell.Prim using (ltNat)
-open import Haskell.Prelude hiding (Show; ShowS; show; showList; showString; showParen; Ord; _<_; _>_; defaultShowList)
+open import Haskell.Prelude hiding
+  ( Show; Show₁; Show₂; show; showsPrec; showList; defaultShowList
+  ; Ord; _<_; _>_
+  )
 
 {-# FOREIGN AGDA2HS
 {-# LANGUAGE TypeSynonymInstances #-}
-import Prelude hiding (Show, ShowS, show, showList, showString, showParen, Ord, (<), (>))
+import Prelude hiding (Show, show, showsPrec, showList, Ord, (<), (>))
 #-}
 
 -- ** Ord
@@ -119,49 +122,38 @@ instance
   Ordℕ = record {Ord₁ (λ where .Ord₁._<_ → ltNat)}
 -- {-# COMPILE AGDA2HS Ordℕ #-}
 
-ShowS : Set
-ShowS = String → String
-{-# COMPILE AGDA2HS ShowS #-}
-
-showString : String → ShowS
-showString = _++_
-{-# COMPILE AGDA2HS showString #-}
-
-showParen : Bool → ShowS → ShowS
-showParen False s = s
-showParen True  s = showString "(" ∘ s ∘ showString ")"
-{-# COMPILE AGDA2HS showParen #-}
-
 defaultShowList : (a → ShowS) → List a → ShowS
-defaultShowList _     []       = showString "[]"
-defaultShowList shows (x ∷ xs) = showString "[" ∘ foldl (λ s x → s ∘ showString "," ∘ shows x) (shows x) xs ∘ showString "]"
+defaultShowList _     []
+  = showString "[]"
+defaultShowList shows (x ∷ xs)
+  = showString "["
+  ∘ foldl (λ s x → s ∘ showString "," ∘ shows x) (shows x) xs
+  ∘ showString "]"
 {-# COMPILE AGDA2HS defaultShowList #-}
 
 record Show (a : Set) : Set where
   field
     show : a → String
-    showPrec : Nat → a → ShowS
+    showsPrec : Int → a → ShowS
     showList : List a → ShowS
 
 record Show₁ (a : Set) : Set where
-  field
-    showPrec : Nat → a → ShowS
+  field showsPrec : Int → a → ShowS
 
   show : a → String
-  show x = showPrec 0 x ""
+  show x = showsPrec 0 x ""
 
   showList : List a → ShowS
-  showList = defaultShowList (showPrec 0)
+  showList = defaultShowList (showsPrec 0)
 
 record Show₂ (a : Set) : Set where
-  field
-    show : a → String
+  field show : a → String
 
-  showPrec : Nat → a → ShowS
-  showPrec _ x s = show x ++ s
+  showsPrec : Int → a → ShowS
+  showsPrec _ x s = show x ++ s
 
   showList : List a → ShowS
-  showList = defaultShowList (showPrec 0)
+  showList = defaultShowList (showsPrec 0)
 
 open Show ⦃ ... ⦄
 
@@ -173,10 +165,10 @@ SB .Show₂.show False = "False"
 
 instance
   ShowBool : Show Bool
-  ShowBool .show     = Show₂.show SB
-  ShowBool .showPrec = Show₂.showPrec SB
-  ShowBool .showList []       = showString ""
-  ShowBool .showList (True ∷ bs) = showString "1" ∘ showList bs
+  ShowBool .show      = Show₂.show SB
+  ShowBool .showsPrec = Show₂.showsPrec SB
+  ShowBool .showList []           = showString ""
+  ShowBool .showList (True ∷ bs)  = showString "1" ∘ showList bs
   ShowBool .showList (False ∷ bs) = showString "0" ∘ showList bs
 {-# COMPILE AGDA2HS ShowBool #-}
 
@@ -185,11 +177,11 @@ instance
   ShowMaybe {a = a} = record {Show₁ s₁}
     where
       s₁ : Show₁ (Maybe a)
-      s₁ .Show₁.showPrec n Nothing = showString "nothing"
-      s₁ .Show₁.showPrec n (Just x) = showParen True {-(9 < n)-} (showString "just " ∘ showPrec 10 x)
+      s₁ .Show₁.showsPrec n Nothing = showString "nothing"
+      s₁ .Show₁.showsPrec n (Just x) = showParen True {-(9 < n)-} (showString "just " ∘ showsPrec 10 x)
 {-# COMPILE AGDA2HS ShowMaybe #-}
 
 instance
   ShowList : ⦃ Show a ⦄ → Show (List a)
-  ShowList = record {Show₁ (λ where .Show₁.showPrec _ → showList)}
+  ShowList = record {Show₁ (λ where .Show₁.showsPrec _ → showList)}
 {-# COMPILE AGDA2HS ShowList #-}

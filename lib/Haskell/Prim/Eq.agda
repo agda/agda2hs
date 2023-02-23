@@ -22,7 +22,7 @@ record Eq (a : Set) : Set where
   _/=_ : a → a → Bool
   x /= y = not (x == y)
 
-open Eq ⦃ ... ⦄ public
+open Eq ⦃...⦄ public
 
 {-# COMPILE AGDA2HS Eq existing-class #-}
 

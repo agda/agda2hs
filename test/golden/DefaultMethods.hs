@@ -2,10 +2,8 @@
 
 module DefaultMethods where
 
-import Numeric.Natural (Natural)
 
-
-import Prelude hiding (Show, ShowS, show, showList, showString, showParen, Ord, (<), (>))
+import Prelude hiding (Show, show, showsPrec, showList, Ord, (<), (>))
 
 class Ord a where
     (<) :: a -> a -> Bool
@@ -69,15 +67,6 @@ instance Ord Bool6 where
     Mk6 False > _ = False
     Mk6 True > Mk6 b = not b
 
-type ShowS = String -> String
-
-showString :: String -> ShowS
-showString = (++)
-
-showParen :: Bool -> ShowS -> ShowS
-showParen False s = s
-showParen True s = showString "(" . s . showString ")"
-
 defaultShowList :: (a -> ShowS) -> [a] -> ShowS
 defaultShowList _ [] = showString "[]"
 defaultShowList shows (x : xs)
@@ -87,12 +76,12 @@ defaultShowList shows (x : xs)
 
 class Show a where
     show :: a -> String
-    showPrec :: Natural -> a -> ShowS
+    showsPrec :: Int -> a -> ShowS
     showList :: [a] -> ShowS
-    {-# MINIMAL showPrec | show #-}
-    show x = showPrec 0 x ""
-    showList = defaultShowList (showPrec 0)
-    showPrec _ x s = show x ++ s
+    {-# MINIMAL showsPrec | show #-}
+    show x = showsPrec 0 x ""
+    showList = defaultShowList (showsPrec 0)
+    showsPrec _ x s = show x ++ s
 
 instance Show Bool where
     show True = "True"
@@ -102,10 +91,10 @@ instance Show Bool where
     showList (False : bs) = showString "0" . showList bs
 
 instance (Show a) => Show (Maybe a) where
-    showPrec n Nothing = showString "nothing"
-    showPrec n (Just x)
-      = showParen True (showString "just " . showPrec 10 x)
+    showsPrec n Nothing = showString "nothing"
+    showsPrec n (Just x)
+      = showParen True (showString "just " . showsPrec 10 x)
 
 instance (Show a) => Show ([a]) where
-    showPrec _ = showList
+    showsPrec _ = showList
 

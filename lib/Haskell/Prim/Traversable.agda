@@ -1,4 +1,5 @@
 
+
 module Haskell.Prim.Traversable where
 
 open import Haskell.Prim
@@ -14,7 +15,18 @@ open import Haskell.Prim.Tuple
 --------------------------------------------------
 -- Traversable
 
+-- ** base
 record Traversable (t : Set → Set) : Set₁ where
+  field
+    traverse : ⦃ Applicative f ⦄ → (a → f b) → t a → f (t b)
+    overlap ⦃ functor ⦄ : Functor t
+    overlap ⦃ foldable ⦄ : Foldable t
+
+    sequenceA : ⦃ Applicative f ⦄ → t (f a) → f (t a)
+    mapM : ⦃ Monad m ⦄ → (a → m b) → t a → m (t b)
+    sequence : ⦃ Monad m ⦄ → t (m a) → m (t a)
+-- ** defaults
+record DefaultTraversable (t : Set → Set) : Set₁ where
   field
     traverse : ⦃ Applicative f ⦄ → (a → f b) → t a → f (t b)
     overlap ⦃ functor ⦄ : Functor t
@@ -28,26 +40,39 @@ record Traversable (t : Set → Set) : Set₁ where
 
   sequence : ⦃ Monad m ⦄ → t (m a) → m (t a)
   sequence = sequenceA
-
-open Traversable ⦃ ... ⦄ public
-
+-- ** export
+open Traversable ⦃...⦄ public
 {-# COMPILE AGDA2HS Traversable existing-class #-}
+-- ** instances
+private
+  mkTraversable : DefaultTraversable t → Traversable t
+  mkTraversable x = record {DefaultTraversable x}
 
+  infix 0 traverse=_
+  traverse=_ : ⦃ Functor t ⦄ → ⦃ Foldable t ⦄
+            → (∀ {f a b} → ⦃ Applicative f ⦄ → (a → f b) → t a → f (t b))
+            → Traversable t
+  traverse= x = record {DefaultTraversable (record {traverse = x})}
 instance
+  open DefaultTraversable
+
   iTraversableList : Traversable List
-  iTraversableList .traverse = traverseList
+  iTraversableList = traverse= traverseList
     where
       traverseList : ⦃ Applicative f ⦄ → (a → f b) → List a → f (List b)
       traverseList f []       = pure []
       traverseList f (x ∷ xs) = ⦇ f x ∷ traverseList f xs ⦈
 
   iTraversableMaybe : Traversable Maybe
-  iTraversableMaybe .traverse f Nothing  = pure Nothing
-  iTraversableMaybe .traverse f (Just x) = Just <$> f x
+  iTraversableMaybe = traverse= λ where
+    f Nothing  → pure Nothing
+    f (Just x) → Just <$> f x
 
   iTraversableEither : Traversable (Either a)
-  iTraversableEither .traverse f (Left  x) = pure (Left x)
-  iTraversableEither .traverse f (Right y) = Right <$> f y
+  iTraversableEither = traverse= λ where
+    f (Left  x) → pure (Left x)
+    f (Right y) → Right <$> f y
 
   iTraversablePair : Traversable (a ×_)
-  iTraversablePair .traverse f (x , y) = (x ,_) <$> f y
+  iTraversablePair = traverse= λ
+    f (x , y) → (x ,_) <$> f y
