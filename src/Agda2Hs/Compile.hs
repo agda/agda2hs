@@ -52,9 +52,9 @@ compile _ _ _ def = withCurrentModule (qnameModule $ defName def) $ runC $
       (NewTypePragma ds, _, Record{}) ->
         tag . single <$> compileRecord (ToRecordNewType ds) def
       (NewTypePragma ds, _, Datatype{}) ->
-        tag <$> compileData (ToDataNewType) ds def
+        tag <$> compileData ToDataNewType ds def
       (DefaultPragma ds, _, Datatype{}) ->
-        tag <$> compileData (ToData) ds def
+        tag <$> compileData ToData ds def
       (DefaultPragma _, Just _, _) ->
         tag . single <$> compileInstance def
       (DefaultPragma _, _, Axiom{}) ->
