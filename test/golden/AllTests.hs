@@ -45,4 +45,5 @@ import QualifiedPrelude
 import AutoLambdaCaseInCase
 import AutoLambdaCaseInBind
 import WitnessedFlows
+import Kinds
 
