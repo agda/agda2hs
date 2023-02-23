@@ -483,7 +483,7 @@ ifThenElse n = if n >= 10 then "big" else "small"
 
 ## Haskell Language Extensions
 
-Required haskell lengauge extensions will be automatically inferred and enabled.
+Required haskell langauge extensions will be automatically inferred and enabled.
 
 A Haskell language extension can also be enabled manually as follows:
 
@@ -496,3 +496,123 @@ Haskell
 ```hs
 {-# LANGUAGE LambdaCase #-}
 ```
+
+# Imports
+
+Agda supports import statements anywhere in a file, but all generated Haskell imports
+will be placed at the top of the file.
+
+Agda
+```agda
+open import M1 -- imports datatype `A` with constructor `mkA`
+
+a : A
+a = mkA
+{-# COMPILE AGDA2HS a #-}
+
+open import M2 -- imports datatype `B` with constructor `mkB`
+
+b : B
+b = mkB
+{-# COMPILE AGDA2HS b #-}
+```
+
+Haskell
+```hs
+import M1 (A(mkA))
+import M2 (B(mkB))
+
+a :: A
+a = mkA
+
+b :: B
+b = bar
+```
+
+Note that on the Haskell side all imports are _explicit_,
+i.e. indicate the imported identifiers.
+
+Imports can be qualified, but not hidden
+(although one can still do this manually using FOREIGN).
+
+Agda
+```agda
+import MyModule as M -- imports type X and function foo
+
+test : M.X -> M.X
+test = M.foo
+{-# COMPILE AGDA2HS test #-}
+```
+
+Haskell
+```hs
+import qualified MyModule as M (X, foo)
+
+test :: M.X -> M.X
+test = M.foo
+```
+
+Other supported features include
+- qualifying the Haskell prelude,
+- automatically inserting necessary packages for built-in types
+- sharing a qualifier across different modules to make a common namespace
+
+Agda
+```agda
+import Haskell.Prelude as Pre
+
+_+_ : Pre.Nat → Pre.Nat → Pre.Nat
+x + y = x
+{-# COMPILE AGDA2HS _+_ #-}
+
+test : Pre.Nat
+test = 0 Pre.+ 1 + 0
+{-# COMPILE AGDA2HS test #-}
+```
+
+Haskell
+```hs
+import Numeric.Natural (Natural)
+import qualified Prelude as Pre ((+))
+
+(+) :: Natural -> Natural -> Natural
+x + y = x
+
+test :: Natural
+test = (Pre.+) 0 (1 + 0)
+```
+
+An important difference is that multiple qualifications of the same module
+will be absorbed in a single qualifier,
+specifically the lexicographically smallest one
+based on each character's ASCII value,
+independent of the order the imports appear in the source file:
+
+Agda
+```agda
+import MyModule as C
+
+testC = C.foo
+{-# COMPILE AGDA2HS testC #-}
+
+import MyModule as A
+
+testA = A.foo
+{-# COMPILE AGDA2HS testA #-}
+
+testB = B.foo
+import MyModule as B
+{-# COMPILE AGDA2HS testB #-}
+```
+
+Haskell
+```hs
+import qualified MyModule as A (foo)
+
+testC = A.foo
+testA = A.foo
+testB = A.foo
+```
+
+
+
