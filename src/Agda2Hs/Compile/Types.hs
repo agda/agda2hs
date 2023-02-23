@@ -5,6 +5,7 @@ import Control.Monad.Reader ( ReaderT )
 import Control.Monad.Writer ( WriterT )
 import Control.DeepSeq ( NFData(..) )
 
+import Data.Maybe ( fromMaybe, isJust )
 import Data.Set ( Set )
 
 import qualified Language.Haskell.Exts.SrcLoc as Hs
@@ -45,6 +46,9 @@ data CompileEnv = CompileEnv
 type Qualifier = Maybe (Maybe (Hs.ModuleName ()))
 pattern Unqualified   = Nothing
 pattern QualifiedAs m = Just m
+
+isQualified = isJust
+qualifiedAs = fromMaybe Nothing
 
 data Import = Import
   { importModule    :: Hs.ModuleName ()

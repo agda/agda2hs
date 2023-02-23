@@ -1,31 +1,39 @@
 module Importer where
 
-import Importee (Foo(MkFoo), Fooable(doTheFoo), foo, (!#))
-import qualified QualifiedImportee as Qually
-       (Foo, Fooable(doTheFoo), foo, (!#))
+import Importee
+       (Foo(MkFoo), Fooable(defaultFoo, doTheFoo), foo, (!#))
+import Numeric.Natural (Natural)
 import SecondImportee (anotherFoo)
+
+-- ** simple imports (possibly with transitive dependencies)
 
 bar :: Int
 bar = foo
 
-otherBar :: Int
-otherBar = anotherFoo
-
-thirdBar :: Int
-thirdBar = Qually.foo
+anotherBar :: Int
+anotherBar = anotherFoo
 
 baz :: Int
 baz = 21 !# 21
 
-otherBaz :: Int
-otherBaz = (Qually.!#) 2 2
+mkFoo :: Foo
+mkFoo = MkFoo
 
-myFoo :: Foo
-myFoo = MkFoo
+fooable :: Foo
+fooable = doTheFoo
 
-myOtherFoo :: Foo
-myOtherFoo = doTheFoo
+-- ** interplay with class default methods
 
-thirdFoo :: Qually.Foo
-thirdFoo = Qually.doTheFoo
+defaultBar :: Foo
+defaultBar = defaultFoo
+
+-- ** interplay with methods of existing class
+
+testFoldMap :: [Natural] -> [Natural]
+testFoldMap = foldMap (:) []
+
+-- ** interplay with default methods of existing class
+
+testFoldr :: [Natural] -> Natural
+testFoldr = foldr (\ _ x -> x) 0
 

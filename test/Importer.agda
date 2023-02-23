@@ -1,44 +1,52 @@
 open import Haskell.Prelude
+
+{-# FOREIGN AGDA2HS
+-- ** simple imports (possibly with transitive dependencies)
+#-}
+
 open import Importee
-open import OtherImportee using ( MkFoo )
-import QualifiedImportee as Qually
+open import OtherImportee using (MkFoo)
 
 bar : Int
 bar = foo
-
 {-# COMPILE AGDA2HS bar #-}
 
-otherBar : Int
-otherBar = anotherFoo
-
-{-# COMPILE AGDA2HS otherBar #-}
-
-thirdBar : Int
-thirdBar = Qually.foo
-
-{-# COMPILE AGDA2HS thirdBar #-}
+anotherBar : Int
+anotherBar = anotherFoo
+{-# COMPILE AGDA2HS anotherBar #-}
 
 baz : Int
 baz = 21 !# 21
-
 {-# COMPILE AGDA2HS baz #-}
 
-otherBaz : Int
-otherBaz = 2 Qually.!# 2
+mkFoo : Foo
+mkFoo = MkFoo -- This is MkFoo from Importee, NOT from OtherImportee!!
+{-# COMPILE AGDA2HS mkFoo #-}
 
-{-# COMPILE AGDA2HS otherBaz #-}
+fooable : Foo
+fooable = doTheFoo
+{-# COMPILE AGDA2HS fooable #-}
 
-myFoo : Foo
-myFoo = MkFoo -- This is MkFoo from Importee, NOT from OtherImportee!!
+{-# FOREIGN AGDA2HS
+-- ** interplay with class default methods
+#-}
 
-{-# COMPILE AGDA2HS myFoo #-}
+defaultBar : Foo
+defaultBar = defaultFoo
+{-# COMPILE AGDA2HS defaultBar #-}
 
-myOtherFoo : Foo
-myOtherFoo = doTheFoo
+{-# FOREIGN AGDA2HS
+-- ** interplay with methods of existing class
+#-}
 
-{-# COMPILE AGDA2HS myOtherFoo #-}
+testFoldMap : List Nat → List Nat
+testFoldMap = foldMap _∷_ []
+{-# COMPILE AGDA2HS testFoldMap #-}
 
-thirdFoo : Qually.Foo
-thirdFoo = Qually.doTheFoo
+{-# FOREIGN AGDA2HS
+-- ** interplay with default methods of existing class
+#-}
 
-{-# COMPILE AGDA2HS thirdFoo #-}
+testFoldr : List Nat → Nat
+testFoldr = foldr (λ _ x → x) 0
+{-# COMPILE AGDA2HS testFoldr #-}
