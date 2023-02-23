@@ -85,18 +85,6 @@ compileMinRecords def sls = do
   -- TODO: order default implementations differently?
   return ([minPragma | not (null prims)] ++ Map.elems decls)
 
--- compileDataRecord :: Hs.Name () -> (Hs.Name () -> Hs.Type () -> b)
---                      -> [Dom QName] -> Telescope -> C ([Hs.Asst ()], [b])
---                      -> Hs.DataOrNew () -> Hs.DeclHead () -> [Hs.Deriving ()]
---                      -> C (Hs.Decl ())
--- compileDataRecord cName fieldDecl recFields fieldTel don hd ds = do
---   checkValidConName cName
---   (constraints, fieldDecls) <- compileRecFields fieldDecl recFields fieldTel
---   unless (null constraints) __IMPOSSIBLE__ -- no constraints for records
---   mapM_ checkFieldInScope (map unDom recFields)
---   let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
---   return $ Hs.DataDecl () (don) Nothing hd [conDecl] ds
-
 compileRecord :: RecordTarget -> Definition -> C (Hs.Decl ())
 compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
   TelV tel _ <- telViewUpTo recPars (defType def)
@@ -121,7 +109,7 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
       ToRecordNewType ds -> do
         checkValidConName cName
         (constraints, fieldDecls) <- compileRecFields fieldDecl recFields fieldTel
-        checkSingleField rName fieldDecls -- must have exactly 1 field
+        checkSingleField rName fieldDecls
         compileDataRecord constraints fieldDecls (Hs.NewType ()) hd ds
 
   where
@@ -174,7 +162,7 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
       unless (null constraints) __IMPOSSIBLE__ -- no constraints for records
       mapM_ checkFieldInScope (map unDom recFields)
       let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
-      return $ Hs.DataDecl () (don) Nothing hd [conDecl] ds
+      return $ Hs.DataDecl () don Nothing hd [conDecl] ds
 
 checkUnboxPragma :: Defn -> C ()
 checkUnboxPragma def@Record{ recFields = (f:fs) }

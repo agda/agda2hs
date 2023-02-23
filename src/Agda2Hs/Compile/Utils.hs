@@ -243,8 +243,3 @@ addTyBang Lazy   ty = return ty
 checkSingleField :: Hs.Name () -> [b] -> C ()
 checkSingleField name fs = unless (length fs == 1) $ genericDocError =<< do
   text "Newtype must have exactly one field in definition: " <+> text (Hs.prettyPrint name)
-
-checkValidNewtype :: Hs.Name () -> Hs.Name () -> [b] -> C ()
-checkValidNewtype cName rName fs = do
-  checkValidConName cName
-  checkSingleField rName fs
