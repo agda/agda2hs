@@ -183,8 +183,7 @@ compileKeptTeleBind :: Hs.Name () -> Type -> C (Hs.TyVarBind ())
 compileKeptTeleBind x t = do
   checkValidTyVarName x
   case compileKind t of
-    Just (Hs.TyStar ()) -> pure $ Hs.UnkindedVar () x
-    Just k              -> pure $ Hs.KindedVar () x k
+    Just k              -> pure $ Hs.UnkindedVar () x -- In the future we may want to show kind annotations
     _                   -> genericDocError =<<
       text "Kind of bound argument not supported:"
       <+> parens (text (Hs.prettyPrint x) <> text " : " <> prettyTCM t)

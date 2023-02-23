@@ -47,6 +47,7 @@ import QualifiedPrelude
 import AutoLambdaCaseInCase
 import AutoLambdaCaseInBind
 import WitnessedFlows
+import Kinds
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -94,4 +95,5 @@ import QualifiedPrelude
 import AutoLambdaCaseInCase
 import AutoLambdaCaseInBind
 import WitnessedFlows
+import Kinds
 #-}

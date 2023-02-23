@@ -1,2 +1,2 @@
 test/Fail/NonStarRecordIndex.agda:5,8-9
-Kind not supported: Nat
+Kind of bound argument not supported: (n : Nat)
