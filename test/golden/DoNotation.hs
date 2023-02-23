@@ -26,3 +26,8 @@ routineWithoutDo
       \ start ->
         landLeft 2 start >>= \ first -> landRight 2 first >>= landLeft 1
 
+swapPolesMaybe :: Maybe Pole -> Maybe Pole
+swapPolesMaybe x
+  = do (one, two) <- x
+       pure (two, one)
+

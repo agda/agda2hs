@@ -123,12 +123,16 @@ bind :: QName -> Elims -> C (Hs.Exp ())
 bind q (e:es) = do
   checkInstance $ unArg $ isApplyElim' __IMPOSSIBLE__ e
   compileElims es >>= \case
-    (u : Hs.Lambda _ [p] v : vs) -> do
-      let stmt1 = Hs.Generator () p u
-      case v of
-        Hs.Do _ stmts -> return $ Hs.Do () (stmt1 : stmts)
-        _             -> return $ Hs.Do () [stmt1, Hs.Qualifier () v]
+    [u, Hs.Lambda _ [p] v] -> pure (bind' u p v)
+    [u, Hs.LCase () [Hs.Alt () p (Hs.UnGuardedRhs () v) Nothing]] -> pure (bind' u p v)
     vs -> return $ hsVar "_>>=_" `eApp` vs
+  where
+    bind' :: Hs.Exp () -> Hs.Pat () -> Hs.Exp () -> Hs.Exp ()
+    bind' u p v =
+      let stmt1 = Hs.Generator () p u in
+      case v of
+        Hs.Do _ stmts -> Hs.Do () (stmt1 : stmts)
+        _             -> Hs.Do () [stmt1, Hs.Qualifier () v]
 bind q [] = return $ hsVar "_>>=_"
 
 sequ :: QName -> Elims -> C (Hs.Exp ())

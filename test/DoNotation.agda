@@ -43,3 +43,10 @@ routineWithoutDo =
     landLeft 1 second
 
 {-# COMPILE AGDA2HS routineWithoutDo #-}
+
+swapPolesMaybe : Maybe Pole → Maybe Pole
+swapPolesMaybe x = do
+  (one , two) ← x
+  pure (two , one)
+
+{-# COMPILE AGDA2HS swapPolesMaybe #-}
