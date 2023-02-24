@@ -39,6 +39,10 @@ import Agda2Hs.HsUtils
 compilingInstance :: C a -> C a
 compilingInstance = local $ \e -> e { isCompilingInstance = True }
 
+outsideInstanceCompilation :: C a -> C a
+outsideInstanceCompilation = local $ \ e -> e { isCompilingInstance = False }
+
+compileInstance :: Definition -> C (Hs.Decl ())
 compileInstance def@Defn{..} = compilingInstance $ setCurrentRange (nameBindingSite $ qnameName defName) $ do
   ir <- compileInstRule [] (unEl defType)
   withFunctionLocals defName $ do
@@ -159,7 +163,7 @@ compileInstanceClause curModule c = withClauseLocals curModule c $ do
 
          -- No minimal dictionary used, proceed with compiling as a regular clause.
          | otherwise
-         -> do ms <- compileClause curModule uf c'
+         -> do ms <- outsideInstanceCompilation $ compileClause curModule uf c'
                return ([Hs.InsDecl () (Hs.FunBind () [ms]) | keepArg arg], [])
 
 fieldArgInfo :: QName -> C ArgInfo
