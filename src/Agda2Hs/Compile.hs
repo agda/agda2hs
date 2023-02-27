@@ -19,7 +19,7 @@ initCompileEnv :: CompileEnv
 initCompileEnv = CompileEnv
   { minRecordName = Nothing
   , locals = []
-  , isCompilingInstance = False
+  , copatternsEnabled = False
   }
 
 runC :: C a -> TCM (a, CompileOutput)

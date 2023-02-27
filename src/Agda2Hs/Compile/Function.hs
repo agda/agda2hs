@@ -97,7 +97,7 @@ compileFun' withSig def@(Defn {..}) = do
   withCurrentModule m $ setCurrentRange (nameBindingSite n) $ do
     ifM (endsInSort defType) (ensureNoLocals err >> compileTypeDef x def) $ do
       when withSig $ checkValidFunName x
-      compileTopLevelType defType $ \ty -> do
+      compileTopLevelType withSig defType $ \ty -> do
         -- Instantiate the clauses to the current module parameters
         pars <- getContextArgs
         reportSDoc "agda2hs.compile" 10 $ text "applying clauses to parameters: " <+> prettyTCM pars
@@ -181,7 +181,7 @@ compilePat (ConP h _ ps) = isUnboxConstructor (conName h) >>= \ case
 compilePat (LitP _ l) = compileLitPat l
 compilePat (ProjP _ q) = do
   reportSDoc "agda2hs.compile" 6 $ text "compiling copattern: " <+> text (prettyShow q)
-  unlessM (asks isCompilingInstance) $
+  unlessM (asks copatternsEnabled) $
     genericDocError =<< text "not supported in Haskell: copatterns"
   let x = hsName $ prettyShow q
   return $ Hs.PVar () x

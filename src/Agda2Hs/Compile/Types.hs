@@ -36,7 +36,8 @@ data CompileEnv = CompileEnv
   -- ^ keeps track of the current minimal record we are compiling
   , locals :: LocalDecls
   -- ^ keeps track of the current clause's where declarations
-  , isCompilingInstance :: Bool
+  , copatternsEnabled :: Bool
+  -- ^ whether copatterns should be allowed when compiling patterns
   }
 
 data Import = Import
