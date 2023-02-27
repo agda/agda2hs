@@ -4,6 +4,7 @@ import Control.Arrow ( (>>>) )
 import Control.Monad ( unless )
 import Control.Monad.Reader
 
+import Data.List ( isPrefixOf )
 import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text ( unpack )
 
@@ -230,6 +231,8 @@ compileTerm v = do
       Nothing -> (`app` es) . Hs.Con () =<< compileQName (conName h)
     Lit l -> compileLiteral l
     Lam v b | usableModality v, getOrigin v == UserWritten -> do
+      when (patternInTeleName `isPrefixOf` absName b) $ genericDocError =<< do
+        text "Record pattern translation not supported. Use a pattern matching lambda instead."
       unless (visible v) $ genericDocError =<< do
         text "Implicit lambda not supported: " <+> prettyTCM (absName b)
       hsLambda (absName b) <$> underAbstr_ b compileTerm
