@@ -3,7 +3,7 @@
 module Agda2Hs.Compile.Type where
 
 import Control.Arrow ( (>>>) )
-import Control.Monad ( forM )
+import Control.Monad ( forM, when )
 import Control.Monad.Reader ( asks )
 import Data.Maybe ( mapMaybe )
 
@@ -87,8 +87,8 @@ qualifyType s = \case
 -- (if any) as explicitly bound type arguments.
 -- The continuation is called in an extended context with these type
 -- arguments bound.
-compileTopLevelType :: Type -> (Hs.Type () -> C a) -> C a
-compileTopLevelType t cont = do
+compileTopLevelType :: Bool -> Type -> (Hs.Type () -> C a) -> C a
+compileTopLevelType keepType t cont = do
     ctxArgs <- getContextArgs
     modTel <- lookupSection =<< currentModule
     go (modTel `apply` ctxArgs) cont
@@ -104,8 +104,7 @@ compileTopLevelType t cont = do
           underAbstraction a atel $ \tel ->
             go tel (cont . constrainType c)
       | otherwise = underAbstraction a atel $ \tel -> do
-          unlessM (asks isCompilingInstance) $
-            tellExtension Hs.ScopedTypeVariables
+          when keepType $ tellExtension Hs.ScopedTypeVariables
           go tel (cont . qualifyType (absName atel))
 
 compileType' :: Term -> C (Strictness, Hs.Type ())
