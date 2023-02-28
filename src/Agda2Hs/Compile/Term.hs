@@ -39,11 +39,15 @@ isSpecialTerm :: QName -> Maybe (QName -> Elims -> C (Hs.Exp ()))
 isSpecialTerm q = case prettyShow q of
   _ | isExtendedLambdaName q                    -> Just lambdaCase
   "Haskell.Prim.if_then_else_"                  -> Just ifThenElse
+  "Haskell.Prim.if'_then_else_"                 -> Just ifThenElse
   "Haskell.Prim.Enum.Enum.enumFrom"             -> Just mkEnumFrom
   "Haskell.Prim.Enum.Enum.enumFromTo"           -> Just mkEnumFromTo
   "Haskell.Prim.Enum.Enum.enumFromThen"         -> Just mkEnumFromThen
   "Haskell.Prim.Enum.Enum.enumFromThenTo"       -> Just mkEnumFromThenTo
   "Haskell.Prim.case_of_"                       -> Just caseOf
+  "Haskell.Prim.Monad.Do.Monad._>>=_"           -> Just bind
+  "Haskell.Prim.Monad.Do.Monad._>>_"            -> Just sequ
+  "Haskell.Prim.case'_of_"                      -> Just caseOf
   "Haskell.Prim.Monad.Do.Monad._>>=_"           -> Just bind
   "Haskell.Prim.Monad.Do.Monad._>>_"            -> Just sequ
   "Agda.Builtin.FromNat.Number.fromNat"         -> Just fromNat
