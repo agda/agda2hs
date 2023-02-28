@@ -44,4 +44,5 @@ import RequalifiedImports
 import QualifiedPrelude
 import AutoLambdaCaseInCase
 import AutoLambdaCaseInBind
+import WitnessedFlows
 
