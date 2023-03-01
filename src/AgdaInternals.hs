@@ -49,3 +49,5 @@ instance (Monoid r, Monad m, IsString (m a)) => IsString (WriterT r m a) where
   fromString s = WriterT $ fmap (,mempty) $ fromString s
 instance (Monoid r, MonadBlock m) => MonadBlock (WriterT r m) where
   catchPatternErr h m = WriterT $ catchPatternErr (runWriterT . h) (runWriterT m)
+instance MonadBlock m => MonadBlock (StateT s m) where
+  catchPatternErr h m = StateT $ \s -> catchPatternErr (flip runStateT s . h) (runStateT m s)

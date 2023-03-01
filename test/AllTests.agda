@@ -40,6 +40,8 @@ import Issue107
 import Importer
 import DoNotation
 import NewTypePragma
+import AutoLambdaCaseInCase
+import AutoLambdaCaseInBind
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -80,4 +82,6 @@ import Issue94
 import Importer
 import DoNotation
 import NewTypePragma
+import AutoLambdaCaseInCase
+import AutoLambdaCaseInBind
 #-}

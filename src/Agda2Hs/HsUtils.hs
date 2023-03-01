@@ -169,8 +169,11 @@ hsLambda x e =
   where
     p = PVar () $ hsName x
 
+hsUnqualName :: String -> QName ()
+hsUnqualName = UnQual () . hsName
+
 hsVar :: String -> Exp ()
-hsVar = Var () . UnQual () . hsName
+hsVar = Var () . hsUnqualName
 
 hsUndefined :: Exp ()
 hsUndefined = hsVar "undefined"

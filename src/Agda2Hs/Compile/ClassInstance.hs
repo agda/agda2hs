@@ -43,10 +43,11 @@ disableCopatterns :: C a -> C a
 disableCopatterns = local $ \e -> e { copatternsEnabled = False }
 
 compileInstance :: Definition -> C (Hs.Decl ())
-compileInstance def@Defn{..} = enableCopatterns $ setCurrentRange (nameBindingSite $ qnameName defName) $ do
+compileInstance def@Defn{..} = enableCopatterns $ setCurrentRangeQ defName $ do
   ir <- compileInstRule [] (unEl defType)
   withFunctionLocals defName $ do
-    (ds, rs) <- concatUnzip <$> mapM (compileInstanceClause (qnameModule defName)) funClauses
+    (ds, rs) <- concatUnzip
+            <$> mapM (compileInstanceClause (qnameModule defName)) funClauses
     when (length (nub rs) > 1) $
       genericDocError =<< fsep (pwords "More than one minimal record used.")
     return $ Hs.InstDecl () Nothing ir (Just ds)
@@ -84,7 +85,8 @@ compileInstRule cs ty = case unSpine1 ty of
 --  - ✓ default implementation that get dropped are also projected from that same dictionary
 
 etaExpandClause :: Clause -> C [Clause]
-etaExpandClause cl@Clause{clauseBody = Nothing} = genericError "Instance definition with absurd pattern!"
+etaExpandClause cl@Clause{clauseBody = Nothing} =
+  genericError "Instance definition with absurd pattern!"
 etaExpandClause cl@Clause{namedClausePats = ps, clauseBody = Just t} = do
   case t of
     Con c _ _ -> do
@@ -93,9 +95,9 @@ etaExpandClause cl@Clause{namedClausePats = ps, clauseBody = Just t} = do
                       clauseBody      = Just $ t `applyE` [Proj ProjSystem $ unArg f] }
                 | f <- fields ]
       return cls
-    _ ->
-      genericDocError =<< fsep (pwords $ "Type class instances must be defined using copatterns (or top-level" ++
-                                         " records) and cannot be defined using helper functions.")
+    _ -> genericDocError =<< fsep (pwords $
+      "Type class instances must be defined using copatterns (or top-level" ++
+      " records) and cannot be defined using helper functions.")
 
 compileInstanceClause :: ModuleName -> Clause -> C ([Hs.InstDecl ()], [QName])
 compileInstanceClause curModule c = withClauseLocals curModule c $ do

@@ -2,9 +2,11 @@ module Agda2Hs.Compile.Types where
 
 import Control.Monad.Reader ( ReaderT )
 import Control.Monad.Writer ( WriterT )
+import Control.Monad.State ( StateT )
 import Control.DeepSeq ( NFData(..) )
 
 import Data.Set ( Set )
+import Data.Map ( Map )
 
 import qualified Language.Haskell.Exts.SrcLoc as Hs
 import qualified Language.Haskell.Exts.Syntax as Hs
@@ -40,6 +42,9 @@ data CompileEnv = CompileEnv
   -- ^ whether copatterns should be allowed when compiling patterns
   }
 
+data CompilingCategory = ClassInstance | CaseOf | MonadicBind
+  deriving Eq
+
 data Import = Import
   { importModule :: Hs.ModuleName ()
   , importParent :: Maybe (Hs.Name ())
@@ -61,7 +66,14 @@ instance Semigroup CompileOutput where
 instance Monoid CompileOutput where
   mempty = CompileOutput [] []
 
-type C = ReaderT CompileEnv (WriterT CompileOutput TCM)
+-- | State used while compiling a single module.
+data CompileState = CompileState
+  { lcaseUsed :: Int
+  -- ^ Keeps track of how many times we've used an extension.
+  -- NB: can be removed by subsequent program transformations, hence the StateT.
+  }
+
+type C = StateT CompileState (ReaderT CompileEnv (WriterT CompileOutput TCM))
 
 -- Currently we can compile an Agda "Dom Type" in three ways:
 -- - To a type in Haskell (with perhaps a strictness annotation)
