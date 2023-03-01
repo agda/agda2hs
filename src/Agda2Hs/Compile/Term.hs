@@ -7,8 +7,7 @@ import Control.Monad.Reader
 import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text ( unpack )
 
-import qualified Language.Haskell.Exts.Syntax as Hs
-import qualified Language.Haskell.Exts.Build as Hs
+import qualified Language.Haskell.Exts as Hs
 
 import Agda.Syntax.Common
 import Agda.Syntax.Literal
@@ -66,7 +65,7 @@ fromNeg _ es = compileElims es <&> \ case
   _ : n@Hs.Lit{} : es' -> Hs.NegApp () n `eApp` es'
   es'                  -> (hsVar "negate" `o` hsVar "fromIntegral") `eApp` drop 1 es'
   where
-    f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ Hs.UnQual () $ hsName "_._") g
+    f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ hsUnqualName "_._") g
 
 fromString :: QName -> Elims -> C (Hs.Exp ())
 fromString _ es = compileElims es <&> \ case
@@ -123,8 +122,9 @@ bind :: QName -> Elims -> C (Hs.Exp ())
 bind q (e:es) = do
   checkInstance $ unArg $ isApplyElim' __IMPOSSIBLE__ e
   compileElims es >>= \case
-    [u, Hs.Lambda _ [p] v] -> pure (bind' u p v)
-    [u, Hs.LCase () [Hs.Alt () p (Hs.UnGuardedRhs () v) Nothing]] -> pure (bind' u p v)
+    [u, Hs.Lambda _ [p] v] -> return (bind' u p v)
+    [u, Hs.LCase () [Hs.Alt () p (Hs.UnGuardedRhs () v) Nothing]] ->
+      decrementLCase >> return (bind' u p v)
     vs -> return $ hsVar "_>>=_" `eApp` vs
   where
     bind' :: Hs.Exp () -> Hs.Pat () -> Hs.Exp () -> Hs.Exp ()
@@ -148,9 +148,10 @@ sequ q (e:es) = do
 sequ q [] = return $ hsVar "_>>_"
 
 caseOf :: QName -> Elims -> C (Hs.Exp ())
-caseOf _ es = compileElims es >>= \ case
+caseOf _ es = compileElims es >>= \case
   -- applied to pattern lambda
-  e : Hs.LCase _ alts : es' ->
+  e : Hs.LCase _ alts : es' -> do
+    decrementLCase
     return $ eApp (Hs.Case () e alts) es'
   -- applied to regular lambda
   e : Hs.Lambda _ (p : ps) b : es' -> do
@@ -180,15 +181,13 @@ lambdaCase q es = setCurrentRange (nameBindingSite $ qnameName q) $ do
     -- simply return the body.
     [Hs.Match _ _ [] (Hs.UnGuardedRhs _ rhs) _] -> return rhs
     _ -> do
-      alts <- mapM clauseToAlt cs -- Pattern lambdas cannot have where blocks
-      args <- compileElims rest
-      return $ eApp (Hs.LCase () alts) args
+      lcase <- hsLCase =<< mapM clauseToAlt cs -- Pattern lambdas cannot have where blocks
+      eApp lcase <$> compileElims rest
 
 clauseToAlt :: Hs.Match () -> C (Hs.Alt ())
 clauseToAlt (Hs.Match _ _ [p] rhs wh) = pure $ Hs.Alt () p rhs wh
 clauseToAlt (Hs.Match _ _ ps _ _)     = genericError $ "Pattern matching lambdas must take a single argument"
 clauseToAlt Hs.InfixMatch{}           = __IMPOSSIBLE__
-
 
 compileLiteral :: Literal -> C (Hs.Exp ())
 compileLiteral (LitNat n)    = return $ Hs.intE n

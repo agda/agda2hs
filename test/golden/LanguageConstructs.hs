@@ -1,5 +1,4 @@
 {-# LANGUAGE LambdaCase #-}
-
 module LanguageConstructs where
 
 oneTwoThree :: [Int]

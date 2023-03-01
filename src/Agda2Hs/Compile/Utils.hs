@@ -4,8 +4,10 @@ import Control.Arrow ( Arrow((***)) )
 import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.Writer ( tell )
+import Control.Monad.State ( put, modify )
 
 import Data.Maybe ( isJust )
+import qualified Data.Map as M
 
 import qualified Language.Haskell.Exts as Hs
 
@@ -54,6 +56,9 @@ f \/ g = \x -> f x || g x
 
 showTCM :: PrettyTCM a => a -> C String
 showTCM x = liftTCM $ show <$> prettyTCM x
+
+setCurrentRangeQ :: QName -> C a -> C a
+setCurrentRangeQ = setCurrentRange . nameBindingSite . qnameName
 
 isInScopeUnqualified :: QName -> C Bool
 isInScopeUnqualified x = lift $ do
@@ -197,6 +202,17 @@ checkInstance u@(Con c _ _)
     prettyShow (conName c) == "Haskell.Prim.IsTrue.itsTrue" ||
     prettyShow (conName c) == "Haskell.Prim.IsFalse.itsFalse" = return ()
 checkInstance u = genericDocError =<< text "illegal instance: " <+> prettyTCM u
+
+modifyLCase :: (Int -> Int) -> CompileState -> CompileState
+modifyLCase f (CompileState {lcaseUsed = n}) = CompileState {lcaseUsed = f n}
+
+incrementLCase, decrementLCase :: C ()
+incrementLCase = modify $ modifyLCase (+ 1)
+decrementLCase = modify $ modifyLCase (\n -> n - 1)
+
+-- Always construct lambda cases with this function.
+hsLCase :: [Hs.Alt ()] -> C (Hs.Exp ())
+hsLCase = (incrementLCase >>) . return . Hs.LCase ()
 
 ensureNoLocals :: String -> C ()
 ensureNoLocals msg = unlessM (null <$> asks locals) $ genericError msg
