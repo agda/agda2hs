@@ -28,15 +28,6 @@ plus5minus5 n
   = case n + 5 of
         m -> m - 5
 
-len :: [a] -> Int
-len xs = length xs
-
-applyToFalse :: (Bool -> a) -> a
-applyToFalse = ($ False)
-
-caseOf :: a -> (a -> b) -> b
-caseOf = flip ($)
-
 enum₁ :: [Int]
 enum₁ = [5 .. 10]
 

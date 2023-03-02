@@ -6,6 +6,12 @@ createRange :: Int -> Int -> Maybe Range
 createRange low high
   = if low <= high then Just (MkRange low high) else Nothing
 
+createRange' :: Int -> Int -> Maybe Range
+createRange' low high
+  = if low <= high then
+      if low <= high then Just (MkRange low high) else Nothing else
+      Nothing
+
 createRangeCase :: Int -> Int -> Maybe Range
 createRangeCase low high
   = case low <= high of

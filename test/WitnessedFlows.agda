@@ -8,13 +8,21 @@ data Range : Set where
 {-# COMPILE AGDA2HS Range #-}
 
 createRange : Int → Int → Maybe Range
-createRange low high = if' low <= high then Just (MkRange low high) else Nothing
+createRange low high = if low <= high then Just (MkRange low high) else Nothing
 
 {-# COMPILE AGDA2HS createRange #-}
 
+createRange' : Int → Int → Maybe Range
+createRange' low high =
+    if low <= high then
+        (λ {{ h }} → if low <= high then Just (MkRange low high {{ h }}) else Nothing)
+    else Nothing
+
+{-# COMPILE AGDA2HS createRange' #-}
+
 createRangeCase : Int → Int → Maybe Range
 createRangeCase low high = 
-    case' low <= high of λ where
+    case low <= high of λ where
         True → Just (MkRange low high)
         False → Nothing
 

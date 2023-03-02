@@ -8,7 +8,7 @@ open Haskell.Prim public using
     TypeError; ⊥; iNumberNat; IsTrue; IsFalse;
     All; allNil; allCons; NonEmpty; lengthNat;
     id; _∘_; _$_; flip; const;
-    if_then_else_; if'_then_else_; case_of_; case'_of_;
+    if_then_else_; case_of_;
     Number; fromNat; Negative; fromNeg;
     IsString; fromString;
     _≡_; refl;

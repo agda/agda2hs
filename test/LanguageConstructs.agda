@@ -43,21 +43,6 @@ plus5minus5 : Int → Int
 plus5minus5 n = case n + 5 of λ m → m - 5
 {-# COMPILE AGDA2HS plus5minus5 #-}
 
--- Applied to non-lambda
-len : List a → Int
-len xs = case xs of length
-{-# COMPILE AGDA2HS len #-}
-
--- Underapplied
-applyToFalse : (Bool → a) → a
-applyToFalse = case False of_
-{-# COMPILE AGDA2HS applyToFalse #-}
-
-caseOf : a → (a → b) → b
-caseOf = case_of_
-{-# COMPILE AGDA2HS caseOf #-}
-
-
 --------------------------------------------------
 -- Enums
 
