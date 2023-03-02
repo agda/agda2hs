@@ -39,15 +39,11 @@ isSpecialTerm :: QName -> Maybe (QName -> Elims -> C (Hs.Exp ()))
 isSpecialTerm q = case prettyShow q of
   _ | isExtendedLambdaName q                    -> Just lambdaCase
   "Haskell.Prim.if_then_else_"                  -> Just ifThenElse
-  "Haskell.Prim.if'_then_else_"                 -> Just ifThenElse
   "Haskell.Prim.Enum.Enum.enumFrom"             -> Just mkEnumFrom
   "Haskell.Prim.Enum.Enum.enumFromTo"           -> Just mkEnumFromTo
   "Haskell.Prim.Enum.Enum.enumFromThen"         -> Just mkEnumFromThen
   "Haskell.Prim.Enum.Enum.enumFromThenTo"       -> Just mkEnumFromThenTo
   "Haskell.Prim.case_of_"                       -> Just caseOf
-  "Haskell.Prim.Monad.Do.Monad._>>=_"           -> Just bind
-  "Haskell.Prim.Monad.Do.Monad._>>_"            -> Just sequ
-  "Haskell.Prim.case'_of_"                      -> Just caseOf
   "Haskell.Prim.Monad.Do.Monad._>>=_"           -> Just bind
   "Haskell.Prim.Monad.Do.Monad._>>_"            -> Just sequ
   "Agda.Builtin.FromNat.Number.fromNat"         -> Just fromNat
@@ -91,11 +87,8 @@ ifThenElse :: QName -> Elims -> C (Hs.Exp ())
 ifThenElse _ es = compileElims es >>= \case
   -- fully applied
   b : t : f : es' -> return $ Hs.If () b t f `eApp` es'
-  -- partially applied -> eta-expand
-  es' -> do
-    xs <- fmap Hs.name . drop (length es') <$> mapM freshString ["b", "t", "f"]
-    let [b, t, f] = es' ++ map Hs.var xs
-    return $ Hs.lamE (Hs.pvar <$> xs) $ Hs.If () b t f
+  -- partially applied
+  _ -> genericError $ "if_then_else must be fully applied"
 
 mkEnumFrom :: QName -> Elims -> C (Hs.Exp ())
 mkEnumFrom q es = compileElims es >>= \case
@@ -163,14 +156,8 @@ caseOf _ es = compileElims es >>= \case
     let lam [] = id
         lam qs = Hs.Lambda () qs
     return $ eApp (Hs.Case () e [Hs.Alt () p (Hs.UnGuardedRhs () $ lam ps b) Nothing]) es'
-  -- no lambda, but fully applied: inline
-  e : f : es' -> return $ eApp f $ e : es'
-  -- partial application
-  [e]         -> do
-    let Just dollar = getOp (hsVar "_$_")
-    return $ Hs.RightSection () dollar e
-  -- unapplied
-  []          -> return $ eApp (hsVar "flip") [hsVar "_$_"]
+  -- applied to non-lambda / partially applied
+  _ -> genericError $ "case_of_ must be fully applied to a lambda"
 
 lambdaCase :: QName -> Elims -> C (Hs.Exp ())
 lambdaCase q es = setCurrentRange (nameBindingSite $ qnameName q) $ do

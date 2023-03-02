@@ -225,27 +225,3 @@ ex_if = if True then 1 else 0
 if_over : Nat
 if_over = (if True then (λ x → x) else (λ x → x + 1)) 0
 {-# COMPILE AGDA2HS if_over #-}
-
-if_partial₁ : List Nat → List Nat
-if_partial₁ = map (if True then 1 else_)
-{-# COMPILE AGDA2HS if_partial₁ #-}
-
-if_partial₂ : List Nat → List (Nat → Nat)
-if_partial₂ = map (if True then_else_)
-{-# COMPILE AGDA2HS if_partial₂ #-}
-
-if_partial₃ : List Bool → List (Nat → Nat → Nat)
-if_partial₃ = map if_then_else_
-{-# COMPILE AGDA2HS if_partial₃ #-}
-
-if_partial₄ : List Bool → List (Nat → Nat)
-if_partial₄ = map (if_then 1 else_)
-{-# COMPILE AGDA2HS if_partial₄ #-}
-
-if_partial₅ : Bool → Nat → List Nat → List Nat
-if_partial₅ b f = map (if b then f else_)
-{-# COMPILE AGDA2HS if_partial₅ #-}
-
-if_partial₆ : Bool → Nat → List Nat → List Nat
-if_partial₆ b f0 = map (if b then f0 else_)
-{-# COMPILE AGDA2HS if_partial₆ #-}

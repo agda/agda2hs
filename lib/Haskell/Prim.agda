@@ -53,22 +53,13 @@ f $ x = f x
 -- Language constructs
 
 infix -1 case_of_
-case_of_ : a → (a → b) → b
+case_of_ : {@0 a b : Set ℓ} → (a' : a) → ((a'' : a) → @0 {{ a' ≡ a'' }} → b) → b
 case x of f = f x
 
-infix -1 case'_of_
-case'_of_ : {@0 A b : Set ℓ} → (a : A) → ((a' : A) → @0 {{ a ≡ a' }} → b) → b
-case' x of f = f x
-
 infix -2 if_then_else_
-if_then_else_ : {@0 a : Set ℓ} → Bool → a → a → a
+if_then_else_ : {@0 a : Set ℓ} → (flg : Bool) → (@0 {{ flg ≡ True }} → a) → (@0 {{ flg ≡ False }} → a) → a
 if False then x else y = y
 if True  then x else y = x
-
-infix -2 if'_then_else_
-if'_then_else_ : {@0 a : Set ℓ} → (flg : Bool) → (@0 {{ flg ≡ True }} → a) → (@0 {{ flg ≡ False }} → a) → a
-if' False then x else y = y
-if' True  then x else y = x
 
 --------------------------------------------------
 -- Agda strings
