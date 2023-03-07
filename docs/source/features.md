@@ -181,24 +181,80 @@ negate'' = \case
     False -> True
 ```
 
-## Partially-Applied Case Pattern Match
+## Flow Control
 
+Agda2HS provides native support for the Haskell `if_then_else_` and `case_of_` constructs.
+
+Agda:
 ```agda
-len : List a → Int
-len xs = case xs of length
-{-# COMPILE AGDA2HS len #-}
+ifThenElse : Int → String
+ifThenElse n = if n >= 10 then "big" else "small"
+{-# COMPILE AGDA2HS ifThenElse #-}
 
-applyToFalse : (Bool → a) → a
-applyToFalse = case False of_
-{-# COMPILE AGDA2HS applyToFalse #-}
+mhead : List a → Maybe a
+mhead xs = case xs of λ where
+  []      → Nothing
+  (x ∷ _) → Just x
+{-# COMPILE AGDA2HS mhead #-}
 ```
 
-```hs
-len :: List a -> Int 
-len xs = length xs
+Haskell:
+```haskell
+ifThenElse :: Int -> String
+ifThenElse n = if n >= 10 then "big" else "small"
 
-applyToFalse :: (Bool -> a) -> a
-applyToFalse = ($ False)
+mhead :: [a] -> Maybe a
+mhead xs
+  = case xs of
+        [] -> Nothing
+        x : _ -> Just x
+```
+
+> **It is NOT possible to partially apply these two constructs.**
+> This means that you must explicitly write `λ x → if x then 2 else 3` instead of `if_then 2 else 3`. (This copies the impossibility of the second implementation in Haskell.)
+
+### Flow Witnesses
+
+While in Haskell such a thing is never necessary, in Agda there are cases when it is useful for a branch to contain a "witness" (proof) of the condition on which it split (i.e. the true branch of `if x < 2 then ... else ...` knows that `x < 2 = True`).
+
+The type signatures of both `if_then_else_` and `case_of_` on the Agda side contain instances of these proofs which can be used to work with e.g. intrinsic verification.
+
+This allows for the following Agda code to type check:
+```
+data Range : Set where
+    MkRange : (low high : Int)
+            → {{ @0 h : ((low <= high) ≡ True) }}
+            → Range
+
+{-# COMPILE AGDA2HS Range #-}
+
+createRange : Int → Int → Maybe Range
+createRange low high = if low <= high then Just (MkRange low high) else Nothing
+
+{-# COMPILE AGDA2HS createRange #-}
+
+createRangeCase : Int → Int → Maybe Range
+createRangeCase low high = 
+    case low <= high of λ where
+        True → Just (MkRange low high)
+        False → Nothing
+
+{-# COMPILE AGDA2HS createRangeCase #-}
+```
+
+and compile to this simplified Haskell code:
+```haskell
+data Range = MkRange Int Int
+
+createRange :: Int -> Int -> Maybe Range
+createRange low high
+  = if low <= high then Just (MkRange low high) else Nothing
+
+createRangeCase :: Int -> Int -> Maybe Range
+createRangeCase low high
+  = case low <= high of
+        True -> Just (MkRange low high)
+        False -> Nothing
 ```
 
 ## 0-Quantity Parameters
@@ -462,23 +518,6 @@ Haskell
 ```hs
 class ImplicitField a where
     aField :: a
-```
-
-## If-then-else
-
-Agda2Hs implicitly converts the  knows about the Haskell syntax for `ifThenElse`.
-
-Agda
-```agda
-ifThenElse : Int → String
-ifThenElse n = if n >= 10 then "big" else "small"
-{-# COMPILE AGDA2HS ifThenElse #-}
-```
-
-Haskell
-```hs
-ifThenElse :: Int -> String
-ifThenElse n = if n >= 10 then "big" else "small"
 ```
 
 ## Haskell Language Extensions
