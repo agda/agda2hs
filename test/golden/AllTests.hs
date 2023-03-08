@@ -42,4 +42,6 @@ import QualifiedImports
 import CommonQualifiedImports
 import RequalifiedImports
 import QualifiedPrelude
+import AutoLambdaCaseInCase
+import AutoLambdaCaseInBind
 

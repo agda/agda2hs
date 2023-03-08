@@ -3,8 +3,6 @@ module LanguageConstructs where
 
 open import Haskell.Prelude
 
-{-# FOREIGN AGDA2HS {-# LANGUAGE LambdaCase #-} #-}
-
 --------------------------------------------------
 -- Lists
 

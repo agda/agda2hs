@@ -44,6 +44,8 @@ import QualifiedImports
 import CommonQualifiedImports
 import RequalifiedImports
 import QualifiedPrelude
+import AutoLambdaCaseInCase
+import AutoLambdaCaseInBind
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -88,4 +90,6 @@ import QualifiedImports
 import CommonQualifiedImports
 import RequalifiedImports
 import QualifiedPrelude
+import AutoLambdaCaseInCase
+import AutoLambdaCaseInBind
 #-}

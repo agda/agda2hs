@@ -78,9 +78,11 @@ compileMinRecords def sls = do
   -- 2. assert that all default implementations are the same (for a certain field)
   let getUnique f (x :| xs)
         | all (x ==) xs = return x
-        | otherwise     = genericDocError =<< do text ("Conflicting default implementations for " ++ pp f ++ ":") $$
-                                                   vcat [ text "-" <+> multilineText (pp d) | d <- nub (x : xs) ]
-  decls <- Map.traverseWithKey getUnique $ Map.unionsWith (<>) $ (map . fmap) (:| []) defaults
+        | otherwise     = genericDocError =<< do
+          text ("Conflicting default implementations for " ++ pp f ++ ":") $$
+            vcat [ text "-" <+> multilineText (pp d) | d <- nub (x : xs) ]
+  decls <- Map.traverseWithKey getUnique
+         $ Map.unionsWith (<>) $ (map . fmap) (:| []) defaults
 
   -- TODO: order default implementations differently?
   return ([minPragma | not (null prims)] ++ Map.elems decls)
@@ -122,7 +124,8 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
     checkFieldInScope f = isInScopeUnqualified f >>= \case
       True  -> return ()
       False -> setCurrentRange (nameBindingSite $ qnameName f) $ genericError $
-        "Record projections (`" ++ prettyShow (qnameName f) ++ "` in this case) must be brought into scope when compiling to Haskell record types. " ++
+        "Record projections (`" ++ prettyShow (qnameName f) ++
+        "` in this case) must be brought into scope when compiling to Haskell record types. " ++
         "Add `open " ++ Hs.prettyPrint rName ++ " public` after the record declaration to fix this."
 
     Record{..} = theDef def
