@@ -14,3 +14,11 @@ nonAssoc b = (b == b) == (b == b)
 mixedAssoc :: Maybe Int -> (Int -> Maybe Int) -> Maybe Int
 mixedAssoc m f = f =<< ((f =<< m) >>= f >>= f)
 
+infixl 7 <+>
+(<+>) :: Int -> Int -> Int
+x <+> y = x + y
+
+infixr 8 <->
+(<->) :: Int -> Int -> Int
+x <-> y = x - y
+
