@@ -25,3 +25,15 @@ mixedAssoc m f = f =<< (((f =<< m) >>= f) >>= f)
 {-# COMPILE AGDA2HS rightAssoc #-}
 {-# COMPILE AGDA2HS nonAssoc   #-}
 {-# COMPILE AGDA2HS mixedAssoc #-}
+
+infixl 7 _<+>_
+_<+>_ : Int → Int → Int
+x <+> y = x + y
+
+{-# COMPILE AGDA2HS _<+>_ #-}
+
+infixr 8 _<->_
+_<->_ : Int → Int → Int
+x <-> y = x - y
+
+{-# COMPILE AGDA2HS _<->_ #-}
