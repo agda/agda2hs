@@ -13,11 +13,8 @@ open import Haskell.Prim.Tuple
 
 record Semigroup (a : Set) : Set where
   infixr 6 _<>_
-  field
-    _<>_ : a → a → a
-
-open Semigroup ⦃ ... ⦄ public
-
+  field _<>_ : a → a → a
+open Semigroup ⦃...⦄ public
 {-# COMPILE AGDA2HS Semigroup existing-class #-}
 
 instance
@@ -49,7 +46,15 @@ instance
 --------------------------------------------------
 -- Monoid
 
+-- ** base
 record Monoid (a : Set) : Set where
+  field
+    mempty : a
+    overlap ⦃ super ⦄ : Semigroup a
+    mappend : a → a → a
+    mconcat : List a → a
+-- ** defaults
+record DefaultMonoid (a : Set) : Set where
   field
     mempty : a
     overlap ⦃ super ⦄ : Semigroup a
@@ -60,42 +65,54 @@ record Monoid (a : Set) : Set where
   mconcat : List a → a
   mconcat []       = mempty
   mconcat (x ∷ xs) = x <> mconcat xs
-
-open Monoid ⦃ ... ⦄ public
-
+-- ** export
+open Monoid ⦃...⦄ public
 {-# COMPILE AGDA2HS Monoid existing-class #-}
+-- ** instances
+private
+  infix 0 mempty=_
+  mempty=_ : ⦃ Semigroup a ⦄ → a → Monoid a
+  mempty= x = record {DefaultMonoid (record {mempty = x})}
 
+  mkMonoid : DefaultMonoid a → Monoid a
+  mkMonoid x = record {DefaultMonoid x}
 instance
   iMonoidList : Monoid (List a)
-  iMonoidList .mempty = []
+  iMonoidList = mempty= []
 
   iMonoidMaybe : ⦃ Semigroup a ⦄ → Monoid (Maybe a)
-  iMonoidMaybe .mempty = Nothing
+  iMonoidMaybe = mempty= Nothing
 
   iMonoidFun : ⦃ Monoid b ⦄ → Monoid (a → b)
-  iMonoidFun .mempty _ = mempty
+  iMonoidFun = mempty= λ _ → mempty
 
   iMonoidUnit : Monoid ⊤
-  iMonoidUnit .mempty = tt
+  iMonoidUnit = mempty= tt
 
   iMonoidTuple₀ : Monoid (Tuple [])
-  iMonoidTuple₀ .mempty = tt 
+  iMonoidTuple₀ = mempty= tt
 
   iMonoidTuple : ⦃ Monoid a ⦄ → ⦃ Monoid (Tuple as) ⦄ → Monoid (Tuple (a ∷ as))
-  iMonoidTuple .mempty = mempty ; mempty
+  iMonoidTuple = mempty= mempty ; mempty
+
+open DefaultMonoid
 
 MonoidEndo : Monoid (a → a)
-MonoidEndo .mempty      = id
-MonoidEndo .super ._<>_ = _∘_
+MonoidEndo = mkMonoid λ where
+  .mempty → id
+  .super ._<>_ → _∘_
 
 MonoidEndoᵒᵖ : Monoid (a → a)
-MonoidEndoᵒᵖ .mempty      = id
-MonoidEndoᵒᵖ .super ._<>_ = flip _∘_
+MonoidEndoᵒᵖ = mkMonoid λ where
+  .mempty      → id
+  .super ._<>_ → flip _∘_
 
 MonoidConj : Monoid Bool
-MonoidConj .mempty      = True
-MonoidConj .super ._<>_ = _&&_
+MonoidConj = mkMonoid λ where
+  .mempty      → True
+  .super ._<>_ → _&&_
 
 MonoidDisj : Monoid Bool
-MonoidDisj .mempty      = False
-MonoidDisj .super ._<>_ = _||_
+MonoidDisj = mkMonoid λ where
+  .mempty      → False
+  .super ._<>_ → _||_

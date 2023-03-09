@@ -121,7 +121,7 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
 
     -- In Haskell, projections live in the same scope as the record type, so check here that the
     -- record module has been opened.
-    checkFieldInScope f = isInScopeUnqualified f >>= \ case
+    checkFieldInScope f = isInScopeUnqualified f >>= \case
       True  -> return ()
       False -> setCurrentRange (nameBindingSite $ qnameName f) $ genericError $
         "Record projections (`" ++ prettyShow (qnameName f) ++

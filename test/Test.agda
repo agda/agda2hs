@@ -187,7 +187,9 @@ instance
   SemigroupNatSum ._<>_ (MkSum a) (MkSum b) = MkSum (a + b)
 
   MonoidNatSum : Monoid NatSum
-  MonoidNatSum .mempty = MkSum 0
+  MonoidNatSum = record {DefaultMonoid (λ where
+    .mempty → MkSum 0
+   )} where open DefaultMonoid
 
 double : ⦃ Monoid a ⦄ → a → a
 double x = x <> x

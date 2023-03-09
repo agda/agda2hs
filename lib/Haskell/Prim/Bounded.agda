@@ -27,8 +27,8 @@ record Bounded (a : Set) : Set where
 
 {-# COMPILE AGDA2HS Bounded existing-class #-}
 
-open BoundedBelow ⦃ ... ⦄ public
-open BoundedAbove ⦃ ... ⦄ public
+open BoundedBelow ⦃...⦄ public
+open BoundedAbove ⦃...⦄ public
 
 instance
   iBounded : ⦃ BoundedBelow a ⦄ → ⦃ BoundedAbove a ⦄ → Bounded a

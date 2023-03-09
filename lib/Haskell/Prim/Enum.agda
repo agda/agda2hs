@@ -78,7 +78,7 @@ record Enum (a : Set) : Set₁ where
     enumFromThenTo : (x x₁ : a) → ⦃ IsFalse (fromEnum x == fromEnum x₁) ⦄ → a → List a
     enumFromThen   : ⦃ IsBoundedBelow ⦄ → ⦃ IsBoundedAbove ⦄ → (x x₁ : a) → ⦃ IsFalse (fromEnum x == fromEnum x₁) ⦄ → List a
 
-open Enum ⦃ ... ⦄ public
+open Enum ⦃...⦄ public
 
 {-# COMPILE AGDA2HS Enum existing-class #-}
 

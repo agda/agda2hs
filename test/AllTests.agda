@@ -37,9 +37,13 @@ import Issue115
 import BangPatterns
 import Issue94
 import Issue107
-import Importer
 import DoNotation
 import NewTypePragma
+import Importer
+import QualifiedImports
+import CommonQualifiedImports
+import RequalifiedImports
+import QualifiedPrelude
 import AutoLambdaCaseInCase
 import AutoLambdaCaseInBind
 
@@ -79,9 +83,13 @@ import TransparentFun
 import Issue115
 import BangPatterns
 import Issue94
-import Importer
 import DoNotation
 import NewTypePragma
+import Importer
+import QualifiedImports
+import CommonQualifiedImports
+import RequalifiedImports
+import QualifiedPrelude
 import AutoLambdaCaseInCase
 import AutoLambdaCaseInBind
 #-}

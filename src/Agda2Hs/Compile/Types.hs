@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternSynonyms #-}
 module Agda2Hs.Compile.Types where
 
 import Control.Monad.Reader ( ReaderT )
@@ -5,6 +6,7 @@ import Control.Monad.Writer ( WriterT )
 import Control.Monad.State ( StateT )
 import Control.DeepSeq ( NFData(..) )
 
+import Data.Maybe ( fromMaybe, isJust )
 import Data.Set ( Set )
 import Data.Map ( Map )
 
@@ -34,7 +36,9 @@ instance NFData Options where
   rnf _ = ()
 
 data CompileEnv = CompileEnv
-  { minRecordName :: Maybe ModuleName
+  { currModule :: TopLevelModuleName
+  -- ^ the current module we are compiling
+  , minRecordName :: Maybe ModuleName
   -- ^ keeps track of the current minimal record we are compiling
   , locals :: LocalDecls
   -- ^ keeps track of the current clause's where declarations
@@ -42,13 +46,21 @@ data CompileEnv = CompileEnv
   -- ^ whether copatterns should be allowed when compiling patterns
   }
 
+type Qualifier = Maybe (Maybe (Hs.ModuleName ()))
+pattern Unqualified   = Nothing
+pattern QualifiedAs m = Just m
+
+isQualified = isJust
+qualifiedAs = fromMaybe Nothing
+
 data CompilingCategory = ClassInstance | CaseOf | MonadicBind
   deriving Eq
 
 data Import = Import
-  { importModule :: Hs.ModuleName ()
-  , importParent :: Maybe (Hs.Name ())
-  , importName   :: Hs.Name ()
+  { importModule    :: Hs.ModuleName ()
+  , importQualified :: Qualifier
+  , importParent    :: Maybe (Hs.Name ())
+  , importName      :: Hs.Name ()
   }
 type Imports = [Import]
 

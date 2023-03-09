@@ -69,6 +69,9 @@ hsName x
 extToName :: KnownExtension -> Name ()
 extToName = Ident () . show
 
+hsModuleName :: String -> ModuleName ()
+hsModuleName = ModuleName ()
+
 isOp :: QName () -> Bool
 isOp (UnQual _ Symbol{}) = True
 isOp (Special _ Cons{})  = True
@@ -117,6 +120,7 @@ pp = prettyPrintWithMode defaultMode{ spacing = False
                                     , classIndent = 4
                                     , whereIndent = 2
                                     }
+
 
 -- exactPrint really looks at the line numbers (and we're using the locations from the agda source
 -- to report Haskell parse errors at the right location), so shift everything to start at line 1.

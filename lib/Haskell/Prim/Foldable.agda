@@ -2,7 +2,7 @@
 module Haskell.Prim.Foldable where
 
 open import Haskell.Prim
-open import Haskell.Prim.Num
+open import Haskell.Prim.Num hiding (abs)
 open import Haskell.Prim.Eq
 open import Haskell.Prim.List
 open import Haskell.Prim.Int
@@ -15,9 +15,29 @@ open import Haskell.Prim.Monoid
 --------------------------------------------------
 -- Foldable
 
+-- ** base
 record Foldable (t : Set → Set) : Set₁ where
   field
     foldMap : ⦃ Monoid b ⦄ → (a → b) → t a → b
+    foldr : (a → b → b) → b → t a → b
+    foldl : (b → a → b) → b → t a → b
+    any : (a → Bool) → t a → Bool
+    all : (a → Bool) → t a → Bool
+    and : t Bool → Bool
+    null : t a → Bool
+    or : t Bool → Bool
+    concat : t (List a) → List a
+    concatMap : (a → List b) → t a → List b
+    elem : ⦃ Eq a ⦄ → a → t a → Bool
+    notElem : ⦃ Eq a ⦄ → a → t a → Bool
+    toList : t a → List a
+    sum : ⦃ iNum : Num a ⦄ → t a → a
+    product : ⦃ iNum : Num a ⦄ → t a → a
+    length : t a → Int
+-- ** defaults
+record DefaultFoldable (t : Set → Set) : Set₁ where
+  module M = Foldable {t = t}
+  field foldMap : ⦃ Monoid b ⦄ → (a → b) → t a → b
 
   foldr : (a → b → b) → b → t a → b
   foldr f z t = foldMap ⦃ MonoidEndo ⦄ f t z
@@ -63,26 +83,33 @@ record Foldable (t : Set → Set) : Set₁ where
 
   length : t a → Int
   length = foldMap ⦃ MonoidSum ⦄ (const 1)
-
-open Foldable ⦃ ... ⦄ public
-
+-- ** export
+open Foldable ⦃...⦄ public
 {-# COMPILE AGDA2HS Foldable existing-class #-}
+-- ** instances
+private
+  mkFoldable : DefaultFoldable t → Foldable t
+  mkFoldable x = record {DefaultFoldable x}
 
+  foldMap=_ : (∀ {b a} → ⦃ Monoid b ⦄ → (a → b) → t a → b) → Foldable t
+  foldMap= x = record {DefaultFoldable (record {foldMap = x})}
 instance
   iFoldableList : Foldable List
-  iFoldableList .foldMap = foldMapList
+  iFoldableList = foldMap= foldMapList
     where
       foldMapList : ⦃ Monoid b ⦄ → (a → b) → List a → b
       foldMapList f []       = mempty
       foldMapList f (x ∷ xs) = f x <> foldMapList f xs
 
   iFoldableMaybe : Foldable Maybe
-  iFoldableMaybe .foldMap _ Nothing  = mempty
-  iFoldableMaybe .foldMap f (Just x) = f x
+  iFoldableMaybe = foldMap= λ where
+    _ Nothing  → mempty
+    f (Just x) → f x
 
   iFoldableEither : Foldable (Either a)
-  iFoldableEither .foldMap _ (Left _) = mempty
-  iFoldableEither .foldMap f (Right x) = f x
+  iFoldableEither = foldMap= λ where
+    _ (Left _)  → mempty
+    f (Right x) → f x
 
   iFoldablePair : Foldable (a ×_)
-  iFoldablePair .foldMap f (_ , x) = f x
+  iFoldablePair = foldMap= λ f (_ , x) → f x

@@ -1,15 +1,18 @@
 open import Haskell.Prelude
 
 foo : Int
-foo = 42
+foo = 43
+
 {-# COMPILE AGDA2HS foo #-}
 
 _!#_ : Int → Int → Int
-x !# y = x + y
+x !# y = x - y
+
 {-# COMPILE AGDA2HS _!#_ #-}
 
 data Foo : Set where
   MkFoo : Foo
+
 {-# COMPILE AGDA2HS Foo #-}
 
 -- ** base
@@ -30,5 +33,3 @@ instance
   FF = record {DefaultFooable (λ where .doTheFoo → MkFoo)}
     where open DefaultFooable
 {-# COMPILE AGDA2HS FF #-}
-
-open import SecondImportee public

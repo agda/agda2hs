@@ -32,7 +32,7 @@ record Num (a : Set) : Set₁ where
     overlap ⦃ numZero ⦄ : number .Number.Constraint 0
     overlap ⦃ numOne ⦄  : number .Number.Constraint 1
 
-open Num ⦃ ... ⦄ public hiding (FromIntegerOK; number)
+open Num ⦃...⦄ public hiding (FromIntegerOK; number)
 
 {-# COMPILE AGDA2HS Num existing-class #-}
 
@@ -105,10 +105,16 @@ instance
   iNumDouble .fromInteger (pos    n) = fromNat n
   iNumDouble .fromInteger (negsuc n) = fromNeg (suc n)
 
+open DefaultMonoid
+
 MonoidSum : ⦃ iNum : Num a ⦄ → Monoid a
-MonoidSum .mempty      = 0
-MonoidSum .super ._<>_ = _+_
+MonoidSum = record {DefaultMonoid (λ where
+  .mempty      → 0
+  .super ._<>_ → _+_
+ )}
 
 MonoidProduct : ⦃ iNum : Num a ⦄ → Monoid a
-MonoidProduct .mempty      = 1
-MonoidProduct .super ._<>_ = _*_
+MonoidProduct = record {DefaultMonoid (λ where
+  .mempty      → 1
+  .super ._<>_ → _*_
+ )}

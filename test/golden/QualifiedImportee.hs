@@ -1,10 +1,10 @@
-module Importee where
+module QualifiedImportee where
 
 foo :: Int
-foo = 42
+foo = 43
 
 (!#) :: Int -> Int -> Int
-x !# y = x + y
+x !# y = x - y
 
 data Foo = MkFoo
 

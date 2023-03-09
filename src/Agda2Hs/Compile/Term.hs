@@ -43,32 +43,32 @@ isSpecialTerm q = case prettyShow q of
   "Haskell.Prim.Enum.Enum.enumFromThen"         -> Just mkEnumFromThen
   "Haskell.Prim.Enum.Enum.enumFromThenTo"       -> Just mkEnumFromThenTo
   "Haskell.Prim.case_of_"                       -> Just caseOf
-  "Haskell.Prim.Monad.Monad._>>=_"              -> Just bind
-  "Haskell.Prim.Monad.Monad._>>_"               -> Just sequ
+  "Haskell.Prim.Monad.Do.Monad._>>=_"           -> Just bind
+  "Haskell.Prim.Monad.Do.Monad._>>_"            -> Just sequ
   "Agda.Builtin.FromNat.Number.fromNat"         -> Just fromNat
   "Agda.Builtin.FromNeg.Negative.fromNeg"       -> Just fromNeg
   "Agda.Builtin.FromString.IsString.fromString" -> Just fromString
   _                                             -> Nothing
 
 isSpecialCon :: QName -> Maybe (ConHead -> ConInfo -> Elims -> C (Hs.Exp ()))
-isSpecialCon = prettyShow >>> \ case
+isSpecialCon = prettyShow >>> \case
   "Haskell.Prim.Tuple._;_" -> Just tupleTerm
   _ -> Nothing
 
 fromNat :: QName -> Elims -> C (Hs.Exp ())
-fromNat _ es = compileElims es <&> \ case
+fromNat _ es = compileElims es <&> \case
   _ : n@Hs.Lit{} : es' -> n `eApp` es'
   es'                  -> hsVar "fromIntegral" `eApp` drop 1 es'
 
 fromNeg :: QName -> Elims -> C (Hs.Exp ())
-fromNeg _ es = compileElims es <&> \ case
+fromNeg _ es = compileElims es <&> \case
   _ : n@Hs.Lit{} : es' -> Hs.NegApp () n `eApp` es'
   es'                  -> (hsVar "negate" `o` hsVar "fromIntegral") `eApp` drop 1 es'
   where
     f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ hsUnqualName "_._") g
 
 fromString :: QName -> Elims -> C (Hs.Exp ())
-fromString _ es = compileElims es <&> \ case
+fromString _ es = compileElims es <&> \case
   _ : s@Hs.Lit{} : es' -> s `eApp` es'
   es'                  -> hsVar "fromString" `eApp` drop 1 es'
 
@@ -213,9 +213,9 @@ compileTerm v = do
     -- args that need attention
     Def f es
       | Just semantics <- isSpecialTerm f -> semantics f es
-      | otherwise -> isClassFunction f >>= \ case
+      | otherwise -> isClassFunction f >>= \case
         True  -> compileClassFunApp f es
-        False -> (isJust <$> isUnboxProjection f) `or2M` isTransparentFunction f >>= \ case
+        False -> (isJust <$> isUnboxProjection f) `or2M` isTransparentFunction f >>= \case
           True  -> compileErasedApp es
           False -> do
             -- Drop module parameters (unless projection-like)
@@ -225,7 +225,7 @@ compileTerm v = do
             (`app` drop n es) . Hs.Var () =<< compileQName f
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
-    Con h i es -> isUnboxConstructor (conName h) >>= \ case
+    Con h i es -> isUnboxConstructor (conName h) >>= \case
       Just _  -> compileErasedApp es
       Nothing -> (`app` es) . Hs.Con () =<< compileQName (conName h)
     Lit l -> compileLiteral l

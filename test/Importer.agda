@@ -1,28 +1,52 @@
 open import Haskell.Prelude
+
+{-# FOREIGN AGDA2HS
+-- ** simple imports (possibly with transitive dependencies)
+#-}
+
 open import Importee
-open import OtherImportee using ( MkFoo )
+open import OtherImportee using (MkFoo)
 
 bar : Int
 bar = foo
-
 {-# COMPILE AGDA2HS bar #-}
+
+anotherBar : Int
+anotherBar = anotherFoo
+{-# COMPILE AGDA2HS anotherBar #-}
 
 baz : Int
 baz = 21 !# 21
-
 {-# COMPILE AGDA2HS baz #-}
 
-myFoo : Foo
-myFoo = MkFoo -- This is MkFoo from Importee, NOT from OtherImportee!!
+mkFoo : Foo
+mkFoo = MkFoo -- This is MkFoo from Importee, NOT from OtherImportee!!
+{-# COMPILE AGDA2HS mkFoo #-}
 
-{-# COMPILE AGDA2HS myFoo #-}
+fooable : Foo
+fooable = doTheFoo
+{-# COMPILE AGDA2HS fooable #-}
 
-myOtherFoo : Foo
-myOtherFoo = doTheFoo
+{-# FOREIGN AGDA2HS
+-- ** interplay with class default methods
+#-}
 
-{-# COMPILE AGDA2HS myOtherFoo #-}
+defaultBar : Foo
+defaultBar = defaultFoo
+{-# COMPILE AGDA2HS defaultBar #-}
 
-otherBar : Int
-otherBar = anotherFoo
+{-# FOREIGN AGDA2HS
+-- ** interplay with methods of existing class
+#-}
 
-{-# COMPILE AGDA2HS otherBar #-}
+testFoldMap : List Nat → List Nat
+testFoldMap = foldMap _∷_ []
+{-# COMPILE AGDA2HS testFoldMap #-}
+
+{-# FOREIGN AGDA2HS
+-- ** interplay with default methods of existing class
+#-}
+
+testFoldr : List Nat → Nat
+testFoldr = foldr (λ _ x → x) 0
+{-# COMPILE AGDA2HS testFoldr #-}

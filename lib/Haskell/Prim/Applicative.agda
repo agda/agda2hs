@@ -14,7 +14,18 @@ open import Haskell.Prim.Tuple
 --------------------------------------------------
 -- Applicative
 
+-- ** base
 record Applicative (f : Set → Set) : Set₁ where
+  infixl 4 _<*>_
+  field
+    pure  : a → f a
+    _<*>_ : f (a → b) → f a → f b
+    overlap ⦃ super ⦄ : Functor f
+    _<*_ : f a → f b → f a
+    _*>_ : f a → f b → f b
+-- ** defaults
+record DefaultApplicative (f : Set → Set) : Set₁ where
+  constructor mk
   infixl 4 _<*>_
   field
     pure  : a → f a
@@ -26,41 +37,52 @@ record Applicative (f : Set → Set) : Set₁ where
 
   _*>_ : f a → f b → f b
   x *> y = const id <$> x <*> y
-
-open Applicative ⦃ ... ⦄ public
-
+-- ** export
+open Applicative ⦃...⦄ public
 {-# COMPILE AGDA2HS Applicative existing-class #-}
-
+-- ** instances
+private
+  mkApplicative : DefaultApplicative t → Applicative t
+  mkApplicative x = record {DefaultApplicative x}
 instance
+  open DefaultApplicative
+
   iApplicativeList : Applicative List
-  iApplicativeList .pure x      = x ∷ []
-  iApplicativeList ._<*>_ fs xs = concatMap (λ f → map f xs) fs
+  iApplicativeList = mkApplicative λ where
+    .pure x      → x ∷ []
+    ._<*>_ fs xs → concatMap (λ f → map f xs) fs
 
   iApplicativeMaybe : Applicative Maybe
-  iApplicativeMaybe .pure = Just
-  iApplicativeMaybe ._<*>_ (Just f) (Just x) = Just (f x)
-  iApplicativeMaybe ._<*>_ _        _        = Nothing
+  iApplicativeMaybe = mkApplicative λ where
+    .pure → Just
+    ._<*>_ (Just f) (Just x) → Just (f x)
+    ._<*>_ _        _        → Nothing
 
   iApplicativeEither : Applicative (Either a)
-  iApplicativeEither .pure = Right
-  iApplicativeEither ._<*>_ (Right f) (Right x) = Right (f x)
-  iApplicativeEither ._<*>_ (Left e)  _         = Left e
-  iApplicativeEither ._<*>_ _         (Left e)  = Left e
+  iApplicativeEither = mkApplicative λ where
+    .pure → Right
+    ._<*>_ (Right f) (Right x) → Right (f x)
+    ._<*>_ (Left e)  _         → Left e
+    ._<*>_ _         (Left e)  → Left e
 
   iApplicativeFun : Applicative (λ b → a → b)
-  iApplicativeFun .pure        = const
-  iApplicativeFun ._<*>_ f g x = f x (g x)
+  iApplicativeFun = mkApplicative λ where
+    .pure        → const
+    ._<*>_ f g x → f x (g x)
 
   iApplicativeTuple₂ : ⦃ Monoid a ⦄ → Applicative (a ×_)
-  iApplicativeTuple₂ .pure x                = mempty , x
-  iApplicativeTuple₂ ._<*>_ (a , f) (b , x) = a <> b , f x
+  iApplicativeTuple₂ = mkApplicative λ where
+    .pure x                → mempty , x
+    ._<*>_ (a , f) (b , x) → a <> b , f x
 
   iApplicativeTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → Applicative (a × b ×_)
-  iApplicativeTuple₃ .pure x                          = mempty , mempty , x
-  iApplicativeTuple₃ ._<*>_ (a , b , f) (a₁ , b₁ , x) = a <> a₁ , b <> b₁ , f x
+  iApplicativeTuple₃ = mkApplicative λ where
+    .pure x                          → mempty , mempty , x
+    ._<*>_ (a , b , f) (a₁ , b₁ , x) → a <> a₁ , b <> b₁ , f x
 
   iApplicativeTuple₄ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → ⦃ Monoid c ⦄ →
-                       Applicative (λ d → Tuple (a ∷ b ∷ c ∷ d ∷ []))
-  iApplicativeTuple₄ .pure x                          = mempty ; mempty ; mempty ; x ; tt
-  iApplicativeTuple₄ ._<*>_ (a ; b ; c ; f ; tt) (a₁ ; b₁ ; c₁ ; x ; tt) =
-    a <> a₁ ; b <> b₁ ; c <> c₁ ; f x ; tt
+    Applicative (λ d → Tuple (a ∷ b ∷ c ∷ d ∷ []))
+  iApplicativeTuple₄ = mkApplicative λ where
+    .pure x → mempty ; mempty ; mempty ; x ; tt
+    ._<*>_ (a ; b ; c ; f ; tt) (a₁ ; b₁ ; c₁ ; x ; tt) →
+      a <> a₁ ; b <> b₁ ; c <> c₁ ; f x ; tt

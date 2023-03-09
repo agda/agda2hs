@@ -33,7 +33,7 @@ instance
   iSemigroupOrdering ._<>_ GT _ = GT
 
   iMonoidOrdering : Monoid Ordering
-  iMonoidOrdering .mempty = EQ
+  iMonoidOrdering = record {DefaultMonoid (record {mempty = EQ})}
 
 --------------------------------------------------
 -- Ord
@@ -51,7 +51,7 @@ record Ord (a : Set) : Set where
 
   infix 4 _<_ _>_ _<=_ _>=_
 
-open Ord ⦃ ... ⦄ public
+open Ord ⦃...⦄ public
 
 {-# COMPILE AGDA2HS Ord existing-class #-}
 

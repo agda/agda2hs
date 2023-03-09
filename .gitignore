@@ -7,3 +7,5 @@ test/agda2hs
 docs/build/
 test/*.hs
 test/Haskell
+*.hi
+*.o

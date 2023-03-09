@@ -2,19 +2,24 @@ module Agda2Hs.AgdaUtils where
 
 import Data.Data
 import Data.Monoid ( Any(..) )
-import Data.Generics ( listify )
 import Data.Maybe ( fromMaybe )
 
 import Agda.Compiler.Backend hiding ( Args )
 
+import Agda.Interaction.FindFile ( findFile' )
+
 import Agda.Syntax.Common ( Arg, defaultArg )
 import Agda.Syntax.Internal
 import Agda.Syntax.Internal.Names
+import Agda.Syntax.TopLevelModuleName
 
-import Agda.TypeChecking.Pretty ( Doc, text, vcat )
+import Agda.TypeChecking.Monad ( topLevelModuleName )
+import Agda.TypeChecking.Pretty 
 import Agda.TypeChecking.Substitute
 
-import Agda.Utils.List
+import Agda.Utils.Either ( isRight )
+import Agda.Utils.List ( initMaybe )
+import Agda.Utils.Monad ( ifM )
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
@@ -67,3 +72,23 @@ mapDef f d = d{ theDef = mapDefn (theDef d) }
     mapDefn defn = defn -- We only need this for Functions
 
     mapClause c = c{ clauseBody = f <$> clauseBody c }
+
+topLevelModuleNameForModuleName :: ModuleName -> TCM TopLevelModuleName
+topLevelModuleNameForModuleName = topLevelModuleName . rawTopLevelModuleNameForModuleName
+
+isTopLevelModule :: ModuleName -> TCM (Maybe TopLevelModuleName)
+isTopLevelModule m = do
+  tlm <- topLevelModuleNameForModuleName m
+  ifM (isRight <$> findFile' tlm) (return $ Just tlm) (return Nothing)
+
+getTopLevelModuleForModuleName :: ModuleName -> TCM (Maybe TopLevelModuleName)
+getTopLevelModuleForModuleName = loop . mnameToList
+  where
+    loop ns
+      | null ns   = return Nothing
+      | otherwise = isTopLevelModule (MName ns) >>= \case
+        Nothing      -> loop (init ns)
+        tlm@(Just _) -> return tlm
+
+getTopLevelModuleForQName :: QName -> TCM (Maybe TopLevelModuleName)
+getTopLevelModuleForQName = getTopLevelModuleForModuleName . qnameModule

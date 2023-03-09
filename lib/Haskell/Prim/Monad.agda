@@ -15,32 +15,46 @@ open import Haskell.Prim.Tuple
 --------------------------------------------------
 -- Monad
 
-record Monad (m : Set → Set) : Set₁ where
-  field
-    _>>=_ : m a → (a → m b) → m b
-    overlap ⦃ super ⦄ : Applicative m
+module Do where
 
-  return : a → m a
-  return = pure
+  -- ** base
+  record Monad (m : Set → Set) : Set₁ where
+    field
+      _>>=_ : m a → (a → m b) → m b
+      overlap ⦃ super ⦄ : Applicative m
+      return : a → m a
+      _>>_ : m a → m b → m b
+      _=<<_ : (a → m b) → m a → m b
+  -- ** defaults
+  record DefaultMonad (m : Set → Set) : Set₁ where
+    field
+      _>>=_ : m a → (a → m b) → m b
+      overlap ⦃ super ⦄ : Applicative m
+    return : a → m a
+    return = pure
 
-  _>>_ : m a → m b → m b
-  m >> m₁ = m >>= λ _ → m₁
+    _>>_ : m a → m b → m b
+    m >> m₁ = m >>= λ _ → m₁
 
-  _=<<_ : (a → m b) → m a → m b
-  _=<<_ = flip _>>=_
+    _=<<_ : (a → m b) → m a → m b
+    _=<<_ = flip _>>=_
+  -- ** export
+  open Monad ⦃...⦄ public
+  {-# COMPILE AGDA2HS Monad existing-class #-}
 
 -- Use `Dont._>>=_` and `Dont._>>_` if you do not want agda2hs to use
 -- do-notation.
 module Dont where
+
+  open Do using (Monad)
+
   _>>=_ : ⦃ Monad m ⦄ → m a → (a → m b) → m b
-  _>>=_ = Monad._>>=_ it
+  _>>=_ = Do._>>=_
 
   _>>_ : ⦃ Monad m ⦄ → m a → m b → m b
-  _>>_ = Monad._>>_ it
+  _>>_ = Do._>>_
 
-open Monad ⦃ ... ⦄ public
-
-{-# COMPILE AGDA2HS Monad existing-class #-}
+open Do public
 
 mapM₋ : ⦃ Monad m ⦄ → ⦃ Foldable t ⦄ → (a → m b) → t a → m ⊤
 mapM₋ f = foldr (λ x k → f x >> k) (pure tt)
@@ -48,30 +62,38 @@ mapM₋ f = foldr (λ x k → f x >> k) (pure tt)
 sequence₋ : ⦃ Monad m ⦄ → ⦃ Foldable t ⦄ → t (m a) → m ⊤
 sequence₋ = foldr _>>_ (pure tt)
 
+-- ** instances
+private
+  mkMonad : DefaultMonad t → Monad t
+  mkMonad x = record {DefaultMonad x}
+
+  infix 0 bind=_
+  bind=_ : ⦃ Applicative m ⦄ → (∀ {a b} → m a → (a → m b) → m b) → Monad m
+  bind= x = record {DefaultMonad (record {_>>=_ = x})}
 instance
   iMonadList : Monad List
-  iMonadList ._>>=_ = flip concatMap
+  iMonadList = bind= flip concatMap
 
   iMonadMaybe : Monad Maybe
-  iMonadMaybe ._>>=_ m k = maybe Nothing k m
+  iMonadMaybe = bind= flip (maybe Nothing)
 
   iMonadEither : Monad (Either a)
-  iMonadEither ._>>=_ m k = either Left k m
+  iMonadEither = bind= flip (either Left)
 
   iMonadFun : Monad (λ b → a → b)
-  iMonadFun ._>>=_ f k r = k (f r) r
+  iMonadFun = bind= λ f k r → k (f r) r
 
   iMonadTuple₂ : ⦃ Monoid a ⦄ → Monad (a ×_)
-  iMonadTuple₂ ._>>=_ (a , x) k = first (a <>_) (k x)
+  iMonadTuple₂ = bind= λ (a , x) k → first (a <>_) (k x)
 
   iMonadTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → Monad (a × b ×_)
-  iMonadTuple₃ ._>>=_ (a , b , x) k =
+  iMonadTuple₃ = bind= λ (a , b , x) k →
     case k x of λ where
       (a₁ , b₁ , y) → a <> a₁ , b <> b₁ , y
 
   iMonadTuple₄ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → ⦃ Monoid c ⦄ →
                  Monad (λ d → Tuple (a ∷ b ∷ c ∷ d ∷ []))
-  iMonadTuple₄ ._>>=_ (a ; b ; c ; x ; tt) k =
+  iMonadTuple₄ = bind= λ (a ; b ; c ; x ; tt) k →
     case k x of λ where
       (a₁ ; b₁ ; c₁ ; y ; tt) → a <> a₁ ; b <> b₁ ; c <> c₁ ; y ; tt
 
@@ -80,7 +102,7 @@ record MonadFail (m : Set → Set) : Set₁ where
     fail : String → m a
     overlap ⦃ super ⦄ : Monad m
 
-open MonadFail ⦃ ... ⦄ public
+open MonadFail ⦃...⦄ public
 
 {-# COMPILE AGDA2HS MonadFail existing-class #-}
 

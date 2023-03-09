@@ -7,6 +7,7 @@ import Control.Monad.State ( StateT, evalStateT, get )
 import qualified Data.Map as M
 
 import Agda.Compiler.Backend
+import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
 import Agda.TypeChecking.Pretty
 import Agda.Utils.Null
 import Agda.Utils.Monad ( whenM )
@@ -22,9 +23,10 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils ( tellExtension )
 import Agda2Hs.Pragma
 
-initCompileEnv :: CompileEnv
-initCompileEnv = CompileEnv
-  { minRecordName = Nothing
+initCompileEnv :: TopLevelModuleName -> CompileEnv
+initCompileEnv tlm = CompileEnv
+  { currModule = tlm
+  , minRecordName = Nothing
   , locals = []
   , copatternsEnabled = False
   }
@@ -32,18 +34,17 @@ initCompileEnv = CompileEnv
 initCompileState :: CompileState
 initCompileState = CompileState { lcaseUsed = 0 }
 
-runC :: C a -> TCM (a, CompileOutput)
-runC = runWriterT
-     . flip runReaderT initCompileEnv
+runC :: TopLevelModuleName -> C a -> TCM (a, CompileOutput)
+runC tlm = runWriterT
+     . flip runReaderT (initCompileEnv tlm)
      . flip evalStateT initCompileState
-
 
 -- Main compile function
 ------------------------
 
 compile :: Options -> ModuleEnv -> IsMain -> Definition ->
   TCM (CompiledDef, CompileOutput)
-compile _ _ _ def = withCurrentModule (qnameModule $ defName def) $ runC $
+compile _ tlm _ def = withCurrentModule (qnameModule $ defName def) $ runC tlm $
   compileAndTag <* postCompile
   where
     tag code = [(nameBindingSite $ qnameName $ defName def, code)]

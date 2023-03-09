@@ -42,7 +42,7 @@ import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
 isSpecialPat :: QName -> Maybe (ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ()))
-isSpecialPat = prettyShow >>> \ case
+isSpecialPat = prettyShow >>> \case
   "Haskell.Prim.Tuple._;_" -> Just tuplePat
   "Agda.Builtin.Int.Int.pos" -> Just posIntPat
   "Agda.Builtin.Int.Int.negsuc" -> Just negSucIntPat
@@ -172,7 +172,7 @@ compilePat p@(VarP o x)
       return $ Hs.PVar () n
 compilePat (ConP h i ps)
   | Just semantics <- isSpecialPat (conName h) = setCurrentRange h $ semantics h i ps
-compilePat (ConP h _ ps) = isUnboxConstructor (conName h) >>= \ case
+compilePat (ConP h _ ps) = isUnboxConstructor (conName h) >>= \case
   Just s -> compileErasedConP ps >>= addPatBang s
   Nothing -> do
     ps <- compilePats ps
