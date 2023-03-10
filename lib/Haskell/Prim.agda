@@ -53,7 +53,7 @@ f $ x = f x
 -- Language constructs
 
 infix -1 case_of_
-case_of_ : {@0 a b : Set ℓ} → (a' : a) → ((a'' : a) → @0 {{ a' ≡ a'' }} → b) → b
+case_of_ : (a' : a) → ((a'' : a) → @0 {{ a' ≡ a'' }} → b) → b
 case x of f = f x
 
 infix -2 if_then_else_
