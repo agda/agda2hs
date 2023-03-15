@@ -92,6 +92,9 @@ lengthNat (_ ∷ xs) = addNat 1 (lengthNat xs)
 
 data ⊥ : Set where
 
+magic : {A : Set} → ⊥ → A
+magic ()
+
 -- Use to bundle up constraints
 data All {a b} {A : Set a} (B : A → Set b) : List A → Set (a ⊔ b) where
   instance

@@ -38,6 +38,11 @@ open import Haskell.Prim.Traversable public
 open import Haskell.Prim.Tuple       public hiding (first; second; _***_)
 open import Haskell.Prim.Word        public
 
+open import Haskell.Law.Bool         public
+open import Haskell.Law.Eq           public
+open import Haskell.Law.Equality     public
+open import Haskell.Law.Maybe        public
+
 -- Problematic features
 --  - [Partial]:  Could pass implicit/instance arguments to prove totality.
 --  - [Float]:    Or Float (Agda floats are Doubles)
