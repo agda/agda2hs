@@ -4,27 +4,21 @@ open import Haskell.Prim
 open import Haskell.Prim.Eq
 open import Haskell.Prim.Maybe
 
+open import Haskell.Law.Eq.Def
 open import Haskell.Law.Equality
 open import Haskell.Law.Maybe
-open import Haskell.Law.Eq.Def
 
-equalityMaybe : ⦃ iEqA : Eq a ⦄ → ⦃ iLawfulEq : IsLawfulEq a ⦄
-  → ∀ (x y : Maybe a) → (x == y) ≡ True → x ≡ y
-equalityMaybe Nothing Nothing _ = refl
-equalityMaybe {{ iLawfulEq = lEq }} (Just x) (Just y) h
-  = cong Just (IsLawfulEq.equality lEq x y h)
-
-nequalityMaybe : ⦃ iEqA : Eq a ⦄ → ⦃ iLawfulEq : IsLawfulEq a ⦄
-  → ∀ (x y : Maybe a) → (x == y) ≡ False → (x ≡ y → ⊥)
-nequalityMaybe Nothing Nothing ()
-nequalityMaybe Nothing (Just y) h = λ()
-nequalityMaybe (Just x) Nothing h = λ()
-nequalityMaybe {{ iLawfulEq = lEq }} (Just x) (Just y) h 
-  = λ eq → (IsLawfulEq.nequality lEq x y h) (injective eq)
+private
+  reflectsJust : ⦃ iEqA : Eq a ⦄ → ⦃ iLawfulEq : IsLawfulEq a ⦄
+    → ∀ (x y : a) → Reflects (Just x ≡ Just y) ((Just x) == (Just y))
+  reflectsJust ⦃ iLawfulEq = lEq ⦄ x y with (x == y) in h
+  ... | True  = ofY (cong Just (IsLawfulEq.equality lEq x y h))
+  ... | False = ofN (λ eq → (IsLawfulEq.nequality lEq x y h) (injective eq))
 
 instance
   iLawfulEqMaybe : ⦃ iEqA : Eq a ⦄ → ⦃ iLawfulEq : IsLawfulEq a ⦄ → IsLawfulEq (Maybe a)
-  iLawfulEqMaybe = λ where
-    .equality → equalityMaybe
-    .nequality → nequalityMaybe
+  iLawfulEqMaybe .isEquality Nothing Nothing = ofY refl
+  iLawfulEqMaybe .isEquality Nothing (Just _) = ofN λ()
+  iLawfulEqMaybe .isEquality (Just _) Nothing = ofN λ()
+  iLawfulEqMaybe .isEquality (Just x) (Just y) = reflectsJust x y
  
