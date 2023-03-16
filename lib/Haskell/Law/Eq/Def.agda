@@ -17,8 +17,13 @@ open import Haskell.Law.Equality
 
 record IsLawfulEq (e : Set) ⦃ iEq : Eq e ⦄ : Set₁ where
   field
-    equality   : ∀ (x y : e) → (x == y) ≡ True → x ≡ y
-    nequality  : ∀ (x y : e) → (x == y) ≡ False → (x ≡ y → ⊥)
+    isEquality : ∀ (x y : e) → Reflects (x ≡ y) (x == y)
+  
+  equality : ∀ (x y : e) → (x == y) ≡ True → x ≡ y
+  equality x y h = extractTrue ⦃ h ⦄ (isEquality x y)
+
+  nequality : ∀ (x y : e) → (x == y) ≡ False → (x ≡ y → ⊥)
+  nequality x y h = extractFalse ⦃ h ⦄ (isEquality x y)
   
   -- contrapositive of nequality
   equality' : ∀ (x y : e) → x ≡ y → (x == y) ≡ True

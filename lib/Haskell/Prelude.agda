@@ -42,6 +42,7 @@ open import Haskell.Law.Bool         public
 open import Haskell.Law.Eq           public
 open import Haskell.Law.Equality     public
 open import Haskell.Law.Maybe        public
+open import Haskell.Law.Ord          public
 
 -- Problematic features
 --  - [Partial]:  Could pass implicit/instance arguments to prove totality.

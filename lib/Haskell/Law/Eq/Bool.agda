@@ -4,12 +4,12 @@ open import Haskell.Prim
 open import Haskell.Prim.Eq
 
 open import Haskell.Law.Eq.Def
+open import Haskell.Law.Equality
 
 instance
   iLawfulEqBool : IsLawfulEq Bool
-  iLawfulEqBool .equality False False _ = refl
-  iLawfulEqBool .equality True True _ = refl
-
-  iLawfulEqBool .nequality False True _ = λ()
-  iLawfulEqBool .nequality True False _ = λ()
+  iLawfulEqBool .isEquality False False = ofY refl
+  iLawfulEqBool .isEquality False True = ofN λ()
+  iLawfulEqBool .isEquality True False = ofN λ()
+  iLawfulEqBool .isEquality True True = ofY refl
  
