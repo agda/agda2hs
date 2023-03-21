@@ -1,4 +1,3 @@
-
 module Haskell.Prim.Applicative where
 
 open import Haskell.Prim

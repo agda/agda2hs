@@ -9,7 +9,7 @@ open import Haskell.Law.Functor.Def
 
 instance
   iLawfulFunctorEither : IsLawfulFunctor (Either a)
-  iLawfulFunctorEither .identity (Left _) = refl
+  iLawfulFunctorEither .identity (Left _)  = refl
   iLawfulFunctorEither .identity (Right _) = refl
 
   iLawfulFunctorEither .composition (Left _)  _ _ = refl

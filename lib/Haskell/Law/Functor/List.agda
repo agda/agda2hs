@@ -1,5 +1,3 @@
-{-# OPTIONS --no-termination-check #-}
-
 module Haskell.Law.Functor.List where
 
 open import Haskell.Prim
@@ -10,10 +8,17 @@ open import Haskell.Prim.Functor
 open import Haskell.Law.Equality
 open import Haskell.Law.Functor.Def
 
+identityList : (fa : List a) → (fmap id) fa ≡ id fa
+identityList [] = refl
+identityList (x ∷ xs) rewrite identityList xs = refl
+
+compositionList : (fa : List a) → (f : a → b) → (g : b → c)
+  → fmap (g ∘ f) fa ≡ (fmap g ∘ fmap f) fa
+compositionList [] _ _ = refl
+compositionList (x ∷ xs) f g rewrite compositionList xs f g = refl
+
 instance
   iLawfulFunctorList : IsLawfulFunctor List
-  iLawfulFunctorList .identity [] = refl
-  iLawfulFunctorList .identity (x ∷ xs) rewrite IsLawfulFunctor.identity iLawfulFunctorList xs = refl
-
-  iLawfulFunctorList .composition [] _ _ = refl
-  iLawfulFunctorList .composition (x ∷ xs) f g rewrite IsLawfulFunctor.composition iLawfulFunctorList xs f g = refl
+  iLawfulFunctorList = λ where
+    .identity → identityList
+    .composition → compositionList
