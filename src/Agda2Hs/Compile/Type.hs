@@ -25,7 +25,7 @@ import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.List ( downFrom )
 import Agda.Utils.Maybe ( ifJustM, fromMaybe )
-import Agda.Utils.Monad ( forMaybeM, ifM, unlessM )
+import Agda.Utils.Monad ( ifM )
 import Agda.Utils.Size ( Sized(size) )
 import Agda.Utils.Functor ( ($>) )
 
@@ -160,7 +160,7 @@ compileDom x a
   | usableModality a = case getHiding a of
       Instance{} -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
       NotHidden  -> uncurry DomType <$> compileType' (unEl $ unDom a)
-      Hidden     -> do
+      Hidden     ->
         ifM (canErase $ unDom a)
             (return DomDropped)
             (genericDocError =<< do text "Implicit type argument not supported: " <+> prettyTCM x)

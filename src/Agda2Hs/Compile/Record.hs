@@ -90,7 +90,7 @@ compileMinRecords def sls = do
 compileRecord :: RecordTarget -> Definition -> C (Hs.Decl ())
 compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
   TelV tel _ <- telViewUpTo recPars (defType def)
-  addContext tel $ do
+  addContext tel $ checkingVars $ do
     checkValidTypeName rName
     binds <- compileTeleBinds tel
     let hd = foldl (Hs.DHApp ()) (Hs.DHead () rName) binds

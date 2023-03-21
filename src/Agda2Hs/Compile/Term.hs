@@ -1,6 +1,6 @@
 module Agda2Hs.Compile.Term where
 
-import Control.Arrow ( (>>>) )
+import Control.Arrow ( (>>>), (&&&) )
 import Control.Monad ( unless )
 import Control.Monad.Reader
 
@@ -191,7 +191,15 @@ compileLiteral (LitString t) = return $ Hs.Lit () $ Hs.String () s s
 compileLiteral l               = genericDocError =<< text "bad term:" <?> prettyTCM (Lit l)
 
 compileVar :: Nat -> C String
-compileVar x = prettyShow . nameConcrete <$> nameOfBV x
+compileVar x = do
+  (d, n) <- (fmap snd &&& fst . unDom) <$> lookupBV x
+  let cn = prettyShow $ nameConcrete n
+  let b | notVisible d   = "hidden"
+        | hasQuantity0 d = "erased"
+        | otherwise      = ""
+  whenM (asks checkVar) $ unless (null b) $ genericDocError =<<
+    text ("Cannot use " <> b <> " variable " <> cn)
+  return cn
 
 compileTerm :: Term -> C (Hs.Exp ())
 compileTerm v = do
