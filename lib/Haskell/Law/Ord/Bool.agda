@@ -43,20 +43,20 @@ instance
   iLawfulOrdBool .lt2gt True  False = refl
   iLawfulOrdBool .lt2gt True  True  = refl
 
-  iLawfulOrdBool .isCompareLt False False = ofN λ()
-  iLawfulOrdBool .isCompareLt False True  = ofY refl
-  iLawfulOrdBool .isCompareLt True  False = ofN λ()
-  iLawfulOrdBool .isCompareLt True  True  = ofN λ()
+  iLawfulOrdBool .compareLt False False = refl
+  iLawfulOrdBool .compareLt False True  = refl
+  iLawfulOrdBool .compareLt True  False = refl
+  iLawfulOrdBool .compareLt True  True  = refl
 
-  iLawfulOrdBool .isCompareGt False False = ofN λ()
-  iLawfulOrdBool .isCompareGt False True  = ofN λ()
-  iLawfulOrdBool .isCompareGt True  False = ofY refl
-  iLawfulOrdBool .isCompareGt True  True  = ofN λ()
+  iLawfulOrdBool .compareGt False False = refl
+  iLawfulOrdBool .compareGt False True  = refl
+  iLawfulOrdBool .compareGt True  False = refl
+  iLawfulOrdBool .compareGt True  True  = refl
 
-  iLawfulOrdBool .isCompareEq False False = ofY refl
-  iLawfulOrdBool .isCompareEq False True  = ofN λ()
-  iLawfulOrdBool .isCompareEq True  False = ofN λ()
-  iLawfulOrdBool .isCompareEq True  True  = ofY refl
+  iLawfulOrdBool .compareEq False False = refl
+  iLawfulOrdBool .compareEq False True  = refl
+  iLawfulOrdBool .compareEq True  False = refl
+  iLawfulOrdBool .compareEq True  True  = refl
 
   iLawfulOrdBool .min2if False False = refl
   iLawfulOrdBool .min2if False True  = refl
