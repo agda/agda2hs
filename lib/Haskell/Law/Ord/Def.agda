@@ -16,9 +16,10 @@ open import Haskell.Prim.Either
 open import Haskell.Prim.Eq
 open import Haskell.Law.Eq
 
+open import Haskell.Law.Bool
 open import Haskell.Law.Equality
 
-record IsLawfulOrd (a : Set) {{iOrd : Ord a}} : Set₁ where
+record IsLawfulOrd (a : Set) ⦃ iOrd : Ord a ⦄ : Set₁ where
   field
     overlap ⦃ super ⦄ : IsLawfulEq a
 
@@ -35,13 +36,13 @@ record IsLawfulOrd (a : Set) {{iOrd : Ord a}} : Set₁ where
     antisymmetry : ∀ (x y : a) → ((x <= y) && (y <= x)) ≡ True → (x == y) ≡ True
 
     -- x >= y = y <= x
-    lte2gte : ∀ (x y : a) → (x >= y) ≡ (y <= x)
+    lte2gte : ∀ (x y : a) → (x <= y) ≡ (y >= x)
 
     -- x < y = x <= y && x /= y
-    lNotLteNeq : ∀ (x y : a) → (x < y) ≡ (x <= y && x /= y)
+    lt2LteNeq : ∀ (x y : a) → (x < y) ≡ (x <= y && x /= y)
 
     -- x > y = y < x
-    lt2gt : ∀ (x y : a) → (x > y) ≡ (y < x)
+    lt2gt : ∀ (x y : a) → (x < y) ≡ (y > x)
 
     -- x < y = compare x y == LT
     compareLt : ∀ (x y : a) → (x < y) ≡ (compare x y == LT)
@@ -60,23 +61,111 @@ record IsLawfulOrd (a : Set) {{iOrd : Ord a}} : Set₁ where
         
 open IsLawfulOrd ⦃ ... ⦄ public
 
-instance
-  postulate iLawfulOrdNat : IsLawfulOrd Nat
+--------------------------------------------------
+-- Some more helper laws
 
-  postulate iLawfulOrdInteger : IsLawfulOrd Integer
+eq2nlt : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
+  → ∀ (x y : a) → (x == y) ≡ True → (x < y) ≡ False
+eq2nlt x y h 
+  rewrite compareEq x y
+    | compareLt x y
+    | equality (compare x y) EQ h
+  = refl
 
-  postulate iLawfulOrdInt : IsLawfulOrd Int
+eq2ngt : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
+  → ∀ (x y : a) → (x == y) ≡ True → (x > y) ≡ False
+eq2ngt x y h
+  rewrite compareEq x y
+    | compareGt x y
+    | equality (compare x y) EQ h
+  = refl
 
-  postulate iLawfulOrdWord : IsLawfulOrd Word
+gte2GtEq : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
+  → ∀ (x y : a) → (x >= y) ≡ (x > y || x == y)
+gte2GtEq x y = trustMe -- TODO
 
-  postulate iLawfulOrdDouble : IsLawfulOrd Double
+gte2nlt : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
+  → ∀ (x y : a) → (x >= y) ≡ not (x < y)
+gte2nlt x y 
+  rewrite gte2GtEq x y
+    | compareGt x y
+    | compareEq x y
+    | sym (compareLt x y)
+  = trustMe -- TODO
 
-  postulate iLawfulOrdChar : IsLawfulOrd Char
+gte2nLT : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
+  → ∀ (x y : a) → (x >= y) ≡ (compare x y /= LT)
+gte2nLT x y
+  rewrite gte2nlt x y
+    | compareLt x y
+  = refl
 
-  postulate iLawfulOrdTuple₀ : IsLawfulOrd (Tuple [])
+lte2LtEq : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
+  → ∀ (x y : a) → (x <= y) ≡ (x < y || x == y)
+lte2LtEq x y = trustMe -- TODO
+  
+lte2ngt : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
+  → ∀ (x y : a) → (x <= y) ≡ not (x > y)
+lte2ngt x y
+  rewrite lte2LtEq x y
+    | compareLt x y
+    | compareEq x y
+    | sym (compareGt x y)
+  = trustMe -- TODO
 
-  postulate iLawfulOrdTuple : ⦃ iOrdA : Ord a ⦄ → ⦃ iLawfulOrdA : Ord (Tuple as) ⦄ → ⦃ IsLawfulOrd a ⦄ → ⦃ IsLawfulOrd (Tuple as) ⦄ → IsLawfulOrd (Tuple (a ∷ as))
+lte2nGT : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
+  → ∀ (x y : a) → (x <= y) ≡ (compare x y /= GT)
+lte2nGT x y
+  rewrite lte2ngt x y
+    | compareGt x y
+  = refl
 
-  postulate iLawfulOrdList : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄ → IsLawfulOrd (List a)
+eq2lte : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
+  → ∀ (x y : a) → (x == y) ≡ True → (x <= y) ≡ True
+eq2lte x y h
+  rewrite lte2ngt x y
+    | eq2ngt x y h
+  = refl
 
-  postulate iLawfulOrdEither : ⦃ iOrdA : Ord a ⦄ → ⦃ iOrdB : Ord b ⦄ →  ⦃ IsLawfulOrd a ⦄ → ⦃ IsLawfulOrd b ⦄ → IsLawfulOrd (Either a b)
+lt2lte : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
+  → ∀ (x y : a) → (x < y) ≡ True → (x <= y) ≡ True
+lt2lte x y h = &&-rightTrue' (x < y) (x <= y) (x /= y) (lt2LteNeq x y) h
+
+eq2gte : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
+  → ∀ (x y : a) → (x == y) ≡ True → (x >= y) ≡ True
+eq2gte x y h
+  rewrite gte2nlt x y
+    | eq2nlt x y h
+  = refl
+
+gt2gte : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
+  → ∀ (x y : a) → (x > y) ≡ True → (x >= y) ≡ True
+gt2gte x y h
+  rewrite sym (lt2gt y x) 
+    | sym (lt2lte y x h)
+    | lte2gte y x
+  = refl
+
+--------------------------------------------------
+-- Postulated instances
+
+postulate instance
+  iLawfulOrdNat : IsLawfulOrd Nat
+
+  iLawfulOrdInteger : IsLawfulOrd Integer
+
+  iLawfulOrdInt : IsLawfulOrd Int
+
+  iLawfulOrdWord : IsLawfulOrd Word
+
+  iLawfulOrdDouble : IsLawfulOrd Double
+
+  iLawfulOrdChar : IsLawfulOrd Char
+
+  iLawfulOrdTuple₀ : IsLawfulOrd (Tuple [])
+
+  iLawfulOrdTuple : ⦃ iOrdA : Ord a ⦄ → ⦃ iLawfulOrdA : Ord (Tuple as) ⦄ → ⦃ IsLawfulOrd a ⦄ → ⦃ IsLawfulOrd (Tuple as) ⦄ → IsLawfulOrd (Tuple (a ∷ as))
+
+  iLawfulOrdList : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄ → IsLawfulOrd (List a)
+
+  iLawfulOrdEither : ⦃ iOrdA : Ord a ⦄ → ⦃ iOrdB : Ord b ⦄ →  ⦃ IsLawfulOrd a ⦄ → ⦃ IsLawfulOrd b ⦄ → IsLawfulOrd (Either a b)

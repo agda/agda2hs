@@ -70,25 +70,25 @@ eqNegation : ⦃ iEq : Eq e ⦄ → ⦃ IsLawfulEq e ⦄
            → ∀ { x y : e } → (x /= y) ≡ not (x == y)
 eqNegation = refl
 
-instance
-  postulate iLawfulEqNat : IsLawfulEq Nat
+postulate instance
+  iLawfulEqNat : IsLawfulEq Nat
 
-  postulate iLawfulEqInteger : IsLawfulEq Integer
+  iLawfulEqInteger : IsLawfulEq Integer
 
-  postulate iLawfulEqInt : IsLawfulEq Int
+  iLawfulEqInt : IsLawfulEq Int
 
-  postulate iLawfulEqWord : IsLawfulEq Word
+  iLawfulEqWord : IsLawfulEq Word
 
-  postulate iLawfulEqDouble : IsLawfulEq Double
+  iLawfulEqDouble : IsLawfulEq Double
 
-  postulate iLawfulEqChar : IsLawfulEq Char
+  iLawfulEqChar : IsLawfulEq Char
 
-  postulate iLawfulEqUnit : IsLawfulEq ⊤
+  iLawfulEqUnit : IsLawfulEq ⊤
 
-  postulate iLawfulEqTuple₀ : IsLawfulEq (Tuple [])
+  iLawfulEqTuple₀ : IsLawfulEq (Tuple [])
 
-  postulate iLawfulEqTuple : ⦃ iEqA : Eq a ⦄ → ⦃ iEqAs : Eq (Tuple as) ⦄ → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq (Tuple as) ⦄ → IsLawfulEq (Tuple (a ∷ as))
+  iLawfulEqTuple : ⦃ iEqA : Eq a ⦄ → ⦃ iEqAs : Eq (Tuple as) ⦄ → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq (Tuple as) ⦄ → IsLawfulEq (Tuple (a ∷ as))
 
-  postulate iLawfulEqList : ⦃ iEqA : Eq a ⦄ → ⦃ IsLawfulEq a ⦄ → IsLawfulEq (List a)
+  iLawfulEqList : ⦃ iEqA : Eq a ⦄ → ⦃ IsLawfulEq a ⦄ → IsLawfulEq (List a)
 
-  postulate iLawfulEqEither : ⦃ iEqA : Eq a ⦄ → ⦃ iEqB : Eq b ⦄ → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄ → Eq (Either a b)
+  iLawfulEqEither : ⦃ iEqA : Eq a ⦄ → ⦃ iEqB : Eq b ⦄ → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄ → Eq (Either a b)

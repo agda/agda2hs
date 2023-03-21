@@ -49,15 +49,15 @@ instance
   iLawfulOrdOrdering .lte2gte GT EQ = refl
   iLawfulOrdOrdering .lte2gte GT GT = refl
 
-  iLawfulOrdOrdering .lNotLteNeq LT LT = refl
-  iLawfulOrdOrdering .lNotLteNeq LT EQ = refl
-  iLawfulOrdOrdering .lNotLteNeq LT GT = refl
-  iLawfulOrdOrdering .lNotLteNeq EQ LT = refl
-  iLawfulOrdOrdering .lNotLteNeq EQ EQ = refl
-  iLawfulOrdOrdering .lNotLteNeq EQ GT = refl
-  iLawfulOrdOrdering .lNotLteNeq GT LT = refl
-  iLawfulOrdOrdering .lNotLteNeq GT EQ = refl
-  iLawfulOrdOrdering .lNotLteNeq GT GT = refl
+  iLawfulOrdOrdering .lt2LteNeq LT LT = refl
+  iLawfulOrdOrdering .lt2LteNeq LT EQ = refl
+  iLawfulOrdOrdering .lt2LteNeq LT GT = refl
+  iLawfulOrdOrdering .lt2LteNeq EQ LT = refl
+  iLawfulOrdOrdering .lt2LteNeq EQ EQ = refl
+  iLawfulOrdOrdering .lt2LteNeq EQ GT = refl
+  iLawfulOrdOrdering .lt2LteNeq GT LT = refl
+  iLawfulOrdOrdering .lt2LteNeq GT EQ = refl
+  iLawfulOrdOrdering .lt2LteNeq GT GT = refl
 
   iLawfulOrdOrdering .lt2gt LT LT = refl
   iLawfulOrdOrdering .lt2gt LT EQ = refl
