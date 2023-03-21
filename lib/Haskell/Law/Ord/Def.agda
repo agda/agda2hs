@@ -44,37 +44,19 @@ record IsLawfulOrd (a : Set) {{iOrd : Ord a}} : Set₁ where
     lt2gt : ∀ (x y : a) → (x > y) ≡ (y < x)
 
     -- x < y = compare x y == LT
-    isCompareLt : ∀ (x y : a) → Reflects (compare x y ≡ LT) (x < y)
+    compareLt : ∀ (x y : a) → (x < y) ≡ (compare x y == LT)
 
     -- x > y = compare x y == GT
-    isCompareGt : ∀ (x y : a) → Reflects (compare x y ≡ GT) (x > y)
+    compareGt : ∀ (x y : a) → (x > y) ≡ (compare x y == GT)
 
     -- x == y = compare x y == EQ
-    isCompareEq : ∀ (x y : a) → Reflects (compare x y ≡ EQ) (x == y)
+    compareEq : ∀ (x y : a) → (x == y) ≡ (compare x y == EQ)
 
     -- min x y == if x <= y then x else y = True
     min2if : ∀ (x y : a) → ((min x y) == (if (x <= y) then x else y)) ≡ True
 
     -- max x y == if x >= y then x else y = True
     max2if : ∀ (x y : a) → ((max x y) == (if (x >= y) then x else y)) ≡ True
-
-  compareLt : ∀ (x y : a) → (x < y) ≡ True → compare x y ≡ LT
-  compareLt x y h = extractTrue ⦃ h ⦄ (isCompareLt x y)
-
-  ncompareLt : ∀ (x y : a) → (x < y) ≡ False → (compare x y ≡ LT → ⊥)
-  ncompareLt x y h = extractFalse ⦃ h ⦄ (isCompareLt x y)
-
-  compareGt : ∀ (x y : a) → (x > y) ≡ True → compare x y ≡ GT
-  compareGt x y h = extractTrue ⦃ h ⦄ (isCompareGt x y)
-
-  ncompareGt : ∀ (x y : a) → (x > y) ≡ False → (compare x y ≡ GT → ⊥)
-  ncompareGt x y h = extractFalse ⦃ h ⦄ (isCompareGt x y)
-
-  compareEq : ∀ (x y : a) → (x == y) ≡ True → compare x y ≡ EQ
-  compareEq x y h = extractTrue ⦃ h ⦄ (isCompareEq x y)
-
-  ncompareEq : ∀ (x y : a) → (x == y) ≡ False → (compare x y ≡ EQ → ⊥)
-  ncompareEq x y h = extractFalse ⦃ h ⦄ (isCompareEq x y)
         
 open IsLawfulOrd ⦃ ... ⦄ public
 
