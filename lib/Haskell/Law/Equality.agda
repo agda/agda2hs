@@ -2,6 +2,11 @@ module Haskell.Law.Equality where
 
 open import Haskell.Prim
 
+open import Agda.Builtin.TrustMe
+
+--------------------------------------------------
+-- Basic Laws
+
 cong : {A B : Set} → ∀ (f : A → B) {x y} → x ≡ y → f x ≡ f y
 cong f refl = refl
 
@@ -10,6 +15,12 @@ sym refl = refl
 
 trans : ∀ {A : Set} {x y z : A} → x ≡ y → y ≡ z → x ≡ z
 trans refl refl = refl
+
+--------------------------------------------------
+-- Scary Things
+
+trustMe : ∀ {a} {A : Set a} {x y : A} → x ≡ y
+trustMe = primTrustMe
 
 --------------------------------------------------
 -- ≡-Reasoning

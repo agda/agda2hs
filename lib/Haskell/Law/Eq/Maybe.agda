@@ -9,14 +9,14 @@ open import Haskell.Law.Equality
 open import Haskell.Law.Maybe
 
 private
-  reflectsJust : ⦃ iEqA : Eq a ⦄ → ⦃ iLawfulEq : IsLawfulEq a ⦄
+  reflectsJust : ⦃ iEqA : Eq a ⦄ → ⦃ IsLawfulEq a ⦄
     → ∀ (x y : a) → Reflects (Just x ≡ Just y) ((Just x) == (Just y))
-  reflectsJust ⦃ iLawfulEq = lEq ⦄ x y with (x == y) in h
-  ... | True  = ofY (cong Just (IsLawfulEq.equality lEq x y h))
-  ... | False = ofN (λ eq → (IsLawfulEq.nequality lEq x y h) (injective eq))
+  reflectsJust x y with (x == y) in h
+  ... | True  = ofY (cong Just (equality x y h))
+  ... | False = ofN (λ eq → (nequality x y h) (injective eq))
 
 instance
-  iLawfulEqMaybe : ⦃ iEqA : Eq a ⦄ → ⦃ iLawfulEq : IsLawfulEq a ⦄ → IsLawfulEq (Maybe a)
+  iLawfulEqMaybe : ⦃ iEqA : Eq a ⦄ → ⦃ IsLawfulEq a ⦄ → IsLawfulEq (Maybe a)
   iLawfulEqMaybe .isEquality Nothing Nothing = ofY refl
   iLawfulEqMaybe .isEquality Nothing (Just _) = ofN λ()
   iLawfulEqMaybe .isEquality (Just _) Nothing = ofN λ()

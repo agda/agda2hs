@@ -1,5 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
-
 module Haskell.Law.Ord.Bool where
 
 open import Haskell.Prim
@@ -33,10 +31,10 @@ instance
   iLawfulOrdBool .lte2gte True  False = refl
   iLawfulOrdBool .lte2gte True  True  = refl
 
-  iLawfulOrdBool .lNotLteNeq False False = refl
-  iLawfulOrdBool .lNotLteNeq False True  = refl
-  iLawfulOrdBool .lNotLteNeq True  False = refl
-  iLawfulOrdBool .lNotLteNeq True  True  = refl
+  iLawfulOrdBool .lt2LteNeq False False = refl
+  iLawfulOrdBool .lt2LteNeq False True  = refl
+  iLawfulOrdBool .lt2LteNeq True  False = refl
+  iLawfulOrdBool .lt2LteNeq True  True  = refl
 
   iLawfulOrdBool .lt2gt False False = refl
   iLawfulOrdBool .lt2gt False True  = refl
