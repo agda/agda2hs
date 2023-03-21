@@ -29,6 +29,7 @@ initCompileEnv tlm = CompileEnv
   , minRecordName = Nothing
   , locals = []
   , copatternsEnabled = False
+  , checkVar = False
   }
 
 initCompileState :: CompileState
