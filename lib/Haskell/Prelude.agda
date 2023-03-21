@@ -38,6 +38,7 @@ open import Haskell.Prim.Traversable public
 open import Haskell.Prim.Tuple       public hiding (first; second; _***_)
 open import Haskell.Prim.Word        public
 
+open import Haskell.Law.Applicative  public
 open import Haskell.Law.Bool         public
 open import Haskell.Law.Eq           public
 open import Haskell.Law.Equality     public
