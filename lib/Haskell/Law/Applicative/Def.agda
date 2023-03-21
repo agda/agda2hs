@@ -15,7 +15,7 @@ open import Haskell.Prim.Monoid
 record IsLawfulApplicative (func : Set → Set) ⦃ iAppF : Applicative func ⦄ : Set₁ where
   field
     -- Identity: pure id <*> v = v
-    identity : (v : func a) → ((Applicative.pure iAppF id) <*> v) ≡ v
+    identity : (v : func a) → (pure id <*> v) ≡ v
 
     -- Composition: pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
     composition : (u : func (b → c)) (v : func (a → b)) (w : func a) 
@@ -28,11 +28,11 @@ record IsLawfulApplicative (func : Set → Set) ⦃ iAppF : Applicative func ⦄
 
     -- Interchange: u <*> pure y = pure ($ y) <*> u
     interchange : (u : func (a → b)) → (y : a) 
-      → (Applicative._<*>_ iAppF u (Applicative.pure iAppF y)) ≡ (Applicative._<*>_ iAppF (Applicative.pure iAppF (_$ y)) u)
+      → (Applicative._<*>_ iAppF u (pure y)) ≡ (pure (_$ y) <*> u)
 
     -- fmap f x = pure f <*> x
     functor : (f : a → b) → (x : func a) 
-      → (Functor.fmap (Applicative.super iAppF) f x) ≡ (Applicative._<*>_ iAppF (Applicative.pure iAppF f) x)
+      → (fmap f x) ≡ ((pure f) <*> x)
   
 open IsLawfulApplicative ⦃ ... ⦄ public
 

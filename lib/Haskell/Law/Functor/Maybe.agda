@@ -9,7 +9,7 @@ open import Haskell.Law.Functor.Def
 
 instance
   iLawfulFunctorMaybe : IsLawfulFunctor Maybe
-  iLawfulFunctorMaybe .identity Nothing = refl
+  iLawfulFunctorMaybe .identity Nothing  = refl
   iLawfulFunctorMaybe .identity (Just _) = refl
 
   iLawfulFunctorMaybe .composition Nothing  _ _ = refl
