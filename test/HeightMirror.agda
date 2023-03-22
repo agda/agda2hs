@@ -17,9 +17,6 @@ data Tree (a : Set) : (@0 height : Nat) → Set where
 
 {-# COMPILE AGDA2HS Tree #-}
 
-@0 cong : (f : a → b) → {@0 x y : a} → @0 x ≡ y → f x ≡ f y
-cong f refl = refl
-
 @0 max-comm : (@0 l r : Nat) → max l r ≡ max r l
 max-comm zero zero = refl
 max-comm zero (suc r) = refl

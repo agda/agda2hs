@@ -1,5 +1,3 @@
-{-# OPTIONS --erased-cubical #-}
-
 open import Haskell.Prelude
 
 open import Agda.Primitive

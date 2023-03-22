@@ -1,5 +1,3 @@
-{-# OPTIONS --erased-cubical #-}
-
 module CubicalTests where
 
 import StreamFusion

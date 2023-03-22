@@ -47,3 +47,10 @@ open import Haskell.Law.Equality
 
 --------------------------------------------------
 -- not
+
+not-not : ∀ (a : Bool) → not (not a) ≡ a
+not-not False = refl
+not-not True = refl
+
+not-binarity : ∀ (a b : Bool) → a ≡ not b → not a ≡ b
+not-binarity .(not b) b refl = not-not b
