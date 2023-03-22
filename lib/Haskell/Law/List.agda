@@ -9,3 +9,7 @@ open import Haskell.Prim.List
 ++-[] : ∀ (xs : List a) → xs ++ [] ≡ xs
 ++-[] [] = refl
 ++-[] (x ∷ xs) rewrite ++-[] xs = refl
+
+[]-++ : ∀ (xs : List a) → xs ++ [] ≡ xs
+[]-++ [] = refl
+[]-++ (x ∷ xs) rewrite []-++ xs = refl
