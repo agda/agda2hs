@@ -5,9 +5,13 @@ open import Haskell.Prim.Functor
 
 open import Haskell.Prim.Applicative
 open import Haskell.Prim.Monoid
+
+open import Haskell.Law.Functor
     
 record IsLawfulApplicative (func : Set → Set) ⦃ iAppF : Applicative func ⦄ : Set₁ where
   field
+    overlap ⦃ super ⦄ : IsLawfulFunctor func
+
     -- Identity: pure id <*> v = v
     identity : (v : func a) → (pure id <*> v) ≡ v
 

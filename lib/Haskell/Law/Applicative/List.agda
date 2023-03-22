@@ -9,6 +9,7 @@ open import Haskell.Prim.Functor
 open import Haskell.Law.Applicative.Def
 
 open import Haskell.Law.Equality
+open import Haskell.Law.Functor.List
 open import Haskell.Law.List
 
 private

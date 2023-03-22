@@ -7,6 +7,8 @@ open import Haskell.Prim.Monad
 
 open import Haskell.Law.Monad.Def
 
+open import Haskell.Law.Applicative.Either
+
 instance
   iLawfulMonadEither : IsLawfulMonad (Either a)
   iLawfulMonadEither .leftIdentity a k = refl

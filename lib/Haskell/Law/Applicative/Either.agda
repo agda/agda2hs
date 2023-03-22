@@ -7,6 +7,8 @@ open import Haskell.Prim.Applicative
 
 open import Haskell.Law.Applicative.Def
 
+open import Haskell.Law.Functor.Either
+
 instance
   iLawfulApplicativeEither : IsLawfulApplicative (Either a)
   iLawfulApplicativeEither .identity (Left _)  = refl

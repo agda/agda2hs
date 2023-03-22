@@ -5,8 +5,10 @@ open import Haskell.Prim.List
 
 open import Haskell.Prim.Monad
 
-open import Haskell.Law.Equality
 open import Haskell.Law.Monad.Def
+
+open import Haskell.Law.Applicative.List
+open import Haskell.Law.Equality
 
 instance
   iLawfulMonadList : IsLawfulMonad List

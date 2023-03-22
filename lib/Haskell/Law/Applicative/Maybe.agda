@@ -7,6 +7,8 @@ open import Haskell.Prim.Applicative
 
 open import Haskell.Law.Applicative.Def
 
+open import Haskell.Law.Functor.Maybe
+
 instance
   iLawfulApplicativeMaybe : IsLawfulApplicative Maybe
   iLawfulApplicativeMaybe .identity Nothing  = refl
