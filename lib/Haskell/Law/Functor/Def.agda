@@ -11,10 +11,10 @@ open import Haskell.Prim.Functor
 record IsLawfulFunctor (func : Set → Set) ⦃ iFuncF : Functor func ⦄ : Set₁ where
   field
     -- Identity: fmap id == id
-    identity : (fa : func a) → (fmap id) fa ≡ id fa
+    identity : {a : Set} → (fa : func a) → (fmap id) fa ≡ id fa
 
     -- Composition: fmap (f . g) == fmap f . fmap g
-    composition : (fa : func a) → (f : a → b) → (g : b → c)
+    composition : {a b c : Set} → (fa : func a) → (f : a → b) → (g : b → c)
       → fmap (g ∘ f) fa ≡ (fmap g ∘ fmap f) fa
         
 open IsLawfulFunctor ⦃ ... ⦄ public
