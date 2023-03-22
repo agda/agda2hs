@@ -1,13 +1,7 @@
 module Haskell.Law.Applicative.Def where
 
 open import Haskell.Prim
-open import Haskell.Prim.Either
-open import Haskell.Prim.Foldable
 open import Haskell.Prim.Functor
-open import Haskell.Prim.List
-open import Haskell.Prim.Maybe
-open import Haskell.Prim.Monoid
-open import Haskell.Prim.Tuple
 
 open import Haskell.Prim.Applicative
 open import Haskell.Prim.Monoid
