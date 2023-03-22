@@ -1,9 +1,6 @@
 module Haskell.Law.Functor.Def where
 
 open import Haskell.Prim
-open import Haskell.Prim.Either
-open import Haskell.Prim.List
-open import Haskell.Prim.Maybe
 open import Haskell.Prim.Tuple
 
 open import Haskell.Prim.Functor

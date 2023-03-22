@@ -45,6 +45,7 @@ open import Haskell.Law.Equality     public
 open import Haskell.Law.Functor      public
 open import Haskell.Law.Maybe        public
 open import Haskell.Law.Monad        public
+open import Haskell.Law.Monoid       public
 open import Haskell.Law.Ord          public
 
 -- Problematic features
