@@ -7,6 +7,8 @@ open import Haskell.Prim.Monad
 
 open import Haskell.Law.Monad.Def
 
+open import Haskell.Law.Applicative.Maybe
+
 instance
   iLawfulMonadMaybe : IsLawfulMonad Maybe
   iLawfulMonadMaybe .leftIdentity a k = refl

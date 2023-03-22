@@ -4,8 +4,12 @@ open import Haskell.Prim
 
 open import Haskell.Prim.Monad
 
+open import Haskell.Law.Applicative
+
 record IsLawfulMonad (func : Set → Set) ⦃ iMonadF : Monad func ⦄ : Set₁ where
   field
+    overlap ⦃ super ⦄ : IsLawfulApplicative func
+
     -- Left identity: return a >>= k = k a
     leftIdentity : {a : Set} → (a' : a) → (k : a → func b) → ((return a') >>= k) ≡ k a'
 
