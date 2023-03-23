@@ -49,6 +49,7 @@ import AutoLambdaCaseInBind
 import WitnessedFlows
 import Kinds
 import LawfulOrd
+import Deriving
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -98,4 +99,5 @@ import AutoLambdaCaseInBind
 import WitnessedFlows
 import Kinds
 import LawfulOrd
+import Deriving
 #-}
