@@ -8,7 +8,7 @@ import Data.Maybe ( isNothing, mapMaybe )
 import qualified Data.HashMap.Strict as HMap
 
 import qualified Language.Haskell.Exts.Syntax as Hs
-import Language.Haskell.Exts.Extension ( KnownExtension( StandaloneDeriving ) )
+import Language.Haskell.Exts.Extension as Hs
 
 import Agda.Compiler.Backend
 import Agda.Compiler.Common ( curDefs, sortDefs )
@@ -43,11 +43,24 @@ enableCopatterns = local $ \e -> e { copatternsEnabled = True }
 disableCopatterns :: C a -> C a
 disableCopatterns = local $ \e -> e { copatternsEnabled = False }
 
+enableStrategies :: Maybe (Hs.DerivStrategy ()) -> C ()
+enableStrategies Nothing = return ()
+enableStrategies (Just s) = do
+  tellExtension Hs.DerivingStrategies
+  enableStrategy s
+
+enableStrategy :: Hs.DerivStrategy () -> C ()
+enableStrategy (Hs.DerivStock ())    = return () -- is included in GHC
+enableStrategy (Hs.DerivAnyclass ()) = tellExtension Hs.DeriveAnyClass -- since 7.10.1
+enableStrategy (Hs.DerivNewtype ())  = tellExtension Hs.GeneralizedNewtypeDeriving -- since 6.8.1.
+enableStrategy (Hs.DerivVia () t)    = tellExtension Hs.DerivingVia -- since 8.6.1
+
 compileInstance :: InstanceTarget -> Definition -> C (Hs.Decl ())
-compileInstance ToDerivation def@Defn{..} = do
-  tellExtension StandaloneDeriving
+compileInstance (ToDerivation strategy) def@Defn{..} = do
+  tellExtension Hs.StandaloneDeriving
+  enableStrategies strategy
   ir <- compileInstRule [] (unEl defType)
-  return $ Hs.DerivDecl () Nothing Nothing ir
+  return $ Hs.DerivDecl () strategy Nothing ir
 compileInstance ToDefinition def@Defn{..} =
   enableCopatterns $ setCurrentRangeQ defName $ do
     ir <- compileInstRule [] (unEl defType)
