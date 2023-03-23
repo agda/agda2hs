@@ -496,6 +496,52 @@ data Optional a = Of a
 deriving instance (Eq a) => Eq (Optional a)
 ```
 
+Or even with deriving strategies, by modifying the pragma:
+
+Agda:
+```agda
+postulate instance iPlanetShow : Show Planet
+
+{-# COMPILE AGDA2HS iPlanetShow strategy:stock #-}
+
+record Clazz (a : Set) : Set where
+  field
+    foo : a → Int
+    bar : a → Bool
+
+open Clazz ⦃...⦄ public
+
+{-# COMPILE AGDA2HS Clazz class #-}
+
+postulate instance iPlanetClazz : Clazz Planet
+
+{-# COMPILE AGDA2HS iPlanetClazz strategy:anyclass #-}
+
+data Duo (a b : Set) : Set where
+  MkDuo : (a × b) → Duo a b
+
+{-# COMPILE AGDA2HS Duo newtype #-}
+
+postulate instance iDuoEq : ⦃ Eq a ⦄ → ⦃ Eq b ⦄ → Eq (Duo a b)
+
+{-# COMPILE AGDA2HS iDuoEq strategy:newtype #-}
+```
+
+Haskell:
+```haskell
+deriving stock instance Show Planet
+
+class Clazz a where
+    foo :: a -> Int
+    bar :: a -> Bool
+
+deriving anyclass instance Clazz Planet
+
+newtype Duo a b = MkDuo (a, b)
+
+deriving newtype instance (Eq a, Eq b) => Eq (Duo a b)
+```
+
 ## Partial Application
 
 Agda:
