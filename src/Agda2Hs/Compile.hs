@@ -76,8 +76,10 @@ compile _ tlm _ def = withCurrentModule (qnameModule $ defName def) $ runC tlm $
           tag <$> compileData ToDataNewType ds def
         (DefaultPragma ds, _, Datatype{}) ->
           tag <$> compileData ToData ds def
+        (DefaultPragma _, Just _, Axiom{}) ->
+          tag . single <$> compileInstance ToDerivation def
         (DefaultPragma _, Just _, _) ->
-          tag . single <$> compileInstance def
+          tag . single <$> compileInstance ToDefinition def
         (DefaultPragma _, _, Axiom{}) ->
           tag <$> compilePostulate def
         (DefaultPragma _, _, Function{}) ->

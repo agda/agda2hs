@@ -103,3 +103,5 @@ type LocalDecls = [QName]
 data DataTarget = ToData | ToDataNewType
 
 data RecordTarget = ToRecord [Hs.Deriving ()] | ToRecordNewType [Hs.Deriving ()] | ToClass [String]
+
+data InstanceTarget = ToDefinition | ToDerivation

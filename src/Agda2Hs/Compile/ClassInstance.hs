@@ -42,16 +42,20 @@ enableCopatterns = local $ \e -> e { copatternsEnabled = True }
 disableCopatterns :: C a -> C a
 disableCopatterns = local $ \e -> e { copatternsEnabled = False }
 
-compileInstance :: Definition -> C (Hs.Decl ())
-compileInstance def@Defn{..} = enableCopatterns $ setCurrentRangeQ defName $ do
+compileInstance :: InstanceTarget -> Definition -> C (Hs.Decl ())
+compileInstance ToDerivation def@Defn{..} = do
   ir <- compileInstRule [] (unEl defType)
-  withFunctionLocals defName $ do
-    (ds, rs) <- concatUnzip
-            <$> mapM (compileInstanceClause (qnameModule defName)) funClauses
-    when (length (nub rs) > 1) $
-      genericDocError =<< fsep (pwords "More than one minimal record used.")
-    return $ Hs.InstDecl () Nothing ir (Just ds)
-  where Function{..} = theDef
+  return $ Hs.DerivDecl () Nothing Nothing ir
+compileInstance ToDefinition def@Defn{..} =
+  enableCopatterns $ setCurrentRangeQ defName $ do
+    ir <- compileInstRule [] (unEl defType)
+    withFunctionLocals defName $ do
+      (ds, rs) <- concatUnzip
+              <$> mapM (compileInstanceClause (qnameModule defName)) funClauses
+      when (length (nub rs) > 1) $
+        genericDocError =<< fsep (pwords "More than one minimal record used.")
+      return $ Hs.InstDecl () Nothing ir (Just ds)
+    where Function{..} = theDef
 
 compileInstRule :: [Hs.Asst ()] -> Term -> C (Hs.InstRule ())
 compileInstRule cs ty = case unSpine1 ty of
