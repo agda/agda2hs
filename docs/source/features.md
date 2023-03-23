@@ -305,7 +305,9 @@ repeat :: a -> Stream a
 repeat x = Cons x (repeat x)
 ```
 
-## Constrained Typeclass Instance
+## Type Classes
+
+### Constrained Typeclass Instance
 
 Agda:
 ```agda
@@ -336,7 +338,7 @@ instance Class1 a => Class2 a where
     field2 = field1
 ```
 
-## Constrained Typeclass
+### Constrained Typeclass
 
 Agda:
 ```agda
@@ -361,7 +363,7 @@ class Class1 a => Class2 a where
     field2 :: a 
 ```
 
-## Default Typeclass Field Implementations
+### Default Typeclass Field Implementations
 
 Agda:
 ```agda
@@ -407,7 +409,7 @@ class Ord a where
     x > y = y < x
 ```
 
-## Coppaterns
+### Coppaterns in Type Class Instances
 
 Agda copatterns are *not* supported by agda2hs in full generality. They *can* be
 used to define fields of typeclass instances, for example:
@@ -432,6 +434,68 @@ instance HasId () where
     id x = x
 ```
 
+### Deriving Type Class Instances
+
+It is also possible to include a standalone `deriving` clause by postulating the instance of a type class.
+
+Agda:
+```agda
+data Planet : Set where
+  Mercury : Planet
+  Venus   : Planet
+  Earth   : Planet
+  Mars    : Planet
+  Jupiter : Planet
+  Saturn  : Planet
+  Uranus  : Planet
+  Neptune : Planet
+  Pluto   : Planet
+
+{-# COMPILE AGDA2HS Planet #-}
+
+postulate instance iPlanetEq : Eq Planet
+
+{-# COMPILE AGDA2HS iPlanetEq #-}
+```
+
+Haskell:
+```haskell
+data Planet = Mercury
+            | Venus
+            | Earth
+            | Mars
+            | Jupiter
+            | Saturn
+            | Uranus
+            | Neptune
+            | Pluto
+
+deriving instance Eq Planet
+```
+
+This is also possible with more complicated instance definitions, such as in the example below.
+
+Agda:
+```agda
+data Optional (a : Set) : Set where
+  Of    : a → Optional a
+  Empty : Optional a
+
+{-# COMPILE AGDA2HS Optional #-}
+
+postulate instance iOptionalEq : ⦃ Eq a ⦄ → Eq (Optional a)
+
+{-# COMPILE AGDA2HS iOptionalEq #-}
+```
+
+Haskell:
+```haskell
+data Optional a = Of a
+                | Empty
+
+deriving instance (Eq a) => Eq (Optional a)
+```
+
 ## Partial Application
 
 Agda:
@@ -447,7 +511,9 @@ add1 :: Nat -> Nat
 add1 = (1 +)
 ```
 
-## Mutually Recursive Functions
+## Mutual Recursion
+
+### Mutually Recursive Functions
 
 Agda
 ```agda
@@ -472,7 +538,7 @@ odd Zero = False
 odd (Suc n) = even n 
 ```
 
-## Mutually Recursive Datatype and Function
+### Mutually Recursive Datatype and Function
 
 Agda
 ```agda
