@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving #-}
 module Deriving where
 
 data Planet = Mercury

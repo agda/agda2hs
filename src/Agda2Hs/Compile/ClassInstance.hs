@@ -8,6 +8,7 @@ import Data.Maybe ( isNothing, mapMaybe )
 import qualified Data.HashMap.Strict as HMap
 
 import qualified Language.Haskell.Exts.Syntax as Hs
+import Language.Haskell.Exts.Extension ( KnownExtension( StandaloneDeriving ) )
 
 import Agda.Compiler.Backend
 import Agda.Compiler.Common ( curDefs, sortDefs )
@@ -44,6 +45,7 @@ disableCopatterns = local $ \e -> e { copatternsEnabled = False }
 
 compileInstance :: InstanceTarget -> Definition -> C (Hs.Decl ())
 compileInstance ToDerivation def@Defn{..} = do
+  tellExtension StandaloneDeriving
   ir <- compileInstRule [] (unEl defType)
   return $ Hs.DerivDecl () Nothing Nothing ir
 compileInstance ToDefinition def@Defn{..} =
