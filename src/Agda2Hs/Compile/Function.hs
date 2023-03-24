@@ -1,7 +1,7 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Agda2Hs.Compile.Function where
 
-import Control.Arrow ( Arrow((***), second), (>>>) )
-import Control.Monad ( (>=>), foldM, filterM, forM_ )
+import Control.Monad ( (>=>), filterM, forM_ )
 import Control.Monad.Reader ( asks )
 
 import Data.Generics
@@ -18,18 +18,15 @@ import Agda.Compiler.Common
 import Agda.Syntax.Common ( NamedArg, namedArg )
 import Agda.Syntax.Internal
 import Agda.Syntax.Literal
-import Agda.Syntax.Scope.Base ( BindingSource(LambdaBound) )
-import Agda.Syntax.Scope.Monad ( bindVariable )
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Substitute
-import Agda.TypeChecking.Telescope ( telView, teleArgs, piApplyM )
+import Agda.TypeChecking.Telescope ( telView )
 import Agda.TypeChecking.Sort ( ifIsSort )
 
 import Agda.Utils.Functor ( (<&>) )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Pretty ( prettyShow )
-import Agda.Utils.List ( snoc )
 import Agda.Utils.Monad
 
 import Agda2Hs.AgdaUtils
@@ -42,11 +39,18 @@ import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
 isSpecialPat :: QName -> Maybe (ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ()))
-isSpecialPat = prettyShow >>> \case
+isSpecialPat qn = case prettyShow qn of
   "Haskell.Prim.Tuple._;_" -> Just tuplePat
   "Agda.Builtin.Int.Int.pos" -> Just posIntPat
   "Agda.Builtin.Int.Int.negsuc" -> Just negSucIntPat
+  s | s `elem` badConstructors -> Just $ \ _ _ _ -> genericDocError =<<
+    "constructor `" <> prettyTCM qn <> "` not supported in patterns"
   _ -> Nothing
+  where
+    badConstructors =
+      [ "Agda.Builtin.Nat.Nat.zero"
+      , "Agda.Builtin.Nat.Nat.suc"
+      ]
 
 isUnboxCopattern :: DeBruijnPattern -> C Bool
 isUnboxCopattern (ProjP _ q) = isJust <$> isUnboxProjection q
@@ -55,9 +59,9 @@ isUnboxCopattern _           = return False
 tuplePat :: ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ())
 tuplePat cons i ps = do
   let p = ConP cons i ps
-      err = sep [ text "Tuple pattern"
+      err = sep [ "Tuple pattern"
                 , nest 2 $ prettyTCM p
-                , text "does not have a known size." ]
+                , "does not have a known size." ]
   xs <- makeListP' "Agda.Builtin.Unit.tt" "Haskell.Prim.Tuple._;_" err p
   qs <- mapM compilePat xs
   return $ Hs.PTuple () Hs.Boxed qs
@@ -72,7 +76,7 @@ compileLitNatPat = \case
     | prettyShow (conName ch) == "Agda.Builtin.Nat.Nat.zero" -> return 0
     | prettyShow (conName ch) == "Agda.Builtin.Nat.Nat.suc"
     , [p] <- ps -> (1+) <$> compileLitNatPat (namedArg p)
-  p -> genericDocError =<< text "not a literal natural number pattern:" <?> prettyTCM p
+  p -> genericDocError =<< "not a literal natural number pattern:" <?> prettyTCM p
 
 posIntPat :: ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ())
 posIntPat c i [p] = do
@@ -92,7 +96,7 @@ compileFun, compileFun' :: Bool -> Definition -> C [Hs.Decl ()]
 compileFun withSig def@Defn{..} = withFunctionLocals defName $ compileFun' withSig def
 -- inherit existing (instantiated) locals
 compileFun' withSig def@(Defn {..}) = do
-  reportSDoc "agda2hs.compile" 6 $ text "compiling function: " <+> prettyTCM defName
+  reportSDoc "agda2hs.compile" 6 $ "compiling function: " <+> prettyTCM defName
   let keepClause = maybe False keepArg . clauseType
   withCurrentModule m $ setCurrentRange (nameBindingSite n) $ do
     ifM (endsInSort defType) (ensureNoLocals err >> compileTypeDef x def) $ do
@@ -100,7 +104,7 @@ compileFun' withSig def@(Defn {..}) = do
       compileTopLevelType withSig defType $ \ty -> do
         -- Instantiate the clauses to the current module parameters
         pars <- getContextArgs
-        reportSDoc "agda2hs.compile" 10 $ text "applying clauses to parameters: " <+> prettyTCM pars
+        reportSDoc "agda2hs.compile" 10 $ "applying clauses to parameters: " <+> prettyTCM pars
         let clauses = filter keepClause funClauses `apply` pars
         cs <- mapM (compileClause (qnameModule defName) x) clauses
         return $ [Hs.TypeSig () [x] ty | withSig ] ++ [Hs.FunBind () cs]
@@ -116,7 +120,7 @@ compileFun' withSig def@(Defn {..}) = do
 
 compileClause :: ModuleName -> Hs.Name () -> Clause -> C (Hs.Match ())
 compileClause curModule x c@Clause{..} = withClauseLocals curModule c $ do
-  reportSDoc "agda2hs.compile" 7 $ text "compiling clause: " <+> prettyTCM c
+  reportSDoc "agda2hs.compile" 7 $ "compiling clause: " <+> prettyTCM c
   addContext (KeepNames clauseTel) $ do
     forM_ namedClausePats $ noAsPatterns . namedArg
     ps <- compilePats namedClausePats
@@ -152,7 +156,7 @@ noAsPatterns = \case
       forM_ ps $ noAsPatterns . namedArg
   where
     checkPatternInfo i = unless (null $ patAsNames i) $
-      genericDocError =<< text "not supported by Agda2Hs: as patterns"
+      genericDocError =<< "not supported by Agda2Hs: as patterns"
 
 compilePats :: NAPs -> C [Hs.Pat ()]
 compilePats ps = mapM (compilePat . namedArg) =<< filterM keepPat ps
@@ -180,12 +184,12 @@ compilePat (ConP h _ ps) = isUnboxConstructor (conName h) >>= \case
     return $ pApp c ps
 compilePat (LitP _ l) = compileLitPat l
 compilePat (ProjP _ q) = do
-  reportSDoc "agda2hs.compile" 6 $ text "compiling copattern: " <+> text (prettyShow q)
+  reportSDoc "agda2hs.compile" 6 $ "compiling copattern: " <+> text (prettyShow q)
   unlessM (asks copatternsEnabled) $
-    genericDocError =<< text "not supported in Haskell: copatterns"
+    genericDocError =<< "not supported in Haskell: copatterns"
   let x = hsName $ prettyShow q
   return $ Hs.PVar () x
-compilePat p = genericDocError =<< text "bad pattern:" <?> prettyTCM p
+compilePat p = genericDocError =<< "bad pattern:" <?> prettyTCM p
 
 compileErasedConP :: NAPs -> C (Hs.Pat ())
 compileErasedConP ps = compilePats ps <&> \case
@@ -195,7 +199,7 @@ compileErasedConP ps = compilePats ps <&> \case
 compileLitPat :: Literal -> C (Hs.Pat ())
 compileLitPat = \case
   LitChar c -> return $ Hs.charP c
-  l -> genericDocError =<< text "bad literal pattern:" <?> prettyTCM l
+  l -> genericDocError =<< "bad literal pattern:" <?> prettyTCM l
 
 -- Local (where) declarations ---------------------------------------------
 
