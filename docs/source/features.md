@@ -307,6 +307,80 @@ repeat x = Cons x (repeat x)
 
 ## Type Classes
 
+To construct an instance of a type class, you can simply do the following:
+
+Agda:
+```agda
+record Circle : Set where
+    constructor MkCircle
+    field
+        radius : Int
+open Circle public
+
+{-# COMPILE AGDA2HS Circle newtype #-}
+
+instance
+  iCircleEq : Eq Circle
+  iCircleEq ._==_ (MkCircle r1) (MkCircle r2) = r1 == r2
+
+{-# COMPILE AGDA2HS iCircleEq #-}
+```
+
+Haskell:
+```hs
+newtype Circle = MkCircle{radius :: Int}
+
+instance Eq Circle where
+    MkCircle r1 == MkCircle r2 = r1 == r2
+```
+
+In some cases (especially when writing proofs), it might be necessary to use the properties (laws) that a type class instance should uphold.
+In this case, you can also implement the `IsLawful` instance for the data type and use it's (erased) properties.
+
+Agda:
+```agda
+record Equal (a : Set) : Set where
+    constructor MkEqual
+    field
+        pair : a × a
+        @0 proof : fst pair ≡ snd pair
+open Equal public
+
+{-# COMPILE AGDA2HS Equal newtype #-}
+
+constructEqual : ⦃ iEqA : Eq a ⦄ → @0 ⦃ IsLawfulEq a ⦄ → (c : a) → (d : a) → Maybe (Equal a)
+constructEqual a b = 
+  if a == b then
+    (λ ⦃ h ⦄ → Just (MkEqual (a , b) (equality a b h)))
+  else Nothing
+
+{-# COMPILE AGDA2HS constructEqual #-}
+
+instance
+  iLawfulCircleEq : IsLawfulEq Circle
+  iLawfulCircleEq .isEquality (MkCircle r1) (MkCircle r2)
+    with r1 == r2 in eq
+  ... | True  = ofY (cong MkCircle (equality r1 r2 eq))
+  ... | False = ofN λ ceq → (nequality r1 r2 eq) (cong radius ceq)
+
+constructEqualCircle : (c : Circle) → (d : Circle) → Maybe (Equal Circle)
+constructEqualCircle c d = constructEqual c d
+
+{-# COMPILE AGDA2HS constructEqualCircle #-}
+```
+
+Haskell:
+```hs
+newtype Equal a = MkEqual{pair :: (a, a)}
+
+constructEqual :: Eq a => a -> a -> Maybe (Equal a)
+constructEqual a b
+  = if a == b then Just (MkEqual (a, b)) else Nothing
+
+constructEqualCircle :: Circle -> Circle -> Maybe (Equal Circle)
+constructEqualCircle c d = constructEqual c d
+```
+
 ### Constrained Typeclass Instance
 
 Agda:
