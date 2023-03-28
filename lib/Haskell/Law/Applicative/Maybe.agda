@@ -25,4 +25,4 @@ instance
   iLawfulApplicativeMaybe .interchange (Just _) _ = refl
 
   iLawfulApplicativeMaybe .functor _ Nothing  = refl
-  iLawfulApplicativeMaybe .functor _ (Just _) = refl 
+  iLawfulApplicativeMaybe .functor _ (Just _) = refl

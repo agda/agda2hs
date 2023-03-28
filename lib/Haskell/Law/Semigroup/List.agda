@@ -13,5 +13,5 @@ instance
   iLawfulSemigroupList : IsLawfulSemigroup (List a)
   iLawfulSemigroupList .associativity []       _  _  = refl
   iLawfulSemigroupList .associativity (x ∷ xs) ys zs
-    rewrite sym (++-assoc xs ys zs) 
+    rewrite sym (++-assoc xs ys zs)
     = refl

@@ -35,7 +35,7 @@ instance
   iLawfulMonadList .sequence2bind (f ∷ fs) (x ∷ xs) = trustMe
 
   iLawfulMonadList .fmap2bind f [] = refl
-  iLawfulMonadList .fmap2bind f (_ ∷ xs) 
+  iLawfulMonadList .fmap2bind f (_ ∷ xs)
     rewrite fmap2bind f xs
     = refl
 

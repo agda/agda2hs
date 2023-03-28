@@ -20,7 +20,7 @@ record IsLawfulMonoid (a : Set) ⦃ iMonoidA : Monoid a ⦄ : Set₁ where
 
     -- Concatenation: mconcat = foldr (<>) mempty
     concatenation : (xs : List a) → mconcat xs ≡ foldr _<>_ mempty xs
-        
+
 open IsLawfulMonoid ⦃ ... ⦄ public
 
 postulate instance
@@ -31,6 +31,6 @@ postulate instance
   iLawfulMonoidTuple₀ : IsLawfulMonoid (Tuple [])
 
   iLawfulMonoidTuple : ⦃ iSemA : Monoid a ⦄ → ⦃ iSemA : Monoid (Tuple as) ⦄
-    → ⦃ IsLawfulMonoid a ⦄ → ⦃ IsLawfulMonoid (Tuple as) ⦄ 
+    → ⦃ IsLawfulMonoid a ⦄ → ⦃ IsLawfulMonoid (Tuple as) ⦄
     → IsLawfulMonoid (Tuple (a ∷ as))
- 
+
