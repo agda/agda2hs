@@ -13,9 +13,9 @@ record IsLawfulFunctor (func : Set → Set) ⦃ iFuncF : Functor func ⦄ : Set�
     -- Composition: fmap (f . g) == fmap f . fmap g
     composition : (fa : func a) → (f : a → b) → (g : b → c)
       → fmap (g ∘ f) fa ≡ (fmap g ∘ fmap f) fa
-        
+
 open IsLawfulFunctor ⦃ ... ⦄ public
- 
+
 instance
   postulate iLawfulFunctorFun : IsLawfulFunctor (λ b → a → b)
 

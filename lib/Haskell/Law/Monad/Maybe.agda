@@ -27,8 +27,8 @@ instance
 
   iLawfulMonadMaybe .fmap2bind _ Nothing  = refl
   iLawfulMonadMaybe .fmap2bind _ (Just _) = refl
-  
+
   iLawfulMonadMaybe .rSequence2rBind Nothing  _        = refl
   iLawfulMonadMaybe .rSequence2rBind (Just _) Nothing  = refl
   iLawfulMonadMaybe .rSequence2rBind (Just _) (Just _) = refl
-  
+

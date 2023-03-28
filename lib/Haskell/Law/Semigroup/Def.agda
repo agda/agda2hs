@@ -9,7 +9,7 @@ record IsLawfulSemigroup (a : Set) ⦃ iSemigroupA : Semigroup a ⦄ : Set₁ wh
   field
     -- Associativity: x <> (y <> z) = (x <> y) <> z
     associativity : (x y z : a) → x <> (y <> z) ≡ (x <> y) <> z
-        
+
 open IsLawfulSemigroup ⦃ ... ⦄ public
 
 postulate instance
@@ -20,6 +20,6 @@ postulate instance
   iLawfulSemigroupTuple₀ : IsLawfulSemigroup (Tuple [])
 
   iLawfulSemigroupTuple : ⦃ iSemA : Semigroup a ⦄ → ⦃ iSemA : Semigroup (Tuple as) ⦄
-    → ⦃ IsLawfulSemigroup a ⦄ → ⦃ IsLawfulSemigroup (Tuple as) ⦄ 
+    → ⦃ IsLawfulSemigroup a ⦄ → ⦃ IsLawfulSemigroup (Tuple as) ⦄
     → IsLawfulSemigroup (Tuple (a ∷ as))
- 
+

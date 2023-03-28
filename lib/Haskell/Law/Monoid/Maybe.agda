@@ -20,4 +20,4 @@ instance
 
   iLawfulMonoidMaybe .concatenation [] = refl
   iLawfulMonoidMaybe .concatenation (x ∷ xs) = trustMe -- TODO
-  
+
