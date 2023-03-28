@@ -28,13 +28,13 @@ open import Haskell.Law.Equality
 &&-leftTrue True True _ = refl
 
 &&-leftTrue' : ∀ (a b c : Bool) → a ≡ (b && c) → a ≡ True → c ≡ True
-&&-leftTrue' .True b c h refl rewrite &&-sym b c = &&-leftTrue c b (sym h)
+&&-leftTrue' .True True True _ refl = refl
 
 &&-rightTrue : ∀ (a b : Bool) → (a && b) ≡ True → b ≡ True
 &&-rightTrue True True _ = refl
 
 &&-rightTrue' : ∀ (a b c : Bool) → a ≡ (b && c) → a ≡ True → b ≡ True
-&&-rightTrue' .True b c h refl rewrite &&-sym b c = &&-rightTrue c b (sym h)
+&&-rightTrue' .True True True _ refl = refl
 
 --------------------------------------------------
 -- ||
@@ -52,5 +52,5 @@ not-not : ∀ (a : Bool) → not (not a) ≡ a
 not-not False = refl
 not-not True = refl
 
-not-binarity : ∀ (a b : Bool) → a ≡ not b → not a ≡ b
-not-binarity .(not b) b refl = not-not b
+not-involution : ∀ (a b : Bool) → a ≡ not b → not a ≡ b
+not-involution .(not b) b refl = not-not b

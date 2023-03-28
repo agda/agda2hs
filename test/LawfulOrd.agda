@@ -12,22 +12,22 @@ nLtEq2Gt : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
 nLtEq2Gt x y ⦃ h1 ⦄ ⦃ h2 ⦄ =
   begin
     (x > y)
-  ≡⟨ sym (not-binarity (x <= y) (x > y) (lte2ngt x y)) ⟩
+  ≡⟨ sym (not-involution (x <= y) (x > y) (lte2ngt x y)) ⟩
     not (x <= y)
-  ≡⟨ cong not (lte2LtEq x y) ⟩ 
+  ≡⟨ cong not (lte2LtEq x y) ⟩
     not ((x < y) || (x == y))
-  ≡⟨ cong (λ b → not (b || (x == y))) h1 ⟩ 
+  ≡⟨ cong (λ b → not (b || (x == y))) h1 ⟩
     not (False || (x == y))
-  ≡⟨ cong (λ b → not (False || b)) h2 ⟩ 
+  ≡⟨ cong (λ b → not (False || b)) h2 ⟩
     not (False || False)
-  ≡⟨⟩ 
+  ≡⟨⟩
     True
   ∎
-  
+
 order : ⦃ iOrd : Ord a ⦄ → @0 ⦃ IsLawfulOrd a ⦄
   → (a' : a) → (a'' : a) → Ordered a
 order left right =
-  if left < right then 
+  if left < right then
     Lt left right
   else (
     if left == right then

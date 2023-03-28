@@ -1,5 +1,3 @@
-{-# OPTIONS -W noUnsupportedIndexedMatch #-}
-
 module Haskell.Law.Maybe where
 
 open import Haskell.Prim
