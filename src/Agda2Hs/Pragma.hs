@@ -57,6 +57,9 @@ data ParsedPragma
   | DerivePragma (Maybe (Hs.DerivStrategy ()))
   deriving Show
 
+derivePragma :: String
+derivePragma = "derive"
+
 parseStrategy :: String -> Maybe (Hs.DerivStrategy ())
 parseStrategy "stock"    = Just (Hs.DerivStock ())
 parseStrategy "newtype"  = Just (Hs.DerivNewtype ())
@@ -81,13 +84,14 @@ processPragma :: QName -> C ParsedPragma
 processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
   Nothing -> return NoPragma
   Just (CompilerPragma _ s)
-    | "class" `isPrefixOf` s     -> return $ ClassPragma (words $ drop 5 s)
-    | s == "existing-class"      -> return ExistingClassPragma
-    | s == "unboxed"             -> return $ UnboxPragma Lazy
-    | s == "unboxed-strict"      -> return $ UnboxPragma Strict
-    | s == "transparent"         -> return TransparentPragma
-    | s == newtypePragma         -> return $ NewTypePragma []
-    | "strategy:" `isPrefixOf` s -> return $ DerivePragma (parseStrategy (drop (length "strategy:") s))
-    | "deriving" `isPrefixOf` s  -> processDeriving s DefaultPragma
+    | "class" `isPrefixOf` s      -> return $ ClassPragma (words $ drop 5 s)
+    | s == "existing-class"       -> return ExistingClassPragma
+    | s == "unboxed"              -> return $ UnboxPragma Lazy
+    | s == "unboxed-strict"       -> return $ UnboxPragma Strict
+    | s == "transparent"          -> return TransparentPragma
+    | s == newtypePragma          -> return $ NewTypePragma []
+    | s == derivePragma           -> return $ DerivePragma Nothing
+    | derivePragma `isPrefixOf` s -> return $ DerivePragma (parseStrategy (drop (length derivePragma + 1) s))
+    | "deriving"   `isPrefixOf` s -> processDeriving s DefaultPragma
     | (newtypePragma ++ " deriving") `isPrefixOf` s -> processDeriving (drop (length newtypePragma + 1) s) NewTypePragma
   _ -> return $ DefaultPragma []

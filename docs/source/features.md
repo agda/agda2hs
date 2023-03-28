@@ -409,7 +409,7 @@ class Ord a where
     x > y = y < x
 ```
 
-### Coppaterns in Type Class Instances
+### Copatterns in Type Class Instances
 
 Agda copatterns are *not* supported by agda2hs in full generality. They *can* be
 used to define fields of typeclass instances, for example:
@@ -436,7 +436,9 @@ instance HasId () where
 
 ### Deriving Type Class Instances
 
-It is also possible to include a standalone `deriving` clause by postulating the instance of a type class.
+It is also possible to include a standalone `deriving` clause by
+* adding the `derive` pragma to an implemented instance,
+* or postulating the instance of a type class.
 
 Agda:
 ```agda
@@ -453,9 +455,24 @@ data Planet : Set where
 
 {-# COMPILE AGDA2HS Planet #-}
 
-postulate instance iPlanetEq : Eq Planet
+instance
+  iPlanetEq : Eq Planet
+  iPlanetEq ._==_ Mercury Mercury = True
+  iPlanetEq ._==_ Venus   Venus   = True
+  iPlanetEq ._==_ Earth   Earth   = True
+  iPlanetEq ._==_ Mars    Mars    = True
+  iPlanetEq ._==_ Jupiter Jupiter = True
+  iPlanetEq ._==_ Saturn  Saturn  = True
+  iPlanetEq ._==_ Uranus  Uranus  = True
+  iPlanetEq ._==_ Neptune Neptune = True
+  iPlanetEq ._==_ Pluto   Pluto   = True
+  iPlanetEq ._==_ _       _       = False
 
-{-# COMPILE AGDA2HS iPlanetEq #-}
+{-# COMPILE AGDA2HS iPlanetEq derive #-}
+
+postulate instance iPlanetOrd : Ord Planet
+
+{-# COMPILE AGDA2HS iPlanetOrd #-}
 ```
 
 Haskell:
@@ -471,6 +488,8 @@ data Planet = Mercury
             | Pluto
 
 deriving instance Eq Planet
+
+deriving instance Ord Planet
 ```
 
 This is also possible with more complicated instance definitions, such as in the example below.
@@ -496,13 +515,13 @@ data Optional a = Of a
 deriving instance (Eq a) => Eq (Optional a)
 ```
 
-Or even with deriving strategies, by modifying the pragma:
+Or even with deriving strategies, by specifying them within the derive pragma:
 
 Agda:
 ```agda
 postulate instance iPlanetShow : Show Planet
 
-{-# COMPILE AGDA2HS iPlanetShow strategy:stock #-}
+{-# COMPILE AGDA2HS iPlanetShow derive stock #-}
 
 record Clazz (a : Set) : Set where
   field
@@ -515,7 +534,7 @@ open Clazz ⦃...⦄ public
 
 postulate instance iPlanetClazz : Clazz Planet
 
-{-# COMPILE AGDA2HS iPlanetClazz strategy:anyclass #-}
+{-# COMPILE AGDA2HS iPlanetClazz derive anyclass #-}
 
 data Duo (a b : Set) : Set where
   MkDuo : (a × b) → Duo a b
@@ -524,7 +543,7 @@ data Duo (a b : Set) : Set where
 
 postulate instance iDuoEq : ⦃ Eq a ⦄ → ⦃ Eq b ⦄ → Eq (Duo a b)
 
-{-# COMPILE AGDA2HS iDuoEq strategy:newtype #-}
+{-# COMPILE AGDA2HS iDuoEq derive newtype #-}
 ```
 
 Haskell:

@@ -14,6 +14,8 @@ data Planet = Mercury
 
 deriving instance Eq Planet
 
+deriving instance Ord Planet
+
 deriving stock instance Show Planet
 
 class Clazz a where

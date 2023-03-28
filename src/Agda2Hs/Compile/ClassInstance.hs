@@ -56,11 +56,12 @@ enableStrategy (Hs.DerivNewtype ())  = tellExtension Hs.GeneralizedNewtypeDerivi
 enableStrategy (Hs.DerivVia () t)    = tellExtension Hs.DerivingVia -- since 8.6.1
 
 compileInstance :: InstanceTarget -> Definition -> C (Hs.Decl ())
-compileInstance (ToDerivation strategy) def@Defn{..} = do
-  tellExtension Hs.StandaloneDeriving
-  enableStrategies strategy
-  ir <- compileInstRule [] (unEl defType)
-  return $ Hs.DerivDecl () strategy Nothing ir
+compileInstance (ToDerivation strategy) def@Defn{..} =
+  setCurrentRangeQ defName $ do
+    tellExtension Hs.StandaloneDeriving
+    enableStrategies strategy
+    ir <- compileInstRule [] (unEl defType)
+    return $ Hs.DerivDecl () strategy Nothing ir
 compileInstance ToDefinition def@Defn{..} =
   enableCopatterns $ setCurrentRangeQ defName $ do
     ir <- compileInstRule [] (unEl defType)
