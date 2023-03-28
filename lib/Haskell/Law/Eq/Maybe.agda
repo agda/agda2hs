@@ -21,4 +21,4 @@ instance
   iLawfulEqMaybe .isEquality Nothing (Just _) = ofN λ()
   iLawfulEqMaybe .isEquality (Just _) Nothing = ofN λ()
   iLawfulEqMaybe .isEquality (Just x) (Just y) = reflectsJust x y
- 
+

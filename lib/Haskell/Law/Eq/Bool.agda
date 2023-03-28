@@ -12,4 +12,4 @@ instance
   iLawfulEqBool .isEquality False True = ofN λ()
   iLawfulEqBool .isEquality True False = ofN λ()
   iLawfulEqBool .isEquality True True = ofY refl
- 
+

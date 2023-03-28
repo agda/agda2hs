@@ -58,7 +58,7 @@ record IsLawfulOrd (a : Set) ⦃ iOrd : Ord a ⦄ : Set₁ where
 
     -- max x y == if x >= y then x else y = True
     max2if : ∀ (x y : a) → ((max x y) == (if (x >= y) then x else y)) ≡ True
-        
+
 open IsLawfulOrd ⦃ ... ⦄ public
 
 --------------------------------------------------
@@ -66,7 +66,7 @@ open IsLawfulOrd ⦃ ... ⦄ public
 
 eq2nlt : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x == y) ≡ True → (x < y) ≡ False
-eq2nlt x y h 
+eq2nlt x y h
   rewrite compareEq x y
     | compareLt x y
     | equality (compare x y) EQ h
@@ -86,7 +86,7 @@ gte2GtEq x y = trustMe -- TODO
 
 gte2nlt : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x >= y) ≡ not (x < y)
-gte2nlt x y 
+gte2nlt x y
   rewrite gte2GtEq x y
     | compareGt x y
     | compareEq x y
@@ -103,7 +103,7 @@ gte2nLT x y
 lte2LtEq : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x <= y) ≡ (x < y || x == y)
 lte2LtEq x y = trustMe -- TODO
-  
+
 lte2ngt : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x <= y) ≡ not (x > y)
 lte2ngt x y
@@ -141,7 +141,7 @@ eq2gte x y h
 gt2gte : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x > y) ≡ True → (x >= y) ≡ True
 gt2gte x y h
-  rewrite sym (lt2gt y x) 
+  rewrite sym (lt2gt y x)
     | sym (lt2lte y x h)
     | lte2gte y x
   = refl

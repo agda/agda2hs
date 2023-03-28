@@ -9,7 +9,7 @@ open import Haskell.Law.Ord.Def
 
 instance
   iLawfulOrdOrdering : IsLawfulOrd Ordering
-  
+
   iLawfulOrdOrdering .comparability LT LT = refl
   iLawfulOrdOrdering .comparability LT EQ = refl
   iLawfulOrdOrdering .comparability LT GT = refl
@@ -108,7 +108,7 @@ instance
   iLawfulOrdOrdering .min2if GT LT = refl
   iLawfulOrdOrdering .min2if GT EQ = refl
   iLawfulOrdOrdering .min2if GT GT = refl
-  
+
   iLawfulOrdOrdering .max2if LT LT = refl
   iLawfulOrdOrdering .max2if LT EQ = refl
   iLawfulOrdOrdering .max2if LT GT = refl
@@ -118,4 +118,4 @@ instance
   iLawfulOrdOrdering .max2if GT LT = refl
   iLawfulOrdOrdering .max2if GT EQ = refl
   iLawfulOrdOrdering .max2if GT GT = refl
-  
+

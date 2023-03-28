@@ -19,4 +19,4 @@ instance
   iLawfulEqOrdering .isEquality GT LT = ofN λ()
   iLawfulEqOrdering .isEquality GT EQ = ofN λ()
   iLawfulEqOrdering .isEquality GT GT = ofY refl
-  
+

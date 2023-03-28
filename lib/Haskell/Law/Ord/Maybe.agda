@@ -28,7 +28,7 @@ transMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
 transMaybe Nothing  Nothing  Nothing  _ = refl
 transMaybe Nothing  Nothing  (Just _) _ = refl
 transMaybe Nothing  (Just _) (Just _) _ = refl
-transMaybe (Just x) (Just y) Nothing  h 
+transMaybe (Just x) (Just y) Nothing  h
   = magic ((nequality (GT /= GT) True refl) (&&-rightTrue (compare x y /= GT) (GT /= GT) h))
 transMaybe (Just x) (Just y) (Just z) h
   rewrite sym (compareGt x z)
@@ -40,24 +40,24 @@ transMaybe (Just x) (Just y) (Just z) h
 reflMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x : Maybe a) → (x <= x) ≡ True
 reflMaybe Nothing = refl
-reflMaybe (Just x) 
+reflMaybe (Just x)
   rewrite (equality (compare x x) EQ (trans (sym (compareEq x x)) (eqReflexivity x)))
   = refl
 
-antisymmetryMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄ 
+antisymmetryMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : Maybe a) → ((x <= y) && (y <= x)) ≡ True → (x == y) ≡ True
 antisymmetryMaybe Nothing  Nothing  _ = refl
-antisymmetryMaybe (Just x) (Just y) h 
+antisymmetryMaybe (Just x) (Just y) h
   rewrite sym (lte2nGT x y)
     | sym (lte2nGT y x)
   = antisymmetry x y h
 
-lte2gteMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄ 
+lte2gteMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : Maybe a) → (x <= y) ≡ (y >= x)
 lte2gteMaybe Nothing  Nothing  = refl
 lte2gteMaybe Nothing  (Just _) = refl
 lte2gteMaybe (Just _) Nothing  = refl
-lte2gteMaybe (Just x) (Just y) 
+lte2gteMaybe (Just x) (Just y)
   rewrite sym (compareGt x y)
     | sym (lte2ngt x y)
     | lte2gte x y -- IH
@@ -65,7 +65,7 @@ lte2gteMaybe (Just x) (Just y)
     | compareLt y x
   = refl
 
-lt2LteNeqMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄ 
+lt2LteNeqMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : Maybe a) → (x < y) ≡ (x <= y && x /= y)
 lt2LteNeqMaybe Nothing  Nothing  = refl
 lt2LteNeqMaybe Nothing  (Just _) = refl
@@ -77,12 +77,12 @@ lt2LteNeqMaybe (Just x) (Just y)
     | compareGt x y
   = refl
 
-lt2gtMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄ 
+lt2gtMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : Maybe a) → (x < y) ≡ (y > x)
 lt2gtMaybe Nothing  Nothing  = refl
 lt2gtMaybe Nothing  (Just _) = refl
 lt2gtMaybe (Just _) Nothing  = refl
-lt2gtMaybe (Just x) (Just y) 
+lt2gtMaybe (Just x) (Just y)
   rewrite sym (compareLt x y)
     | lt2gt x y -- IH
     | compareGt y x
@@ -114,19 +114,19 @@ min2ifMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
 min2ifMaybe Nothing  Nothing  = refl
 min2ifMaybe Nothing  (Just _) = refl
 min2ifMaybe (Just _) Nothing = refl
-min2ifMaybe (Just x) (Just y) 
+min2ifMaybe (Just x) (Just y)
   rewrite ifFlip (compare x y == GT) (Just y) (Just x)
   = equality'
       (if (compare x y /= GT) then Just x else Just y)
       (if (compare x y /= GT) then Just x else Just y)
       refl
 
-max2ifMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄ 
+max2ifMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : Maybe a) → ((max x y) == (if (x >= y) then x else y)) ≡ True
 max2ifMaybe Nothing  Nothing  = refl
 max2ifMaybe Nothing  (Just y) = eqReflexivity y
 max2ifMaybe (Just x) Nothing  = eqReflexivity x
-max2ifMaybe (Just x) (Just y) 
+max2ifMaybe (Just x) (Just y)
   rewrite ifFlip (compare x y == LT) (Just y) (Just x)
   = equality'
     (if (compare x y /= LT) then Just x else Just y)
@@ -148,4 +148,4 @@ instance
     .compareEq → compareEqMaybe
     .min2if → min2ifMaybe
     .max2if → max2ifMaybe
-   
+
