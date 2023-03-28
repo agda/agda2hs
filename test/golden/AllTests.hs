@@ -47,4 +47,5 @@ import AutoLambdaCaseInBind
 import WitnessedFlows
 import Kinds
 import LawfulOrd
+import Deriving
 

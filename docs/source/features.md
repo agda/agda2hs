@@ -305,7 +305,9 @@ repeat :: a -> Stream a
 repeat x = Cons x (repeat x)
 ```
 
-## Constrained Typeclass Instance
+## Type Classes
+
+### Constrained Typeclass Instance
 
 Agda:
 ```agda
@@ -336,7 +338,7 @@ instance Class1 a => Class2 a where
     field2 = field1
 ```
 
-## Constrained Typeclass
+### Constrained Typeclass
 
 Agda:
 ```agda
@@ -361,7 +363,7 @@ class Class1 a => Class2 a where
     field2 :: a 
 ```
 
-## Default Typeclass Field Implementations
+### Default Typeclass Field Implementations
 
 Agda:
 ```agda
@@ -407,7 +409,7 @@ class Ord a where
     x > y = y < x
 ```
 
-## Coppaterns
+### Copatterns in Type Class Instances
 
 Agda copatterns are *not* supported by agda2hs in full generality. They *can* be
 used to define fields of typeclass instances, for example:
@@ -432,6 +434,133 @@ instance HasId () where
     id x = x
 ```
 
+### Deriving Type Class Instances
+
+It is also possible to include a standalone `deriving` clause by
+* adding the `derive` pragma to an implemented instance,
+* or postulating the instance of a type class.
+
+Agda:
+```agda
+data Planet : Set where
+  Mercury : Planet
+  Venus   : Planet
+  Earth   : Planet
+  Mars    : Planet
+  Jupiter : Planet
+  Saturn  : Planet
+  Uranus  : Planet
+  Neptune : Planet
+  Pluto   : Planet
+
+{-# COMPILE AGDA2HS Planet #-}
+
+instance
+  iPlanetEq : Eq Planet
+  iPlanetEq ._==_ Mercury Mercury = True
+  iPlanetEq ._==_ Venus   Venus   = True
+  iPlanetEq ._==_ Earth   Earth   = True
+  iPlanetEq ._==_ Mars    Mars    = True
+  iPlanetEq ._==_ Jupiter Jupiter = True
+  iPlanetEq ._==_ Saturn  Saturn  = True
+  iPlanetEq ._==_ Uranus  Uranus  = True
+  iPlanetEq ._==_ Neptune Neptune = True
+  iPlanetEq ._==_ Pluto   Pluto   = True
+  iPlanetEq ._==_ _       _       = False
+
+{-# COMPILE AGDA2HS iPlanetEq derive #-}
+
+postulate instance iPlanetOrd : Ord Planet
+
+{-# COMPILE AGDA2HS iPlanetOrd #-}
+```
+
+Haskell:
+```haskell
+data Planet = Mercury
+            | Venus
+            | Earth
+            | Mars
+            | Jupiter
+            | Saturn
+            | Uranus
+            | Neptune
+            | Pluto
+
+deriving instance Eq Planet
+
+deriving instance Ord Planet
+```
+
+This is also possible with more complicated instance definitions, such as in the example below.
+
+Agda:
+```agda
+data Optional (a : Set) : Set where
+  Of    : a → Optional a
+  Empty : Optional a
+
+{-# COMPILE AGDA2HS Optional #-}
+
+postulate instance iOptionalEq : ⦃ Eq a ⦄ → Eq (Optional a)
+
+{-# COMPILE AGDA2HS iOptionalEq #-}
+```
+
+Haskell:
+```haskell
+data Optional a = Of a
+                | Empty
+
+deriving instance (Eq a) => Eq (Optional a)
+```
+
+Or even with deriving strategies, by specifying them within the derive pragma:
+
+Agda:
+```agda
+postulate instance iPlanetShow : Show Planet
+
+{-# COMPILE AGDA2HS iPlanetShow derive stock #-}
+
+record Clazz (a : Set) : Set where
+  field
+    foo : a → Int
+    bar : a → Bool
+
+open Clazz ⦃...⦄ public
+
+{-# COMPILE AGDA2HS Clazz class #-}
+
+postulate instance iPlanetClazz : Clazz Planet
+
+{-# COMPILE AGDA2HS iPlanetClazz derive anyclass #-}
+
+data Duo (a b : Set) : Set where
+  MkDuo : (a × b) → Duo a b
+
+{-# COMPILE AGDA2HS Duo newtype #-}
+
+postulate instance iDuoEq : ⦃ Eq a ⦄ → ⦃ Eq b ⦄ → Eq (Duo a b)
+
+{-# COMPILE AGDA2HS iDuoEq derive newtype #-}
+```
+
+Haskell:
+```haskell
+deriving stock instance Show Planet
+
+class Clazz a where
+    foo :: a -> Int
+    bar :: a -> Bool
+
+deriving anyclass instance Clazz Planet
+
+newtype Duo a b = MkDuo (a, b)
+
+deriving newtype instance (Eq a, Eq b) => Eq (Duo a b)
+```
+
 ## Partial Application
 
 Agda:
@@ -447,7 +576,9 @@ add1 :: Nat -> Nat
 add1 = (1 +)
 ```
 
-## Mutually Recursive Functions
+## Mutual Recursion
+
+### Mutually Recursive Functions
 
 Agda
 ```agda
@@ -472,7 +603,7 @@ odd Zero = False
 odd (Suc n) = even n 
 ```
 
-## Mutually Recursive Datatype and Function
+### Mutually Recursive Datatype and Function
 
 Agda
 ```agda
