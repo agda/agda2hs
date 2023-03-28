@@ -2,6 +2,8 @@ module Haskell.Law.Monad.Def where
 
 open import Haskell.Prim
 
+open import Haskell.Prim.Applicative
+open import Haskell.Prim.Functor
 open import Haskell.Prim.Monad
 
 open import Haskell.Law.Applicative
@@ -21,11 +23,17 @@ record IsLawfulMonad (func : Set → Set) ⦃ iMonadF : Monad func ⦄ : Set₁ 
       → (ma >>= (λ x → f x >>= g)) ≡ ((ma >>= f) >>= g)
 
     -- pure = return
+    pureIsReturn : (a' : a) → pure a' ≡ (Monad.return iMonadF a')
     -- m1 <*> m2 = m1 >>= (\x1 -> m2 >>= (\x2 -> return (x1 x2)))
+    sequence2bind : {a b : Set} → (mab : func (a → b)) → (ma : func a) 
+      → (mab <*> ma) ≡ (mab >>= (λ x1 → (ma >>= (λ x2 → return (x1 x2)))))
 
     -- fmap f xs  =  xs >>= return . f
+    fmap2bind : {a b : Set} → (f : a → b) → (ma : func a) 
+      → fmap f ma ≡ (ma >>= (return ∘ f))
     -- (>>) = (*>)
-        
+    rSequence2rBind : (ma : func a) → (mb : func b) → (ma *> mb) ≡ (ma >> mb)
+
 open IsLawfulMonad ⦃ ... ⦄ public
  
 instance
