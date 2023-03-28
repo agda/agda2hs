@@ -9,7 +9,7 @@ open import Haskell.Law.Ord.Def
 
 instance
   iLawfulOrdBool : IsLawfulOrd Bool
-  
+
   iLawfulOrdBool .comparability False False = refl
   iLawfulOrdBool .comparability False True  = refl
   iLawfulOrdBool .comparability True  False = refl
@@ -60,9 +60,9 @@ instance
   iLawfulOrdBool .min2if False True  = refl
   iLawfulOrdBool .min2if True  False = refl
   iLawfulOrdBool .min2if True  True  = refl
-  
+
   iLawfulOrdBool .max2if False False = refl
   iLawfulOrdBool .max2if False True  = refl
   iLawfulOrdBool .max2if True  False = refl
   iLawfulOrdBool .max2if True  True  = refl
- 
+

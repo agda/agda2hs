@@ -21,7 +21,7 @@ createRange' low high =
 {-# COMPILE AGDA2HS createRange' #-}
 
 createRangeCase : Int → Int → Maybe Range
-createRangeCase low high = 
+createRangeCase low high =
     case low <= high of λ where
         True → Just (MkRange low high)
         False → Nothing
