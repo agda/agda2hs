@@ -1,16 +1,17 @@
 cabal-version:       2.2
 name:                agda2hs
-version:             0.1
+version:             0.1.20230328
 license:             BSD-3-Clause
 license-file:        LICENSE
-author:              Ulf Norell, Jesper Cockx, James Chapman, Orestis Melkonian, Lucas Escot
-maintainer:          ulf.norell@gmail.com
-copyright:           Ulf Norell, 2020
+author:              Ulf Norell, Jesper Cockx, Orestis Melkonian, Sára Juhošová, James Chapman, Lucas Escot, Henry Blanchette
+maintainer:          jesper@sikanda.be
+copyright:           2023 Ulf Norell, Jesper Cockx, Orestis Melkonian, Sára Juhošová, James Chapman, Lucas Escot, Henry Blanchette
 category:            Language, Compiler
 build-type:          Simple
 synopsis:            Compiling Agda code to readable Haskell.
 description:
-  Allows compiling Agda functions in a subset of Agda to readable Haskell code.
+  Produces verified and readable Haskell code by extracting it from a
+  (lightly annotated) Agda program.
   The tool is implemented as an Agda backend, which means that `agda2hs` is a
   fully functional Agda compiler.
 
