@@ -5,23 +5,23 @@ open import Haskell.Prim.Tuple
 
 open import Haskell.Prim.Functor
 
-record IsLawfulFunctor (func : Set → Set) ⦃ iFuncF : Functor func ⦄ : Set₁ where
+record IsLawfulFunctor (F : Set → Set) ⦃ iFuncF : Functor F ⦄ : Set₁ where
   field
     -- Identity: fmap id == id
-    identity : (fa : func a) → (fmap id) fa ≡ id fa
+    identity : (fa : F a) → (fmap id) fa ≡ id fa
 
     -- Composition: fmap (f . g) == fmap f . fmap g
-    composition : (fa : func a) → (f : a → b) → (g : b → c)
+    composition : (fa : F a) (f : a → b) (g : b → c)
       → fmap (g ∘ f) fa ≡ (fmap g ∘ fmap f) fa
 
 open IsLawfulFunctor ⦃ ... ⦄ public
 
-instance
-  postulate iLawfulFunctorFun : IsLawfulFunctor (λ b → a → b)
+instance postulate
+  iLawfulFunctorFun : IsLawfulFunctor (λ b → a → b)
 
-  postulate iLawfulFunctorTuple₂ : IsLawfulFunctor (a ×_)
+  iLawfulFunctorTuple₂ : IsLawfulFunctor (a ×_)
 
-  postulate iLawfulFunctorTuple₃ : IsLawfulFunctor (a × b ×_)
+  iLawfulFunctorTuple₃ : IsLawfulFunctor (a × b ×_)
 
-  postulate iLawfulFunctorTuple₄ : IsLawfulFunctor (λ d → Tuple (a ∷ b ∷ c ∷ d ∷ []))
+  iLawfulFunctorTuple₄ : IsLawfulFunctor (λ d → Tuple (a ∷ b ∷ c ∷ d ∷ []))
 

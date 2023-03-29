@@ -11,18 +11,19 @@ open import Haskell.Law.Functor.Either
 
 instance
   iLawfulApplicativeEither : IsLawfulApplicative (Either a)
-  iLawfulApplicativeEither .identity (Left _)  = refl
-  iLawfulApplicativeEither .identity (Right _) = refl
+  -- (λ { true → true ; false → false })
 
-  iLawfulApplicativeEither .composition (Left _)  _         _         = refl
-  iLawfulApplicativeEither .composition (Right _) (Left _)  _         = refl
-  iLawfulApplicativeEither .composition (Right _) (Right _) (Left _)  = refl
-  iLawfulApplicativeEither .composition (Right _) (Right _) (Right _) = refl
+  iLawfulApplicativeEither .identity = λ { (Left _) → refl; (Right _) → refl }
+
+  iLawfulApplicativeEither .composition =
+    λ { (Left _)  _         _         → refl
+      ; (Right _) (Left _)  _         → refl
+      ; (Right _) (Right _) (Left _)  → refl
+      ; (Right _) (Right _) (Right _) → refl
+      }
 
   iLawfulApplicativeEither .homomorphism _ _ = refl
 
-  iLawfulApplicativeEither .interchange (Left _)  _ = refl
-  iLawfulApplicativeEither .interchange (Right _) _ = refl
+  iLawfulApplicativeEither .interchange = λ { (Left _) _ → refl; (Right _) _ → refl }
 
-  iLawfulApplicativeEither .functor _ (Left _)  = refl
-  iLawfulApplicativeEither .functor _ (Right _) = refl
+  iLawfulApplicativeEither .functor = λ { _ (Left _) → refl; _ (Right _) → refl }

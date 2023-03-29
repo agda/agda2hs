@@ -10,5 +10,4 @@ open import Haskell.Law.Semigroup.Def
 
 instance
   iLawfulSemigroupEither : IsLawfulSemigroup (Either a b)
-  iLawfulSemigroupEither .associativity (Left _)  _ _ = refl
-  iLawfulSemigroupEither .associativity (Right _) _ _ = refl
+  iLawfulSemigroupEither .associativity  = λ { (Left _) _ _ → refl; (Right _) _ _ → refl }
