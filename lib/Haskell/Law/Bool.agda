@@ -45,6 +45,13 @@ open import Haskell.Law.Equality
 ||-excludedMiddle False _ = refl
 ||-excludedMiddle True  _ = refl
 
+||-leftTrue : ∀ (a b : Bool) → a ≡ True → (a || b) ≡ True
+||-leftTrue .True b refl = refl
+
+||-rightTrue : ∀ (a b : Bool) → b ≡ True → (a || b) ≡ True
+||-rightTrue False .True refl = refl
+||-rightTrue True  .True refl = refl
+
 --------------------------------------------------
 -- not
 
