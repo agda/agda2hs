@@ -263,9 +263,9 @@ addTyBang Strict ty = tellExtension Hs.BangPatterns >>
   return (Hs.TyBang () (Hs.BangedTy ()) (Hs.NoUnpackPragma ()) ty)
 addTyBang Lazy   ty = return ty
 
-checkSingleField :: Hs.Name () -> [b] -> C ()
-checkSingleField name fs = unless (length fs == 1) $ genericDocError =<< do
-  text "Newtype must have exactly one field in definition: " <+> text (Hs.prettyPrint name)
+checkSingleElement :: Hs.Name () -> [b] -> String -> C ()
+checkSingleElement name fs s = unless (length fs == 1) $ genericDocError =<< do
+  text s <+> text ": " <+> text (Hs.prettyPrint name)
 
 checkingVars :: C a -> C a
 checkingVars = local $ \e -> e { checkVar = True }

@@ -111,7 +111,7 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
       ToRecordNewType ds -> do
         checkValidConName cName
         (constraints, fieldDecls) <- compileRecFields fieldDecl recFields fieldTel
-        checkSingleField rName fieldDecls
+        checkSingleElement cName fieldDecls "Newtype must have exactly one field in constructor"
         compileDataRecord constraints fieldDecls (Hs.NewType ()) hd ds
 
   where
