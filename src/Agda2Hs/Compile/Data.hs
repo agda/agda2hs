@@ -19,8 +19,15 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
+checkNewtype :: Hs.Name () -> [Hs.QualConDecl ()] -> C ()
+checkNewtype name cs = do
+  checkSingleElement name cs "Newtype must have exactly one constructor in definition"
+  case head cs of
+    Hs.QualConDecl () _ _ (Hs.ConDecl () cName types) 
+      -> checkSingleElement cName types "Newtype must have exactly one field in constructor"
+
 compileData :: DataTarget -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
-compileData target ds def = do
+compileData target ds def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
   let d = hsName $ prettyShow $ qnameName $ defName def
   checkValidTypeName d
   case theDef def of
@@ -37,7 +44,7 @@ compileData target ds def = do
         case target of
           ToData -> return [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs ds]
           ToDataNewType -> do
-            checkSingleField d cs
+            checkNewtype d cs
             return [Hs.DataDecl () (Hs.NewType ()) Nothing hd cs ds]
     _ -> __IMPOSSIBLE__
   where
