@@ -265,7 +265,7 @@ addTyBang Lazy   ty = return ty
 
 checkSingleElement :: Hs.Name () -> [b] -> String -> C ()
 checkSingleElement name fs s = unless (length fs == 1) $ genericDocError =<< do
-  text s <+> text ": " <+> text (Hs.prettyPrint name)
+  text (s ++ ":") <+> text (Hs.prettyPrint name)
 
 checkingVars :: C a -> C a
 checkingVars = local $ \e -> e { checkVar = True }
