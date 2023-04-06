@@ -1,2 +1,2 @@
 test/Fail/Issue142.agda:5,1-7
-not supported by Agda2Hs: forced (dot) patterns in non-erased positions
+not supported by agda2hs: forced (dot) patterns in non-erased positions

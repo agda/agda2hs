@@ -155,7 +155,7 @@ noAsPatterns = \case
       forM_ ps $ noAsPatterns . namedArg
   where
     checkPatternInfo i = unless (null $ patAsNames i) $
-      genericDocError =<< "not supported by Agda2Hs: as patterns"
+      genericDocError =<< "not supported by agda2hs: as patterns"
 
 compilePats :: NAPs -> C [Hs.Pat ()]
 compilePats ps = mapM (compilePat . namedArg) =<< filterM keepPat ps
@@ -166,7 +166,7 @@ compilePats ps = mapM (compilePat . namedArg) =<< filterM keepPat ps
       when keep $ noAsPatterns $ namedArg p
       -- We do not allow forced (dot) patterns for non-erased arguments (see issue #142).
       when (usableModality p && isForcedPat (namedArg p)) $
-        genericDocError =<< "not supported by Agda2Hs: forced (dot) patterns in non-erased positions"
+        genericDocError =<< "not supported by agda2hs: forced (dot) patterns in non-erased positions"
       return keep
 
     isForcedPat :: DeBruijnPattern -> Bool
