@@ -122,7 +122,6 @@ compileClause :: ModuleName -> Hs.Name () -> Clause -> C (Hs.Match ())
 compileClause curModule x c@Clause{..} = withClauseLocals curModule c $ do
   reportSDoc "agda2hs.compile" 7 $ "compiling clause: " <+> prettyTCM c
   addContext (KeepNames clauseTel) $ do
-    forM_ namedClausePats $ noAsPatterns . namedArg
     ps <- compilePats namedClausePats
     ls <- asks locals
     let
@@ -164,6 +163,7 @@ compilePats ps = mapM (compilePat . namedArg) =<< filterM keepPat ps
     keepPat :: NamedArg DeBruijnPattern -> C Bool
     keepPat p = do
       keep <- return (keepArg p) `and2M` (not <$> isUnboxCopattern (namedArg p))
+      when keep $ noAsPatterns $ namedArg p
       -- We do not allow forced (dot) patterns for non-erased arguments (see issue #142).
       when (usableModality p && isForcedPat (namedArg p)) $
         genericDocError =<< "not supported by Agda2Hs: forced (dot) patterns in non-erased positions"
@@ -266,5 +266,6 @@ checkTransparentPragma def = compileFun False def >>= \case
     checkTransparentTypeDef (Hs.DHApp _ _ (Hs.UnkindedVar _ x)) (Hs.TyVar _ y) | x == y = return ()
     checkTransparentTypeDef _ _ = errNotTransparent
 
-    errNotTransparent = genericError $
+    errNotTransparent = genericDocError =<<
+      "Cannot make function" <+> prettyTCM (defName def) <+> "transparent." <+>
       "A transparent function must have exactly one non-erased argument and return it unchanged."
