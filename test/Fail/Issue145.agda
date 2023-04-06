@@ -5,7 +5,7 @@ open import Haskell.Prim.Strict
 
 -- ** PASS
 
-module _ {@0 a : Set} where
+module _ {a : Set} where
   it : a → a
   it x = x
   {-# COMPILE AGDA2HS it #-}

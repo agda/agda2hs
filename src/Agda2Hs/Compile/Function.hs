@@ -15,7 +15,7 @@ import qualified Language.Haskell.Exts.Build as Hs
 import Agda.Compiler.Backend
 import Agda.Compiler.Common
 
-import Agda.Syntax.Common ( NamedArg, namedArg )
+import Agda.Syntax.Common
 import Agda.Syntax.Internal
 import Agda.Syntax.Literal
 
@@ -162,10 +162,23 @@ compilePats :: NAPs -> C [Hs.Pat ()]
 compilePats ps = mapM (compilePat . namedArg) =<< filterM keepPat ps
   where
     keepPat :: NamedArg DeBruijnPattern -> C Bool
-    keepPat p = andM
-      [ return $ keepArg p
-      , not <$> isUnboxCopattern (namedArg p)
-      ]
+    keepPat p = do
+      keep <- return (keepArg p) `and2M` (not <$> isUnboxCopattern (namedArg p))
+      -- We do not allow forced (dot) patterns for non-erased arguments (see issue #142).
+      when (usableModality p && isForcedPat (namedArg p)) $
+        genericDocError =<< "not supported by Agda2Hs: forced (dot) patterns in non-erased positions"
+      return keep
+
+    isForcedPat :: DeBruijnPattern -> Bool
+    isForcedPat = \case
+      VarP{}        -> False
+      DotP{}        -> True
+      ConP c cpi ps -> conPLazy cpi
+      LitP{}        -> False
+      ProjP{}       -> False
+      IApplyP{}     -> False
+      DefP{}        -> False
+
 
 compilePat :: DeBruijnPattern -> C (Hs.Pat ())
 compilePat p@(VarP o x)

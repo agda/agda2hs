@@ -25,7 +25,7 @@ import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.List ( downFrom )
 import Agda.Utils.Maybe ( ifJustM, fromMaybe )
-import Agda.Utils.Monad ( ifM )
+import Agda.Utils.Monad ( ifM, unlessM )
 import Agda.Utils.Size ( Sized(size) )
 import Agda.Utils.Functor ( ($>) )
 
@@ -134,6 +134,8 @@ compileType t = do
           f <- compileQName f
           return $ tApp (Hs.TyCon () f) vs
     Var x es | Just args <- allApplyElims es -> do
+      unlessM (usableModality <$> lookupBV x) $ genericDocError =<<
+        text "Not supported by agda2hs: erased type variable" <+> prettyTCM (var x)
       vs <- compileTypeArgs args
       x  <- hsName <$> compileVar x
       return $ tApp (Hs.TyVar () x) vs

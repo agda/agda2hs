@@ -1,8 +1,8 @@
 
 open import Haskell.Prelude hiding (max)
 
-subst : (@0 p : @0 a → Set) {@0 m n : a} → @0 m ≡ n → p m → p n
-subst p refl t = t
+subst : {p : @0 a → Set} {@0 m n : a} → @0 m ≡ n → p m → p n
+subst refl t = t
 
 {-# COMPILE AGDA2HS subst transparent #-}
 
@@ -26,6 +26,6 @@ max-comm (suc l) (suc r) = cong suc (max-comm l r)
 mirror : ∀ {@0 h} → Tree a h → Tree a h
 mirror Tip = Tip
 mirror {a = a} (Bin {l} {r} x lt rt) =
-  subst (Tree a) (cong suc (max-comm r l)) (Bin x (mirror rt) (mirror lt))
+  subst {p = Tree a} (cong suc (max-comm r l)) (Bin x (mirror rt) (mirror lt))
 
 {-# COMPILE AGDA2HS mirror #-}
