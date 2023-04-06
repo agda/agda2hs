@@ -3,7 +3,7 @@ open import Haskell.Prelude
 postulate Something : Set
 postulate something : Something
 
-module _ {@0 a : Set} where
+module _ {a : Set} where
   foo : a → a
   foo x = bar {something}
     where
