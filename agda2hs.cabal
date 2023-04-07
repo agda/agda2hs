@@ -1,6 +1,6 @@
 cabal-version:       2.2
 name:                agda2hs
-version:             0.1.20230328
+version:             1.0
 license:             BSD-3-Clause
 license-file:        LICENSE
 author:              Ulf Norell, Jesper Cockx, Orestis Melkonian, Sára Juhošová, James Chapman, Lucas Escot, Henry Blanchette

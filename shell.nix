@@ -9,7 +9,7 @@ let
       }:
       mkDerivation {
         pname = "agda2hs";
-        version = "0.1";
+        version = "1.0";
         src = ./.;
         isLibrary = false;
         isExecutable = true;

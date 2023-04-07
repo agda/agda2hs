@@ -26,7 +26,7 @@ extensionOpt ext opts = return opts{ optExtensions = Hs.parseExtension ext : opt
 backend :: Backend' Options Options ModuleEnv ModuleRes (CompiledDef, CompileOutput)
 backend = Backend'
   { backendName           = "agda2hs"
-  , backendVersion        = Just "0.1"
+  , backendVersion        = Just "1.0"
   , options               = defaultOptions
   , commandLineFlags      =
       [ Option ['o'] ["out-dir"] (ReqArg outdirOpt "DIR")
