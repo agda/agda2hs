@@ -20,3 +20,10 @@ newtype Identity a = MkIdentity{runIdentity :: a}
 
 newtype Equal a = MkEqual{pair :: (a, a)}
 
+-- record newtype with same name
+
+newtype Duo a = Duo{duo :: (a, a)}
+
+createDuo :: a -> a -> Duo a
+createDuo a b = Duo (a, b)
+

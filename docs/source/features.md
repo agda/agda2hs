@@ -140,7 +140,29 @@ newtype Identity a = MkIdentity{runIdentity :: a}
 newtype Equal a = MkEqual{pair :: (a, a)}
 ```
 
-_Note: Unfortunately, Agda does not allow the constructor name to be the same as the data/record name._
+Unfortunately, Agda does not allow the constructor name to be the same as the data/record name.
+However, it _is_ possible to achieve this with Agda2HS if you do not explicitly add a constructor name to a record definition (this requires the use of `record { ... }` syntax on the Agda side):
+
+```agda
+record Duo (a : Set) : Set where
+    field
+        duo : a × a
+open Duo public
+
+{-# COMPILE AGDA2HS Duo newtype #-}
+
+createDuo : a → a → Duo a
+createDuo a b = record { duo = a , b }
+
+{-# COMPILE AGDA2HS createDuo #-}
+```
+
+```hs
+newtype Duo a = Duo{duo :: (a, a)}
+
+createDuo :: a -> a -> Duo a
+createDuo a b = Duo (a, b)
+```
 
 ## Pattern Matching on Datatype Values
 
