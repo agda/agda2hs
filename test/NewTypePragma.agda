@@ -1,6 +1,8 @@
 open import Haskell.Prelude using ( Int ; fst ; snd
                                   ; a ; b
-                                  ; _×_ ; _≡_
+                                  ; _×_ ; _,_
+                                  ; _≡_; refl
+                                  ; List; map
                                   )
 
 {-# FOREIGN AGDA2HS
@@ -50,3 +52,19 @@ record Equal (a : Set) : Set where
 open Equal public
 
 {-# COMPILE AGDA2HS Equal newtype #-}
+
+{-# FOREIGN AGDA2HS
+-- record newtype with same name
+#-}
+
+record Duo (a : Set) : Set where
+    field
+        duo : a × a
+open Duo public
+
+{-# COMPILE AGDA2HS Duo newtype #-}
+
+createDuo : a → a → Duo a
+createDuo a b = record { duo = a , b }
+
+{-# COMPILE AGDA2HS createDuo #-}
