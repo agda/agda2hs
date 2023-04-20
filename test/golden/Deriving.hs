@@ -11,6 +11,7 @@ data Planet = Mercury
             | Uranus
             | Neptune
             | Pluto
+                deriving (Read)
 
 deriving instance Eq Planet
 
