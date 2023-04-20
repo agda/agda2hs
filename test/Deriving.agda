@@ -11,7 +11,7 @@ data Planet : Set where
   Neptune : Planet
   Pluto   : Planet
 
-{-# COMPILE AGDA2HS Planet #-}
+{-# COMPILE AGDA2HS Planet deriving ( Read ) #-}
 
 instance
   iPlanetEq : Eq Planet

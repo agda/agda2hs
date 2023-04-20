@@ -532,11 +532,8 @@ instance HasId () where
 
 ### Deriving Type Class Instances
 
-It is also possible to include a standalone `deriving` clause by
-* adding the `derive` pragma to an implemented instance,
-* or postulating the instance of a type class.
+If the derived instance is not needed on the Agda side and needs to only be generated in Haskell, the deriving clause can simply be added to the compilation pragma (this also works with the `newtype` pragma):
 
-Agda:
 ```agda
 data Planet : Set where
   Mercury : Planet
@@ -549,8 +546,29 @@ data Planet : Set where
   Neptune : Planet
   Pluto   : Planet
 
-{-# COMPILE AGDA2HS Planet #-}
+{-# COMPILE AGDA2HS Planet deriving ( Read ) #-}
+```
 
+Haskell:
+```hs
+data Planet = Mercury
+            | Venus
+            | Earth
+            | Mars
+            | Jupiter
+            | Saturn
+            | Uranus
+            | Neptune
+            | Pluto
+                deriving (Read)
+```
+
+It is also possible to include a standalone `deriving` clause which makes the instance available on the Agda side by
+* adding the `derive` pragma to an implemented instance,
+* or postulating the instance.
+
+Agda:
+```agda
 instance
   iPlanetEq : Eq Planet
   iPlanetEq ._==_ Mercury Mercury = True
@@ -572,17 +590,7 @@ postulate instance iPlanetOrd : Ord Planet
 ```
 
 Haskell:
-```haskell
-data Planet = Mercury
-            | Venus
-            | Earth
-            | Mars
-            | Jupiter
-            | Saturn
-            | Uranus
-            | Neptune
-            | Pluto
-
+```hs
 deriving instance Eq Planet
 
 deriving instance Ord Planet
@@ -611,7 +619,7 @@ data Optional a = Of a
 deriving instance (Eq a) => Eq (Optional a)
 ```
 
-Or even with deriving strategies, by specifying them within the derive pragma:
+Or even with deriving strategies, by specifying them within the derive pragma (Agda2HS will also automatically set the language flags):
 
 Agda:
 ```agda
@@ -644,6 +652,9 @@ postulate instance iDuoEq : ⦃ Eq a ⦄ → ⦃ Eq b ⦄ → Eq (Duo a b)
 
 Haskell:
 ```haskell
+{-# LANGUAGE StandaloneDeriving, DerivingStrategies,
+  DeriveAnyClass, GeneralizedNewtypeDeriving #-}
+
 deriving stock instance Show Planet
 
 class Clazz a where
