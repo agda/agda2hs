@@ -4,11 +4,19 @@ open import Haskell.Prim
 
 open import Agda.Builtin.TrustMe
 
+_≠_ : {A : Set} → A → A → Set
+_≠_ a b = a ≡ b → ⊥
+
+infix 4 _≠_
+
 --------------------------------------------------
 -- Basic Laws
 
 cong : {A B : Set} → ∀ (f : A → B) {x y} → x ≡ y → f x ≡ f y
 cong f refl = refl
+
+cong₂ : ∀ (f : a → b → c) {x y u v} → x ≡ y → u ≡ v → f x u ≡ f y v
+cong₂ f refl refl = refl
 
 sym : ∀ {A : Set} {x y : A} → x ≡ y → y ≡ x
 sym refl = refl
