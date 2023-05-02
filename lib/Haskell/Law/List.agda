@@ -78,16 +78,16 @@ lengthNat-++ (x ∷ xs) = cong suc (lengthNat-++ xs)
 ++-identity-left-unique {xs = x ∷ xs} (y ∷ []   ) eq | ()
 ++-identity-left-unique {xs = x ∷ xs} (y ∷ _ ∷ _) eq | ()
 
-++-cancel-left : ∀ (xs ys zs : List a) → xs ++ ys ≡ xs ++ zs → ys ≡ zs
-++-cancel-left [] ys zs h       = h
-++-cancel-left (x ∷ xs) ys zs h = ++-cancel-left xs ys zs (∷-injective-right h)
+++-cancel-left : ∀ (xs ys : List a) {zs} → xs ++ ys ≡ xs ++ zs → ys ≡ zs
+++-cancel-left []       ys eq = eq
+++-cancel-left (x ∷ xs) ys eq = ++-cancel-left xs ys (∷-injective-right eq)
 
-++-cancel-right : ∀ (xs ys zs : List a) → xs ++ zs ≡ ys ++ zs → xs ≡ ys
-++-cancel-right [] []    zs eq = refl
-++-cancel-right (x ∷ xs) [] zs eq = ++-identity-left-unique (x ∷ xs) (sym eq)
-++-cancel-right [] (y ∷ ys) zs eq = sym $ ++-identity-left-unique (y ∷ ys) eq
-++-cancel-right (x ∷ xs) (y ∷ ys) zs eq 
-  rewrite ∷-injective-left eq = cong (y ∷_) $ ++-cancel-right xs ys zs (∷-injective-right eq)
+++-cancel-right : ∀ (xs ys : List a) {zs} → xs ++ zs ≡ ys ++ zs → xs ≡ ys
+++-cancel-right []       []       eq = refl
+++-cancel-right (x ∷ xs) []       eq = ++-identity-left-unique (x ∷ xs) (sym eq)
+++-cancel-right []       (y ∷ ys) eq = sym $ ++-identity-left-unique (y ∷ ys) eq
+++-cancel-right (x ∷ xs) (y ∷ ys) eq 
+  rewrite ∷-injective-left eq = cong (y ∷_) $ ++-cancel-right xs ys (∷-injective-right eq)
 
 ++-conical-left : (xs ys : List a) → xs ++ ys ≡ [] → xs ≡ []
 ++-conical-left [] _ refl = refl
