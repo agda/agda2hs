@@ -82,12 +82,6 @@ lengthNat-++ (x ∷ xs) = cong suc (lengthNat-++ xs)
 ++-cancel-left [] ys zs h       = h
 ++-cancel-left (x ∷ xs) ys zs h = ++-cancel-left xs ys zs (∷-injective-right h)
 
-¬xs++ys≡ys : ∀ {x} {xs ys : List a} → (x ∷ xs) ++ ys ≡ ys → ⊥
-¬xs++ys≡ys {x = x} {xs = xs} {ys = []} ()
-¬xs++ys≡ys {x = x} {xs = []} {ys = ys} ()
-¬xs++ys≡ys {x = x} {xs = x' ∷ xs} {ys = y ∷ ys} h 
-  rewrite ++-∷-assoc xs y ys = ¬xs++ys≡ys (∷-injective-right h)
-
 ++-cancel-right : ∀ (xs ys zs : List a) → xs ++ zs ≡ ys ++ zs → xs ≡ ys
 ++-cancel-right [] []    zs eq = refl
 ++-cancel-right (x ∷ xs) [] zs eq = ++-identity-left-unique (x ∷ xs) (sym eq)
@@ -100,6 +94,9 @@ lengthNat-++ (x ∷ xs) = cong suc (lengthNat-++ xs)
 
 ++-conical-right : (xs ys : List a) → xs ++ ys ≡ [] → ys ≡ []
 ++-conical-right [] _ refl = refl
+
+∷-not-identity : ∀ x (xs ys : List a) → (x ∷ xs) ++ ys ≡ ys → ⊥
+∷-not-identity x xs ys eq = []≠∷ x xs (sym $ ++-identity-left-unique (x ∷ xs) (sym eq))
 
 --------------------------------------------------
 -- foldr
