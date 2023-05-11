@@ -2,8 +2,8 @@
 module Haskell.Prim.List where
 
 open import Haskell.Prim
-open import Haskell.Prim.Tuple
 open import Haskell.Prim.Bool
+open import Haskell.Prim.Tuple
 open import Haskell.Prim.Int
 
 
