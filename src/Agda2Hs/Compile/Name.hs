@@ -45,6 +45,7 @@ isSpecialCon = prettyShow >>> \case
 isSpecialName :: QName -> Maybe (Hs.Name (), Maybe Import)
 isSpecialName = prettyShow >>> \case
     "Agda.Builtin.Nat.Nat"         -> withImport "Numeric.Natural" "Natural"
+    "Haskell.Control.Monad.guard"  -> withImport "Control.Monad" "guard"
     "Agda.Builtin.Int.Int"         -> noImport "Integer"
     "Agda.Builtin.Word.Word64"     -> noImport "Word"
     "Agda.Builtin.Float.Float"     -> noImport "Double"

@@ -18,8 +18,8 @@ record Functor (f : Set → Set) : Set₁ where
     fmap : (a → b) → f a → f b
     _<$>_ : (a → b) → f a → f b
     _<&>_ : f a → (a → b) → f b
-    _<$_ : a → f b → f a
-    _$>_ : f a → b → f b
+    _<$_ : (@0 {{ b }} → a) → f b → f a
+    _$>_ : f a → (@0 {{ a }} → b) → f b
     void : f a → f (Tuple [])
 -- ** defaults
 record DefaultFunctor (f : Set → Set) : Set₁ where
@@ -34,10 +34,10 @@ record DefaultFunctor (f : Set → Set) : Set₁ where
   _<&>_ : f a → (a → b) → f b
   m <&> f = fmap f m
 
-  _<$_ : a → f b → f a
-  x <$ m = fmap (const x) m
+  _<$_ : (@0 {{ b }} → a) → f b → f a
+  x <$ m = fmap (λ b → x {{b}}) m
 
-  _$>_ : f a → b → f b
+  _$>_ : f a → (@0 {{ a }} → b) → f b
   m $> x = x <$ m
 
   void : f a → f (Tuple [])

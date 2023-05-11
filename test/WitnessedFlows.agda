@@ -1,4 +1,5 @@
 open import Haskell.Prelude
+open import Haskell.Control.Monad
 
 data Range : Set where
     MkRange : (low high : Int)
@@ -27,3 +28,16 @@ createRangeCase low high =
         False → Nothing
 
 {-# COMPILE AGDA2HS createRangeCase #-}
+
+createRangeGuardSeq : Int → Int → Maybe Range
+createRangeGuardSeq low high =
+  do guard (low <= high)
+     pure (MkRange low high)
+
+{-# COMPILE AGDA2HS createRangeGuardSeq #-}
+
+createRangeGuardFmap : Int → Int → Maybe Range
+createRangeGuardFmap low high
+  = MkRange low high <$ guard (low <= high)
+
+{-# COMPILE AGDA2HS createRangeGuardFmap #-}
