@@ -43,13 +43,14 @@ isSpecialPat qn = case prettyShow qn of
   "Haskell.Prim.Tuple._;_" -> Just tuplePat
   "Agda.Builtin.Int.Int.pos" -> Just posIntPat
   "Agda.Builtin.Int.Int.negsuc" -> Just negSucIntPat
+  "Agda.Builtin.Nat.Nat.zero" -> Just $ \ _ _ _ -> return $ Hs.PLit () (Hs.Signless ()) (Hs.Int () 0 "0")
   s | s `elem` badConstructors -> Just $ \ _ _ _ -> genericDocError =<<
     "constructor `" <> prettyTCM qn <> "` not supported in patterns"
   _ -> Nothing
   where
     badConstructors =
-      [ "Agda.Builtin.Nat.Nat.zero"
-      , "Agda.Builtin.Nat.Nat.suc"
+      [
+        "Agda.Builtin.Nat.Nat.suc"
       ]
 
 isUnboxCopattern :: DeBruijnPattern -> C Bool
