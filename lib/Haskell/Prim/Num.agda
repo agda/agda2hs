@@ -18,9 +18,9 @@ record Num (a : Set) : Set₁ where
   infixl 6 _+_ _-_
   infixl 7 _*_
   field
-    MinusOK       : a → a → Set
-    NegateOK      : a → Set
-    FromIntegerOK : Integer → Set
+    @0 MinusOK       : a → a → Set
+    @0 NegateOK      : a → Set
+    @0 FromIntegerOK : Integer → Set
     _+_           : a → a → a
     _-_           : (x y : a) → @0 ⦃ MinusOK x y ⦄ → a
     _*_           : a → a → a
