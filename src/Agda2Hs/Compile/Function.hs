@@ -223,6 +223,7 @@ withFunctionLocals q k = do
   ls <- takeWhile (isAnonymousModuleName . qnameModule)
       . dropWhile (<= q)
       . map fst
+      . filter (usableModality . getModality . snd) -- drop if it's an erased definition anyway
       . sortDefs <$> liftTCM curDefs
   withLocals ls k
 
@@ -230,7 +231,7 @@ withFunctionLocals q k = do
 zoomLocals :: ModuleName -> LocalDecls -> LocalDecls
 zoomLocals mname = filter ((mname `isLeParentModuleOf`) . qnameModule)
 
--- | Before checking a clause, grab all of its local declarationaas.
+-- | Before checking a clause, grab all of its local declarations.
 -- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
 withClauseLocals :: ModuleName -> Clause -> C a -> C a
 withClauseLocals curModule c@Clause{..} k = do
