@@ -50,6 +50,7 @@ import WitnessedFlows
 import Kinds
 import LawfulOrd
 import Deriving
+import ErasedLocalDefinitions
 
 {-# FOREIGN AGDA2HS
 import Issue14
