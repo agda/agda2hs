@@ -45,6 +45,10 @@ validVarName :: Name () -> Bool
 validVarName (Ident _ s)  = validVarId s
 validVarName (Symbol _ s) = validVarSym s
 
+validTypeName :: Name () -> Bool
+validTypeName (Ident _ s) = validConId s
+validTypeName (Symbol _ s) = validVarSym s || validConSym s -- type operators need not start with a colon
+
 validConName :: Name () -> Bool
 validConName (Ident _ s)  = validConId s
 validConName (Symbol _ s) = validConSym s

@@ -240,7 +240,7 @@ checkValidFunName x = unless (validVarName x) $ genericDocError =<< do
   text "Invalid name for Haskell function: " <+> text (Hs.prettyPrint x)
 
 checkValidTypeName :: Hs.Name () -> C ()
-checkValidTypeName x = unless (validConName x) $ genericDocError =<< do
+checkValidTypeName x = unless (validTypeName x) $ genericDocError =<< do
   text "Invalid name for Haskell type: " <+> text (Hs.prettyPrint x)
 
 checkValidConName :: Hs.Name () -> C ()

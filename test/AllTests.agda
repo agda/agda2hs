@@ -51,6 +51,7 @@ import Kinds
 import LawfulOrd
 import Deriving
 import ErasedLocalDefinitions
+import TypeOperators
 
 {-# FOREIGN AGDA2HS
 import Issue14
