@@ -242,7 +242,7 @@ While in Haskell such a thing is never necessary, in Agda there are cases when i
 The type signatures of both `if_then_else_` and `case_of_` on the Agda side contain instances of these proofs which can be used to work with e.g. intrinsic verification.
 
 This allows for the following Agda code to type check:
-```
+```agda
 data Range : Set where
     MkRange : (low high : Int)
             → {{ @0 h : ((low <= high) ≡ True) }}
@@ -281,7 +281,7 @@ createRangeCase low high
 
 ## 0-Quantity Parameters
 
-Parameters can be annotated with a _quantiy_ of either `0` or `ω` (the default quantity is `ω` if not quantity is explicitly annotated). Such parameters are irrelevant to evaluation, so they are irrelevant to the compiled Haskell program, and so agda2hs erases them.
+Parameters can be annotated with a _quantity_ of either `0` or `ω` (the default quantity is `ω` if no quantity is explicitly annotated). Such parameters are irrelevant to evaluation, so they are irrelevant to the compiled Haskell program, and so agda2hs erases them.
 
 Agda:
 ```agda
