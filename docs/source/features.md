@@ -760,7 +760,7 @@ class ImplicitField a where
 
 ## Haskell Language Extensions
 
-Required haskell langauge extensions will be automatically inferred and enabled.
+Required haskell language extensions will be automatically inferred and enabled.
 
 A Haskell language extension can also be enabled manually as follows:
 
