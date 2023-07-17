@@ -1,0 +1,3 @@
+name: example-structure
+include: ./src/agda
+depend: agda2hs
