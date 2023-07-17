@@ -4,7 +4,7 @@ The repositories relevant to the tutorials can be found [on github](https://gith
 
 ## How to build a small library in agda2hs
 
-[Example source code](https://github.com/wcqaguxa/agda2hs-examples/tree/main/example-basics)
+[Example source code](https://github.com/agda/agda2hs/tree/master/tutorials/example-basics)
 
 After [installing agda2hs](https://agda.github.io/agda2hs/introduction.html), it's time to write a small library. See the folder example-basics for the files described in this document. 
 
@@ -70,7 +70,7 @@ To verify our code is correct, you can load the Agda file using `C-c C-l`. In or
 
 ## How to manage structure and dependencies of a bigger repository?
 
-[Example source code](https://github.com/wcqaguxa/agda2hs-examples/tree/main/example-structure)
+[Example source code](https://github.com/agda/agda2hs/tree/master/tutorials/example-structure)
 
 Ideally, a working repository should have more than one file. The repository `example-structure` contains an example of a minimally bigger project, with intuition on how to manage a bigger codebase. 
 

@@ -1,0 +1,3 @@
+name: example-basics
+include: . 
+depend: agda2hs
