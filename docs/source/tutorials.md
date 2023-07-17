@@ -53,7 +53,7 @@ Let's look at the first line:
 ```haskell
 module HelloWorld where
 ```
- Specifying the module name is not strictly necessary for the compilation to work. If missing, the agda2hs compiler will simply take the file name as the module name in Haskell. However, if the file name does not confine to Haskell module naming standards, the resulting Haskell file will be incorrect. Since Agda module naming rules are the same as Haskell's, encapsulating the file in a propely named module is a good practice to create correct Haskell files.
+ Specifying the module name is not strictly necessary for the compilation to work. If missing, the agda2hs compiler will simply take the file name as the module name in Haskell. However, if the file name does not confine to Haskell module naming standards, the resulting Haskell file will be incorrect. Since Agda module naming rules are the same as Haskell's, encapsulating the file in a properly named module is a good practice to create correct Haskell files.
  
 ```agda
 open import Haskell.Prelude
@@ -94,7 +94,7 @@ However, both files need to import `Haskell.Prelude` independently of each other
 
 ### Compilation
 
-In principle, `agda2hs` has to be invoked on file-by-file basis and to define a compilation of a whole folder, additional scripting is neccesary. However, since `Definition` is imported in `Usage`, when compiling the latter, the former also will be compiled as a ncessary dependency. Thus, in our example, it is only necessary to execute `agda2hs` once.
+In principle, `agda2hs` has to be invoked on file-by-file basis and to define a compilation of a whole folder, additional scripting is necessary. However, since `Definition` is imported in `Usage`, when compiling the latter, the former also will be compiled as it is a dependency. Thus, in our example, it is only necessary to execute `agda2hs` once.
 
 Since the target repository is different than the source, it has to be specified as an argument. An example script, to be executed from the root of `example-structure` is placed in `script.sh`:
 
