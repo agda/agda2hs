@@ -28,6 +28,7 @@ import Agda.Utils.Pretty ( prettyShow )
 import qualified Agda.Utils.Pretty as P ( Pretty(pretty) )
 
 import Agda2Hs.AgdaUtils
+import Agda2Hs.Compile.Rewrites
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
@@ -42,26 +43,38 @@ isSpecialCon = prettyShow >>> \case
     _ -> Nothing
   where special c = Just (Hs.Special () $ c ())
 
-isSpecialName :: QName -> Maybe (Hs.Name (), Maybe Import)
-isSpecialName = prettyShow >>> \case
-    "Agda.Builtin.Nat.Nat"         -> withImport "Numeric.Natural" "Natural"
-    "Haskell.Control.Monad.guard"  -> withImport "Control.Monad" "guard"
-    "Agda.Builtin.Int.Int"         -> noImport "Integer"
-    "Agda.Builtin.Word.Word64"     -> noImport "Word"
-    "Agda.Builtin.Float.Float"     -> noImport "Double"
-    "Agda.Builtin.Bool.Bool.false" -> noImport "False"
-    "Agda.Builtin.Bool.Bool.true"  -> noImport "True"
-    "Haskell.Prim._∘_"             -> noImport "_._"
-    "Haskell.Prim.seq"             -> noImport "seq"
-    "Haskell.Prim._$!_"            -> noImport "_$!_"
-    "Haskell.Prim.Monad.Dont._>>=_" -> noImport "_>>=_"
-    "Haskell.Prim.Monad.Dont._>>_"  -> noImport "_>>_"
-    _ -> Nothing
+-- Gets an extra parameter, with the user-defined rewrite rules in it.
+-- If finds it in the user-defined or the built-in rewrite rules, then it returns the new name and a possible import in a Just; otherwise returns Nothing.
+isSpecialName :: QName -> Rewrites -> Maybe (Hs.Name (), Maybe Import)
+isSpecialName f rules = let pretty = prettyShow f in case lookupRules pretty rules of
+    result@(Just _)     -> result
+    Nothing             -> case pretty of
+      "Agda.Builtin.Nat.Nat"          -> withImport "Numeric.Natural" "Natural"
+      "Haskell.Control.Monad.guard"   -> withImport "Control.Monad" "guard"
+      "Agda.Builtin.Int.Int"          -> noImport "Integer"
+      "Agda.Builtin.Word.Word64"      -> noImport "Word"
+      "Agda.Builtin.Float.Float"      -> noImport "Double"
+      "Agda.Builtin.Bool.Bool.false"  -> noImport "False"
+      "Agda.Builtin.Bool.Bool.true"   -> noImport "True"
+      "Haskell.Prim._∘_"              -> noImport "_._"
+      "Haskell.Prim.seq"              -> noImport "seq"
+      "Haskell.Prim._$!_"             -> noImport "_$!_"
+      "Haskell.Prim.Monad.Dont._>>=_" -> noImport "_>>=_"
+      "Haskell.Prim.Monad.Dont._>>_"  -> noImport "_>>_"
+      _                               -> Nothing
   where
     noImport x = Just (hsName x, Nothing)
     withImport mod x =
       let imp = Import (hsModuleName mod) Unqualified Nothing (hsName x)
       in Just (hsName x, Just imp)
+
+    lookupRules :: String -> Rewrites -> Maybe (Hs.Name (), Maybe Import)
+    lookupRules _ [] = Nothing
+    lookupRules pretty (rule:ls)
+      | pretty == from rule   = case (importing rule) of     -- check if there is a new import
+          Just lib -> withImport lib (to rule)
+          Nothing  -> noImport (to rule)
+      | otherwise             = lookupRules pretty ls
 
 compileName :: Applicative m => Name -> m (Hs.Name ())
 compileName n = hsName . show <$> pretty (nameConcrete n)
@@ -79,7 +92,8 @@ compileQName f
       Just (r, Record{recNamedCon = False}) -> r -- use record name for unnamed constructors
       _                                     -> f
     hf0 <- compileName (qnameName f)
-    let (hf, mimpBuiltin) = fromMaybe (hf0, Nothing) (isSpecialName f)
+    rules <- asks rewrites
+    let (hf, mimpBuiltin) = fromMaybe (hf0, Nothing) (isSpecialName f rules)
     parent <- parentName f
     par <- traverse (compileName . qnameName) parent
     let mod0 = qnameModule $ fromMaybe f parent

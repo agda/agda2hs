@@ -19,25 +19,28 @@ import Agda2Hs.Compile.Data ( compileData )
 import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
+import Agda2Hs.Compile.Rewrites
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils ( tellExtension )
 import Agda2Hs.Pragma
 
-initCompileEnv :: TopLevelModuleName -> CompileEnv
-initCompileEnv tlm = CompileEnv
+-- Needs a list of rewrite rules too.
+initCompileEnv :: TopLevelModuleName -> Rewrites -> CompileEnv
+initCompileEnv tlm rewrites = CompileEnv
   { currModule = tlm
   , minRecordName = Nothing
   , locals = []
   , copatternsEnabled = False
   , checkVar = False
+  , rewrites = rewrites
   }
 
 initCompileState :: CompileState
 initCompileState = CompileState { lcaseUsed = 0 }
 
-runC :: TopLevelModuleName -> C a -> TCM (a, CompileOutput)
-runC tlm = runWriterT
-     . flip runReaderT (initCompileEnv tlm)
+runC :: TopLevelModuleName -> Rewrites -> C a -> TCM (a, CompileOutput)
+runC tlm rewrites = runWriterT
+     . flip runReaderT (initCompileEnv tlm rewrites)
      . flip evalStateT initCompileState
 
 -- Main compile function
@@ -45,7 +48,7 @@ runC tlm = runWriterT
 
 compile :: Options -> ModuleEnv -> IsMain -> Definition ->
   TCM (CompiledDef, CompileOutput)
-compile _ tlm _ def = withCurrentModule (qnameModule $ defName def) $ runC tlm $
+compile opts tlm _ def = withCurrentModule (qnameModule $ defName def) $ runC tlm (rewriteRules opts) $
   compileAndTag <* postCompile
   where
     tag code = [(nameBindingSite $ qnameName $ defName def, code)]
