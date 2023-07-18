@@ -44,7 +44,7 @@ backend = Backend'
       , Option ['X'] [] (ReqArg extensionOpt "EXTENSION")
         "Enable Haskell language EXTENSION. Affects parsing of Haskell code in FOREIGN blocks."
       , Option [] ["rewrite-rules"] (ReqArg rewriteOpt "FILE")
-        "Provide custom rewrite rules in a YAML configuration file. Identifiers contained here will be replaced with the one given, with an appropriate import added if requested. See rewrite-example.yaml for the format."
+        "Provide custom rewrite rules in a YAML configuration file. Identifiers contained here will be replaced with the one given, with an appropriate import added if requested. See rewrite-rules-example.yaml for the format."
       ]
   , isEnabled             = \ _ -> True
   , preCompile            = return
