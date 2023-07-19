@@ -20,6 +20,7 @@ import Agda.Syntax.Position ( Range )
 import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
 
 import Agda2Hs.HsUtils ( Strictness )
+import Agda2Hs.Compile.Rewrites
 
 type ModuleEnv   = TopLevelModuleName
 type ModuleRes   = ()
@@ -29,7 +30,9 @@ type Ranged a    = (Range, a)
 type Code = (Hs.Module Hs.SrcSpanInfo, [Hs.Comment])
 
 data Options = Options { optOutDir     :: Maybe FilePath,
-                         optExtensions :: [Hs.Extension] }
+                         optExtensions :: [Hs.Extension],
+                         rewriteRules  :: Rewrites }
+                      -- ^ the rewrite rules read from user-provided config files
 
 -- Required by Agda-2.6.2, but we don't really care.
 instance NFData Options where
@@ -46,6 +49,8 @@ data CompileEnv = CompileEnv
   -- ^ whether copatterns should be allowed when compiling patterns
   , checkVar :: Bool
   -- ^ whether to ensure compiled variables are usable and visible
+  , rewrites :: Rewrites
+  -- ^ the user-defined rewrite rules read from a config file
   }
 
 type Qualifier = Maybe (Maybe (Hs.ModuleName ()))

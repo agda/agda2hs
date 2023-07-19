@@ -891,5 +891,125 @@ testA = A.foo
 testB = A.foo
 ```
 
+# Rewrite rules
 
+User-defined rewrite rules for names can be defined through YAML configuration files. These should be provided via the `--rewrite-rules` option.
 
+This feature is particularly useful if you have a project depending on a large library which is not agda2hs-compatible
+(the most evident example is probably the Agda standard library).
+In this case, you might not want to rewrite the entire library, but you might still have to use it for your proofs.
+User-defined rewrite rules can help you translate the library's functions to the ones in the Haskell Prelude,
+or even to those written by yourself.
+In the latter case, place a Haskell file (e.g. `Base.hs`) next to your `.agda` files that contains your custom definitions
+and provide this custom module in the `importing` clauses of the config file.
+
+To an extent, this compromises the mathematically proven correctness of your project.
+But if you trust that your (or Prelude's) functions are equivalent to the original ones,
+this might not be a problem.
+You can also prove the equivalence of the two definitions to be safe.
+
+For example, let's suppose we want to compile the following file:
+
+```agda
+open import Data.Nat as ℕ
+open import Data.Integer as ℤ
+open import Data.Rational.Unnormalised as ℚ
+
+double : ℚᵘ → ℚᵘ
+double p = (+ 2 / 1) ℚ.* p
+{-# COMPILE AGDA2HS double #-}
+
+-- this will use denominator-1 and suc from BaseExample.hs
+twoDenoms : ℚᵘ → ℕ
+twoDenoms p = 2 ℕ.* (ℕ.suc (ℚᵘ.denominator-1 p))
+{-# COMPILE AGDA2HS twoDenoms #-}
+```
+
+By default, the output would be this:
+
+```hs
+module Example where
+
+import Data.Rational.Unnormalised.Base (ℚᵘ(denominator-1), (/))
+import qualified Data.Rational.Unnormalised.Base as ℚ ((*))
+import Numeric.Natural (Natural)
+import qualified Prelude as ℕ ((*))
+
+double :: ℚᵘ -> ℚᵘ
+double p = (ℚ.*) (pos 2 / 1) p
+
+twoDenoms :: ℚᵘ -> Natural
+twoDenoms p = (ℕ.*) 2 (suc (denominator-1 p))
+```
+
+Here, agda2hs doesn't know where to find these definitions; so it simply leaves them as they are.
+
+Run this again with the following rewrite rules:
+
+```yaml
+- from: Agda.Builtin.Nat.Nat.suc
+  to: suc
+  importing: BaseExample
+- from: Agda.Builtin.Nat._*_
+  to: _*_
+  importing: Prelude
+
+- from: Agda.Builtin.Int.Int.pos
+  to: toInteger
+  importing: Prelude
+
+- from: Data.Rational.Unnormalised.Base.ℚᵘ
+  to: Rational
+  importing: Data.Ratio
+- from: Data.Rational.Unnormalised.Base._*_
+  to: _*_
+  importing: Prelude
+- from: Data.Rational.Unnormalised.Base._/_
+  to: _%_
+  importing: Data.Ratio
+- from: Data.Rational.Unnormalised.Base.ℚᵘ.denominator-1
+  to: denominatorMinus1
+  importing: BaseExample
+```
+
+The names are a bit difficult to find. It helps if you run agda2hs with a verbosity level of 26 and check the logs (specifically the parts beginning with `compiling name`).
+
+The output is now this:
+
+```hs
+module Example where
+
+import BaseExample (denominatorMinus1, suc)
+import Data.Ratio (Rational, (%))
+import Numeric.Natural (Natural)
+import Prelude (toInteger, (*))
+
+double :: Rational -> Rational
+double p = toInteger 2 % 1 * p
+
+twoDenoms :: Rational -> Natural
+twoDenoms p = 2 * suc (denominatorMinus1 p)
+```
+
+With a manually written `BaseExample.hs` file like this, GHCi accepts it:
+
+```hs
+module BaseExample where
+
+import Numeric.Natural
+import Data.Ratio
+
+suc :: Natural -> Natural
+suc = (1 +)
+
+denominatorMinus1 :: Rational -> Natural
+denominatorMinus1 = fromIntegral . denominator
+```
+
+See also `rewrite-rules-example.yaml` in the root of the repository.
+
+**Known issues:**
+- If you import something from Prelude, you have to state this explicitly.
+- Then, it will add an import like import Prelude (...), which shadows all the other functions in Prelude. This is not necessarily a problem; as we will probably not modify the generated Haskell files by hand, and so we won't add any new Prelude functions.
+- But this only works for things you do use, not for those that you only define. For example, if you write an instance of the Num class and define signum but do not use it, it will not get into Prelude's import list, and so GHC will complain.
+- You cannot change to a version with arguments of different modality without getting useless code. So if you rewrite a function to a version which has some of its parameters erased, the parameters remain there; probably because rewriting happens only after compiling the type signature.
