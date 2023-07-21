@@ -18,7 +18,9 @@ import Agda2Hs.Render
 import qualified System.IO.Unsafe as UNSAFE (unsafePerformIO)
 
 defaultOptions :: Options
-defaultOptions = Options{ optOutDir = Nothing, optExtensions = [], rewriteRules = [] }
+defaultOptions = Options{ optOutDir = Nothing, optExtensions = [],
+                          optPrelude = (False, Auto),   -- default to including Prelude explicitly and letting agda2hs search for identifiers to import automatically
+                          optRewrites = [] }
 
 outdirOpt :: Monad m => FilePath -> Options -> m Options
 outdirOpt dir opts = return opts{ optOutDir = Just dir }
@@ -29,8 +31,15 @@ extensionOpt ext opts = return opts{ optExtensions = Hs.parseExtension ext : opt
 -- Here we use unsafePerformIO to read the rewrite rules from the files.
 rewriteOpt :: Monad m => FilePath -> Options -> m Options
 rewriteOpt file opts = return opts{
-                         rewriteRules = UNSAFE.unsafePerformIO (readRewritesFromFile file)
-                                          ++ rewriteRules opts}
+                         optRewrites = newRules ++ optRewrites opts,
+                         optPrelude = case maybePreludeOptions of {
+                                   Nothing       -> optPrelude opts;
+                                   Just newPOpts -> newPOpts
+                                   -- ^ the new one trumps the older one
+                                   -- maybe this should be done so that we are given an error in case of conflicting options
+                                   }}
+  where
+    (maybePreludeOptions, newRules) = UNSAFE.unsafePerformIO (readConfigFile file)
 {-# NOINLINE rewriteOpt #-}
 
 backend :: Backend' Options Options ModuleEnv ModuleRes (CompiledDef, CompileOutput)
@@ -44,7 +53,7 @@ backend = Backend'
       , Option ['X'] [] (ReqArg extensionOpt "EXTENSION")
         "Enable Haskell language EXTENSION. Affects parsing of Haskell code in FOREIGN blocks."
       , Option [] ["rewrite-rules"] (ReqArg rewriteOpt "FILE")
-        "Provide custom rewrite rules in a YAML configuration file. Identifiers contained here will be replaced with the one given, with an appropriate import added if requested. See rewrite-rules-example.yaml for the format."
+        "Provide custom rewrite rules in a YAML configuration file. Identifiers contained here will be replaced with the one given, with an appropriate import added if requested. The handling of imports from Prelude should preferably also be included in this file. See rewrite-rules-example.yaml for the format."
       ]
   , isEnabled             = \ _ -> True
   , preCompile            = return

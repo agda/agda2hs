@@ -27,11 +27,15 @@ import Agda.Syntax.Position
 import Agda.Syntax.TopLevelModuleName
 
 import Agda.Utils.Pretty ( prettyShow )
+import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
+
 import Agda2Hs.Compile
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Imports
 import Agda2Hs.HsUtils
 import Agda2Hs.Pragma ( getForeignPragmas )
+
+import Language.Haskell.Exts as Hs (prettyPrint, prelude_mod)
 
 -- Rendering --------------------------------------------------------------
 
@@ -94,8 +98,18 @@ writeModule opts _ isMain m outs = do
     -- Add automatic imports
     let unlines' [] = []
         unlines' ss = unlines ss ++ "\n"
-    autoImports <- unlines' . map pp <$> compileImports mod imps
-    -- The comments makes it hard to generate and pretty print a full module
+    let filteredImps = case optPrelude opts of
+          (False, Auto) -> imps                                                              -- import Prelude explicitly and search for imported identifiers, just like at other modules
+          _             -> filter (not . (== Hs.prelude_mod ()) . importModule) imps         -- handle Prelude separately
+    let autoImportList = case optPrelude opts of
+          (False, Auto)               -> compileImports mod filteredImps -- then we have left Prelude in filteredImps
+          (True,  Names [])           -> compileImports mod filteredImps -- we write nothing about Prelude and import everything
+          (isImplicit, Names names)   -> (:) <$>
+                                         (pure $ makeManualDecl (Hs.prelude_mod ()) Nothing isImplicit names) <*>
+                                         compileImports mod filteredImps
+          (True,  Auto)               -> __IMPOSSIBLE__
+    autoImports <- (unlines' . map pp) <$> autoImportList
+    -- The comments make it hard to generate and pretty print a full module
     hsFile <- moduleFileName opts m
     let output = concat
                  [ renderLangExts exts

@@ -48,7 +48,7 @@ runC tlm rewrites = runWriterT
 
 compile :: Options -> ModuleEnv -> IsMain -> Definition ->
   TCM (CompiledDef, CompileOutput)
-compile opts tlm _ def = withCurrentModule (qnameModule $ defName def) $ runC tlm (rewriteRules opts) $
+compile opts tlm _ def = withCurrentModule (qnameModule $ defName def) $ runC tlm (optRewrites opts) $
   compileAndTag <* postCompile
   where
     tag code = [(nameBindingSite $ qnameName $ defName def, code)]
