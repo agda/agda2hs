@@ -891,7 +891,9 @@ testA = A.foo
 testB = A.foo
 ```
 
-# Rewrite rules
+# Rewrite rules and Prelude imports
+
+## Rewrite rules
 
 User-defined rewrite rules for names can be defined through YAML configuration files. These should be provided via the `--rewrite-rules` option.
 
@@ -1008,8 +1010,38 @@ denominatorMinus1 = fromIntegral . denominator
 
 See also `rewrite-rules-example.yaml` in the root of the repository.
 
-**Known issues:**
-- If you import something from Prelude, you have to state this explicitly.
-- Then, it will add an import like import Prelude (...), which shadows all the other functions in Prelude. This is not necessarily a problem; as we will probably not modify the generated Haskell files by hand, and so we won't add any new Prelude functions.
-- But this only works for things you do use, not for those that you only define. For example, if you write an instance of the Num class and define signum but do not use it, it will not get into Prelude's import list, and so GHC will complain.
+## Handling of Prelude
+
+By default, agda2hs handles Prelude like other modules: it collects all the identifiers it finds we use from Prelude, and adds them to Prelude's import list.
+
+In the config YAML, we can specify a different behaviour. The format is:
+
+```yaml
+# First, we specify how to handle Prelude.
+prelude:
+  implicit: true
+  hiding:           # if implicit is true
+    - seq
+
+  #using:           # if implicit is false
+  #  - +
+  #  - Num
+
+# Then the rules themselves.
+rules:
+
+  # The rational type.
+  - from: Data.Rational.Unnormalised.Base.ℚᵘ
+    to: Rational
+    importing: Data.Ratio
+  - [...]
+```
+
+If `implicit` is `true`, then everything gets imported from Prelude, except for those that are specified in the `hiding` list. This can cause clashes if you reuse names from Prelude, hence the opportunity for a `hiding` list. If there is no such list, then everything gets imported.
+
+If `implicit` is `false`, Prelude gets imported explicitly, and only those identifiers that are specified in the `using` list. If there is no such list, agda2hs reverts to the default behaviour (it tries to collect imports by itself).
+
+## Known issues
+
+- Rewrite rules only work for things you do use, not for those that you only define. This causes a problem with class instances: if you choose the default behaviour, then write an instance of the Num class and define signum but do not use it, it will not get into Prelude's import list, and so GHC will complain.
 - You cannot change to a version with arguments of different modality without getting useless code. So if you rewrite a function to a version which has some of its parameters erased, the parameters remain there; probably because rewriting happens only after compiling the type signature.
