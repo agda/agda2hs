@@ -88,6 +88,10 @@ data Import = Import
   , importQualified :: Qualifier
   , importParent    :: Maybe (Hs.Name ())
   , importName      :: Hs.Name ()
+  , importNamespace :: Maybe (Hs.Namespace ())
+                    -- ^^ if this is a type or something like that, we can add a namespace qualifier to the import spec
+                    -- now it's only useful for differentiating type operators; hence the "Maybe"
+                    -- (we don't calculate it if it's not necessary)
   }
 type Imports = [Import]
 

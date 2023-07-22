@@ -20,7 +20,9 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
-type ImportSpecMap = Map (Hs.Name ()) (Set (Hs.Name ()))
+type MaybeNamespace = Maybe (Hs.Namespace ()) -- just for shortening
+
+type ImportSpecMap = Map (Hs.Name (), MaybeNamespace) (Set (Hs.Name (), MaybeNamespace))
 type ImportDeclMap = Map (Hs.ModuleName (), Qualifier) ImportSpecMap
 
 compileImports :: String -> Imports -> TCM [Hs.ImportDecl ()]
@@ -33,14 +35,19 @@ compileImports top is0 = do
     mergeChildren :: ImportSpecMap -> ImportSpecMap -> ImportSpecMap
     mergeChildren = Map.unionWith Set.union
 
-    makeSingle :: Maybe (Hs.Name ()) -> Hs.Name () -> ImportSpecMap
+    makeSingle :: Maybe (Hs.Name (), MaybeNamespace) -> (Hs.Name (), MaybeNamespace) -> ImportSpecMap
     makeSingle Nothing  q = Map.singleton q Set.empty
     makeSingle (Just p) q = Map.singleton p $ Set.singleton q
 
     groupModules :: [Import] -> ImportDeclMap
     groupModules = foldr
-      (\(Import mod as p q) -> Map.insertWith mergeChildren (mod,as) (makeSingle p q))
+      (\(Import mod as p q mIT) -> Map.insertWith mergeChildren (mod,as)
+                                                                (makeSingle (parentTuple p) (q, mIT)))
       Map.empty
+        where
+          parentTuple :: Maybe (Hs.Name ()) -> Maybe (Hs.Name (), MaybeNamespace)
+          parentTuple (Just name) = Just (name, Just (Hs.TypeNamespace ()))  -- for parents, we assume they are typeclasses or datatypes
+          parentTuple Nothing     = Nothing
 
     -- TODO: avoid having to do this by having a CName instead of a
     -- Name in the Import datatype
@@ -52,10 +59,12 @@ compileImports top is0 = do
       | head s == ':' = Hs.ConName () n
       | otherwise     = Hs.VarName () n
 
-    makeImportSpec :: Hs.Name () -> Set (Hs.Name ()) -> Hs.ImportSpec ()
-    makeImportSpec q qs
-      | Set.null qs = Hs.IVar () q
-      | otherwise   = Hs.IThingWith () q $ map makeCName $ Set.toList qs
+    makeImportSpec :: (Hs.Name (), MaybeNamespace) -> Set (Hs.Name (), MaybeNamespace) -> Hs.ImportSpec ()
+    makeImportSpec (q, maybeNamespace) qs
+      | Set.null qs = case maybeNamespace of
+                        Just namespace   -> Hs.IAbs () namespace q
+                        _                -> Hs.IVar () q   -- if we don't know, we treat it as a value
+      | otherwise   = Hs.IThingWith () q $ map (makeCName . fst) $ Set.toList qs
 
     makeImportDecl :: Hs.ModuleName () -> Qualifier -> ImportSpecMap -> Hs.ImportDecl ()
     makeImportDecl mod qual specs = Hs.ImportDecl ()
@@ -66,13 +75,13 @@ compileImports top is0 = do
 
     checkClashingImports :: Imports -> TCM ()
     checkClashingImports [] = return ()
-    checkClashingImports (Import mod as p q : is) =
+    checkClashingImports (Import mod as p q _ : is) =
       case filter isClashing is of
         (i : _) -> genericDocError =<< text (mkErrorMsg i)
         []      -> checkClashingImports is
      where
-        isClashing (Import _ as' p' q') = (as' == as) && (p' /= p) && (q' == q)
-        mkErrorMsg (Import _ _ p' q') =
+        isClashing (Import _ as' p' q' _) = (as' == as) && (p' /= p) && (q' == q)
+        mkErrorMsg (Import _ _ p' q' _) =
              "Clashing import: " ++ pp q ++ " (both from "
           ++ prettyShow (pp <$> p) ++ " and "
           ++ prettyShow (pp <$> p') ++ ")"

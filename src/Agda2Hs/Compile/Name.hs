@@ -14,6 +14,7 @@ import Agda.Compiler.Backend hiding ( topLevelModuleName )
 import Agda.Compiler.Common ( topLevelModuleName )
 
 import Agda.Syntax.Common
+import Agda.Syntax.Internal
 import Agda.Syntax.Position
 import qualified Agda.Syntax.Concrete as C
 import Agda.Syntax.Scope.Base ( inverseScopeLookupName )
@@ -65,7 +66,8 @@ isSpecialName f rules = let pretty = prettyShow f in case lookupRules pretty rul
   where
     noImport x = Just (hsName x, Nothing)
     withImport mod x =
-      let imp = Import (hsModuleName mod) Unqualified Nothing (hsName x)
+      let imp = Import (hsModuleName mod) Unqualified Nothing (hsName x) Nothing
+                                                                      -- ^ maybe we should add an option to specify this in the config file (whether it is a type or not)
       in Just (hsName x, Just imp)
 
     lookupRules :: String -> Rewrites -> Maybe (Hs.Name (), Maybe Import)
@@ -104,7 +106,11 @@ compileQName f
                   || prettyShow mod0 `elem` primMonadModules
     qual <- if | skipModule -> return Unqualified
                | otherwise  -> getQualifier (fromMaybe f parent) mod
-    let (mod', mimp) = mkImport mod qual par hf
+    -- we only calculate this when dealing with type operators; usually that's where 'type' prefixes are needed in imports
+    maybeNamespace <- (case hf of
+          Hs.Symbol _ _ -> Just <$> getNamespace f
+          Hs.Ident  _ _ -> return Nothing)
+    let (mod', mimp) = mkImport mod qual par hf maybeNamespace
         qf = qualify mod' hf qual
 
     -- add (possibly qualified) import
@@ -147,15 +153,32 @@ compileQName f
     primModules = ["Agda.Builtin", "Haskell.Prim", "Haskell.Prelude"]
     primMonadModules = ["Haskell.Prim.Monad.Dont", "Haskell.Prim.Monad.Do"]
 
-    mkImport mod qual par hf
+    getNamespace :: QName -> C (Hs.Namespace ())
+    getNamespace qName = do
+      definition <- getConstInfo qName
+      let sort = _getSort $ defType definition
+      -- TODO: this doesn't work well
+      -- maybe it believes Prelude functions to have a higher level than in reality
+      return (case sort of
+        Type (Max l _) -> intToNamespace l    
+        Prop (Max l _) -> intToNamespace l
+        SSet (Max l _) -> intToNamespace l
+        a              -> Hs.TypeNamespace ()) -- error $ show a ++ show f) -- we do not try to elaborate further at this point
+        where
+          intToNamespace :: Integer -> Hs.Namespace ()
+          intToNamespace l
+            | l <= 1    = Hs.NoNamespace () -- is this the way of checking whether it's a value? I'm not sure
+            | otherwise = Hs.TypeNamespace ()
+
+    mkImport mod qual par hf maybeIsType
       -- make sure the Prelude is properly qualified
       | any (`isPrefixOf` pp mod) primModules
       = if isQualified qual then
           let mod' = hsModuleName "Prelude"
-          in (mod', Just (Import mod' qual Nothing hf))
+          in (mod', Just (Import mod' qual Nothing hf maybeIsType))
         else (mod, Nothing)
       | otherwise
-      = (mod, Just (Import mod qual par hf))
+      = (mod, Just (Import mod qual par hf maybeIsType))
 
 hsTopLevelModuleName :: TopLevelModuleName -> Hs.ModuleName ()
 hsTopLevelModuleName = hsModuleName . intercalate "." . map unpack
