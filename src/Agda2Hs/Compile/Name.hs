@@ -153,22 +153,27 @@ compileQName f
     primModules = ["Agda.Builtin", "Haskell.Prim", "Haskell.Prelude"]
     primMonadModules = ["Haskell.Prim.Monad.Dont", "Haskell.Prim.Monad.Do"]
 
+    -- Determine whether it is a type operator or an "ordinary" operator.
+    -- _getSort is not for that; e. g. a data has the same sort as its constructor.
     getNamespace :: QName -> C (Hs.Namespace ())
     getNamespace qName = do
       definition <- getConstInfo qName
-      let sort = _getSort $ defType definition
-      -- TODO: this doesn't work well
-      -- maybe it believes Prelude functions to have a higher level than in reality
-      return (case sort of
-        Type (Max l _) -> intToNamespace l    
-        Prop (Max l _) -> intToNamespace l
-        SSet (Max l _) -> intToNamespace l
-        a              -> Hs.TypeNamespace ()) -- error $ show a ++ show f) -- we do not try to elaborate further at this point
-        where
-          intToNamespace :: Integer -> Hs.Namespace ()
-          intToNamespace l
-            | l <= 1    = Hs.NoNamespace () -- is this the way of checking whether it's a value? I'm not sure
-            | otherwise = Hs.TypeNamespace ()
+      let isQNameSet = isSet $ getResultType $ defType definition
+      reportSDoc "agda2hs.name" 25 $ text $ "Checking whether " ++ (prettyShow $ nameCanonical $ qnameName f)
+                                              ++ "is a type operator: " ++ show isQNameSet
+      if isQNameSet then return (Hs.TypeNamespace ()) else return (Hs.NoNamespace ())
+
+    -- Gets the type of the result of the function (the type after the last "->").
+    getResultType :: Type -> Type
+    getResultType typ = case (unEl typ) of
+      (Pi _ absType) -> getResultType $ unAbs absType
+      _              -> typ
+
+    -- I'm not sure whether this is the correct way to determine whether it's a Set/Prop;
+    -- but this is my best bet.
+    isSet :: Type -> Bool
+    isSet (El _ (Sort _)) = True
+    isSet _               = False
 
     mkImport mod qual par hf maybeIsType
       -- make sure the Prelude is properly qualified
