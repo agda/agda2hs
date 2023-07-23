@@ -1,5 +1,5 @@
 
-module Agda2Hs.Compile.Imports ( compileImports ) where
+module Agda2Hs.Compile.Imports ( compileImports, makeManualDecl ) where
 
 import Data.Char ( isUpper )
 import Data.List ( isPrefixOf )
@@ -60,7 +60,9 @@ compileImports top is0 = do
     makeImportDecl :: Hs.ModuleName () -> Qualifier -> ImportSpecMap -> Hs.ImportDecl ()
     makeImportDecl mod qual specs = Hs.ImportDecl ()
       mod (isQualified qual) False False Nothing (qualifiedAs qual)
-      (Just $ Hs.ImportSpecList () False $ map (uncurry makeImportSpec) $ Map.toList specs)
+      (Just $ Hs.ImportSpecList ()
+            False                                             -- whether the list should be a list of hidden identifiers ('hiding')
+            $ map (uncurry makeImportSpec) $ Map.toList specs)
 
     checkClashingImports :: Imports -> TCM ()
     checkClashingImports [] = return ()
@@ -76,3 +78,12 @@ compileImports top is0 = do
           ++ prettyShow (pp <$> p') ++ ")"
         -- TODO: no range information as we only have Haskell names at this point
 
+-- if the user has provided a "using" or "hiding" list in the config file
+-- used for Prelude
+makeManualDecl :: Hs.ModuleName () -> Qualifier -> Bool -> [String] -> Hs.ImportDecl ()
+makeManualDecl mod qual isImplicit namesToHide = Hs.ImportDecl ()
+       mod (isQualified qual) False False Nothing (qualifiedAs qual)
+      (Just $ Hs.ImportSpecList ()
+            isImplicit        -- whether the list should be a list of hidden identifiers ('hiding')
+            $ map (Hs.IVar() . (\str -> if validVarId str || validConId str then Hs.Ident() str else Hs.Symbol() str))    -- since we can only read strings from the config file, we have to do this
+            namesToHide) -- map (uncurry makeImportSpec) $ Map.toList specs)
