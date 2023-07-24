@@ -66,8 +66,9 @@ isSpecialName f rules = let pretty = prettyShow f in case lookupRules pretty rul
   where
     noImport x = Just (hsName x, Nothing)
     withImport mod x =
-      let imp = Import (hsModuleName mod) Unqualified Nothing (hsName x) Nothing
-                                                                      -- ^ maybe we should add an option to specify this in the config file (whether it is a type or not)
+      let imp = Import (hsModuleName mod) Unqualified Nothing (hsName x) (Hs.NoNamespace ())
+                                                                       -- ^ TODO: add an option to specify this in the config file (whether it is a type or not)
+                                                                       -- as far as I know, there are no type operators in Prelude, but maybe a self-defined one could cause trouble
       in Just (hsName x, Just imp)
 
     lookupRules :: String -> Rewrites -> Maybe (Hs.Name (), Maybe Import)
@@ -107,11 +108,12 @@ compileQName f
     qual <- if | skipModule -> return Unqualified
                | otherwise  -> getQualifier (fromMaybe f parent) mod
     -- we only calculate this when dealing with type operators; usually that's where 'type' prefixes are needed in imports
-    maybeNamespace <- (case hf of
-          Hs.Symbol _ _ -> Just <$> getNamespace f
-          Hs.Ident  _ _ -> return Nothing)
-    let (mod', mimp) = mkImport mod qual par hf maybeNamespace
-        qf = qualify mod' hf qual
+    namespace <- (case hf of
+          Hs.Symbol _ _ -> getNamespace f
+          Hs.Ident  _ _ -> return (Hs.NoNamespace ()))
+    let
+      (mod', mimp) = mkImport mod qual par hf namespace
+      qf = qualify mod' hf qual
 
     -- add (possibly qualified) import
     whenJust (mimpBuiltin <|> mimp) tellImport
