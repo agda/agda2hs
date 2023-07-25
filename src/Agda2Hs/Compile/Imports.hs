@@ -20,7 +20,7 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
-type ImportSpecMap = Map (Hs.Name (), Hs.Namespace ()) (Set (Hs.Name (), Hs.Namespace ()))
+type ImportSpecMap = Map NamespacedName (Set NamespacedName)
 type ImportDeclMap = Map (Hs.ModuleName (), Qualifier) ImportSpecMap
 
 compileImports :: String -> Imports -> TCM [Hs.ImportDecl ()]
@@ -33,23 +33,23 @@ compileImports top is0 = do
     mergeChildren :: ImportSpecMap -> ImportSpecMap -> ImportSpecMap
     mergeChildren = Map.unionWith Set.union
 
-    makeSingle :: Maybe (Hs.Name (), Hs.Namespace ()) -> (Hs.Name (), Hs.Namespace ()) -> ImportSpecMap
+    makeSingle :: Maybe NamespacedName -> NamespacedName -> ImportSpecMap
     makeSingle Nothing  q = Map.singleton q Set.empty
     makeSingle (Just p) q = Map.singleton p $ Set.singleton q
 
     groupModules :: [Import] -> ImportDeclMap
     groupModules = foldr
       (\(Import mod as p q ns) -> Map.insertWith mergeChildren (mod,as)
-                                                                (makeSingle (parentTuple p) (q, ns)))
+                                                                (makeSingle (parentNN p) (NamespacedName ns q)))
       Map.empty
         where
-          parentTuple :: Maybe (Hs.Name ()) -> Maybe (Hs.Name (), Hs.Namespace ())
-          parentTuple (Just name@(Hs.Symbol _ _)) = Just (name, Hs.TypeNamespace ())
-                                                             -- ^ for parents, if they are operators, we assume they are type operators
-                                                             -- but actually, this will get lost anyway because of the structure of ImportSpec
-                                                             -- the point is that there should not be two tuples with the same name and diffenrent namespaces
-          parentTuple (Just name)                 = Just (name, Hs.NoNamespace ())
-          parentTuple Nothing     = Nothing
+          parentNN :: Maybe (Hs.Name ()) -> Maybe NamespacedName
+          parentNN (Just name@(Hs.Symbol _ _)) = Just $ NamespacedName (Hs.TypeNamespace ()) name
+                                                                        -- ^ for parents, if they are operators, we assume they are type operators
+                                                                        -- but actually, this will get lost anyway because of the structure of ImportSpec
+                                                                        -- the point is that there should not be two tuples with the same name and diffenrent namespaces
+          parentNN (Just name)                 = Just $ NamespacedName (Hs.NoNamespace ())   name
+          parentNN Nothing                     = Nothing
 
     -- TODO: avoid having to do this by having a CName instead of a
     -- Name in the Import datatype
@@ -61,10 +61,10 @@ compileImports top is0 = do
       | head s == ':' = Hs.ConName () n
       | otherwise     = Hs.VarName () n
 
-    makeImportSpec :: (Hs.Name (), Hs.Namespace ()) -> Set (Hs.Name (), Hs.Namespace ()) -> Hs.ImportSpec ()
-    makeImportSpec (q, namespace) qs
+    makeImportSpec :: NamespacedName -> Set NamespacedName -> Hs.ImportSpec ()
+    makeImportSpec (NamespacedName namespace q) qs
       | Set.null qs = Hs.IAbs () namespace q
-      | otherwise   = Hs.IThingWith () q $ map (makeCName . fst) $ Set.toList qs
+      | otherwise   = Hs.IThingWith () q $ map (makeCName . nnName) $ Set.toList qs
 
     makeImportDecl :: Hs.ModuleName () -> Qualifier -> ImportSpecMap -> Hs.ImportDecl ()
     makeImportDecl mod qual specs = Hs.ImportDecl ()

@@ -134,3 +134,9 @@ data DataTarget = ToData | ToDataNewType
 data RecordTarget = ToRecord [Hs.Deriving ()] | ToRecordNewType [Hs.Deriving ()] | ToClass [String]
 
 data InstanceTarget = ToDefinition | ToDerivation (Maybe (Hs.DerivStrategy ()))
+
+-- Used when compiling imports. If there is a type operator, we can append a "type" namespace here.
+data NamespacedName = NamespacedName { nnNamespace :: Hs.Namespace (),
+                                       nnName      :: Hs.Name ()
+                                     }
+                      deriving (Eq, Ord)
