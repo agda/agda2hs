@@ -193,5 +193,7 @@ compileKeptTeleBind x t = do
 compileKind :: Type -> Maybe (Hs.Kind ())
 compileKind t = case unEl t of
   Sort (Type _) -> pure (Hs.TyStar ())
-  Pi a b -> Hs.TyFun () <$> compileKind (unDom a) <*> compileKind (unAbs b)
-  _ -> Nothing
+  Pi a b
+    | usableModality a  -> Hs.TyFun () <$> compileKind (unDom a) <*> compileKind (unAbs b)
+    | otherwise         -> compileKind (unAbs b)
+  _ -> Nothing          -- ^ if the argument is erased, we only compile the rest
