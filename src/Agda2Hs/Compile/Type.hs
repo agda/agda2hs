@@ -141,9 +141,7 @@ compileType t = do
       return $ tApp (Hs.TyVar () x) vs
     Sort s -> return (Hs.TyStar ())
     Lam argInfo restAbs
-      | usableModality argInfo  -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
-      | otherwise               -> compileType $ unAbs restAbs
-      -- ^ we allow lambdas if their parameters are erased
+      | not (keepArg argInfo)   -> compileType $ unAbs restAbs
     _ -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
 compileTypeArgs :: Args -> C [Hs.Type ()]
@@ -198,6 +196,6 @@ compileKind :: Type -> Maybe (Hs.Kind ())
 compileKind t = case unEl t of
   Sort (Type _) -> pure (Hs.TyStar ())
   Pi a b
-    | usableModality a  -> Hs.TyFun () <$> compileKind (unDom a) <*> compileKind (unAbs b)
-    | otherwise         -> compileKind (unAbs b)
-  _ -> Nothing          -- ^ if the argument is erased, we only compile the rest
+    | keepArg a    -> Hs.TyFun () <$> compileKind (unDom a) <*> compileKind (unAbs b)
+    | otherwise    -> compileKind (unAbs b)
+  _ -> Nothing     -- ^ if the argument is erased, we only compile the rest
