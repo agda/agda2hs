@@ -52,6 +52,7 @@ import LawfulOrd
 import Deriving
 import ErasedLocalDefinitions
 import TypeOperators
+import ErasedTypeArguments
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -102,4 +103,7 @@ import WitnessedFlows
 import Kinds
 import LawfulOrd
 import Deriving
+import ErasedLocalDefinitions
+import TypeOperators
+import ErasedTypeArguments
 #-}
