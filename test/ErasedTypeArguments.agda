@@ -1,4 +1,4 @@
--- Testing whether erased value arguments in type signatures
+-- Testing whether erased value arguments in record type signatures
 -- do get erased.
 module ErasedTypeArguments where
 
@@ -8,7 +8,7 @@ open import Agda.Primitive
 -- but the argument of the lambda is erased;
 -- so that it won't be dependent-typed after compilation.
 record Σ' {i j} (a : Set i) (b : @0 a → Set j) : Set (i ⊔ j) where
-  constructor _:^:_                      -- see https://stackoverflow.com/questions/10548170/what-characters-are-permitted-for-haskell-operators
+  constructor _:^:_
   field
     proj₁ : a
     proj₂ : b proj₁
