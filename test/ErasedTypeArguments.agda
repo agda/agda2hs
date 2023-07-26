@@ -1,8 +1,10 @@
 -- Testing whether erased value arguments in record type signatures
--- do get erased.
+-- and in lambdas do get erased.
 module ErasedTypeArguments where
 
 open import Agda.Primitive
+open import Agda.Builtin.Unit
+open import Agda.Builtin.Nat
 
 -- A record type which has both members compiled,
 -- but the argument of the lambda is erased;
@@ -15,3 +17,9 @@ record Σ' {i j} (a : Set i) (b : @0 a → Set j) : Set (i ⊔ j) where
 open Σ' public
 infixr 4 _:^:_
 {-# COMPILE AGDA2HS Σ' #-}
+
+-- Now test lambdas.
+-- Actually, Agda can deduce here that n is erased; probably from the type signature of Σ'.
+test : Nat -> Σ' Nat (λ (n : Nat) -> ⊤)
+test n = n :^: tt
+{-# COMPILE AGDA2HS test #-}
