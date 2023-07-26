@@ -140,7 +140,11 @@ compileType t = do
       x  <- hsName <$> compileVar x
       return $ tApp (Hs.TyVar () x) vs
     Sort s -> return (Hs.TyStar ())
-    t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
+    Lam argInfo restAbs
+      | usableModality argInfo  -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
+      | otherwise               -> compileType $ unAbs restAbs
+      -- ^ we allow lambdas if their parameters are erased
+    _ -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
 compileTypeArgs :: Args -> C [Hs.Type ()]
 compileTypeArgs args = mapM (compileType . unArg) $ filter keepArg args
