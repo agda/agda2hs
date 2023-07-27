@@ -1,8 +1,7 @@
 module RequalifiedImports where
 
 import OtherImportee (OtherFoo(MkFoo))
-import qualified QualifiedImportee as A
-       (Foo, Fooable(defaultFoo, doTheFoo), foo, (!#))
+import qualified QualifiedImportee as A (Foo, Fooable(defaultFoo, doTheFoo), foo, (!#))
 
 -- ** conflicting imports are all replaced with the "smallest" qualifier
 --   * the characters are ordered based on their ASCII value (i.e. capitals first)
