@@ -186,21 +186,16 @@ compileTeleBinds tel =
 compileKeptTeleBind :: Hs.Name () -> Type -> C (Hs.TyVarBind ())
 compileKeptTeleBind x t = do
   checkValidTyVarName x
-  compileKind t >>= (\case
+  case compileKind t of
     Just k              -> pure $ Hs.UnkindedVar () x -- In the future we may want to show kind annotations
     _                   -> genericDocError =<<
       text "Kind of bound argument not supported:"
-      <+> parens (text (Hs.prettyPrint x) <> text " : " <> prettyTCM t))
+      <+> parens (text (Hs.prettyPrint x) <> text " : " <> prettyTCM t)
 
-compileKind :: Type -> C (Maybe (Hs.Kind ()))
+compileKind :: Type -> Maybe (Hs.Kind ())
 compileKind t = case unEl t of
-  Sort (Type _) -> return (Just $ Hs.TyStar ())
-  Pi a b -> (compileKind $ unDom a) >>= (\case
-    Just kindA -> do
-      mbKindB <- underAbstraction a b compileKind
-      return (Hs.TyFun() kindA <$> mbKindB)
-    Nothing
-      | keepArg a    -> return Nothing
-      | otherwise    -> underAbstraction a b compileKind)
-                     -- ^ if the argument is erased, we don't complain about it
-  _ -> return Nothing
+  Sort (Type _) -> pure (Hs.TyStar ())
+  Pi a b
+    | keepArg a    -> Hs.TyFun () <$> compileKind (unDom a) <*> compileKind (unAbs b)
+    | otherwise    -> compileKind (unAbs b)
+  _ -> Nothing     -- ^ if the argument is erased, we only compile the rest
