@@ -48,4 +48,8 @@ import WitnessedFlows
 import Kinds
 import LawfulOrd
 import Deriving
+import ErasedLocalDefinitions
+import TypeOperators
+import TypeOperatorExport
+import TypeOperatorImport
 
