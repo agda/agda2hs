@@ -160,22 +160,17 @@ compileQName f
     getNamespace :: QName -> C (Hs.Namespace ())
     getNamespace qName = do
       definition <- getConstInfo qName
-      let isQNameSet = isSet $ getResultType $ defType definition
-      reportSDoc "agda2hs.name" 25 $ text $ "Checking whether " ++ (prettyShow $ nameCanonical $ qnameName f)
-                                              ++ "is a type operator: " ++ show isQNameSet
-      if isQNameSet then return (Hs.TypeNamespace ()) else return (Hs.NoNamespace ())
+      case isSort $ unEl $ getResultType $ defType definition of
+        Just _         -> (reportSDoc "agda2hs.name" 25 $ text $ (prettyShow $ nameCanonical $ qnameName f)
+                                              ++ " is a type operator; will add \"type\" prefix before it") >>
+                          return (Hs.TypeNamespace ())
+        _              -> return (Hs.NoNamespace ())
 
     -- Gets the type of the result of the function (the type after the last "->").
     getResultType :: Type -> Type
     getResultType typ = case (unEl typ) of
       (Pi _ absType) -> getResultType $ unAbs absType
       _              -> typ
-
-    -- I'm not sure whether this is the correct way to determine whether it's a Set/Prop;
-    -- but this is my best bet.
-    isSet :: Type -> Bool
-    isSet (El _ (Sort _)) = True
-    isSet _               = False
 
     mkImport mod qual par hf maybeIsType
       -- make sure the Prelude is properly qualified
