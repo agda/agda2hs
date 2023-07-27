@@ -53,6 +53,8 @@ import Deriving
 import ErasedLocalDefinitions
 import TypeOperators
 import ErasedTypeArguments
+import TypeOperatorExport
+import TypeOperatorImport
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -106,4 +108,6 @@ import Deriving
 import ErasedLocalDefinitions
 import TypeOperators
 import ErasedTypeArguments
+import TypeOperatorExport
+import TypeOperatorImport
 #-}

@@ -1,7 +1,6 @@
 module Importer where
 
-import Importee
-       (Foo(MkFoo), Fooable(defaultFoo, doTheFoo), foo, (!#))
+import Importee (Foo(MkFoo), Fooable(defaultFoo, doTheFoo), foo, (!#))
 import Numeric.Natural (Natural)
 import SecondImportee (anotherFoo)
 
