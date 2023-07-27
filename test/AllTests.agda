@@ -52,6 +52,7 @@ import LawfulOrd
 import Deriving
 import ErasedLocalDefinitions
 import TypeOperators
+import ErasedTypeArguments
 import TypeOperatorExport
 import TypeOperatorImport
 
@@ -106,6 +107,7 @@ import LawfulOrd
 import Deriving
 import ErasedLocalDefinitions
 import TypeOperators
+import ErasedTypeArguments
 import TypeOperatorExport
 import TypeOperatorImport
 #-}

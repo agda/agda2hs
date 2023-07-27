@@ -140,7 +140,9 @@ compileType t = do
       x  <- hsName <$> compileVar x
       return $ tApp (Hs.TyVar () x) vs
     Sort s -> return (Hs.TyStar ())
-    t -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
+    Lam argInfo restAbs
+      | not (keepArg argInfo)   -> underAbstraction_ restAbs compileType
+    _ -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
 compileTypeArgs :: Args -> C [Hs.Type ()]
 compileTypeArgs args = mapM (compileType . unArg) $ filter keepArg args
@@ -193,5 +195,7 @@ compileKeptTeleBind x t = do
 compileKind :: Type -> Maybe (Hs.Kind ())
 compileKind t = case unEl t of
   Sort (Type _) -> pure (Hs.TyStar ())
-  Pi a b -> Hs.TyFun () <$> compileKind (unDom a) <*> compileKind (unAbs b)
-  _ -> Nothing
+  Pi a b
+    | keepArg a    -> Hs.TyFun () <$> compileKind (unDom a) <*> compileKind (unAbs b)
+    | otherwise    -> compileKind (unAbs b)
+  _ -> Nothing     -- ^ if the argument is erased, we only compile the rest
