@@ -141,7 +141,7 @@ compileType t = do
       return $ tApp (Hs.TyVar () x) vs
     Sort s -> return (Hs.TyStar ())
     Lam argInfo restAbs
-      | not (keepArg argInfo)   -> compileType $ unAbs restAbs
+      | not (keepArg argInfo)   -> underAbstraction_ restAbs compileType
     _ -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
 compileTypeArgs :: Args -> C [Hs.Type ()]
@@ -186,16 +186,21 @@ compileTeleBinds tel =
 compileKeptTeleBind :: Hs.Name () -> Type -> C (Hs.TyVarBind ())
 compileKeptTeleBind x t = do
   checkValidTyVarName x
-  case compileKind t of
+  compileKind t >>= (\case
     Just k              -> pure $ Hs.UnkindedVar () x -- In the future we may want to show kind annotations
     _                   -> genericDocError =<<
       text "Kind of bound argument not supported:"
-      <+> parens (text (Hs.prettyPrint x) <> text " : " <> prettyTCM t)
+      <+> parens (text (Hs.prettyPrint x) <> text " : " <> prettyTCM t))
 
-compileKind :: Type -> Maybe (Hs.Kind ())
+compileKind :: Type -> C (Maybe (Hs.Kind ()))
 compileKind t = case unEl t of
-  Sort (Type _) -> pure (Hs.TyStar ())
-  Pi a b
-    | keepArg a    -> Hs.TyFun () <$> compileKind (unDom a) <*> compileKind (unAbs b)
-    | otherwise    -> compileKind (unAbs b)
-  _ -> Nothing     -- ^ if the argument is erased, we only compile the rest
+  Sort (Type _) -> return (Just $ Hs.TyStar ())
+  Pi a b -> (compileKind $ unDom a) >>= (\case
+    Just kindA -> do
+      mbKindB <- underAbstraction a b compileKind
+      return (Hs.TyFun() kindA <$> mbKindB)
+    Nothing
+      | keepArg a    -> return Nothing
+      | otherwise    -> underAbstraction a b compileKind)
+                     -- ^ if the argument is erased, we don't complain about it
+  _ -> return Nothing
