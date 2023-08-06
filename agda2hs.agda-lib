@@ -1,4 +1,4 @@
 name: agda2hs
 depend:
 include: lib
-flags: -W noUnsupportedIndexedMatch
+flags: -W noUnsupportedIndexedMatch --erasure
