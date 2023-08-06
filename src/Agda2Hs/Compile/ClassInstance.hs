@@ -21,13 +21,13 @@ import Agda.Syntax.Internal
 import Agda.Syntax.Position ( noRange )
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad ( resolveName )
+import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Substitute ( Apply(applyE) )
 import Agda.TypeChecking.Records
 
 import Agda.Utils.Lens
-import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils

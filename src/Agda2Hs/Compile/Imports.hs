@@ -12,7 +12,7 @@ import qualified Language.Haskell.Exts as Hs
 
 import Agda.Compiler.Backend
 import Agda.TypeChecking.Pretty ( text )
-import Agda.Utils.Pretty ( prettyShow )
+import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name

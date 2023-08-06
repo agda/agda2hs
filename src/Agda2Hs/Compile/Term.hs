@@ -10,6 +10,8 @@ import qualified Data.Text as Text ( unpack )
 
 import qualified Language.Haskell.Exts as Hs
 
+import Agda.Syntax.Common.Pretty ( prettyShow )
+import qualified Agda.Syntax.Common.Pretty as P
 import Agda.Syntax.Common
 import Agda.Syntax.Literal
 import Agda.Syntax.Internal
@@ -20,8 +22,6 @@ import Agda.TypeChecking.Reduce ( instantiate )
 import Agda.TypeChecking.Substitute ( Apply(applyE) )
 
 import Agda.Utils.Lens
-import Agda.Utils.Pretty ( prettyShow )
-import qualified Agda.Utils.Pretty as P
 
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Monad

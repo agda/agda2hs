@@ -9,18 +9,18 @@ import Agda.Compiler.Backend hiding ( Args )
 import Agda.Interaction.FindFile ( findFile' )
 
 import Agda.Syntax.Common ( Arg, defaultArg )
+import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.Syntax.Internal
 import Agda.Syntax.Internal.Names
 import Agda.Syntax.TopLevelModuleName
 
 import Agda.TypeChecking.Monad ( topLevelModuleName )
-import Agda.TypeChecking.Pretty 
+import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Substitute
 
 import Agda.Utils.Either ( isRight )
 import Agda.Utils.List ( initMaybe )
 import Agda.Utils.Monad ( ifM )
-import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import AgdaInternals
