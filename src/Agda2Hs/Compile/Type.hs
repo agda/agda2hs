@@ -15,6 +15,7 @@ import Agda.Compiler.Backend hiding ( Args )
 
 import Agda.Syntax.Common
 import Agda.Syntax.Internal
+import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Reduce ( reduce )
@@ -22,7 +23,6 @@ import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
 
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
-import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.List ( downFrom )
 import Agda.Utils.Maybe ( ifJustM, fromMaybe )
 import Agda.Utils.Monad ( ifM, unlessM )

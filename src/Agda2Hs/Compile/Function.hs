@@ -18,6 +18,7 @@ import Agda.Compiler.Common
 import Agda.Syntax.Common
 import Agda.Syntax.Internal
 import Agda.Syntax.Literal
+import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Substitute
@@ -26,7 +27,6 @@ import Agda.TypeChecking.Sort ( ifIsSort )
 
 import Agda.Utils.Functor ( (<&>) )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
-import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.Monad
 
 import Agda2Hs.AgdaUtils

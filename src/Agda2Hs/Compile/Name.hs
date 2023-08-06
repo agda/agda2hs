@@ -19,14 +19,14 @@ import Agda.Syntax.Position
 import qualified Agda.Syntax.Concrete as C
 import Agda.Syntax.Scope.Base ( inverseScopeLookupName )
 import Agda.Syntax.TopLevelModuleName
+import Agda.Syntax.Common.Pretty ( prettyShow )
+import qualified Agda.Syntax.Common.Pretty as P
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Records ( isRecordConstructor )
 
 import qualified Agda.Utils.List1 as List1
 import Agda.Utils.Maybe ( isJust, whenJust, fromMaybe, caseMaybeM )
-import Agda.Utils.Pretty ( prettyShow )
-import qualified Agda.Utils.Pretty as P ( Pretty(pretty) )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Rewrites
