@@ -6,6 +6,7 @@ open import Haskell.Prim.Applicative
 open import Haskell.Prim.Either
 open import Haskell.Prim.Foldable
 open import Haskell.Prim.Functor
+open import Haskell.Prim.IO
 open import Haskell.Prim.List
 open import Haskell.Prim.Maybe
 open import Haskell.Prim.Monoid
@@ -96,6 +97,8 @@ instance
   iMonadTuple₄ = bind= λ (a ; b ; c ; x ; tt) k →
     case k x of λ where
       (a₁ ; b₁ ; c₁ ; y ; tt) → a <> a₁ ; b <> b₁ ; c <> c₁ ; y ; tt
+
+instance postulate iMonadIO : Monad IO
 
 record MonadFail (m : Set → Set) : Set₁ where
   field
