@@ -270,7 +270,7 @@ menus.")
 (defvar agda2-mode-map
   (let ((map (make-sparse-keymap "Agda mode")))
     (define-key map [menu-bar Agda]
-      (cons "Agda" (make-sparse-keymap "Agda")))
+      (cons "Agda2Hs" (make-sparse-keymap "Agda2Hs")))
     (define-key map [down-mouse-3]  'agda2-popup-menu-3)
     (dolist (d (reverse agda2-command-table))
       (cl-destructuring-bind (f &optional keys kinds desc) d
@@ -373,7 +373,7 @@ Note that this variable is not buffer-local.")
 ;;;###autoload
 (modify-coding-system-alist 'file "\\.l?agda\\'" 'utf-8)
 ;;;###autoload
-(define-derived-mode agda2-mode prog-mode "Agda"
+(define-derived-mode agda2-mode prog-mode "Agda2Hs"
   "Major mode for Agda files.
 
 The following paragraph does not apply to Emacs 23 or newer.
