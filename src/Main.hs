@@ -18,9 +18,13 @@ import Agda2Hs.Render
 import qualified System.IO.Unsafe as UNSAFE (unsafePerformIO)
 
 defaultOptions :: Options
-defaultOptions = Options{ optOutDir = Nothing, optExtensions = [],
+defaultOptions = Options{ optIsEnabled = True,
+                          optOutDir = Nothing, optExtensions = [],
                           optPrelude = (False, Auto),   -- default to including Prelude explicitly and letting agda2hs search for identifiers to import automatically
                           optRewrites = [] }
+
+disableOpt :: Monad m => Options -> m Options
+disableOpt opts = return opts{ optIsEnabled = False }
 
 outdirOpt :: Monad m => FilePath -> Options -> m Options
 outdirOpt dir opts = return opts{ optOutDir = Just dir }
@@ -48,14 +52,16 @@ backend = Backend'
   , backendVersion        = Just "1.0"
   , options               = defaultOptions
   , commandLineFlags      =
-      [ Option ['o'] ["out-dir"] (ReqArg outdirOpt "DIR")
+      [ Option ['d'] ["disable-backend"] (NoArg disableOpt)
+        "Disable backend and fall back to vanilla Agda behaviour, without compilation (important for Emacs mode)."
+      , Option ['o'] ["out-dir"] (ReqArg outdirOpt "DIR")
         "Write Haskell code to DIR. (default: project root)"
       , Option ['X'] [] (ReqArg extensionOpt "EXTENSION")
         "Enable Haskell language EXTENSION. Affects parsing of Haskell code in FOREIGN blocks."
       , Option [] ["rewrite-rules"] (ReqArg rewriteOpt "FILE")
         "Provide custom rewrite rules in a YAML configuration file. Identifiers contained here will be replaced with the one given, with an appropriate import added if requested. The handling of imports from Prelude should preferably also be included in this file. See rewrite-rules-example.yaml for the format."
       ]
-  , isEnabled             = \ _ -> True
+  , isEnabled             = optIsEnabled
   , preCompile            = return
   , postCompile           = \ _ _ _ -> return ()
   , preModule             = moduleSetup
