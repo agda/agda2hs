@@ -27,11 +27,15 @@ import Agda.Syntax.Position
 import Agda.Syntax.TopLevelModuleName
 
 import Agda.Utils.Pretty ( prettyShow )
+import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
+
 import Agda2Hs.Compile
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Imports
 import Agda2Hs.HsUtils
 import Agda2Hs.Pragma ( getForeignPragmas )
+
+import Language.Haskell.Exts as Hs (prettyPrint, prelude_mod)
 
 -- Rendering --------------------------------------------------------------
 
@@ -80,6 +84,53 @@ moduleSetup _ _ m _ = do
 ensureDirectory :: FilePath -> IO ()
 ensureDirectory = createDirectoryIfMissing True . takeDirectory
 
+-- We have to rewrite this so that in the IThingAll and IThingWith import specs,
+-- the "type" prefixes get before type operators if necessary.
+-- But see haskell-src-exts, PR #475. If it gets merged, this will be unnecessary.
+prettyShowImportDecl :: Hs.ImportDecl () -> String
+prettyShowImportDecl (Hs.ImportDecl _ m qual src safe mbPkg mbName mbSpecs) =
+  unwords $ ("import" :) $
+            (if src  then ("{-# SOURCE #-}" :) else id) $
+            (if safe then ("safe" :) else id) $
+            (if qual then ("qualified" :) else id) $
+            maybeAppend (\ str -> show str) mbPkg $
+            (pp m :) $
+            maybeAppend (\m' -> "as " ++ pp m') mbName $
+            (case mbSpecs of {Just specs -> [prettyShowSpecList specs]; Nothing -> []})
+    where
+      maybeAppend :: (a -> String) -> Maybe a -> ([String] -> [String])
+      maybeAppend f (Just a) = (f a :)
+      maybeAppend _ Nothing  = id
+
+      prettyShowSpecList :: Hs.ImportSpecList () -> String
+      prettyShowSpecList (Hs.ImportSpecList _ b ispecs)  =
+            (if b then "hiding " else "")
+                ++ parenList (map prettyShowSpec ispecs)
+
+      parenList :: [String] -> String
+      parenList [] = ""
+      parenList (x:xs) = '(' : (x ++ go xs)
+        where
+          go :: [String] -> String
+          go [] = ")"
+          go (x:xs) = ", " ++ x ++ go xs
+
+      -- this is why we have rewritten it
+      prettyShowSpec :: Hs.ImportSpec () -> String
+      prettyShowSpec (Hs.IVar _ name  )        = pp name
+      prettyShowSpec (Hs.IAbs _ ns name)       = let ppns = pp ns in case ppns of
+          []                                  -> pp name -- then we don't write a space before it
+          _                                   -> ppns ++ (' ' : pp name)
+      prettyShowSpec (Hs.IThingAll _ name) = let rest = pp name ++ "(..)" in
+        case name of
+          -- if it's a symbol, append a "type" prefix to the beginning
+          (Hs.Symbol _ _)                     -> pp (Hs.TypeNamespace ()) ++ (' ' : rest)
+          (Hs.Ident  _ _)                     -> rest
+      prettyShowSpec (Hs.IThingWith _ name nameList) = let rest = pp name ++ (parenList . map pp $ nameList) in
+        case name of
+          (Hs.Symbol _ _)                     -> pp (Hs.TypeNamespace ()) ++ (' ' : rest)
+          (Hs.Ident  _ _)                     -> rest
+
 writeModule :: Options -> ModuleEnv -> IsMain -> TopLevelModuleName
             -> [(CompiledDef, CompileOutput)] -> TCM ModuleRes
 writeModule opts _ isMain m outs = do
@@ -94,8 +145,18 @@ writeModule opts _ isMain m outs = do
     -- Add automatic imports
     let unlines' [] = []
         unlines' ss = unlines ss ++ "\n"
-    autoImports <- unlines' . map pp <$> compileImports mod imps
-    -- The comments makes it hard to generate and pretty print a full module
+    let filteredImps = case optPrelude opts of
+          (False, Auto) -> imps                                                              -- import Prelude explicitly and search for imported identifiers, just like at other modules
+          _             -> filter (not . (== Hs.prelude_mod ()) . importModule) imps         -- handle Prelude separately
+    let autoImportList = case optPrelude opts of
+          (False, Auto)               -> compileImports mod filteredImps -- then we have left Prelude in filteredImps
+          (True,  Names [])           -> compileImports mod filteredImps -- we write nothing about Prelude and import everything
+          (isImplicit, Names names)   -> (:) <$>
+                                         (pure $ makeManualDecl (Hs.prelude_mod ()) Nothing isImplicit names) <*>
+                                         compileImports mod filteredImps
+          (True,  Auto)               -> __IMPOSSIBLE__
+    autoImports <- (unlines' . map prettyShowImportDecl) <$> autoImportList
+    -- The comments make it hard to generate and pretty print a full module
     hsFile <- moduleFileName opts m
     let output = concat
                  [ renderLangExts exts

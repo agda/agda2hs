@@ -26,6 +26,7 @@ open import Haskell.Prim.Foldable    public
 open import Haskell.Prim.Functor     public
 open import Haskell.Prim.Int         public
 open import Haskell.Prim.Integer     public
+open import Haskell.Prim.IO          public
 open import Haskell.Prim.List        public
 open import Haskell.Prim.Maybe       public
 open import Haskell.Prim.Monad       public

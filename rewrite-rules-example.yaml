@@ -1,0 +1,104 @@
+# An example config file for the '--rewrite-rules' option.
+# Imagine a library which uses the Agda standard library extensively and let's suppose we would like to translate its operators to the Haskell equivalents. The library includes a Haskell.Prim.Num.Num instance.
+
+# First, we specify how to handle Prelude.
+prelude:
+  implicit: true
+  hiding:           # if implicit is true
+    - seq
+
+  #using:           # if implicit is false
+  #  - +            # (+) should be given like that
+  #  - Num
+
+#Then the rules themselves.
+rules:
+
+  # The rational type.
+  - from: Data.Rational.Unnormalised.Base.ℚᵘ
+    to: Rational
+    importing: Data.Ratio
+
+  # Arithmetic operators.
+  # Note: Prelude has to be specified too!
+  - from: Agda.Builtin.Nat._+_
+    to: _+_
+    importing: Prelude
+  - from: Agda.Builtin.Nat._*_
+    to: _*_
+    importing: Prelude
+  - from: Agda.Builtin.Nat.-_
+    to: negate
+    importing: Prelude
+  - from: Agda.Builtin.Nat._-_
+    to: _-_
+    importing: Prelude
+  - from: Data.Nat.Base._⊔_
+    to: max
+    importing: Prelude
+
+  - from: Agda.Builtin.Integer._+_
+    to: _+_
+    importing: Prelude
+  - from: Data.Integer.Base._*_
+    to: _*_
+    importing: Prelude
+  - from: Agda.Builtin.Integer.-_
+    to: negate
+    importing: Prelude
+  - from: Agda.Builtin.Integer._-_
+    to: _-_
+    importing: Prelude
+
+  - from: Data.Rational.Unnormalised.Base._+_
+    to: _+_
+    importing: Prelude
+  - from: Data.Rational.Unnormalised.Base._*_
+    to: _*_
+    importing: Prelude
+  - from: Data.Rational.Unnormalised.Base.-_
+    to: negate
+    importing: Prelude
+  - from: Data.Rational.Unnormalised.Base._-_
+    to: _-_
+    importing: Prelude
+  - from: Data.Rational.Unnormalised.Base._/_
+    to: _%_
+    importing: Data.Ratio
+  - from: Data.Rational.Unnormalised.Base._⊔_
+    to: max
+    importing: Prelude
+  - from: Data.Rational.Unnormalised.Base._⊓_
+    to: min
+    importing: Prelude
+  - from: Data.Rational.Unnormalised.Base.∣_∣
+    to: abs
+    importing: Prelude
+  - from: Data.Integer.Base.∣_∣
+    to: intAbs
+    importing: Base
+
+  # Standard library functions related to naturals and integers.
+  - from: Agda.Builtin.Nat.Nat.suc
+    to: suc
+    importing: Base
+  - from: Agda.Builtin.Int.Int.pos
+    to: toInteger
+    importing: Prelude
+  - from: Data.Integer.DivMod._divℕ_
+    to: divNat
+    importing: Base
+  - from: Data.Nat.DivMod._/_
+    to: div
+    importing: Prelude
+
+  # Standard library functions related to rationals.
+  - from: Data.Rational.Unnormalised.Base.ℚᵘ.numerator
+    to: numerator
+    importing: Data.Ratio
+  - from: Data.Rational.Unnormalised.Base.ℚᵘ.denominator
+    to: denominatorNat
+    importing: Base       #the Base version returns a Natural
+  - from: Data.Rational.Unnormalised.Base.ℚᵘ.denominator-1
+    to: denominatorMinus1
+    importing: Base

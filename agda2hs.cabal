@@ -44,6 +44,7 @@ executable agda2hs
                        Agda2Hs.Compile.Name,
                        Agda2Hs.Compile.Postulate,
                        Agda2Hs.Compile.Record,
+                       Agda2Hs.Compile.Rewrites,
                        Agda2Hs.Compile.Term,
                        Agda2Hs.Compile.Type,
                        Agda2Hs.Compile.TypeDefinition,
@@ -55,6 +56,7 @@ executable agda2hs
                        AgdaInternals
   build-depends:       base >= 4.10 && < 4.18,
                        Agda >= 2.6.3 && < 2.6.4,
+                       bytestring >= 0.11,
                        containers >= 0.6 && < 0.7,
                        unordered-containers >= 0.2,
                        mtl >= 2.2,
@@ -63,7 +65,8 @@ executable agda2hs
                        haskell-src-exts >= 1.23 && < 1.25,
                        syb >= 0.7,
                        text >= 1.2.3.0,
-                       deepseq >= 1.4.1.1
+                       deepseq >= 1.4.1.1,
+                       yaml-light >= 0.1.4
   default-language:    Haskell2010
   default-extensions:  LambdaCase,
                        RecordWildCards,

@@ -1,5 +1,5 @@
 
-module Agda2Hs.Compile.Imports ( compileImports ) where
+module Agda2Hs.Compile.Imports ( compileImports, makeManualDecl ) where
 
 import Data.Char ( isUpper )
 import Data.List ( isPrefixOf )
@@ -20,7 +20,7 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
-type ImportSpecMap = Map (Hs.Name ()) (Set (Hs.Name ()))
+type ImportSpecMap = Map NamespacedName (Set NamespacedName)
 type ImportDeclMap = Map (Hs.ModuleName (), Qualifier) ImportSpecMap
 
 compileImports :: String -> Imports -> TCM [Hs.ImportDecl ()]
@@ -33,14 +33,23 @@ compileImports top is0 = do
     mergeChildren :: ImportSpecMap -> ImportSpecMap -> ImportSpecMap
     mergeChildren = Map.unionWith Set.union
 
-    makeSingle :: Maybe (Hs.Name ()) -> Hs.Name () -> ImportSpecMap
+    makeSingle :: Maybe NamespacedName -> NamespacedName -> ImportSpecMap
     makeSingle Nothing  q = Map.singleton q Set.empty
     makeSingle (Just p) q = Map.singleton p $ Set.singleton q
 
     groupModules :: [Import] -> ImportDeclMap
     groupModules = foldr
-      (\(Import mod as p q) -> Map.insertWith mergeChildren (mod,as) (makeSingle p q))
+      (\(Import mod as p q ns) -> Map.insertWith mergeChildren (mod,as)
+                                                                (makeSingle (parentNN p) (NamespacedName ns q)))
       Map.empty
+        where
+          parentNN :: Maybe (Hs.Name ()) -> Maybe NamespacedName
+          parentNN (Just name@(Hs.Symbol _ _)) = Just $ NamespacedName (Hs.TypeNamespace ()) name
+                                                                        -- ^ for parents, if they are operators, we assume they are type operators
+                                                                        -- but actually, this will get lost anyway because of the structure of ImportSpec
+                                                                        -- the point is that there should not be two tuples with the same name and diffenrent namespaces
+          parentNN (Just name)                 = Just $ NamespacedName (Hs.NoNamespace ())   name
+          parentNN Nothing                     = Nothing
 
     -- TODO: avoid having to do this by having a CName instead of a
     -- Name in the Import datatype
@@ -52,27 +61,38 @@ compileImports top is0 = do
       | head s == ':' = Hs.ConName () n
       | otherwise     = Hs.VarName () n
 
-    makeImportSpec :: Hs.Name () -> Set (Hs.Name ()) -> Hs.ImportSpec ()
-    makeImportSpec q qs
-      | Set.null qs = Hs.IVar () q
-      | otherwise   = Hs.IThingWith () q $ map makeCName $ Set.toList qs
+    makeImportSpec :: NamespacedName -> Set NamespacedName -> Hs.ImportSpec ()
+    makeImportSpec (NamespacedName namespace q) qs
+      | Set.null qs = Hs.IAbs () namespace q
+      | otherwise   = Hs.IThingWith () q $ map (makeCName . nnName) $ Set.toList qs
 
     makeImportDecl :: Hs.ModuleName () -> Qualifier -> ImportSpecMap -> Hs.ImportDecl ()
     makeImportDecl mod qual specs = Hs.ImportDecl ()
       mod (isQualified qual) False False Nothing (qualifiedAs qual)
-      (Just $ Hs.ImportSpecList () False $ map (uncurry makeImportSpec) $ Map.toList specs)
+      (Just $ Hs.ImportSpecList ()
+            False                                             -- whether the list should be a list of hidden identifiers ('hiding')
+            $ map (uncurry makeImportSpec) $ Map.toList specs)
 
     checkClashingImports :: Imports -> TCM ()
     checkClashingImports [] = return ()
-    checkClashingImports (Import mod as p q : is) =
+    checkClashingImports (Import mod as p q _ : is) =
       case filter isClashing is of
         (i : _) -> genericDocError =<< text (mkErrorMsg i)
         []      -> checkClashingImports is
      where
-        isClashing (Import _ as' p' q') = (as' == as) && (p' /= p) && (q' == q)
-        mkErrorMsg (Import _ _ p' q') =
+        isClashing (Import _ as' p' q' _) = (as' == as) && (p' /= p) && (q' == q)
+        mkErrorMsg (Import _ _ p' q' _) =
              "Clashing import: " ++ pp q ++ " (both from "
           ++ prettyShow (pp <$> p) ++ " and "
           ++ prettyShow (pp <$> p') ++ ")"
         -- TODO: no range information as we only have Haskell names at this point
 
+-- if the user has provided a "using" or "hiding" list in the config file
+-- used for Prelude
+makeManualDecl :: Hs.ModuleName () -> Qualifier -> Bool -> [String] -> Hs.ImportDecl ()
+makeManualDecl mod qual isImplicit namesToHide = Hs.ImportDecl ()
+       mod (isQualified qual) False False Nothing (qualifiedAs qual)
+      (Just $ Hs.ImportSpecList ()
+            isImplicit        -- whether the list should be a list of hidden identifiers ('hiding')
+            $ map (Hs.IVar() . (\str -> if validVarId str || validConId str then Hs.Ident() str else Hs.Symbol() str))    -- since we can only read strings from the config file, we have to do this
+            namesToHide) -- map (uncurry makeImportSpec) $ Map.toList specs)

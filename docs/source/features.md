@@ -891,5 +891,157 @@ testA = A.foo
 testB = A.foo
 ```
 
+# Rewrite rules and Prelude imports
 
+## Rewrite rules
 
+User-defined rewrite rules for names can be defined through YAML configuration files. These should be provided via the `--rewrite-rules` option.
+
+This feature is particularly useful if you have a project depending on a large library which is not agda2hs-compatible
+(the most evident example is probably the Agda standard library).
+In this case, you might not want to rewrite the entire library, but you might still have to use it for your proofs.
+User-defined rewrite rules can help you translate the library's functions to the ones in the Haskell Prelude,
+or even to those written by yourself.
+In the latter case, place a Haskell file (e.g. `Base.hs`) next to your `.agda` files that contains your custom definitions
+and provide this custom module in the `importing` clauses of the config file.
+
+To an extent, this compromises the mathematically proven correctness of your project.
+But if you trust that your (or Prelude's) functions are equivalent to the original ones,
+this might not be a problem.
+You can also prove the equivalence of the two definitions to be safe.
+
+For example, let's suppose we want to compile the following file:
+
+```agda
+open import Data.Nat as ℕ
+open import Data.Integer as ℤ
+open import Data.Rational.Unnormalised as ℚ
+
+double : ℚᵘ → ℚᵘ
+double p = (+ 2 / 1) ℚ.* p
+{-# COMPILE AGDA2HS double #-}
+
+-- this will use denominator-1 and suc from BaseExample.hs
+twoDenoms : ℚᵘ → ℕ
+twoDenoms p = 2 ℕ.* (ℕ.suc (ℚᵘ.denominator-1 p))
+{-# COMPILE AGDA2HS twoDenoms #-}
+```
+
+By default, the output would be this:
+
+```hs
+module Example where
+
+import Data.Rational.Unnormalised.Base (ℚᵘ(denominator-1), (/))
+import qualified Data.Rational.Unnormalised.Base as ℚ ((*))
+import Numeric.Natural (Natural)
+import qualified Prelude as ℕ ((*))
+
+double :: ℚᵘ -> ℚᵘ
+double p = (ℚ.*) (pos 2 / 1) p
+
+twoDenoms :: ℚᵘ -> Natural
+twoDenoms p = (ℕ.*) 2 (suc (denominator-1 p))
+```
+
+Here, agda2hs doesn't know where to find these definitions; so it simply leaves them as they are.
+
+Run this again with the following rewrite rules:
+
+```yaml
+- from: Agda.Builtin.Nat.Nat.suc
+  to: suc
+  importing: BaseExample
+- from: Agda.Builtin.Nat._*_
+  to: _*_
+  importing: Prelude
+
+- from: Agda.Builtin.Int.Int.pos
+  to: toInteger
+  importing: Prelude
+
+- from: Data.Rational.Unnormalised.Base.ℚᵘ
+  to: Rational
+  importing: Data.Ratio
+- from: Data.Rational.Unnormalised.Base._*_
+  to: _*_
+  importing: Prelude
+- from: Data.Rational.Unnormalised.Base._/_
+  to: _%_
+  importing: Data.Ratio
+- from: Data.Rational.Unnormalised.Base.ℚᵘ.denominator-1
+  to: denominatorMinus1
+  importing: BaseExample
+```
+
+The names are a bit difficult to find. It helps if you run agda2hs with a verbosity level of 26 and check the logs (specifically the parts beginning with `compiling name`).
+
+The output is now this:
+
+```hs
+module Example where
+
+import BaseExample (denominatorMinus1, suc)
+import Data.Ratio (Rational, (%))
+import Numeric.Natural (Natural)
+import Prelude (toInteger, (*))
+
+double :: Rational -> Rational
+double p = toInteger 2 % 1 * p
+
+twoDenoms :: Rational -> Natural
+twoDenoms p = 2 * suc (denominatorMinus1 p)
+```
+
+With a manually written `BaseExample.hs` file like this, GHCi accepts it:
+
+```hs
+module BaseExample where
+
+import Numeric.Natural
+import Data.Ratio
+
+suc :: Natural -> Natural
+suc = (1 +)
+
+denominatorMinus1 :: Rational -> Natural
+denominatorMinus1 = fromIntegral . denominator
+```
+
+See also `rewrite-rules-example.yaml` in the root of the repository.
+
+## Handling of Prelude
+
+By default, agda2hs handles Prelude like other modules: it collects all the identifiers it finds we use from Prelude, and adds them to Prelude's import list.
+
+In the config YAML, we can specify a different behaviour. The format is:
+
+```yaml
+# First, we specify how to handle Prelude.
+prelude:
+  implicit: true
+  hiding:           # if implicit is true
+    - seq
+
+  #using:           # if implicit is false
+  #  - +
+  #  - Num
+
+# Then the rules themselves.
+rules:
+
+  # The rational type.
+  - from: Data.Rational.Unnormalised.Base.ℚᵘ
+    to: Rational
+    importing: Data.Ratio
+  - [...]
+```
+
+If `implicit` is `true`, then everything gets imported from Prelude, except for those that are specified in the `hiding` list. This can cause clashes if you reuse names from Prelude, hence the opportunity for a `hiding` list. If there is no such list, then everything gets imported.
+
+If `implicit` is `false`, Prelude gets imported explicitly, and only those identifiers that are specified in the `using` list. If there is no such list, agda2hs reverts to the default behaviour (it tries to collect imports by itself).
+
+## Known issues
+
+- Rewrite rules only work for things you do use, not for those that you only define. This causes a problem with class instances: if you choose the default behaviour, then write an instance of the Num class and define signum but do not use it, it will not get into Prelude's import list, and so GHC will complain.
+- You cannot change to a version with arguments of different modality without getting useless code. So if you rewrite a function to a version which has some of its parameters erased, the parameters remain there; probably because rewriting happens only after compiling the type signature.
