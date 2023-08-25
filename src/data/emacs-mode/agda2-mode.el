@@ -1,10 +1,13 @@
-;;; agda2-mode.el --- Major mode for Agda
+;;; agda2-mode.el --- Major mode for agda2hs
 ;; SPDX-License-Identifier: MIT License
 
 ;;; Commentary:
 
 ;; A major mode for editing Agda (the dependently typed programming
 ;; language / interactive theorem prover).
+;;
+;; Modified to work with agda2hs, a new backend compiling
+;; lightly annotated Agda code to readable Haskell.
 ;;
 ;; Major features include:
 ;;
@@ -84,7 +87,7 @@ Or possibly (let* VARBIND (labels FUNCBIND BODY...))."
   "Major mode for interactively developing Agda programs."
   :group 'languages)
 
-(defcustom agda2-program-name "~/.cabal/bin/agda2hs"
+(defcustom agda2-program-name "agda2hs"
   "The name of the Agda executable."
   :type 'string
   :group 'agda2)

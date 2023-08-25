@@ -152,6 +152,10 @@ identifier files =
 setupString :: Files -> String
 setupString files = unlines
   [ ""
+  , "(setenv \"PATH\" (concat (getenv \"PATH\") \":~/.cabal/bin\"))"
+  , "(setq exec-path (append exec-path '(\"~/.cabal/bin\")))"
+ -- ^ We append ~/.cabal/bin to PATH, since it's the default installation path when using `cabal new-install`.
+  , ""
   , "(load-file (let ((coding-system-for-read 'utf-8))"
   , "                (shell-command-to-string \""
                         ++ identifier files ++ "\")))"
