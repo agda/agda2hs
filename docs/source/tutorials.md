@@ -101,3 +101,84 @@ Since the target repository is different than the source, it has to be specified
 ```bash
 agda2hs ./src/agda/Usage.agda -o ./src/haskell/
 ```
+## How (and what) to prove?
+
+[Example source code](https://github.com/agda/agda2hs/tree/master/tutorials/example-proofs)
+
+This tutorial aims to explain how to apply different formal verification techniques compliant with agda2hs and haskell. 
+
+### Constructor constraints
+
+The code described in this section can be found in the file `Triangle.agda`.
+
+Lets say we want to have a data type describing a triangle. A first attempt might look somewhat like this:
+
+```agda
+open import Haskell.Prelude
+
+data Triangle : Set where
+    MkTriangle : (alpha beta gamma : Nat)
+           → Triangle
+
+{-# COMPILE AGDA2HS Triangle #-}
+```
+It's defined with three angles, because maybe thats the only property we are interested in so far. However, three arbitrary angle values do not make a triangle. First of all, they cannot be negative - to make things easier we use natural numbers (`Nat`) to represent the angle values. But that is not enough, three angles can constitute a triangle only if they sum up to 180 degrees and at most one angle is right or obtuse. This can be modeled in Agda:
+
+```agda
+open import Haskell.Prelude
+
+countBiggerThan : ⦃ Ord a ⦄ → List a → a → Int 
+countBiggerThan xs b = length (filter (λ x → (x >= b)) xs)
+
+{-# COMPILE AGDA2HS countBiggerThan #-}
+
+data Triangle : Set where
+    MkTriangle : (alpha beta gamma : Nat)
+        → ⦃ @0 h₁ : (((alpha + beta + gamma) == 180) ≡ True )⦄
+        → @0 ⦃ ((countBiggerThan
+     (alpha ∷ beta ∷  gamma ∷ []) 90 <= 1) ≡ True ) ⦄
+           → Triangle
+
+{-# COMPILE AGDA2HS Triangle #-}
+```
+Adding two hypotheses to the type signature of MkTriangle does the trick. 
+ Notice the use of double brackets, which signify the use of [instance arguments](https://agda.readthedocs.io/en/latest/language/instance-arguments.html): they allow Agda to infer the hypotheses if they are present in the context, instead of having them manually applied each and every time. 
+
+These hypotheses cannot be compiled to Haskell, therefore they have to be erased. This is done by annotating them with [0-quantity parameters](0-Quantity). To correctly annotate a hypothesis with quantity, it has to be explicitly named: in this case h₁. Alternatively, it can also be applied to the whole bracket, like in the second hypothesis. 
+
+The helper function `countBiggerThan` could also operate solely on natural numbers, but this way it show another example of using instance arguments, which map to Haskell's typeclass constraints.
+
+You might want to ask, what is the point of adding hypotheses if they will be erased in Haskell anyway? If you write the remainder of the code in Haskell, it is indeed the case. However, defining the data type in Agda requires the hypotheses to be present when constructing variables of that type:
+
+```agda
+createTriangle : Nat -> Nat -> Nat -> Maybe Triangle
+createTriangle alpha beta gamma 
+    = if (countBiggerThan (alpha ∷ beta ∷  gamma ∷ []) 90 <= 1)
+        then if (alpha + beta + gamma == 180 )
+            then Just (MkTriangle alpha beta gamma) 
+            else Nothing
+        else Nothing
+
+{-# COMPILE AGDA2HS createTriangle #-}
+```
+Unfortunately, the instance arguments are inferred only if presented in exactly the same shape as hypotheses in the constructor, which is the cause of perceived redundancy of the if-then-else statement - chaining the hypotheses with `&&` (the AND operator defined in `Haskell.Prim.Bool` in Agda2hs) will not allow for the reference to be inferred automatically, and the proofs would have to be provided manually. An example for that can be seen in the alternative `createTriangle₁` function:
+
+```agda
+createTriangle₁ : Nat -> Nat -> Nat -> Maybe Triangle
+createTriangle₁ alpha beta gamma 
+    = if ((countBiggerThan (alpha ∷ beta ∷  gamma ∷ []) 90 <= 1) && (alpha + beta + gamma == 180 )) 
+        then (λ ⦃ h₁ ⦄ →  Just (MkTriangle alpha beta gamma 
+            ⦃ &&-rightTrue (countBiggerThan (alpha ∷ beta ∷  gamma ∷ []) 90 <= 1) (alpha + beta + gamma == 180 ) h₁ ⦄ 
+            ⦃ &&-leftTrue (countBiggerThan (alpha ∷ beta ∷  gamma ∷ []) 90 <= 1) (alpha + beta + gamma == 180 ) h₁ ⦄) )
+        else Nothing
+ 
+{-# COMPILE AGDA2HS createTriangle₁ #-}
+
+```
+While using this alternative function offers much cleaner Haskell code as an output (no nested if statements), however the Agda side gets a bit messier. Two things are worth noting here: first, to be able to operate on the hypothesis asserted in the if condition, the branch has to be rewritten as an anonymous function taking the assertion as instance argument. Secondly, to explicitly provide the instance arguments, it also has to be done inside the double curly brackets. 
+
+Lastly, the two functions used to extract conditions from the compound condition: `&&-rightTrue` and `&&-leftTrue` were defined in `Haskell.Law.Bool`. The `Law` folder contains many theorems useful for designing your own proofs. This will be expanded on in following sections. 
+
+### Function or Postulate?
+
+The code described in this section can be found in the file ``

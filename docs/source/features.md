@@ -279,6 +279,7 @@ createRangeCase low high
         False -> Nothing
 ```
 
+(0-Quantity)=
 ## 0-Quantity Parameters
 
 Parameters can be annotated with a _quantity_ of either `0` or `ω` (the default quantity is `ω` if no quantity is explicitly annotated). Such parameters are irrelevant to evaluation, so they are irrelevant to the compiled Haskell program, and so agda2hs erases them.

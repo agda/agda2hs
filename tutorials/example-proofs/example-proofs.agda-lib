@@ -1,0 +1,3 @@
+name: example-proofs
+include: . 
+depend: agda2hs, standard-library
