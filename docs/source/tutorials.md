@@ -179,7 +179,7 @@ While using this alternative function offers much cleaner Haskell code as an out
 
 Lastly, the two functions used to extract conditions from the compound condition: `&&-rightTrue` and `&&-leftTrue` were defined in `Haskell.Law.Bool`. The `Law` folder contains many theorems useful for designing your own proofs. This will be expanded on in following sections. 
 
-### Function or Postulate?
+### Function or Predicate?
 
 The code described in this section can be found in the file `Ascending.agda`. 
 
