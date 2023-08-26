@@ -181,4 +181,117 @@ Lastly, the two functions used to extract conditions from the compound condition
 
 ### Function or Postulate?
 
-The code described in this section can be found in the file ``
+The code described in this section can be found in the file `Ascending.agda`. 
+
+We will try to define ascending order on lists, which will allow us to use statements about the order in later proofs and programs. 
+
+A first attempt at definition could be a function that can provide judgments on instances of lists:
+
+```agda
+isAscending : ⦃ iOrdA : Ord a ⦄ → List a → Bool
+isAscending [] = True
+isAscending (x ∷ []) = True
+isAscending (x ∷ y ∷ xs) = if x <= y then isAscending (y ∷ xs) else False
+
+{-# COMPILE AGDA2HS isAscending #-}
+```
+This function can be compiled to Haskell without any issue, however, when you try using it in proofs you can notice that it is not the most handy definition: the different cases are anonymous and to invoke them, some heavy stretching with regards to values has to be invoked. A better definition might be a predicate, instead:
+
+```agda
+data IsAscending₂ {a : Set} ⦃ iOrdA : Ord a ⦄ : List a → Set where
+    Empty : IsAscending₂ []
+    OneElem : (x : a) →  IsAscending₂ (x ∷ [])
+    ManyElem : (x y : a) (xs : List a) 
+        → ⦃ IsAscending₂ (y ∷ xs) ⦄
+        → ⦃ IsTrue (x <= y) ⦄
+        → IsAscending₂ (x ∷ y ∷ xs)
+```
+However, this data type cannot be compiled to Haskell, as they do not allow to match on specific values. However, some amount of equivalency can be proven between these two definitions. They are not structurally different (one evaluates to True and the other to a data type), therefore they cannot be equal per the `≡` operator, however there occurs the material equivalence relation (`⇔`), such that if the function returns `True`, the predicate holds, and vice versa. Lets try to prove it then!
+
+The signature of the first direction will look like this:
+
+```agda
+proof₁ : ⦃ iOrdA : Ord a ⦄ (xs : List a) → ⦃ IsAscending₂ xs ⦄ → (IsTrue (isAscending xs)) 
+proof xs = ?
+```
+
+> Note: in Agda, you can use [interactive mode](https://agda.readthedocs.io/en/latest/tools/emacs-mode.html#commands-in-context-of-a-goal) to assist in proofs. Question marks will be loaded to open goals. THis feature doesn't work yet seamlessly with agda2hs but the preview of context and splitting based on cases will guide with both more complicated and trivial proofs. 
+
+Since there are three constructors for the `IsAscending₂` predicate, there need to be only three cases in the proof, two of which are trivial:
+
+```agda
+proof₁ : ⦃ iOrdA : Ord a ⦄ (xs : List a) → ⦃ IsAscending₂ xs ⦄ → (IsTrue (isAscending xs)) 
+proof₁ [] = IsTrue.itsTrue 
+proof₁ (x ∷ []) = IsTrue.itsTrue
+proof₁ (x ∷ x₁ ∷ xs) ⦃ (ManyElem .x .x₁ .xs ⦃ h₁ ⦄ ⦃ h₂ ⦄) ⦄ = ?
+```
+In the third case, we need insight into the `IsAscending₂` predicate so it has to be explicitly invoked. Later in the proof we will only need the h₂ hypothesis, but because its the second implicit argument, both need to be stated. The goal is of the shape `IsTrue (isAscending xs)`, but it cannot be easily constructed. Instead, this goal can be mapped to `isAscending xs ≡ True`, which allows to use [chains of equality](https://plfa.github.io/Equality/#chains-of-equations) syntax - transforming the first statement in the equation step by step until we obtain the second statement in a given equality.
+
+```agda
+useEq : {x y : Bool} → x ≡ y → IsTrue x → IsTrue y
+useEq {True} {True} eq is = IsTrue.itsTrue
+
+reverseEq : { x : Bool } → (IsTrue x) → x ≡ True
+reverseEq {False} ()
+reverseEq {True} input = refl 
+
+proof₁ (x ∷ x₁ ∷ xs) ⦃ (ManyElem .x .x₁ .xs ⦃ h₁ ⦄ ⦃ h₂ ⦄) ⦄ = useEq ( sym $
+    begin
+        isAscending (x ∷ x₁ ∷ xs)
+    ≡⟨⟩ 
+        (if x <= x₁ then isAscending (x₁ ∷ xs) else False)
+    ≡⟨ ifTrueEqThen (x <= x₁)  (reverseEq h₂) ⟩ 
+        isAscending (x₁ ∷ xs)
+    ≡⟨ reverseEq (proof₁ (x₁ ∷ xs) ) ⟩ 
+        True
+    ∎ ) IsTrue.itsTrue
+```
+Two helper functions, useEq and reverseEq, had to be added to easily operate on the goal. Even though both of them have trivial proofs, they need to be stated explicitly so that the proper type signature can be invoked. To inspect other helper functions used in the proof, try loading the source code in agda - the definitions all come from `Haskell.Prelude`. 
+
+The reverse direction of the iff proof is, again, substantially more complicated. First, the necessary helper proofs will be discussed.
+
+```agda
+--reductio ad absurdum
+absurd₁ : {x : Bool} → (x ≡ True) → (x ≡ False) → ⊥
+absurd₁ {False} () b 
+absurd₁ {True} a ()
+```
+Reductio ad absurdum is a necessary tactic for dealing with self-contradictory statements. If such statement is one of the input arguments, this contradiction can be discarded with the [`()` keyword](https://agda.readthedocs.io/en/latest/language/function-definitions.html#absurd-patterns) in place of the contradictory argument. However, if the absurd is arising from some combination of the input arguments, it requires some helper method. 
+
+```agda
+--inductive hypothesis for isAscending function
+helper₁ : ⦃ iOrdA : Ord a ⦄ (x : a) (xs : List a) → isAscending xs ≡ False → (isAscending (x ∷ xs)) ≡ False
+helper₁ x xs h₁ with (isAscending (x ∷ xs)) in h₂
+helper₁ x (x₁ ∷ xs) h₁ | True  with (x <= x₁)
+helper₁ x (x₁ ∷ xs) h₁ | True | True = magic (absurd₁ h₂ h₁)
+helper₁ x (x₁ ∷ xs) h₁ | True | False = sym h₂
+helper₁ x xs h₁ | False = refl
+```
+Here is a helper method for the inductive hypothesis. Notice that where in the predicate syntax we were able to pattern-match on the different constructor, when working with a function, the only way to narrow down to different cases is to pattern match on the possible values of the function output. The [`with ... in` syntax](https://agda.readthedocs.io/en/latest/language/with-abstraction.html) can be used in such cases. In the first useage of the syntax, the output of the function is needed to be applied in the proof, so it needs to be saved *in* a value to be accessed in the context. This is what applying `in h₂` achieves. In the second usage, Agda manages to simplify the necessary arguments automatically, so it is not necessary to add the assertion to the syntax. 
+
+The `absurd₁` function can be applied to the `magic` function to resolve the internal contradiction. `magic` lives in `Haskell.Prim` which also needs to be imported. 
+
+```agda
+--recursion helper
+postulate
+   theorem₂helper : ⦃ iOrdA : Ord a ⦄ (xs : List a) → (IsTrue (isAscending xs)) → IsAscending₂ xs
+```
+The last element is a definition of the same type as the actual proof. This was incidentally necessary as the termination check did not recognize that it is being applied to a recursive case. [Postulates](https://agda.readthedocs.io/en/latest/language/postulates.html) are in general a bad practice.
+
+```agda
+--proof for (function returns true) → predicate holds
+theorem₂ : ⦃ iOrdA : Ord a ⦄ (xs : List a) 
+    → (IsTrue (isAscending xs)) → IsAscending₂ xs
+theorem₂ [] h₁ = Empty
+theorem₂ (x ∷ []) h₁ = OneElem x
+theorem₂ (x ∷ x₁ ∷ xs) h₁ with (isAscending xs) in h₂ | (x <= x₁) in h₃
+theorem₂ (x ∷ x₁ ∷ xs) h₁ | True  | True = ManyElem x x₁ xs  
+    ⦃ theorem₂helper (x₁ ∷ xs) h₁ ⦄ ⦃ useEq ( sym $ h₃ ) IsTrue.itsTrue ⦄
+theorem₂ (x ∷ x₁ ∷ xs) ()    | _  | False 
+theorem₂ (x ∷ x₁ ∷ xs) h₁ | False | True = magic (
+         absurd₁ (reverseEq h₁) (helper₁ x₁ xs h₂) )
+```
+
+Finally, the proof can be constructed. In itself, it doesn't use any concepts that weren't already discussed. With these two proofs, the differences between using these two different styles of describing properties of the code are clear, and some basic principles of building proofs were demonstrated. 
+
+From all the functions and data types discussed, only the first can be compiled into Haskell. The predicate type class and the proofs cannot be compiled as they use concepts that are not supported by Haskell or agda2hs. However, they shouldn't be compiled; they should remain on the "Agda side" as the formal verification of the written code. 
