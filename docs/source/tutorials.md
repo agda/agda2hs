@@ -195,7 +195,7 @@ isAscending (x ∷ y ∷ xs) = if x <= y then isAscending (y ∷ xs) else False
 
 {-# COMPILE AGDA2HS isAscending #-}
 ```
-This function can be compiled to Haskell without any issue, however, when you try using it in proofs you can notice that it is not the most handy definition: the different cases are anonymous and to invoke them, some heavy stretching with regards to values has to be invoked. A better definition might be a predicate, instead:
+This function can be compiled to Haskell without any issue, however, when you try using it in proofs you can notice that it is not the most handy definition: since the different cases are anonymous, invoking them is not straightforward and might require defining more proof cases with additional assertions about the values input data (an example of which can be found [further in the tutorial](function-example)) A better definition might be a predicate, instead:
 
 ```agda
 data IsAscending₂ {a : Set} ⦃ iOrdA : Ord a ⦄ : List a → Set where
@@ -206,7 +206,7 @@ data IsAscending₂ {a : Set} ⦃ iOrdA : Ord a ⦄ : List a → Set where
         → ⦃ IsTrue (x <= y) ⦄
         → IsAscending₂ (x ∷ y ∷ xs)
 ```
-However, this data type cannot be compiled to Haskell, as they do not allow to match on specific values. However, some amount of equivalency can be proven between these two definitions. They are not structurally different (one evaluates to True and the other to a data type), therefore they cannot be equal per the `≡` operator, however there occurs the material equivalence relation (`⇔`), such that if the function returns `True`, the predicate holds, and vice versa. Lets try to prove it then!
+This data type cannot be compiled to Haskell, as they do not allow to match on specific values. However, some amount of equivalency can be proven between these two definitions. They are not structurally different (one evaluates to True and the other to a data type), therefore they cannot be equal per the `≡` operator. Instead, there occurs the material equivalence relation (`⇔`), such that if the function returns `True`, the predicate holds, and vice versa. Let's try to prove it then!
 
 The signature of the first direction will look like this:
 
@@ -269,13 +269,15 @@ helper₁ x xs h₁ | False = refl
 ```
 Here is a helper method for the inductive hypothesis. Notice that where in the predicate syntax we were able to pattern-match on the different constructor, when working with a function, the only way to narrow down to different cases is to pattern match on the possible values of the function output. The [`with ... in` syntax](https://agda.readthedocs.io/en/latest/language/with-abstraction.html) can be used in such cases. In the first useage of the syntax, the output of the function is needed to be applied in the proof, so it needs to be saved *in* a value to be accessed in the context. This is what applying `in h₂` achieves. In the second usage, Agda manages to simplify the necessary arguments automatically, so it is not necessary to add the assertion to the syntax. 
 
-The `absurd₁` function can be applied to the `magic` function to resolve the internal contradiction. `magic` lives in `Haskell.Prim` which also needs to be imported. 
+The applied `absurd₁` function can be given as input argument to the `magic` function to resolve the internal contradiction. `magic` lives in `Haskell.Prim` which also needs to be imported. 
 
 ```agda
 --recursion helper
 postulate
    theorem₂helper : ⦃ iOrdA : Ord a ⦄ (xs : List a) → (IsTrue (isAscending xs)) → IsAscending₂ xs
 ```
+(function-example)=
+
 The last element is a definition of the same type as the actual proof. This was incidentally necessary as the termination check did not recognize that it is being applied to a recursive case. [Postulates](https://agda.readthedocs.io/en/latest/language/postulates.html) are in general a bad practice.
 
 ```agda
