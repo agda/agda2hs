@@ -111,7 +111,7 @@ This tutorial aims to explain how to apply different formal verification techniq
 
 The code described in this section can be found in the file `Triangle.agda`.
 
-Lets say we want to have a data type describing a triangle. A first attempt might look somewhat like this:
+Let's say we want to have a data type describing a triangle. A first attempt might look somewhat like this:
 
 ```agda
 open import Haskell.Prelude
