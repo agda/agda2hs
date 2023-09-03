@@ -258,6 +258,8 @@ absurd₁ {True} a ()
 ```
 Reductio ad absurdum is a necessary tactic for dealing with self-contradictory statements. If such statement is one of the input arguments, this contradiction can be discarded with the [`()` keyword](https://agda.readthedocs.io/en/latest/language/function-definitions.html#absurd-patterns) in place of the contradictory argument. However, if the absurd is arising from some combination of the input arguments, it requires some helper method. 
 
+(function-example)=
+
 ```agda
 --inductive hypothesis for isAscending function
 helper₁ : ⦃ iOrdA : Ord a ⦄ (x : a) (xs : List a) → isAscending xs ≡ False → (isAscending (x ∷ xs)) ≡ False
@@ -267,18 +269,9 @@ helper₁ x (x₁ ∷ xs) h₁ | True | True = magic (absurd₁ h₂ h₁)
 helper₁ x (x₁ ∷ xs) h₁ | True | False = sym h₂
 helper₁ x xs h₁ | False = refl
 ```
-Here is a helper method for the inductive hypothesis. Notice that where in the predicate syntax we were able to pattern-match on the different constructor, when working with a function, the only way to narrow down to different cases is to pattern match on the possible values of the function output. The [`with ... in` syntax](https://agda.readthedocs.io/en/latest/language/with-abstraction.html) can be used in such cases. In the first useage of the syntax, the output of the function is needed to be applied in the proof, so it needs to be saved *in* a value to be accessed in the context. This is what applying `in h₂` achieves. In the second usage, Agda manages to simplify the necessary arguments automatically, so it is not necessary to add the assertion to the syntax. 
+Here is a helper method for the inductive hypothesis. Notice that where in the predicate syntax we were able to pattern-match on the different constructor, when working with a function, the only way to narrow down to different cases is to pattern match on the possible values of the function output. The [`with ... in` syntax](https://agda.readthedocs.io/en/latest/language/with-abstraction.html) can be used in such cases. In the first usage of the syntax, the output of the function is needed to be applied in the proof, so it needs to be saved *in* a value to be accessed in the context. This is what applying `in h₂` achieves. In the second usage, Agda manages to simplify the necessary arguments automatically, so it is not necessary to add the assertion to the syntax. 
 
 The applied `absurd₁` function can be given as input argument to the `magic` function to resolve the internal contradiction. `magic` lives in `Haskell.Prim` which also needs to be imported. 
-
-```agda
---recursion helper
-postulate
-   theorem₂helper : ⦃ iOrdA : Ord a ⦄ (xs : List a) → (IsTrue (isAscending xs)) → IsAscending₂ xs
-```
-(function-example)=
-
-The last element is a definition of the same type as the actual proof. This was incidentally necessary as the termination check did not recognize that it is being applied to a recursive case. [Postulates](https://agda.readthedocs.io/en/latest/language/postulates.html) are in general a bad practice.
 
 ```agda
 --proof for (function returns true) → predicate holds
@@ -294,6 +287,36 @@ theorem₂ (x ∷ x₁ ∷ xs) h₁ | False | True = magic (
          absurd₁ (reverseEq h₁) (helper₁ x₁ xs h₂) )
 ```
 
-Finally, the proof can be constructed. In itself, it doesn't use any concepts that weren't already discussed. With these two proofs, the differences between using these two different styles of describing properties of the code are clear, and some basic principles of building proofs were demonstrated. 
+Finally, the proof can be constructed. The recursive case of the proof had to be split into three different cases, but in the place where one would expect to be able to use `theorem₂` recursively, `theorem₂helper` is used instead: 
+
+```agda
+--recursion helper
+postulate3
+   theorem₂helper : ⦃ iOrdA : Ord a ⦄ (xs : List a) → (IsTrue (isAscending xs)) → IsAscending₂ xs
+```
+
+The `theorem₂helper` is a definition of the same type as the actual proof, but without a proof attached - it was only postulated. [Postulates](https://agda.readthedocs.io/en/latest/language/postulates.html) are in general a bad practice. Here it was necessary, as the termination check did not recognize that it is being applied to a recursive case. However, doesn't this invalidate the whole proof? Since postulates are a bad practice, can we do better? Turns out, termination checks on recursive cases [is a known issue when using `with abstraction`](https://agda.readthedocs.io/en/latest/language/with-abstraction.html#termination-checking). Thus, in the next attempt, we can get rid of the postulate:
+
+```agda
+helper₂ : ⦃ iOrdA : Ord a ⦄ (x : a) (xs : List a) 
+    → (IsTrue (isAscending (x ∷ xs))) → (IsTrue (isAscending xs))
+helper₂ x [] h₁ = IsTrue.itsTrue
+helper₂ x (x₁ ∷ xs) h₁ with (x <= x₁) in h₂
+helper₂ x (x₁ ∷ xs) h₁ | True = h₁
+helper₂ x (x₁ ∷ xs) () | False 
+
+--proof for (function returns true) → predicate holds version 2
+theorem₃ : ⦃ iOrdA : Ord a ⦄ (xs : List a) 
+    → (IsTrue (isAscending xs)) → IsAscending₂ xs
+theorem₃ [] h₁ = Empty
+theorem₃ (x ∷ []) h₁ = OneElem x
+theorem₃ (x ∷ x₁ ∷ xs) h₁ with (theorem₃ (x₁ ∷ xs) (helper₂ x (x₁ ∷ xs) h₁)) 
+theorem₃ (x ∷ x₁ ∷ xs) h₁ | _ with (x <= x₁) in h₂ 
+theorem₃ (x ∷ x₁ ∷ xs) h₁ | h₃ | True  = ManyElem x x₁ xs ⦃ h₃ ⦄ ⦃ useEq ( sym $ h₂ ) IsTrue.itsTrue ⦄
+theorem₃ (x ∷ x₁ ∷ xs) () | _  | False 
+```
+We need another helper function to obtain the correct hypothesis about the tail of the list, but thanks to this approach we can remove one of the assertions about the input values. On the other hand, we need to break up the single `with` assertion into two different lines - if both the new recursive hypothesis (`h₃`) and `h₂` were defined in the same step, Agda wouldn't be able to implicitly apply `h₂` in the `h₁` hypothesis and reason about it being a contradiction in the last case. This way, we finally obtain a correct proof. 
+
+With these proofs, the differences between using these two different styles of describing properties of the code are clear, and some basic principles of building proofs were demonstrated. 
 
 From all the functions and data types discussed, only the first can be compiled into Haskell. The predicate type class and the proofs cannot be compiled as they use concepts that are not supported by Haskell or agda2hs. However, they shouldn't be compiled; they should remain on the "Agda side" as the formal verification of the written code. 

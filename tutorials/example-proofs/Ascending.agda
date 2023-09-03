@@ -62,7 +62,7 @@ postulate
    theorem₂helper : ⦃ iOrdA : Ord a ⦄ (xs : List a) 
     → (IsTrue (isAscending xs)) → IsAscending₂ xs
 
---proof for (function returns true) → predicate holds
+--proof for (function returns true) → predicate holds version 1 (wrong)
 theorem₂ : ⦃ iOrdA : Ord a ⦄ (xs : List a) 
     → (IsTrue (isAscending xs)) → IsAscending₂ xs
 theorem₂ [] h₁ = Empty
@@ -70,6 +70,24 @@ theorem₂ (x ∷ []) h₁ = OneElem x
 theorem₂ (x ∷ x₁ ∷ xs) h₁ with (isAscending xs) in h₂ | (x <= x₁) in h₃
 theorem₂ (x ∷ x₁ ∷ xs) h₁ | True  | True = ManyElem x x₁ xs  
     ⦃ theorem₂helper (x₁ ∷ xs) h₁ ⦄ ⦃ useEq ( sym $ h₃ ) IsTrue.itsTrue ⦄
-theorem₂ (x ∷ x₁ ∷ xs) ()    | _  | False 
+theorem₂ (x ∷ x₁ ∷ xs) () | _     | False 
 theorem₂ (x ∷ x₁ ∷ xs) h₁ | False | True = magic (
          absurd₁ (reverseEq h₁) (helper₁ x₁ xs h₂) )
+
+helper₂ : ⦃ iOrdA : Ord a ⦄ (x : a) (xs : List a) 
+    → (IsTrue (isAscending (x ∷ xs))) → (IsTrue (isAscending xs))
+helper₂ x [] h₁ = IsTrue.itsTrue
+helper₂ x (x₁ ∷ xs) h₁ with (x <= x₁) in h₂
+helper₂ x (x₁ ∷ xs) h₁ | True = h₁
+helper₂ x (x₁ ∷ xs) () | False 
+
+--proof for (function returns true) → predicate holds version 2
+theorem₃ : ⦃ iOrdA : Ord a ⦄ (xs : List a) 
+    → (IsTrue (isAscending xs)) → IsAscending₂ xs
+theorem₃ [] h₁ = Empty
+theorem₃ (x ∷ []) h₁ = OneElem x
+theorem₃ (x ∷ x₁ ∷ xs) h₁ with (theorem₃ (x₁ ∷ xs) (helper₂ x (x₁ ∷ xs) h₁)) 
+theorem₃ (x ∷ x₁ ∷ xs) h₁ | _ with (x <= x₁) in h₂ 
+theorem₃ (x ∷ x₁ ∷ xs) h₁ | h₃ | True  = ManyElem x x₁ xs 
+    ⦃ h₃ ⦄ ⦃ useEq ( sym $ h₂ ) IsTrue.itsTrue ⦄
+theorem₃ (x ∷ x₁ ∷ xs) () | _  | False  
