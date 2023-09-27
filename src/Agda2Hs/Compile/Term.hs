@@ -167,7 +167,7 @@ lambdaCase q es = setCurrentRange (nameBindingSite $ qnameName q) $ do
   let (pars, rest) = splitAt npars es
       cs           = applyE cls pars
   ls   <- filter (`extLamUsedIn` cs) <$> asks locals
-  cs   <- withLocals ls $ mapM (compileClause (qnameModule q) $ hsName "(lambdaCase)") cs
+  cs   <- withLocals ls $ mapMaybeM (compileClause (qnameModule q) $ hsName "(lambdaCase)") cs
   case cs of
     -- If there is a single clause and all patterns got erased, we
     -- simply return the body.

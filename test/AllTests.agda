@@ -57,6 +57,7 @@ import TypeOperatorExport
 import TypeOperatorImport
 import IOFile
 import IOInput
+import Issue200
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -114,4 +115,5 @@ import TypeOperatorExport
 import TypeOperatorImport
 import IOFile
 import IOInput
+import Issue200
 #-}

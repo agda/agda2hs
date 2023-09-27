@@ -106,7 +106,7 @@ compileFun' withSig def@(Defn {..}) = do
         pars <- getContextArgs
         reportSDoc "agda2hs.compile" 10 $ "applying clauses to parameters: " <+> prettyTCM pars
         let clauses = filter keepClause funClauses `apply` pars
-        cs <- mapM (compileClause (qnameModule defName) x) clauses
+        cs <- mapMaybeM (compileClause (qnameModule defName) x) clauses
         return $ [Hs.TypeSig () [x] ty | withSig ] ++ [Hs.FunBind () cs]
   where
     Function{..} = theDef
@@ -118,7 +118,8 @@ compileFun' withSig def@(Defn {..}) = do
       addContext tel $ ifIsSort b (\_ -> return True) (return False)
     err = "Not supported: type definition with `where` clauses"
 
-compileClause :: ModuleName -> Hs.Name () -> Clause -> C (Hs.Match ())
+compileClause :: ModuleName -> Hs.Name () -> Clause -> C (Maybe (Hs.Match ()))
+compileClause curModule x c@Clause{ clauseBody = Nothing} = return Nothing
 compileClause curModule x c@Clause{..} = withClauseLocals curModule c $ do
   reportSDoc "agda2hs.compile" 7 $ "compiling clause: " <+> prettyTCM c
   addContext (KeepNames clauseTel) $ do
@@ -138,7 +139,7 @@ compileClause curModule x c@Clause{..} = withClauseLocals curModule c $ do
           match = case (x, ps) of
             (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
             _                         -> Hs.Match () x ps rhs whereBinds
-      return match
+      return $ Just match
 
 noAsPatterns :: DeBruijnPattern -> C ()
 noAsPatterns = \case

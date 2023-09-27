@@ -3,6 +3,7 @@ module Agda2Hs.Compile.ClassInstance where
 import Control.Monad ( when, filterM, unless )
 import Control.Monad.Reader ( local )
 
+import Data.Foldable ( toList )
 import Data.List ( nub )
 import Data.Maybe ( isNothing, mapMaybe )
 import qualified Data.HashMap.Strict as HMap
@@ -186,7 +187,7 @@ compileInstanceClause curModule c = withClauseLocals curModule c $ do
          -- No minimal dictionary used, proceed with compiling as a regular clause.
          | otherwise
          -> do ms <- disableCopatterns $ compileClause curModule uf c'
-               return ([Hs.InsDecl () (Hs.FunBind () [ms]) | keepArg arg], [])
+               return ([Hs.InsDecl () (Hs.FunBind () (toList ms)) | keepArg arg], [])
 
 fieldArgInfo :: QName -> C ArgInfo
 fieldArgInfo f = do
