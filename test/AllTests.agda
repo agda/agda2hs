@@ -55,6 +55,7 @@ import TypeOperators
 import ErasedTypeArguments
 import TypeOperatorExport
 import TypeOperatorImport
+import Issue169
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -110,4 +111,5 @@ import TypeOperators
 import ErasedTypeArguments
 import TypeOperatorExport
 import TypeOperatorImport
+import Issue169
 #-}

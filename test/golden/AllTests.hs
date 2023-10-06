@@ -53,4 +53,5 @@ import TypeOperators
 import ErasedTypeArguments
 import TypeOperatorExport
 import TypeOperatorImport
+import Issue169
 
