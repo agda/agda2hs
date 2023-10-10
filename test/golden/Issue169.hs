@@ -6,7 +6,5 @@ showIdentity :: Show a => Identity a -> String
 showIdentity (Identity id) = "Id < " ++ show id ++ " >"
 
 instance (Show a) => Show (Identity a) where
-    showsPrec = showsPrec
-    showList = showList
     show = showIdentity
 
