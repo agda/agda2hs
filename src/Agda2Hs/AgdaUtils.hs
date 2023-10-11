@@ -2,6 +2,7 @@ module Agda2Hs.AgdaUtils where
 
 import Data.Data
 import Data.Monoid ( Any(..) )
+import qualified Data.Map as Map
 import Data.Maybe ( fromMaybe )
 
 import Agda.Compiler.Backend hiding ( Args )
@@ -10,8 +11,11 @@ import Agda.Interaction.FindFile ( findFile' )
 
 import Agda.Syntax.Common ( Arg, defaultArg )
 import Agda.Syntax.Common.Pretty ( prettyShow )
+import qualified Agda.Syntax.Concrete as C
 import Agda.Syntax.Internal
 import Agda.Syntax.Internal.Names
+import Agda.Syntax.Scope.Base
+import Agda.Syntax.Scope.Monad
 import Agda.Syntax.TopLevelModuleName
 
 import Agda.TypeChecking.Monad ( topLevelModuleName )
@@ -20,6 +24,7 @@ import Agda.TypeChecking.Substitute
 
 import Agda.Utils.Either ( isRight )
 import Agda.Utils.List ( initMaybe )
+import qualified Agda.Utils.List1 as List1
 import Agda.Utils.Monad ( ifM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
@@ -92,3 +97,7 @@ getTopLevelModuleForModuleName = loop . mnameToList
 
 getTopLevelModuleForQName :: QName -> TCM (Maybe TopLevelModuleName)
 getTopLevelModuleForQName = getTopLevelModuleForModuleName . qnameModule
+
+lookupModuleInCurrentModule :: C.Name -> TCM [AbstractModule]
+lookupModuleInCurrentModule x =
+  List1.toList' . Map.lookup x . nsModules . thingsInScope [PublicNS, PrivateNS] <$> getCurrentScope

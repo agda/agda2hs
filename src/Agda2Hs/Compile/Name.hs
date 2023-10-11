@@ -3,8 +3,10 @@ module Agda2Hs.Compile.Name where
 import Control.Arrow ( (>>>) )
 import Control.Applicative ( (<|>) )
 import Control.Monad
+import Control.Monad.Except ( catchError )
 import Control.Monad.Reader
 
+import Data.Functor ( (<&>) )
 import Data.List ( intercalate, isPrefixOf )
 import Data.Text ( unpack )
 
@@ -13,20 +15,23 @@ import qualified Language.Haskell.Exts as Hs
 import Agda.Compiler.Backend hiding ( topLevelModuleName )
 import Agda.Compiler.Common ( topLevelModuleName )
 
+import qualified Agda.Syntax.Abstract as A
 import Agda.Syntax.Common
 import Agda.Syntax.Internal
 import Agda.Syntax.Position
 import qualified Agda.Syntax.Concrete as C
-import Agda.Syntax.Scope.Base ( inverseScopeLookupName )
+import Agda.Syntax.Scope.Base ( inverseScopeLookupName, amodName )
+import Agda.Syntax.Scope.Monad ( resolveName, isDatatypeModule )
 import Agda.Syntax.TopLevelModuleName
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import qualified Agda.Syntax.Common.Pretty as P
 
+import Agda.TypeChecking.Datatypes ( isDataOrRecordType )
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Records ( isRecordConstructor )
 
 import qualified Agda.Utils.List1 as List1
-import Agda.Utils.Maybe ( isJust, whenJust, fromMaybe, caseMaybeM )
+import Agda.Utils.Maybe ( isJust, isNothing, whenJust, fromMaybe, caseMaybeM )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Rewrites
@@ -140,12 +145,17 @@ compileQName f
 
     getQualifier :: QName -> Hs.ModuleName () -> C Qualifier
     getQualifier f mod =
-      (inverseScopeLookupName f <$> getScope) >>= return . \case
-        (C.Qual as C.QName{} : _)
-          | qual <- hsModuleName $ prettyShow as, qual /= mod
-          -> QualifiedAs (Just qual)
-        (C.Qual{} : _) -> QualifiedAs Nothing
-        _ -> Unqualified
+      (inverseScopeLookupName f <$> getScope) >>= \case
+        (C.QName{} : _) -> return Unqualified
+        (C.Qual as C.QName{} : _) -> liftTCM $ do
+          let qual = hsModuleName $ prettyShow as
+          lookupModuleInCurrentModule as >>= \case
+            (x:_) | qual /= mod -> isDatatypeModule (amodName x) >>= \case
+              Just{} -> return $ QualifiedAs Nothing
+              Nothing -> return $ QualifiedAs $ Just qual
+            _ -> return Nothing
+          `catchError` \_ -> return $ QualifiedAs Nothing
+        _ -> return $ QualifiedAs Nothing
 
     qualify :: Hs.ModuleName () -> Hs.Name () -> Qualifier -> Hs.QName ()
     qualify mod n = \case

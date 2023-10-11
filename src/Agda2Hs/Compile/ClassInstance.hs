@@ -138,6 +138,10 @@ compileInstanceClause curModule c = withClauseLocals curModule c $ do
       -- We want the actual field name, not the instance-opened projection.
       (q, _, _) <- origProjection q
       arg <- fieldArgInfo q
+
+      reportSDoc "agda2hs.compile.instance" 15 $
+        text "Compiling instance clause for" <+> prettyTCM (Arg arg $ Def q [])
+
       let uf = hsName $ prettyShow $ nameConcrete $ qnameName q
 
       let
@@ -169,25 +173,37 @@ compileInstanceClause curModule c = withClauseLocals curModule c $ do
         -- Projection of a primitive field: chase down definition and inline as instance clause.
         | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
         , [(_, f)] <- mapMaybe isProjElim es
-        , f .~ q
-        -> do d <- chaseDef n
-              fc <- compileFun False d
-              let hd = hsName $ prettyShow $ nameConcrete $ qnameName $ defName d
-              let fc' = dropPatterns 1 $ replaceName hd uf fc
-              return (map (Hs.InsDecl ()) fc', [n])
+        , f .~ q -> do
+          reportSDoc "agda2hs.compile.instance" 20 $
+            text "Instance clause is projected from" <+> prettyTCM (Def n [])
+          reportSDoc "agda2hs.compile.instance" 20 $
+            text $ "raw projection:" ++ prettyShow (Def n [])
+          d <- chaseDef n
+          fc <- compileFun False d
+          let hd = hsName $ prettyShow $ nameConcrete $ qnameName $ defName d
+          let fc' = dropPatterns 1 $ replaceName hd uf fc
+          return (map (Hs.InsDecl ()) fc', [n])
 
          -- Projection of a default implementation: drop while making sure these are drawn from the
          -- same (minimal) dictionary as the primitive fields.
-         | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
-         , n .~ q
-         , Just [ Def n' _ ] <- map unArg . filter keepArg <$> allApplyElims es
-         -> do n' <- resolveExtendedLambda n'
-               return ([], [n'])
+        | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
+        , n .~ q -> do
+          case map unArg . filter keepArg <$> allApplyElims es of
+            Just [ Def f _ ] -> do
+              reportSDoc "agda2hs.compile.instance" 20 $ vcat
+                  [ text "Dropping default instance clause" <+> prettyTCM c'
+                  , text "with minimal dictionary" <+> prettyTCM f
+                  ]
+              reportSDoc "agda2hs.compile.instance" 40 $
+                  text $ "raw dictionary:" ++ prettyShow f
+              return ([], [f])
+            _ -> genericDocError =<< text "illegal instance declaration: instances using default methods should use a named definition or an anonymous `λ where`."
 
-         -- No minimal dictionary used, proceed with compiling as a regular clause.
-         | otherwise
-         -> do ms <- disableCopatterns $ compileClause curModule uf c'
-               return ([Hs.InsDecl () (Hs.FunBind () (toList ms)) | keepArg arg], [])
+        -- No minimal dictionary used, proceed with compiling as a regular clause.
+        | otherwise -> do
+          reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
+          ms <- disableCopatterns $ compileClause curModule uf c'
+          return ([Hs.InsDecl () (Hs.FunBind () (toList ms))], [])
 
 fieldArgInfo :: QName -> C ArgInfo
 fieldArgInfo f = do
