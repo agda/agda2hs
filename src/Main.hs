@@ -1,6 +1,9 @@
 module Main where
 
+import Control.Monad.IO.Class ( MonadIO(..) )
+
 import System.Console.GetOpt
+import System.Environment ( getArgs )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
 import qualified Language.Haskell.Exts.Build as Hs
@@ -71,4 +74,8 @@ backend = Backend'
   , mayEraseType          = \ _ -> return True
   }
 
-main = runAgda [Backend backend]
+main = do
+  -- Issue #201: drop backend when running in interactive mode
+  let interactionFlag = Option ['I'] ["interactive", "interaction", "interaction-json"] (NoArg ()) ""
+  (i , _ , _) <- getOpt Permute [interactionFlag] <$> getArgs
+  runAgda [Backend backend | null i ]
