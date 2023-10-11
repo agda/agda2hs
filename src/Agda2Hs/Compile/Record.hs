@@ -14,12 +14,12 @@ import Agda.Compiler.Backend
 
 import Agda.Syntax.Common ( Arg(unArg), defaultArg )
 import Agda.Syntax.Internal
+import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty ( ($$), (<+>), text, vcat )
 import Agda.TypeChecking.Substitute ( TelV(TelV), Apply(apply) )
 import Agda.TypeChecking.Telescope
 
-import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils

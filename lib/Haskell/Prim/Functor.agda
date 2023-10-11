@@ -3,6 +3,7 @@ module Haskell.Prim.Functor where
 
 open import Haskell.Prim
 open import Haskell.Prim.Either
+open import Haskell.Prim.IO
 open import Haskell.Prim.List
 open import Haskell.Prim.Maybe
 open import Haskell.Prim.Tuple
@@ -77,3 +78,5 @@ instance
 
   iFunctorTuple₄ : Functor (λ d → Tuple (a ∷ b ∷ c ∷ d ∷ []))
   iFunctorTuple₄ = fmap= λ f (x ; y ; z ; w ; tt) → x ; y ; z ; f w ; tt
+
+instance postulate iFunctiorIO : Functor IO

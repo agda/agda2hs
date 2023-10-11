@@ -29,7 +29,7 @@ languagePragmas _ = []
 
 getForeignPragmas :: [Hs.Extension] -> TCM [(Range, Code)]
 getForeignPragmas exts = do
-  pragmas <- fromMaybe [] . Map.lookup pragmaName . iForeignCode <$> curIF
+  pragmas <- fromMaybe [] . fmap getForeignCodeStack . Map.lookup pragmaName . iForeignCode <$> curIF
   getCode exts $ reverse pragmas
   where
     getCode :: [Hs.Extension] -> [ForeignCode] -> TCM [(Range, Code)]

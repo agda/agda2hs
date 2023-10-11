@@ -25,8 +25,8 @@ import Agda.TypeChecking.Pretty
 import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Position
 import Agda.Syntax.TopLevelModuleName
+import Agda.Syntax.Common.Pretty ( prettyShow )
 
-import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.Compile

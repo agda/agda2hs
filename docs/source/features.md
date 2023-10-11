@@ -279,6 +279,7 @@ createRangeCase low high
         False -> Nothing
 ```
 
+(0-Quantity)=
 ## 0-Quantity Parameters
 
 Parameters can be annotated with a _quantity_ of either `0` or `ω` (the default quantity is `ω` if no quantity is explicitly annotated). Such parameters are irrelevant to evaluation, so they are irrelevant to the compiled Haskell program, and so agda2hs erases them.
@@ -1045,3 +1046,28 @@ If `implicit` is `false`, Prelude gets imported explicitly, and only those ident
 
 - Rewrite rules only work for things you do use, not for those that you only define. This causes a problem with class instances: if you choose the default behaviour, then write an instance of the Num class and define signum but do not use it, it will not get into Prelude's import list, and so GHC will complain.
 - You cannot change to a version with arguments of different modality without getting useless code. So if you rewrite a function to a version which has some of its parameters erased, the parameters remain there; probably because rewriting happens only after compiling the type signature.
+
+# Emacs mode
+
+Since there is a full Agda typechecker in the `agda2hs` binary, using a "normal"
+Agda installation beside agda2hs can cause a problem: they will check every dependency
+again each time you switch from one to another. This problem becomes especially
+inconvenient when working with the Emacs mode.
+
+That's why agda2hs comes with a full Agda mode, which uses the Agda typechecker
+built into the binary. Installation is roughly the same as with Agda, except that
+you use `agda2hs-mode` instead of `agda-mode`.
+
+With `C-c C-x C-c`, you can even call the `agda2hs` backend from inside Emacs;
+but all the usual backends are available, too.
+
+## Known issues
+
+- Switching versions doesn't work yet.
+- Documentation and help string are simply taken from the vanilla Agda version.
+- Now, the output can only be written next to the `.agda` files;
+  there is no option to collect these under a separate directory.
+- The `--rewrite-rules` option is not yet supported in Emacs mode.
+- There might be problems when both the vanilla Agda mode and agda2hs-mode are installed.
+  For now, it is recommended to install only the agda2hs version.
+

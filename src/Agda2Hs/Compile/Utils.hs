@@ -19,6 +19,8 @@ import Agda.Syntax.Internal
 import Agda.Syntax.Position ( noRange )
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad ( bindVariable, freshConcreteName )
+import Agda.Syntax.Common.Pretty ( prettyShow )
+import qualified Agda.Syntax.Common.Pretty as P
 
 import Agda.TypeChecking.CheckInternal ( infer )
 import Agda.TypeChecking.Constraints ( noConstraints )
@@ -34,8 +36,6 @@ import Agda.TypeChecking.Substitute ( Subst, TelV(TelV) )
 import Agda.TypeChecking.Telescope ( telView )
 
 import Agda.Utils.Lens ( (<&>) )
-import Agda.Utils.Pretty ( prettyShow )
-import qualified Agda.Utils.Pretty as P
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Singleton

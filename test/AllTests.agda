@@ -55,6 +55,9 @@ import TypeOperators
 import ErasedTypeArguments
 import TypeOperatorExport
 import TypeOperatorImport
+import IOFile
+import IOInput
+import Issue200
 import Issue169
 
 {-# FOREIGN AGDA2HS
@@ -111,5 +114,8 @@ import TypeOperators
 import ErasedTypeArguments
 import TypeOperatorExport
 import TypeOperatorImport
+import IOFile
+import IOInput
+import Issue200
 import Issue169
 #-}

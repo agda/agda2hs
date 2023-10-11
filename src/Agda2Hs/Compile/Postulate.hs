@@ -5,8 +5,7 @@ import qualified Language.Haskell.Exts.Syntax as Hs
 import Agda.Compiler.Backend
 
 import Agda.Syntax.Internal
-
-import Agda.Utils.Pretty ( prettyShow )
+import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda2Hs.Compile.Type ( compileType )
 import Agda2Hs.Compile.Types

@@ -3,6 +3,7 @@ module Agda2Hs.Compile.ClassInstance where
 import Control.Monad ( when, filterM, unless )
 import Control.Monad.Reader ( local )
 
+import Data.Foldable ( toList )
 import Data.List ( nub )
 import Data.Maybe ( isNothing, mapMaybe )
 import qualified Data.HashMap.Strict as HMap
@@ -20,13 +21,13 @@ import Agda.Syntax.Internal
 import Agda.Syntax.Position ( noRange )
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad ( resolveName )
+import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Substitute ( Apply(applyE) )
 import Agda.TypeChecking.Records
 
 import Agda.Utils.Lens
-import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils
@@ -202,7 +203,7 @@ compileInstanceClause curModule c = withClauseLocals curModule c $ do
         | otherwise -> do
           reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
           ms <- disableCopatterns $ compileClause curModule uf c'
-          return ([Hs.InsDecl () (Hs.FunBind () [ms])], [])
+          return ([Hs.InsDecl () (Hs.FunBind () (toList ms))], [])
 
 fieldArgInfo :: QName -> C ArgInfo
 fieldArgInfo f = do

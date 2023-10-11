@@ -5,13 +5,13 @@ import qualified Language.Haskell.Exts.Syntax as Hs
 import Agda.Compiler.Backend
 import Agda.Syntax.Common
 import Agda.Syntax.Internal
+import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Reduce
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
 
-import Agda.Utils.Pretty ( prettyShow )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.Compile.Type ( compileDom, compileTeleBinds )
@@ -23,7 +23,7 @@ checkNewtype :: Hs.Name () -> [Hs.QualConDecl ()] -> C ()
 checkNewtype name cs = do
   checkSingleElement name cs "Newtype must have exactly one constructor in definition"
   case head cs of
-    Hs.QualConDecl () _ _ (Hs.ConDecl () cName types) 
+    Hs.QualConDecl () _ _ (Hs.ConDecl () cName types)
       -> checkSingleElement cName types "Newtype must have exactly one field in constructor"
 
 compileData :: DataTarget -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]

@@ -4,6 +4,7 @@ open import Haskell.Prim
 open import Haskell.Prim.Either
 open import Haskell.Prim.Foldable
 open import Haskell.Prim.Functor
+open import Haskell.Prim.IO
 open import Haskell.Prim.List
 open import Haskell.Prim.Maybe
 open import Haskell.Prim.Monoid
@@ -85,3 +86,5 @@ instance
     .pure x → mempty ; mempty ; mempty ; x ; tt
     ._<*>_ (a ; b ; c ; f ; tt) (a₁ ; b₁ ; c₁ ; x ; tt) →
       a <> a₁ ; b <> b₁ ; c <> c₁ ; f x ; tt
+
+instance postulate iApplicativeIO : Applicative IO
