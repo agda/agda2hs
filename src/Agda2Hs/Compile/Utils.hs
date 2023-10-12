@@ -18,7 +18,7 @@ import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Internal
 import Agda.Syntax.Position ( noRange )
 import Agda.Syntax.Scope.Base
-import Agda.Syntax.Scope.Monad ( bindVariable, freshConcreteName )
+import Agda.Syntax.Scope.Monad ( bindVariable, freshConcreteName, isDatatypeModule )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import qualified Agda.Syntax.Common.Pretty as P
 
@@ -32,7 +32,7 @@ import Agda.TypeChecking.Monad.SizedTypes ( isSizeType )
 import Agda.TypeChecking.Pretty ( Doc, (<+>), text, PrettyTCM(..) )
 import Agda.TypeChecking.Records ( isRecordConstructor, getRecordOfField )
 import Agda.TypeChecking.Reduce ( instantiate, reduce )
-import Agda.TypeChecking.Substitute ( Subst, TelV(TelV) )
+import Agda.TypeChecking.Substitute ( Subst, TelV(TelV), Apply(..) )
 import Agda.TypeChecking.Telescope ( telView )
 
 import Agda.Utils.Lens ( (<&>) )
@@ -156,6 +156,15 @@ dropClassModule :: ModuleName -> C ModuleName
 dropClassModule m@(MName ns) = isClassModule m >>= \case
   True  -> dropClassModule $ MName $ init ns
   False -> return m
+
+moduleParametersToDrop :: ModuleName -> C Telescope
+moduleParametersToDrop mod = do
+   reportSDoc "agda2hs.moduleParameters" 25 $ text "Getting telescope for" <+> prettyTCM mod
+   isDatatypeModule mod >>= \case
+     Just _ -> return EmptyTel
+     Nothing -> do
+       ctxArgs <- getContextArgs
+       (`apply` ctxArgs) <$> lookupSection mod
 
 isUnboxRecord :: QName -> C (Maybe Strictness)
 isUnboxRecord q = do

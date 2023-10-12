@@ -89,9 +89,9 @@ qualifyType s = \case
 -- arguments bound.
 compileTopLevelType :: Bool -> Type -> (Hs.Type () -> C a) -> C a
 compileTopLevelType keepType t cont = do
-    ctxArgs <- getContextArgs
-    modTel <- lookupSection =<< currentModule
-    go (modTel `apply` ctxArgs) cont
+    reportSDoc "agda2hs.compile.type" 12 $ text "Compiling top-level type" <+> prettyTCM t
+    modTel <- moduleParametersToDrop =<< currentModule
+    go modTel cont
   where
     go :: Telescope -> (Hs.Type () -> C a) -> C a
     go EmptyTel cont = do
