@@ -119,27 +119,26 @@ compileFun' withSig def@(Defn {..}) = do
     err = "Not supported: type definition with `where` clauses"
 
 compileClause :: ModuleName -> Hs.Name () -> Clause -> C (Maybe (Hs.Match ()))
-compileClause curModule x c@Clause{ clauseBody = Nothing} = return Nothing
-compileClause curModule x c@Clause{..} = withClauseLocals curModule c $ do
+compileClause mod x c = withClauseLocals mod c $ compileClause' mod x c
+
+compileClause' :: ModuleName -> Hs.Name () -> Clause -> C (Maybe (Hs.Match ()))
+compileClause' curModule x c@Clause{ clauseBody = Nothing} = return Nothing
+compileClause' curModule x c@Clause{..} = do
   reportSDoc "agda2hs.compile" 7 $ "compiling clause: " <+> prettyTCM c
   addContext (KeepNames clauseTel) $ do
     ps <- compilePats namedClausePats
-    ls <- asks locals
-    let
-      (children, ls') = partition
-        (   not . isExtendedLambdaName
-         /\ (curModule `isFatherModuleOf`) . qnameModule )
-        ls
-    withLocals ls' $ do
-      body <- compileTerm $ fromMaybe __IMPOSSIBLE__ clauseBody
-      whereDecls <- mapM (getConstInfo >=> compileFun' True) children
-      let rhs = Hs.UnGuardedRhs () body
-          whereBinds | null whereDecls = Nothing
-                     | otherwise       = Just $ Hs.BDecls () (concat whereDecls)
-          match = case (x, ps) of
-            (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
-            _                         -> Hs.Match () x ps rhs whereBinds
-      return $ Just match
+    body <- compileTerm $ fromMaybe __IMPOSSIBLE__ clauseBody
+    let isWhereDecl = not . isExtendedLambdaName
+          /\ (curModule `isFatherModuleOf`) . qnameModule
+    children <- filter isWhereDecl <$> asks locals
+    whereDecls <- mapM (getConstInfo >=> compileFun' True) children
+    let rhs = Hs.UnGuardedRhs () body
+        whereBinds | null whereDecls = Nothing
+                   | otherwise       = Just $ Hs.BDecls () (concat whereDecls)
+        match = case (x, ps) of
+          (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
+          _                         -> Hs.Match () x ps rhs whereBinds
+    return $ Just match
 
 noAsPatterns :: DeBruijnPattern -> C ()
 noAsPatterns = \case

@@ -33,7 +33,7 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
-import {-# SOURCE #-} Agda2Hs.Compile.Function ( compileClause )
+import {-# SOURCE #-} Agda2Hs.Compile.Function ( compileClause' )
 
 isSpecialTerm :: QName -> Maybe (QName -> Elims -> C (Hs.Exp ()))
 isSpecialTerm q = case prettyShow q of
@@ -185,8 +185,7 @@ lambdaCase q es = setCurrentRange (nameBindingSite $ qnameName q) $ do
   npars <- size <$> lookupSection mname
   let (pars, rest) = splitAt npars es
       cs           = applyE cls pars
-  ls   <- filter (`extLamUsedIn` cs) <$> asks locals
-  cs   <- withLocals ls $ mapMaybeM (compileClause (qnameModule q) $ hsName "(lambdaCase)") cs
+  cs <- mapMaybeM (compileClause' (qnameModule q) $ hsName "(lambdaCase)") cs
   case cs of
     -- If there is a single clause and all patterns got erased, we
     -- simply return the body.
@@ -239,10 +238,13 @@ compileTerm v = do
         False -> (isJust <$> isUnboxProjection f) `or2M` isTransparentFunction f >>= \case
           True  -> compileErasedApp es
           False -> do
-            -- Drop module parameters (unless projection-like)
-            n <- (theDef <$> getConstInfo f) >>= \case
-              Function{ funProjection = Right{} } -> return 0
-              _ -> size <$> lookupSection (qnameModule f)
+            reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of regular function"
+            -- Drop module parameters of local `where` functions
+            xs <- asks locals
+            reportSDoc "agda2hs.compile.term" 15 $ text "Locals: " <+> (prettyTCM xs)
+            n <- if
+              | f `elem` xs -> size <$> lookupSection (qnameModule f)
+              | otherwise   -> return 0
             (`app` drop n es) . Hs.Var () =<< compileQName f
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
