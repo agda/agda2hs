@@ -84,6 +84,7 @@ executable agda2hs-mode
   hs-source-dirs:      src/agda2hs-mode
   main-is:             Main.hs
   other-modules:       Paths_agda2hs
+  autogen-modules:     Paths_agda2hs
   build-depends:       base >= 4.10 && < 4.18,
                        Agda >= 2.6.4 && < 2.6.5,
                        bytestring >= 0.11.5 && < 0.12,
