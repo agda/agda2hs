@@ -56,23 +56,6 @@ isSpecialCon = prettyShow >>> \case
   "Haskell.Prim.Tuple._;_" -> Just tupleTerm
   _ -> Nothing
 
-fromNat :: QName -> Elims -> C (Hs.Exp ())
-fromNat _ es = compileElims es <&> \case
-  _ : n@Hs.Lit{} : es' -> n `eApp` es'
-  es'                  -> hsVar "fromIntegral" `eApp` drop 1 es'
-
-fromNeg :: QName -> Elims -> C (Hs.Exp ())
-fromNeg _ es = compileElims es <&> \case
-  _ : n@Hs.Lit{} : es' -> Hs.NegApp () n `eApp` es'
-  es'                  -> (hsVar "negate" `o` hsVar "fromIntegral") `eApp` drop 1 es'
-  where
-    f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ hsUnqualName "_._") g
-
-fromString :: QName -> Elims -> C (Hs.Exp ())
-fromString _ es = compileElims es <&> \case
-  _ : s@Hs.Lit{} : es' -> s `eApp` es'
-  es'                  -> hsVar "fromString" `eApp` drop 1 es'
-
 tupleTerm :: ConHead -> ConInfo -> Elims -> C (Hs.Exp ())
 tupleTerm cons i es = do
   let v   = Con cons i es
@@ -90,25 +73,61 @@ ifThenElse _ es = compileElims es >>= \case
   -- partially applied
   _ -> genericError $ "if_then_else must be fully applied"
 
+specialClassFunction :: Hs.Exp () -> ([Hs.Exp ()] -> Hs.Exp ()) -> Elims -> C (Hs.Exp ())
+specialClassFunction v f [] = return v
+specialClassFunction v f (Apply w : es) = do
+  checkInstance $ unArg w
+  f <$> compileElims es
+specialClassFunction v f (_ : _) = __IMPOSSIBLE__
+
+specialClassFunction1 :: Hs.Exp () -> (Hs.Exp () -> Hs.Exp ()) -> Elims -> C (Hs.Exp ())
+specialClassFunction1 v f = specialClassFunction v $ \case
+  (a : es) -> f a `eApp` es
+  []       -> v
+
+specialClassFunction2 :: Hs.Exp () -> (Hs.Exp () -> Hs.Exp () -> Hs.Exp ()) -> Elims -> C (Hs.Exp ())
+specialClassFunction2 v f = specialClassFunction v $ \case
+  (a : b : es) -> f a b `eApp` es
+  es           -> v `eApp` es
+
+specialClassFunction3 :: Hs.Exp () -> (Hs.Exp () -> Hs.Exp () -> Hs.Exp () -> Hs.Exp ()) -> Elims -> C (Hs.Exp ())
+specialClassFunction3 v f = specialClassFunction v $ \case
+  (a : b : c : es) -> f a b c `eApp` es
+  es               -> v `eApp` es
+
+fromNat :: QName -> Elims -> C (Hs.Exp ())
+fromNat _ = specialClassFunction1 (hsVar "fromIntegral") $ \case
+  n@Hs.Lit{} -> n
+  v          -> hsVar "fromIntegral" `eApp` [v]
+
+fromNeg :: QName -> Elims -> C (Hs.Exp ())
+fromNeg _ = specialClassFunction1 negFromIntegral $ \case
+  n@Hs.Lit{} -> Hs.NegApp () n
+  v          -> negFromIntegral `eApp` [v]
+  where
+    negFromIntegral = hsVar "negate" `o` hsVar "fromIntegral"
+    f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ hsUnqualName "_._") g
+
+fromString :: QName -> Elims -> C (Hs.Exp ())
+fromString _ = specialClassFunction1 (hsVar "fromString") $ \case
+  s@Hs.Lit{} -> s
+  v          -> hsVar "fromString" `eApp` [v]
+
 mkEnumFrom :: QName -> Elims -> C (Hs.Exp ())
-mkEnumFrom q es = compileElims es >>= \case
-  _ : a : es' -> return $ Hs.EnumFrom () a `eApp` es'
-  es'         -> return $ hsVar "enumFrom" `eApp` drop 1 es'
+mkEnumFrom _ = specialClassFunction1 (hsVar "enumFrom") $
+  \a -> Hs.EnumFrom () a
 
 mkEnumFromTo :: QName -> Elims -> C (Hs.Exp ())
-mkEnumFromTo q es = compileElims es >>= \case
-  _ : a : b : es' -> return $ Hs.EnumFromTo () a b `eApp` es'
-  es'             -> return $ hsVar "enumFromTo" `eApp` drop 1 es'
+mkEnumFromTo _ = specialClassFunction2 (hsVar "enumFromTo") $
+  \a b -> Hs.EnumFromTo () a b
 
 mkEnumFromThen :: QName -> Elims -> C (Hs.Exp ())
-mkEnumFromThen q es = compileElims es >>= \case
-  _ : a : a' : es' -> return $ Hs.EnumFromThen () a a' `eApp` es'
-  es'              -> return $ hsVar "enumFromThen" `eApp` drop 1 es'
+mkEnumFromThen _ = specialClassFunction2 (hsVar "enumFromThen") $
+  \a b -> Hs.EnumFromThen () a b
 
 mkEnumFromThenTo :: QName -> Elims -> C (Hs.Exp ())
-mkEnumFromThenTo q es = compileElims es >>= \case
-  _ : a : a' : b : es' -> return $ Hs.EnumFromThenTo () a a' b `eApp` es'
-  es'                  -> return $ hsVar "enumFromThenTo" `eApp` drop 1 es'
+mkEnumFromThenTo _ = specialClassFunction3 (hsVar "enumFromThenTo") $
+  \a b c -> Hs.EnumFromThenTo () a b c
 
 delay :: QName -> Elims -> C (Hs.Exp ())
 delay _ = compileErasedApp
