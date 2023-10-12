@@ -226,6 +226,7 @@ withFunctionLocals q k = do
       . map fst
       . filter (usableModality . getModality . snd) -- drop if it's an erased definition anyway
       . sortDefs <$> liftTCM curDefs
+  reportSDoc "agda2hs.compile.locals" 17 $ "Function locals: "<+> prettyTCM ls
   withLocals ls k
 
 -- | Retain only those local declarations that belong to current clause's module.
@@ -249,6 +250,7 @@ withClauseLocals curModule c@Clause{..} k = do
     ls' = case whereModuleName of
       Nothing -> []
       Just m  -> zoomLocals m ls
+  reportSDoc "agda2hs.compile.locals" 18 $ "Clause locals: "<+> prettyTCM ls'
   withLocals ls' k
 
 checkTransparentPragma :: Definition -> C ()
