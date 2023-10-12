@@ -223,7 +223,7 @@ compileVar x = do
 compileTerm :: Term -> C (Hs.Exp ())
 compileTerm v = do
   reportSDoc "agda2hs.compile" 7 $ text "compiling term:" <+> prettyTCM v
-  reportSDoc "agda2hs.compile" 27 $ text "compiling term:" <+> pure (P.pretty v)
+  reportSDoc "agda2hs.compile" 27 $ text "compiling term:" <+> pure (P.pretty $ unSpine1 v)
   case unSpine1 v of
     Var x es   -> do
       s <- compileVar x
@@ -231,7 +231,9 @@ compileTerm v = do
     -- v currently we assume all record projections are instance
     -- args that need attention
     Def f es
-      | Just semantics <- isSpecialTerm f -> semantics f es
+      | Just semantics <- isSpecialTerm f -> do
+        reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of special function"
+        semantics f es
       | otherwise -> isClassFunction f >>= \case
         True  -> compileClassFunApp f es
         False -> (isJust <$> isUnboxProjection f) `or2M` isTransparentFunction f >>= \case
@@ -275,14 +277,17 @@ compileTerm v = do
 -- `compileErasedApp` compiles an application of an erased constructor
 -- or projection.
 compileErasedApp :: Elims -> C (Hs.Exp ())
-compileErasedApp es = compileElims es >>= \case
-  []     -> return $ hsVar "id"
-  (v:vs) -> return $ v `eApp` vs
+compileErasedApp es = do
+  reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of erased function"
+  compileElims es >>= \case
+    []     -> return $ hsVar "id"
+    (v:vs) -> return $ v `eApp` vs
 
 -- `compileClassFunApp` is used when we have a record projection and we want to
 -- drop the first visible arg (the record)
 compileClassFunApp :: QName -> Elims -> C (Hs.Exp ())
 compileClassFunApp f es = do
+  reportSDoc "agda2hs.compile.term" 14 $ text "Compiling application of class function"
   hf <- compileQName f
   case dropWhile notVisible (fromMaybe __IMPOSSIBLE__ $ allApplyElims es) of
     []     -> __IMPOSSIBLE__

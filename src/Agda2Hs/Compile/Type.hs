@@ -116,6 +116,7 @@ compileType' t = do
 
 compileType :: Term -> C (Hs.Type ())
 compileType t = do
+  reportSDoc "agda2hs.compile.type" 12 $ text "Compiling type" <+> prettyTCM t
   case t of
     Pi a b -> compileDom (absName b) a >>= \case
       DomType _ hsA -> do
