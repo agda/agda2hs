@@ -18,16 +18,19 @@ example-basics [project root]
 
 More details about Agda's library management can be found [in the documentation](https://agda.readthedocs.io/en/v2.6.0.1/tools/package-system.html). 
 
-This is how the `example-basics.agda-lib` files looks for our project:
+This is how the `example-basics.agda-lib` file looks for our project:
 
-```haskell
+```
 name: example-basics
 include: .
 depend: agda2hs
+flags: --erasure
 ```
 The `include` label specifies the current folder as the path for files to be included in the library. For our toy example it works perfectly, but for a bigger library it might be handy to place all the `.agda` files in a single repository such as `src`.
 
 The only dependency we need so far is `agda2hs`, as that is where `Haskell.Prelude` and agda2hs pragmas live. 
+
+Finally, to be able to  import modules we need in this example, erasure needs to be enabled. We add it as a flag.
 
 Let's look at the `HelloWorld.agda` file now:
 
@@ -80,6 +83,7 @@ The source code of agda resides in `/src/agda`, which is reflected in the path i
 name: example-structure
 include: ./src/agda
 depend: agda2hs
+flags: --erasure
 ```
 
 The `agda` folder contains two files: `Definition.agda`, which contains a declaration of a data type `CountDown` and `Usage.agda`, which contains its constructor. Usually, there is no good reason to split those in two files, but it gives a good opportunity to show how these would interact under `agda2hs`. 
@@ -166,10 +170,17 @@ Unfortunately, the instance arguments are inferred only if presented in exactly 
 ```agda
 createTriangle₁ : Nat -> Nat -> Nat -> Maybe Triangle
 createTriangle₁ alpha beta gamma 
-    = if ((countBiggerThan (alpha ∷ beta ∷  gamma ∷ []) 90 <= 1) && (alpha + beta + gamma == 180 )) 
+    = if ((countBiggerThan (alpha ∷ beta ∷  gamma ∷ []) 90 <= 1) 
+            && (alpha + beta + gamma == 180 )) 
         then (λ ⦃ h₁ ⦄ →  Just (MkTriangle alpha beta gamma 
-            ⦃ &&-rightTrue (countBiggerThan (alpha ∷ beta ∷  gamma ∷ []) 90 <= 1) (alpha + beta + gamma == 180 ) h₁ ⦄ 
-            ⦃ &&-leftTrue (countBiggerThan (alpha ∷ beta ∷  gamma ∷ []) 90 <= 1) (alpha + beta + gamma == 180 ) h₁ ⦄) )
+            ⦃ &&-rightTrue 
+                    (countBiggerThan (alpha ∷ beta ∷  gamma ∷ []) 90 <= 1) 
+                    (alpha + beta + gamma == 180 ) 
+                    h₁ ⦄ 
+            ⦃ &&-leftTrue 
+                    (countBiggerThan (alpha ∷ beta ∷  gamma ∷ []) 90 <= 1) 
+                    (alpha + beta + gamma == 180 ) 
+                    h₁ ⦄) )
         else Nothing
  
 {-# COMPILE AGDA2HS createTriangle₁ #-}
@@ -191,7 +202,8 @@ A first attempt at definition could be a function that can provide judgments on 
 isAscending : ⦃ iOrdA : Ord a ⦄ → List a → Bool
 isAscending [] = True
 isAscending (x ∷ []) = True
-isAscending (x ∷ y ∷ xs) = if x <= y then isAscending (y ∷ xs) else False
+isAscending (x ∷ y ∷ xs) = if x <= y then isAscending 
+    (y ∷ xs) else False
 
 {-# COMPILE AGDA2HS isAscending #-}
 ```
@@ -211,7 +223,8 @@ This data type cannot be compiled to Haskell, as they do not allow to match on s
 The signature of the first direction will look like this:
 
 ```agda
-proof₁ : ⦃ iOrdA : Ord a ⦄ (xs : List a) → ⦃ IsAscending₂ xs ⦄ → (IsTrue (isAscending xs)) 
+proof₁ : ⦃ iOrdA : Ord a ⦄ (xs : List a) → ⦃ IsAscending₂ xs ⦄ 
+    → (IsTrue (isAscending xs)) 
 proof xs = ?
 ```
 
@@ -220,7 +233,8 @@ proof xs = ?
 Since there are three constructors for the `IsAscending₂` predicate, there need to be only three cases in the proof, two of which are trivial:
 
 ```agda
-proof₁ : ⦃ iOrdA : Ord a ⦄ (xs : List a) → ⦃ IsAscending₂ xs ⦄ → (IsTrue (isAscending xs)) 
+proof₁ : ⦃ iOrdA : Ord a ⦄ (xs : List a) → ⦃ IsAscending₂ xs ⦄ 
+    → (IsTrue (isAscending xs)) 
 proof₁ [] = IsTrue.itsTrue 
 proof₁ (x ∷ []) = IsTrue.itsTrue
 proof₁ (x ∷ x₁ ∷ xs) ⦃ (ManyElem .x .x₁ .xs ⦃ h₁ ⦄ ⦃ h₂ ⦄) ⦄ = ?
@@ -262,7 +276,8 @@ Reductio ad absurdum is a necessary tactic for dealing with self-contradictory s
 
 ```agda
 --inductive hypothesis for isAscending function
-helper₁ : ⦃ iOrdA : Ord a ⦄ (x : a) (xs : List a) → isAscending xs ≡ False → (isAscending (x ∷ xs)) ≡ False
+helper₁ : ⦃ iOrdA : Ord a ⦄ (x : a) (xs : List a) 
+    → isAscending xs ≡ False → (isAscending (x ∷ xs)) ≡ False
 helper₁ x xs h₁ with (isAscending (x ∷ xs)) in h₂
 helper₁ x (x₁ ∷ xs) h₁ | True  with (x <= x₁)
 helper₁ x (x₁ ∷ xs) h₁ | True | True = magic (absurd₁ h₂ h₁)
@@ -292,7 +307,8 @@ Finally, the proof can be constructed. The recursive case of the proof had to be
 ```agda
 --recursion helper
 postulate3
-   theorem₂helper : ⦃ iOrdA : Ord a ⦄ (xs : List a) → (IsTrue (isAscending xs)) → IsAscending₂ xs
+   theorem₂helper : ⦃ iOrdA : Ord a ⦄ (xs : List a) 
+        → (IsTrue (isAscending xs)) → IsAscending₂ xs
 ```
 
 The `theorem₂helper` is a definition of the same type as the actual proof, but without a proof attached - it was only postulated. [Postulates](https://agda.readthedocs.io/en/latest/language/postulates.html) are in general a bad practice. Here it was necessary, as the termination check did not recognize that it is being applied to a recursive case. However, doesn't this invalidate the whole proof? Since postulates are a bad practice, can we do better? Turns out, termination checks on recursive cases [is a known issue when using `with abstraction`](https://agda.readthedocs.io/en/latest/language/with-abstraction.html#termination-checking). Thus, in the next attempt, we can get rid of the postulate:
@@ -312,7 +328,8 @@ theorem₃ [] h₁ = Empty
 theorem₃ (x ∷ []) h₁ = OneElem x
 theorem₃ (x ∷ x₁ ∷ xs) h₁ with (theorem₃ (x₁ ∷ xs) (helper₂ x (x₁ ∷ xs) h₁)) 
 theorem₃ (x ∷ x₁ ∷ xs) h₁ | _ with (x <= x₁) in h₂ 
-theorem₃ (x ∷ x₁ ∷ xs) h₁ | h₃ | True  = ManyElem x x₁ xs ⦃ h₃ ⦄ ⦃ useEq ( sym $ h₂ ) IsTrue.itsTrue ⦄
+theorem₃ (x ∷ x₁ ∷ xs) h₁ | h₃ | True  = ManyElem x x₁ xs 
+        ⦃ h₃ ⦄ ⦃ useEq ( sym $ h₂ ) IsTrue.itsTrue ⦄
 theorem₃ (x ∷ x₁ ∷ xs) () | _  | False 
 ```
 We need another helper function to obtain the correct hypothesis about the tail of the list, but thanks to this approach we can remove one of the assertions about the input values. On the other hand, we need to break up the single `with` assertion into two different lines - if both the new recursive hypothesis (`h₃`) and `h₂` were defined in the same step, Agda wouldn't be able to implicitly apply `h₂` in the `h₁` hypothesis and reason about it being a contradiction in the last case. This way, we finally obtain a correct proof. 
