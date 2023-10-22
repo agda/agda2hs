@@ -56,7 +56,7 @@ backend = Backend'
   , options               = defaultOptions
   , commandLineFlags      =
       [ Option ['d'] ["disable-backend"] (NoArg disableOpt)
-        "Disable backend and fall back to vanilla Agda behaviour, without compilation (important for Emacs mode)."
+        "Disable backend and fall back to vanilla Agda behaviour, without compilation (important for Emacs mode). Implied when run in interactive mode (with --interactive, --interaction or --interaction-json)."
       , Option ['o'] ["out-dir"] (ReqArg outdirOpt "DIR")
         "Write Haskell code to DIR. (default: project root)"
       , Option ['X'] [] (ReqArg extensionOpt "EXTENSION")
@@ -74,8 +74,17 @@ backend = Backend'
   , mayEraseType          = \ _ -> return True
   }
 
-main = do
-  -- Issue #201: drop backend when running in interactive mode
+-- Checking whether we are in interactive mode.
+-- These will imply --disable-backend.
+isInteractive :: IO Bool
+isInteractive = do
   let interactionFlag = Option ['I'] ["interactive", "interaction", "interaction-json"] (NoArg ()) ""
   (i , _ , _) <- getOpt Permute [interactionFlag] <$> getArgs
-  runAgda [Backend backend | null i ]
+  return $ not $ null i
+
+main = do
+  -- Issue #201: drop backend when run in interactive mode
+  isInt <- isInteractive
+  if isInt
+    then runAgda [Backend (backend{isEnabled = const False})]
+    else runAgda [Backend backend]
