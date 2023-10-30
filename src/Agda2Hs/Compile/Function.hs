@@ -133,11 +133,18 @@ compileClause' curModule x c@Clause{..} = do
   reportSDoc "agda2hs.compile" 7 $ "compiling clause: " <+> prettyTCM c
   addContext (KeepNames clauseTel) $ do
     ps <- compilePats namedClausePats
-    body <- compileTerm $ fromMaybe __IMPOSSIBLE__ clauseBody
     let isWhereDecl = not . isExtendedLambdaName
           /\ (curModule `isFatherModuleOf`) . qnameModule
     children <- filter isWhereDecl <$> asks locals
     whereDecls <- mapM (getConstInfo >=> compileFun' True) children
+    -- Jesper, 2023-10-30: We should compile the body in the module of the
+    -- `where` declarations (if there are any) in order to drop the arguments
+    -- that correspond to the pattern variables of this clause from the calls to
+    -- the functions defined in the `where` block.
+    let inWhereModule = case children of
+          [] -> id
+          (c:_) -> withCurrentModule $ qnameModule c
+    body <- inWhereModule $ compileTerm $ fromMaybe __IMPOSSIBLE__ clauseBody
     let rhs = Hs.UnGuardedRhs () body
         whereBinds | null whereDecls = Nothing
                    | otherwise       = Just $ Hs.BDecls () (concat whereDecls)
