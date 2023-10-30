@@ -19,6 +19,7 @@ import Agda.Syntax.Common
 import Agda.Syntax.Internal
 import Agda.Syntax.Literal
 import Agda.Syntax.Common.Pretty ( prettyShow )
+import Agda.Syntax.Scope.Monad ( isDatatypeModule )
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Substitute
@@ -27,6 +28,8 @@ import Agda.TypeChecking.Sort ( ifIsSort )
 
 import Agda.Utils.Functor ( (<&>) )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
+import Agda.Utils.List
+import Agda.Utils.Maybe
 import Agda.Utils.Monad
 
 import Agda2Hs.AgdaUtils
@@ -37,6 +40,7 @@ import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
+import Agda.TypeChecking.Datatypes (isDataOrRecord)
 
 isSpecialPat :: QName -> Maybe (ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ()))
 isSpecialPat qn = case prettyShow qn of
@@ -97,6 +101,8 @@ compileFun withSig def@Defn{..} = withFunctionLocals defName $ compileFun' withS
 -- inherit existing (instantiated) locals
 compileFun' withSig def@(Defn {..}) = do
   reportSDoc "agda2hs.compile" 6 $ "compiling function: " <+> prettyTCM defName
+  when withSig $ whenJustM (liftTCM $ isDatatypeModule $ qnameModule defName) $ \_ ->
+    genericDocError =<< text "not supported by agda2hs: functions inside a record module"
   let keepClause = maybe False keepArg . clauseType
   withCurrentModule m $ setCurrentRange (nameBindingSite n) $ do
     ifM (endsInSort defType) (ensureNoLocals err >> compileTypeDef x def) $ do
