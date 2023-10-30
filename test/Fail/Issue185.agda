@@ -1,3 +1,5 @@
+module Fail.Issue185 where
+
 open import Agda.Builtin.Bool
 
 record RecordTest : Set where
