@@ -59,6 +59,7 @@ import IOFile
 import IOInput
 import Issue200
 import Issue169
+import Issue210
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -118,4 +119,5 @@ import IOFile
 import IOInput
 import Issue200
 import Issue169
+import Issue210
 #-}

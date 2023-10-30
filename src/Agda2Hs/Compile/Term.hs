@@ -240,12 +240,9 @@ compileTerm v = do
           False -> do
             reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of regular function"
             -- Drop module parameters of local `where` functions
-            xs <- asks locals
-            reportSDoc "agda2hs.compile.term" 15 $ text "Locals: " <+> (prettyTCM xs)
-            n <- if
-              | f `elem` xs -> size <$> lookupSection (qnameModule f)
-              | otherwise   -> return 0
-            (`app` drop n es) . Hs.Var () =<< compileQName f
+            moduleArgs <- getDefFreeVars f
+            reportSDoc "agda2hs.compile.term" 15 $ text "Module arguments for" <+> (prettyTCM f <> text ":") <+> prettyTCM moduleArgs
+            (`app` drop moduleArgs es) . Hs.Var () =<< compileQName f
     Con h i es
       | Just semantics <- isSpecialCon (conName h) -> semantics h i es
     Con h i es -> isUnboxConstructor (conName h) >>= \case
