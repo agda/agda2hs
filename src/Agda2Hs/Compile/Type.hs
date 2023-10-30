@@ -91,6 +91,7 @@ compileTopLevelType :: Bool -> Type -> (Hs.Type () -> C a) -> C a
 compileTopLevelType keepType t cont = do
     reportSDoc "agda2hs.compile.type" 12 $ text "Compiling top-level type" <+> prettyTCM t
     modTel <- moduleParametersToDrop =<< currentModule
+    reportSDoc "agda2hs.compile.type" 19 $ text "Module parameters to drop: " <+> prettyTCM modTel
     go modTel cont
   where
     go :: Telescope -> (Hs.Type () -> C a) -> C a

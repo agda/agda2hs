@@ -131,6 +131,8 @@ compileClause' :: ModuleName -> Hs.Name () -> Clause -> C (Maybe (Hs.Match ()))
 compileClause' curModule x c@Clause{ clauseBody = Nothing} = return Nothing
 compileClause' curModule x c@Clause{..} = do
   reportSDoc "agda2hs.compile" 7 $ "compiling clause: " <+> prettyTCM c
+  reportSDoc "agda2hs.compile" 17 $ "Old context: " <+> (prettyTCM =<< getContext)
+  reportSDoc "agda2hs.compile" 17 $ "Clause telescope: " <+> prettyTCM clauseTel
   addContext (KeepNames clauseTel) $ do
     ps <- compilePats namedClausePats
     let isWhereDecl = not . isExtendedLambdaName

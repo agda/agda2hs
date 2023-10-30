@@ -163,8 +163,12 @@ moduleParametersToDrop mod = do
    isDatatypeModule mod >>= \case
      Just _ -> return EmptyTel
      Nothing -> do
+       reportSDoc "agda2hs.moduleParameters" 25 $ text "Current context: " <+> (prettyTCM =<< getContext)
        ctxArgs <- getContextArgs
-       (`apply` ctxArgs) <$> lookupSection mod
+       reportSDoc "agda2hs.moduleParameters" 25 $ text "Context arguments: " <+> prettyTCM ctxArgs
+       sec <- lookupSection mod
+       reportSDoc "agda2hs.moduleParameters" 25 $ text "Module section: " <+> prettyTCM sec
+       return $ sec `apply` ctxArgs
 
 isUnboxRecord :: QName -> C (Maybe Strictness)
 isUnboxRecord q = do
