@@ -10,6 +10,13 @@ open ∃ public
 
 {-# COMPILE AGDA2HS ∃ unboxed #-}
 
+record Σ0 (A : Set) (P : @0 A → Set) : Set where
+  field
+    @0 el : A
+    pf : P el
+
+{-# COMPILE AGDA2HS Σ0 unboxed #-}
+
 postulate
   IsSorted : List Int → Set
   looksfine : {xs : List Int} → IsSorted xs
