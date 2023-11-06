@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 module Agda2Hs.Compile.Record where
 
 import Control.Monad ( unless )
@@ -168,7 +169,11 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
       return $ Hs.DataDecl () don Nothing hd [conDecl] ds
 
 checkUnboxPragma :: Defn -> C ()
-checkUnboxPragma def@Record{ recFields = (f:fs) }
-  | keepArg f , all (not . keepArg) fs , not (recRecursive def) = return ()
-checkUnboxPragma _ = genericError $
-  "An unboxed type must be a non-recursive record type with exactly one non-erased field."
+checkUnboxPragma def
+  | Record{recFields} <- def
+  , length (filter keepArg recFields) == 1
+  , not (recRecursive def)
+  = return ()
+
+  | otherwise
+  = genericError "An unboxed type must be a non-recursive record type with exactly one non-erased field."
