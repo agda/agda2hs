@@ -17,3 +17,9 @@ t2 = ((True, False), True)
 t3 :: (Bool, (Bool, Bool))
 t3 = (True, (False, True))
 
+pair :: (Int, Int)
+pair = (1, 2)
+
+test :: Int
+test = fst pair + snd pair
+

@@ -5,7 +5,7 @@ import Control.Monad ( unless )
 import Control.Monad.Reader
 
 import Data.List ( isPrefixOf )
-import Data.Maybe ( fromMaybe, isJust )
+import Data.Maybe ( fromMaybe, isJust, listToMaybe )
 import qualified Data.Text as Text ( unpack )
 
 import qualified Language.Haskell.Exts as Hs
@@ -46,6 +46,7 @@ isSpecialTerm q = case prettyShow q of
   "Haskell.Prim.case_of_"                       -> Just caseOf
   "Haskell.Prim.Monad.Do.Monad._>>=_"           -> Just bind
   "Haskell.Prim.Monad.Do.Monad._>>_"            -> Just sequ
+  "Haskell.Prim.Tuple.Pair.fst"                 -> Just (const tupleProj)
   "Agda.Builtin.FromNat.Number.fromNat"         -> Just fromNat
   "Agda.Builtin.FromNeg.Negative.fromNeg"       -> Just fromNeg
   "Agda.Builtin.FromString.IsString.fromString" -> Just fromString
@@ -65,6 +66,13 @@ tupleTerm cons i es = do
   xs <- makeList' "Agda.Builtin.Unit.tt" "Haskell.Prim.Tuple._;_" err v
   ts <- mapM compileTerm xs
   return $ Hs.Tuple () Hs.Boxed ts
+
+tupleProj :: Elims -> C (Hs.Exp ())
+tupleProj elims = do
+  let t = unArg $ fromMaybe __IMPOSSIBLE__ (listToMaybe =<< allApplyElims elims)
+  case unSpine1 t of
+    Def q es | q ~~ "Haskell.Prim.Tuple.Pair.snd" -> compileTerm t
+    _ -> Hs.App () (hsVar "fst") <$> compileTerm t
 
 ifThenElse :: QName -> Elims -> C (Hs.Exp ())
 ifThenElse _ es = compileElims es >>= \case
