@@ -5,6 +5,7 @@ module Agda2Hs.Compile.Type where
 import Control.Arrow ( (>>>) )
 import Control.Monad ( forM, when )
 import Control.Monad.Reader ( asks )
+import Data.List ( find )
 import Data.Maybe ( mapMaybe )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
@@ -152,9 +153,10 @@ compileTypeArgs args = mapM (compileType . unArg) $ filter keepArg args
 compileUnboxType :: QName -> Args -> C (Hs.Type ())
 compileUnboxType r pars = do
   def <- theDef <$> getConstInfo r
-  case recTel def `apply` pars of
-    EmptyTel        -> __IMPOSSIBLE__
-    (ExtendTel a _) -> compileType $ unEl $ unDom a
+  let tel = telToList $ recTel def `apply` pars
+  case find keepArg tel of
+    Nothing -> __IMPOSSIBLE__
+    Just t -> compileType $ unEl $ snd (unDom t)
 
 compileTransparentType :: Args -> C (Hs.Type ())
 compileTransparentType args = compileTypeArgs args >>= \case
