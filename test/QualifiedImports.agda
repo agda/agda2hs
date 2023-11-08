@@ -35,3 +35,7 @@ qualFooable = Qually.doTheFoo
 qualDefaultBar : Qually.Foo
 qualDefaultBar = Qually.defaultFoo
 {-# COMPILE AGDA2HS qualDefaultBar #-}
+
+Foo : Set
+Foo = Importee.Foo
+{-# COMPILE AGDA2HS Foo #-}
