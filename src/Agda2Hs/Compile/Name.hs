@@ -150,10 +150,10 @@ compileQName f
         (C.Qual as C.QName{} : _) -> liftTCM $ do
           let qual = hsModuleName $ prettyShow as
           lookupModuleInCurrentModule as >>= \case
-            (x:_) | qual /= mod -> isDatatypeModule (amodName x) >>= \case
-              Just{} -> return $ QualifiedAs Nothing
-              Nothing -> return $ QualifiedAs $ Just qual
-            _ -> return Nothing
+            (x:_) | qual /= mod -> do
+              isDataMod <- isJust <$> isDatatypeModule (amodName x)
+              return $ QualifiedAs (if isDataMod then Nothing else Just qual)
+            _ -> return $ QualifiedAs Nothing
           `catchError` \_ -> return $ QualifiedAs Nothing
         _ -> return $ QualifiedAs Nothing
 

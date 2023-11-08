@@ -1,15 +1,15 @@
 module QualifiedImports where
 
-import Importee (Foo(MkFoo), foo)
+import qualified Importee (Foo(MkFoo), foo)
 import qualified QualifiedImportee as Qually (Foo, Fooable(defaultFoo, doTheFoo), foo, (!#))
 
 -- ** simple qualification
 
 simpqualBar :: Int
-simpqualBar = foo
+simpqualBar = Importee.foo
 
-simpfoo :: Foo
-simpfoo = MkFoo
+simpfoo :: Importee.Foo
+simpfoo = Importee.MkFoo
 
 -- ** qualified imports
 
@@ -24,4 +24,6 @@ qualFooable = Qually.doTheFoo
 
 qualDefaultBar :: Qually.Foo
 qualDefaultBar = Qually.defaultFoo
+
+type Foo = Importee.Foo
 
