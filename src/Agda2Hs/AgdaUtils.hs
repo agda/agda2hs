@@ -70,11 +70,12 @@ unSpine1 v =
         e        : es' -> loop h (e : res) es'
       where v = h $ reverse res
 
+-- | Map over the body of all clauses of a function definition.
 mapDef :: (Term -> Term) -> Definition -> Definition
 mapDef f d = d{ theDef = mapDefn (theDef d) }
   where
     mapDefn def@Function{} = def{ funClauses = map mapClause (funClauses def) }
-    mapDefn defn = defn -- We only need this for Functions
+    mapDefn defn = defn
 
     mapClause c = c{ clauseBody = f <$> clauseBody c }
 
@@ -86,16 +87,18 @@ isTopLevelModule m = do
   tlm <- topLevelModuleNameForModuleName m
   ifM (isRight <$> findFile' tlm) (return $ Just tlm) (return Nothing)
 
-getTopLevelModuleForModuleName :: ModuleName -> TCM (Maybe TopLevelModuleName)
+-- | Get the toplevel module parent to a given module.
+getTopLevelModuleForModuleName :: ModuleName -> TCM TopLevelModuleName
 getTopLevelModuleForModuleName = loop . mnameToList
   where
     loop ns
-      | null ns   = return Nothing
+      | null ns   = __IMPOSSIBLE__
       | otherwise = isTopLevelModule (MName ns) >>= \case
-        Nothing      -> loop (init ns)
-        tlm@(Just _) -> return tlm
+          Nothing  -> loop (init ns)
+          Just tlm -> return tlm
 
-getTopLevelModuleForQName :: QName -> TCM (Maybe TopLevelModuleName)
+-- | Get the toplevel module parent to a given a name.
+getTopLevelModuleForQName :: QName -> TCM TopLevelModuleName
 getTopLevelModuleForQName = getTopLevelModuleForModuleName . qnameModule
 
 lookupModuleInCurrentModule :: C.Name -> TCM [AbstractModule]
