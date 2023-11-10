@@ -179,7 +179,7 @@ caseOf _ es = compileElims es >>= \case
   _ -> genericError $ "case_of_ must be fully applied to a lambda"
 
 lambdaCase :: QName -> Elims -> C (Hs.Exp ())
-lambdaCase q es = setCurrentRange (nameBindingSite $ qnameName q) $ do
+lambdaCase q es = setCurrentRangeQ q $ do
   Function{funClauses = cls, funExtLam = Just ExtLamInfo {extLamModule = mname}}
     <- theDef <$> getConstInfo q
   npars <- size <$> lookupSection mname

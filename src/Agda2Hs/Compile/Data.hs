@@ -27,7 +27,7 @@ checkNewtype name cs = do
       -> checkSingleElement cName types "Newtype must have exactly one field in constructor"
 
 compileData :: DataTarget -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
-compileData target ds def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
+compileData target ds def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
   checkValidTypeName d
   case theDef def of
