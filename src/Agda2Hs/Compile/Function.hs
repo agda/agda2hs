@@ -104,7 +104,7 @@ compileFun' withSig def@(Defn {..}) = do
   when withSig $ whenJustM (liftTCM $ isDatatypeModule $ qnameModule defName) $ \_ ->
     genericDocError =<< text "not supported by agda2hs: functions inside a record module"
   let keepClause = maybe False keepArg . clauseType
-  withCurrentModule m $ setCurrentRange (nameBindingSite n) $ do
+  withCurrentModule m $ do
     ifM (endsInSort defType) (ensureNoLocals err >> compileTypeDef x def) $ do
       when withSig $ checkValidFunName x
       compileTopLevelType withSig defType $ \ty -> do

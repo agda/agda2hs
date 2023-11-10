@@ -89,7 +89,7 @@ compileMinRecords def sls = do
   return ([minPragma | not (null prims)] ++ Map.elems decls)
 
 compileRecord :: RecordTarget -> Definition -> C (Hs.Decl ())
-compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defName def) $ do
+compileRecord target def = do
   TelV tel _ <- telViewUpTo recPars (defType def)
   addContext tel $ checkingVars $ do
     checkValidTypeName rName
@@ -124,7 +124,7 @@ compileRecord target def = setCurrentRange (nameBindingSite $ qnameName $ defNam
     -- record module has been opened.
     checkFieldInScope f = isInScopeUnqualified f >>= \case
       True  -> return ()
-      False -> setCurrentRange (nameBindingSite $ qnameName f) $ genericError $
+      False -> setCurrentRangeQ f $ genericError $
         "Record projections (`" ++ prettyShow (qnameName f) ++
         "` in this case) must be brought into scope when compiling to Haskell record types. " ++
         "Add `open " ++ Hs.prettyPrint rName ++ " public` after the record declaration to fix this."
