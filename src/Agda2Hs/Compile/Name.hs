@@ -196,13 +196,12 @@ hsTopLevelModuleName :: TopLevelModuleName -> Hs.ModuleName ()
 hsTopLevelModuleName = hsModuleName . intercalate "." . map unpack
                      . List1.toList . moduleNameParts
 
+-- | Given a module name (assumed to be a toplevel module), 
+-- compute the associated Haskell module name.
 compileModuleName :: ModuleName -> C (Hs.ModuleName ())
-compileModuleName m =
-  caseMaybeM
-    (liftTCM $ fmap hsTopLevelModuleName <$> getTopLevelModuleForModuleName m)
-    (genericDocError =<< text "Cannot compile non-existing module: " <+> prettyTCM m)
-    $ \tlm -> do
-      reportSDoc "agda2hs.name" 25 $
-        text "Top-level module name for" <+> prettyTCM m <+>
-        text "is" <+> text (pp tlm)
-      return tlm
+compileModuleName m = do
+  tlm <- liftTCM $ hsTopLevelModuleName <$> getTopLevelModuleForModuleName m
+  reportSDoc "agda2hs.name" 25 $
+    text "Top-level module name for" <+> prettyTCM m <+>
+    text "is" <+> text (pp tlm)
+  return tlm
