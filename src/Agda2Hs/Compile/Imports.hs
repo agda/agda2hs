@@ -1,5 +1,4 @@
-
-module Agda2Hs.Compile.Imports ( compileImports, makeManualDecl ) where
+module Agda2Hs.Compile.Imports ( compileImports, preludeImportDecl ) where
 
 import Data.Char ( isUpper )
 import Data.List ( isPrefixOf )
@@ -87,12 +86,26 @@ compileImports top is0 = do
           ++ prettyShow (pp <$> p') ++ ")"
         -- TODO: no range information as we only have Haskell names at this point
 
--- if the user has provided a "using" or "hiding" list in the config file
--- used for Prelude
-makeManualDecl :: Hs.ModuleName () -> Qualifier -> Bool -> [String] -> Hs.ImportDecl ()
-makeManualDecl mod qual isImplicit namesToHide = Hs.ImportDecl ()
-       mod (isQualified qual) False False Nothing (qualifiedAs qual)
-      (Just $ Hs.ImportSpecList ()
-            isImplicit        -- whether the list should be a list of hidden identifiers ('hiding')
-            $ map (Hs.IVar() . (\str -> if validVarId str || validConId str then Hs.Ident() str else Hs.Symbol() str))    -- since we can only read strings from the config file, we have to do this
-            namesToHide) -- map (uncurry makeImportSpec) $ Map.toList specs)
+
+-- | Generate a prelude import considering prelude config options (hiding, implicit, etc).
+preludeImportDecl :: PreludeOptions -> Hs.ImportDecl ()
+preludeImportDecl (PreludeOpts{..}) =
+  let toName s | validVarId s || validConId s = Hs.Ident () s
+      toName s = Hs.Symbol () s
+
+      -- if the prelude is implicit, we use the provided hiding list.
+      -- if it is explicit, we use the import list.
+      spec = Hs.ImportSpecList () preludeImplicit $
+              map (Hs.IVar () . toName) $
+                if preludeImplicit then preludeHiding
+                                   else concat preludeImports
+  in Hs.ImportDecl
+    { importAnn       = ()
+    , importModule    = Hs.prelude_mod ()
+    , importQualified = False
+    , importSrc       = False
+    , importSafe      = False
+    , importPkg       = Nothing
+    , importAs        = Nothing
+    , importSpecs     = Just spec
+    }

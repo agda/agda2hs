@@ -7,8 +7,10 @@ import Control.Monad.Except ( catchError )
 import Control.Monad.Reader
 
 import Data.Functor ( (<&>) )
+import Data.Bifunctor ( bimap )
 import Data.List ( intercalate, isPrefixOf )
 import Data.Text ( unpack )
+import qualified Data.Map.Strict as Map
 
 import qualified Language.Haskell.Exts as Hs
 
@@ -16,7 +18,7 @@ import Agda.Compiler.Backend hiding ( topLevelModuleName )
 import Agda.Compiler.Common ( topLevelModuleName )
 
 import qualified Agda.Syntax.Abstract as A
-import Agda.Syntax.Common
+import Agda.Syntax.Common hiding (Rewrite)
 import Agda.Syntax.Internal
 import Agda.Syntax.Position
 import qualified Agda.Syntax.Concrete as C
@@ -34,7 +36,6 @@ import qualified Agda.Utils.List1 as List1
 import Agda.Utils.Maybe ( isJust, isNothing, whenJust, fromMaybe, caseMaybeM )
 
 import Agda2Hs.AgdaUtils
-import Agda2Hs.Compile.Rewrites
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
@@ -44,45 +45,40 @@ isSpecialCon = prettyShow >>> \case
     "Agda.Builtin.List.List"     -> special Hs.ListCon
     "Agda.Builtin.List.List._∷_" -> special Hs.Cons
     "Agda.Builtin.List.List.[]"  -> special Hs.ListCon
-    "Agda.Builtin.Unit.⊤"       -> special Hs.UnitCon
+    "Agda.Builtin.Unit.⊤"        -> special Hs.UnitCon
     "Agda.Builtin.Unit.tt"       -> special Hs.UnitCon
     _ -> Nothing
   where special c = Just (Hs.Special () $ c ())
 
--- Gets an extra parameter, with the user-defined rewrite rules in it.
--- If finds it in the user-defined or the built-in rewrite rules, then it returns the new name and a possible import in a Just; otherwise returns Nothing.
-isSpecialName :: QName -> Rewrites -> Maybe (Hs.Name (), Maybe Import)
-isSpecialName f rules = let pretty = prettyShow f in case lookupRules pretty rules of
-    result@(Just _)     -> result
-    Nothing             -> case pretty of
-      "Agda.Builtin.Nat.Nat"          -> withImport "Numeric.Natural" "Natural"
-      "Haskell.Control.Monad.guard"   -> withImport "Control.Monad" "guard"
-      "Agda.Builtin.Int.Int"          -> noImport "Integer"
-      "Agda.Builtin.Word.Word64"      -> noImport "Word"
-      "Agda.Builtin.Float.Float"      -> noImport "Double"
-      "Agda.Builtin.Bool.Bool.false"  -> noImport "False"
-      "Agda.Builtin.Bool.Bool.true"   -> noImport "True"
-      "Haskell.Prim._∘_"              -> noImport "_._"
-      "Haskell.Prim.seq"              -> noImport "seq"
-      "Haskell.Prim._$!_"             -> noImport "_$!_"
-      "Haskell.Prim.Monad.Dont._>>=_" -> noImport "_>>=_"
-      "Haskell.Prim.Monad.Dont._>>_"  -> noImport "_>>_"
-      _                               -> Nothing
-  where
-    noImport x = Just (hsName x, Nothing)
-    withImport mod x =
-      let imp = Import (hsModuleName mod) Unqualified Nothing (hsName x) (Hs.NoNamespace ())
-                                                                       -- ^ TODO: add an option to specify this in the config file (whether it is a type or not)
-                                                                       -- as far as I know, there are no type operators in Prelude, but maybe a self-defined one could cause trouble
-      in Just (hsName x, Just imp)
+-- | Convert identifier and import module strings into the Haskell equivalent syntax.
+toNameImport :: String -> Maybe String -> (Hs.Name (), Maybe Import)
+toNameImport x Nothing = (hsName x, Nothing)
+toNameImport x (Just mod) =
+  ( hsName x
+  , Just $ Import (hsModuleName mod) Unqualified Nothing (hsName x) (Hs.NoNamespace ())
+  )
 
-    lookupRules :: String -> Rewrites -> Maybe (Hs.Name (), Maybe Import)
-    lookupRules _ [] = Nothing
-    lookupRules pretty (rule:ls)
-      | pretty == from rule   = case (importing rule) of     -- check if there is a new import
-          Just lib -> withImport lib (to rule)
-          Nothing  -> noImport (to rule)
-      | otherwise             = lookupRules pretty ls
+-- | Default rewrite rules.
+defaultSpecialRules :: SpecialRules
+defaultSpecialRules = Map.fromList
+  [ "Agda.Builtin.Nat.Nat"          `to` "Natural" `importing` Just "Numeric.Natural"
+  , "Haskell.Control.Monad.guard"   `to` "guard"   `importing` Just "Control.Monad"
+  , "Agda.Builtin.Int.Int"          `to` "Integer" `importing` Nothing
+  , "Agda.Builtin.Word.Word64"      `to` "Word"    `importing` Nothing
+  , "Agda.Builtin.Float.Float"      `to` "Double"  `importing` Nothing
+  , "Agda.Builtin.Bool.Bool.false"  `to` "False"   `importing` Nothing
+  , "Agda.Builtin.Bool.Bool.true"   `to` "True"    `importing` Nothing
+  , "Haskell.Prim._∘_"              `to` "_._"     `importing` Nothing
+  , "Haskell.Prim.Monad.Dont._>>=_" `to` "_>>=_"   `importing` Nothing
+  , "Haskell.Prim.Monad.Dont._>>_"  `to` "_>>_"    `importing` Nothing
+  ]
+  where infixr 6 `to`, `importing`
+        to = (,)
+        importing = toNameImport
+
+-- | Check whether the given name should be rewritten to a special Haskell name, possibly with new imports.
+isSpecialName :: QName -> C (Maybe (Hs.Name (), Maybe Import))
+isSpecialName f = asks (Map.lookup (prettyShow f) . rewrites)
 
 compileName :: Applicative m => Name -> m (Hs.Name ())
 compileName n = hsName . show <$> pretty (nameConcrete n)
@@ -100,8 +96,7 @@ compileQName f
       Just (r, Record{recNamedCon = False}) -> r -- use record name for unnamed constructors
       _                                     -> f
     hf0 <- compileName (qnameName f)
-    rules <- asks rewrites
-    let (hf, mimpBuiltin) = fromMaybe (hf0, Nothing) (isSpecialName f rules)
+    (hf, mimpBuiltin) <- fromMaybe (hf0, Nothing) <$> isSpecialName f
     parent <- parentName f
     par <- traverse (compileName . qnameName) parent
     let mod0 = qnameModule $ fromMaybe f parent
