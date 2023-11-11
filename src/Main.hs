@@ -1,6 +1,7 @@
 module Main where
 
-import Control.Monad.IO.Class ( MonadIO(..) )
+import Data.Maybe ( fromMaybe )
+import Control.Monad.IO.Class ( MonadIO(liftIO) )
 
 import System.Console.GetOpt
 import System.Environment ( getArgs )
@@ -18,13 +19,16 @@ import Agda2Hs.Compile.Rewrites
 import Agda2Hs.Compile.Types
 import Agda2Hs.Render
 
-import qualified System.IO.Unsafe as UNSAFE (unsafePerformIO)
-
 defaultOptions :: Options
-defaultOptions = Options{ optIsEnabled = True,
-                          optOutDir = Nothing, optExtensions = [],
-                          optPrelude = (False, Auto),   -- default to including Prelude explicitly and letting agda2hs search for identifiers to import automatically
-                          optRewrites = [] }
+defaultOptions = Options
+  { optIsEnabled = True
+  , optOutDir = Nothing
+  , optConfigFile = Nothing
+  , optExtensions = []
+  , optPrelude = (False, Auto)
+    -- by default the Prelude is imported explicitly
+  , optRewrites = []
+  }
 
 disableOpt :: Monad m => Options -> m Options
 disableOpt opts = return opts{ optIsEnabled = False }
@@ -32,22 +36,22 @@ disableOpt opts = return opts{ optIsEnabled = False }
 outdirOpt :: Monad m => FilePath -> Options -> m Options
 outdirOpt dir opts = return opts{ optOutDir = Just dir }
 
+configOpt :: Monad m => FilePath -> Options -> m Options
+configOpt src opts = return opts{optConfigFile = Just src}
+
 extensionOpt :: Monad m => String -> Options -> m Options
 extensionOpt ext opts = return opts{ optExtensions = Hs.parseExtension ext : optExtensions opts }
 
--- Here we use unsafePerformIO to read the rewrite rules from the files.
-rewriteOpt :: Monad m => FilePath -> Options -> m Options
-rewriteOpt file opts = return opts{
-                         optRewrites = newRules ++ optRewrites opts,
-                         optPrelude = case maybePreludeOptions of {
-                                   Nothing       -> optPrelude opts;
-                                   Just newPOpts -> newPOpts
-                                   -- ^ the new one trumps the older one
-                                   -- maybe this should be done so that we are given an error in case of conflicting options
-                                   }}
-  where
-    (maybePreludeOptions, newRules) = UNSAFE.unsafePerformIO (readConfigFile file)
-{-# NOINLINE rewriteOpt #-}
+-- | Update options by reading the config, if any was specified.
+readConfig :: Options -> TCM Options
+readConfig opts
+  | Just src <- optConfigFile opts
+  = do (maybePreludeOptions, newRules) <- liftIO $ readConfigFile src
+       return opts
+         { optRewrites = newRules ++ optRewrites opts
+         , optPrelude  = fromMaybe (optPrelude opts) maybePreludeOptions
+         }
+readConfig opts = return opts
 
 backend :: Backend' Options Options ModuleEnv ModuleRes (CompiledDef, CompileOutput)
 backend = Backend'
@@ -61,11 +65,11 @@ backend = Backend'
         "Write Haskell code to DIR. (default: project root)"
       , Option ['X'] [] (ReqArg extensionOpt "EXTENSION")
         "Enable Haskell language EXTENSION. Affects parsing of Haskell code in FOREIGN blocks."
-      , Option [] ["rewrite-rules"] (ReqArg rewriteOpt "FILE")
-        "Provide custom rewrite rules in a YAML configuration file. Identifiers contained here will be replaced with the one given, with an appropriate import added if requested. The handling of imports from Prelude should preferably also be included in this file. See rewrite-rules-example.yaml for the format."
+      , Option [] ["config"] (ReqArg configOpt "FILE")
+        "Provide additional configuration to agda2hs with a YAML file."
       ]
   , isEnabled             = optIsEnabled
-  , preCompile            = return
+  , preCompile            = readConfig
   , postCompile           = \ _ _ _ -> return ()
   , preModule             = moduleSetup
   , postModule            = writeModule
@@ -74,8 +78,7 @@ backend = Backend'
   , mayEraseType          = \ _ -> return True
   }
 
--- Checking whether we are in interactive mode.
--- These will imply --disable-backend.
+-- | Parse command-line arguments to check whether we are in interactive mode.
 isInteractive :: IO Bool
 isInteractive = do
   let interactionFlag = Option ['I'] ["interactive", "interaction", "interaction-json"] (NoArg ()) ""
@@ -83,8 +86,8 @@ isInteractive = do
   return $ not $ null i
 
 main = do
-  -- Issue #201: drop backend when run in interactive mode
+  -- Issue #201: disable backend when run in interactive mode
   isInt <- isInteractive
   if isInt
-    then runAgda [Backend (backend{isEnabled = const False})]
+    then runAgda [Backend backend{isEnabled = const False}]
     else runAgda [Backend backend]
