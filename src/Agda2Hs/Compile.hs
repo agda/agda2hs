@@ -19,13 +19,12 @@ import Agda2Hs.Compile.Data ( compileData )
 import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
-import Agda2Hs.Compile.Rewrites
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils ( setCurrentRangeQ, tellExtension )
 import Agda2Hs.Pragma
 
 -- Needs a list of rewrite rules too.
-initCompileEnv :: TopLevelModuleName -> Rewrites -> CompileEnv
+initCompileEnv :: TopLevelModuleName -> SpecialRules -> CompileEnv
 initCompileEnv tlm rewrites = CompileEnv
   { currModule = tlm
   , minRecordName = Nothing
@@ -38,7 +37,7 @@ initCompileEnv tlm rewrites = CompileEnv
 initCompileState :: CompileState
 initCompileState = CompileState { lcaseUsed = 0 }
 
-runC :: TopLevelModuleName -> Rewrites -> C a -> TCM (a, CompileOutput)
+runC :: TopLevelModuleName -> SpecialRules -> C a -> TCM (a, CompileOutput)
 runC tlm rewrites = runWriterT
      . flip runReaderT (initCompileEnv tlm rewrites)
      . flip evalStateT initCompileState

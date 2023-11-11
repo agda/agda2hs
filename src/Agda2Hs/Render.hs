@@ -5,7 +5,7 @@ import Control.Monad.Except ( MonadIO(liftIO) )
 
 import Data.Function ( on )
 import Data.List ( sortBy, nub )
-import Data.Maybe ( fromMaybe )
+import Data.Maybe ( fromMaybe, isNothing )
 import Data.Set ( Set )
 import qualified Data.Set as Set
 
@@ -142,27 +142,40 @@ writeModule opts _ isMain m outs = do
       imps = concat impss
       exts = concat extss
   unless (null code && null defs && isMain == NotMain) $ do
-    -- Add automatic imports
+
     let unlines' [] = []
         unlines' ss = unlines ss ++ "\n"
-    let filteredImps = case optPrelude opts of
-          (False, Auto) -> imps                                                              -- import Prelude explicitly and search for imported identifiers, just like at other modules
-          _             -> filter (not . (== Hs.prelude_mod ()) . importModule) imps         -- handle Prelude separately
-    let autoImportList = case optPrelude opts of
-          (False, Auto)               -> compileImports mod filteredImps -- then we have left Prelude in filteredImps
-          (True,  Names [])           -> compileImports mod filteredImps -- we write nothing about Prelude and import everything
-          (isImplicit, Names names)   -> (:) <$>
-                                         (pure $ makeManualDecl (Hs.prelude_mod ()) Nothing isImplicit names) <*>
-                                         compileImports mod filteredImps
-          (True,  Auto)               -> __IMPOSSIBLE__
+
+    let preOpts@PreludeOpts{..} = optPrelude opts
+
+    -- if the prelude is supposed to be implicit,
+    -- or the prelude imports have been fixed in the config file,
+    -- we remove it from the list of imports
+    let filteredImps =
+          if not preludeImplicit && isNothing preludeImports
+            then imps
+            else filter ((/= Hs.prelude_mod ()) . importModule) imps
+
+    -- then we try to add it back
+    let autoImportList =
+          if (not preludeImplicit && isNothing preludeImports) || null preludeHiding
+            then compileImports mod filteredImps
+            else (preludeImportDecl preOpts:) <$> compileImports mod filteredImps
+
+    -- Add automatic imports
     autoImports <- (unlines' . map prettyShowImportDecl) <$> autoImportList
+
     -- The comments make it hard to generate and pretty print a full module
     hsFile <- moduleFileName opts m
+
     let output = concat
-                 [ renderLangExts exts
-                 , renderBlocks $ codePragmas code
-                 , "module " ++ mod ++ " where\n\n"
-                 , autoImports
-                 , renderBlocks defs ]
+          [ renderLangExts exts
+          , renderBlocks $ codePragmas code
+          , "module " ++ mod ++ " where\n\n"
+          , autoImports
+          , renderBlocks defs
+          ]
+
     reportSLn "" 1 $ "Writing " ++ hsFile
+
     liftIO $ ensureDirectory hsFile >> writeFile hsFile output
