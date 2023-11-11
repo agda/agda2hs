@@ -47,14 +47,14 @@ type PreludeOptions = (Bool, NamesToImport)
 type Config = (Maybe PreludeOptions, Rewrites)
             -- ^ Nothing if there was no "prelude" element in the file
 
-data Options = Options { optIsEnabled         :: Bool,
-                      -- ^ false if the backend is disabled because we want vanilla Agda behaviour (important for Emacs)
-                         optOutDir            :: Maybe FilePath,
-                         optExtensions        :: [Hs.Extension],
-                         optRewrites          :: Rewrites,
-                      -- ^ the rewrite rules read from user-provided config files
-                         optPrelude           :: PreludeOptions }
-                      -- ^ options on how to handle Prelude; see Agda2Hs.Compile.Rewrites
+data Options = Options
+  { optIsEnabled  :: Bool
+  , optOutDir     :: Maybe FilePath
+  , optConfigFile :: Maybe FilePath
+  , optExtensions :: [Hs.Extension]
+  , optRewrites   :: Rewrites
+  , optPrelude    :: PreludeOptions
+  }
 
 -- Required by Agda-2.6.2, but we don't really care.
 instance NFData Options where
