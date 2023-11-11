@@ -14,8 +14,9 @@ import qualified Language.Haskell.Exts.Extension as Hs
 import Agda.Main
 import Agda.Compiler.Backend
 
+import Agda2Hs.Compile.Name ( defaultSpecialRules )
 import Agda2Hs.Compile
-import Agda2Hs.Compile.Rewrites
+import Agda2Hs.Config (checkConfig)
 import Agda2Hs.Compile.Types
 import Agda2Hs.Render
 
@@ -25,9 +26,9 @@ defaultOptions = Options
   , optOutDir = Nothing
   , optConfigFile = Nothing
   , optExtensions = []
-  , optPrelude = (False, Auto)
+  , optPrelude = PreludeOpts False Nothing []
     -- by default the Prelude is imported explicitly
-  , optRewrites = []
+  , optRewrites = defaultSpecialRules
   }
 
 disableOpt :: Monad m => Options -> m Options
@@ -43,15 +44,6 @@ extensionOpt :: Monad m => String -> Options -> m Options
 extensionOpt ext opts = return opts{ optExtensions = Hs.parseExtension ext : optExtensions opts }
 
 -- | Update options by reading the config, if any was specified.
-readConfig :: Options -> TCM Options
-readConfig opts
-  | Just src <- optConfigFile opts
-  = do (maybePreludeOptions, newRules) <- liftIO $ readConfigFile src
-       return opts
-         { optRewrites = newRules ++ optRewrites opts
-         , optPrelude  = fromMaybe (optPrelude opts) maybePreludeOptions
-         }
-readConfig opts = return opts
 
 backend :: Backend' Options Options ModuleEnv ModuleRes (CompiledDef, CompileOutput)
 backend = Backend'
@@ -69,7 +61,7 @@ backend = Backend'
         "Provide additional configuration to agda2hs with a YAML file."
       ]
   , isEnabled             = optIsEnabled
-  , preCompile            = readConfig
+  , preCompile            = checkConfig
   , postCompile           = \ _ _ _ -> return ()
   , preModule             = moduleSetup
   , postModule            = writeModule

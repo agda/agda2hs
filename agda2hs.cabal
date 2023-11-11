@@ -49,12 +49,12 @@ executable agda2hs
                        Agda2Hs.Compile.Name,
                        Agda2Hs.Compile.Postulate,
                        Agda2Hs.Compile.Record,
-                       Agda2Hs.Compile.Rewrites,
                        Agda2Hs.Compile.Term,
                        Agda2Hs.Compile.Type,
                        Agda2Hs.Compile.TypeDefinition,
                        Agda2Hs.Compile.Types,
                        Agda2Hs.Compile.Utils,
+                       Agda2Hs.Config,
                        Agda2Hs.HsUtils,
                        Agda2Hs.Pragma
                        Agda2Hs.Render
@@ -71,7 +71,8 @@ executable agda2hs
                        syb >= 0.7.2 && < 0.8,
                        text >= 2.0.2 && < 2.1,
                        deepseq >= 1.4.4 && < 1.5,
-                       yaml-light >= 0.1.4 && < 2.0
+                       yaml >= 0.11 && < 0.12,
+                       aeson >= 2.2 && < 2.3
   default-language:    Haskell2010
   default-extensions:  LambdaCase,
                        RecordWildCards,
@@ -99,8 +100,9 @@ executable agda2hs-mode
                        syb >= 0.7.2 && < 0.8,
                        text >= 2.0.2 && < 2.1,
                        deepseq >= 1.4.4 && < 1.5,
-                       yaml-light >= 0.1.4 && < 2.0,
-                       process   >= 1.6.3.0  && < 1.7
+                       process   >= 1.6.3.0  && < 1.7,
+                       yaml >= 0.11 && < 0.12,
+                       aeson >= 2.2 && < 2.3
   default-language:    Haskell2010
   default-extensions:  LambdaCase,
                        RecordWildCards,

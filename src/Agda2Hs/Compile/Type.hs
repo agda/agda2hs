@@ -30,7 +30,6 @@ import Agda.Utils.Monad ( ifM, unlessM )
 import Agda.Utils.Size ( Sized(size) )
 import Agda.Utils.Functor ( ($>) )
 
-import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Term ( compileVar )
 import Agda2Hs.Compile.Types

@@ -28,31 +28,35 @@ type Ranged a    = (Range, a)
 
 type Code = (Hs.Module Hs.SrcSpanInfo, [Hs.Comment])
 
--- For config files and rewrite rules.
--- There is already a RewriteRule identifier in Agda internals, hence the name.
--- Elements:
-  -- the identifier to rewrite ("from")
-  -- the identifier with which we replace it ("to")
-  -- the import to use, if any ("importing")
-data Rewrite = Rewrite {from :: String, to :: String, importing :: Maybe String}
+-- | Custom substitution for a given definition.
+data Rewrite = Rewrite
+  { rewFrom   :: String
+    -- ^ The fully qualified name.
+  , rewTo     :: String
+    -- ^ The corresponding Haskell name.
+  , rewImport :: Maybe String
+    -- ^ Haskell module to import.
+  }
 
 type Rewrites = [Rewrite]
 
-data NamesToImport = Auto | Names [String]     -- Auto if Prelude is explicit and we want agda2hs to figure out the import list by itself
+-- | A lookup table for rewrite rules.
+type SpecialRules = Map String (Hs.Name (), Maybe Import)
 
-type PreludeOptions = (Bool, NamesToImport)
-                       -- ^ whether Prelude functions should be implicitly imported; if yes, then NamesToImport is a "hiding" list
+data PreludeOptions = PreludeOpts
+  { preludeImplicit :: Bool
+  , preludeImports  :: Maybe [String]
+  , preludeHiding   :: [String]
+  }
+  -- ^ whether Prelude functions should be implicitly imported; if yes, then NamesToImport is a "hiding" list
 
--- The type of an entire parsed config file.
-type Config = (Maybe PreludeOptions, Rewrites)
-            -- ^ Nothing if there was no "prelude" element in the file
 
 data Options = Options
   { optIsEnabled  :: Bool
   , optOutDir     :: Maybe FilePath
   , optConfigFile :: Maybe FilePath
   , optExtensions :: [Hs.Extension]
-  , optRewrites   :: Rewrites
+  , optRewrites   :: SpecialRules
   , optPrelude    :: PreludeOptions
   }
 
@@ -71,8 +75,8 @@ data CompileEnv = CompileEnv
   -- ^ whether copatterns should be allowed when compiling patterns
   , checkVar :: Bool
   -- ^ whether to ensure compiled variables are usable and visible
-  , rewrites :: Rewrites
-  -- ^ the user-defined rewrite rules read from a config file
+  , rewrites :: SpecialRules
+  -- ^ Special compilation rules.
   }
 
 type Qualifier = Maybe (Maybe (Hs.ModuleName ()))
