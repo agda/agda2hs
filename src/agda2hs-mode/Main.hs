@@ -1,5 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-
 -- | A program which either tries to add setup code for Agda's Emacs
 -- mode to the users .emacs file, or provides information to Emacs
 -- about where the Emacs mode is installed.
