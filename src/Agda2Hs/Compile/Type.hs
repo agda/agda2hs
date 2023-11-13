@@ -4,9 +4,10 @@ module Agda2Hs.Compile.Type where
 
 import Control.Arrow ( (>>>) )
 import Control.Monad ( forM, when )
+import Control.Monad.Trans ( lift )
 import Control.Monad.Reader ( asks )
 import Data.List ( find )
-import Data.Maybe ( mapMaybe )
+import Data.Maybe ( mapMaybe, isJust )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
 import qualified Language.Haskell.Exts.Extension as Hs
@@ -68,14 +69,22 @@ tupleType q es = do
   ts <- mapM compileType xs
   return $ Hs.TyTuple () Hs.Boxed ts
 
-constrainType :: Hs.Asst () -> Hs.Type () -> Hs.Type ()
+-- | Add a class constraint to a Haskell type.
+constrainType
+  :: Hs.Asst () -- ^ The class assertion.
+  -> Hs.Type () -- ^ The type to constrain.
+  -> Hs.Type ()
 constrainType c = \case
   Hs.TyForall _ as (Just (Hs.CxTuple _ cs)) t -> Hs.TyForall () as (Just (Hs.CxTuple () (c:cs))) t
   Hs.TyForall _ as (Just (Hs.CxSingle _ c')) t -> Hs.TyForall () as (Just (Hs.CxTuple () [c,c'])) t
   Hs.TyForall _ as _ t -> Hs.TyForall () as (Just (Hs.CxSingle () c)) t
   t -> Hs.TyForall () Nothing (Just (Hs.CxSingle () c)) t
 
-qualifyType :: String -> Hs.Type () -> Hs.Type ()
+-- | Add explicit quantification over a variable to a Haskell type.
+qualifyType
+  :: String     -- ^ Name of the variable.
+  -> Hs.Type () -- ^ Type to quantify.
+  -> Hs.Type ()
 qualifyType s = \case
     Hs.TyForall _ (Just as) cs t -> Hs.TyForall () (Just (a:as)) cs t
     Hs.TyForall _ Nothing cs t -> Hs.TyForall () (Just [a]) cs t
@@ -83,30 +92,51 @@ qualifyType s = \case
   where
     a = Hs.UnkindedVar () $ Hs.Ident () s
 
--- Compile a top-level type that binds the current module parameters
--- (if any) as explicitly bound type arguments.
--- The continuation is called in an extended context with these type
--- arguments bound.
-compileTopLevelType :: Bool -> Type -> (Hs.Type () -> C a) -> C a
+
+-- | Compile a top-level type, such that:
+--
+--   * erased parameters of the current module are dropped.
+--   * usable hidden type parameters of the current module are explicitely quantified.
+--   * usable instance parameters are added as type constraints.
+--   * usable explicit parameters are forbidden (for now).
+--
+--   The continuation is called in an extended context with these type
+--   arguments bound.
+compileTopLevelType
+    :: Bool
+    -- ^ Whether the generated Haskell type will end up in
+    --   the final output. If so, this functions asks for
+    --   language extension ScopedTypeVariables to be enabled.
+    -> Type
+    -> (Hs.Type () -> C a) -- ^ Continuation with the compiled type.
+    -> C a
 compileTopLevelType keepType t cont = do
     reportSDoc "agda2hs.compile.type" 12 $ text "Compiling top-level type" <+> prettyTCM t
+    -- NOTE(flupe): even though we only quantify variable for definitions inside anonymous modules,
+    --              they will still get quantified over the toplevel module parameters.
+    weAreOnTop <- isJust <$> liftTCM  (currentModule >>= isTopLevelModule)
     modTel <- moduleParametersToDrop =<< currentModule
-    reportSDoc "agda2hs.compile.type" 19 $ text "Module parameters to drop: " <+> prettyTCM modTel
-    go modTel cont
+    reportSDoc "agda2hs.compile.type" 19 $ text "Module parameters to process: " <+> prettyTCM modTel
+    go weAreOnTop modTel cont
   where
-    go :: Telescope -> (Hs.Type () -> C a) -> C a
-    go EmptyTel cont = do
+    go :: Bool -> Telescope -> (Hs.Type () -> C a) -> C a
+    go _ EmptyTel cont = do
       ctxArgs <- getContextArgs
       ty <- compileType . unEl =<< t `piApplyM` ctxArgs
       cont ty
-    go (ExtendTel a atel) cont
+    go onTop (ExtendTel a atel) cont
+      | not (usableModality a) =
+          underAbstraction a atel $ \tel -> go onTop tel cont
       | isInstance a = do
           c <- Hs.TypeA () <$> compileType (unEl $ unDom a)
           underAbstraction a atel $ \tel ->
-            go tel (cont . constrainType c)
-      | otherwise = underAbstraction a atel $ \tel -> do
-          when keepType $ tellExtension Hs.ScopedTypeVariables
-          go tel (cont . qualifyType (absName atel))
+            go onTop tel (cont . constrainType c)
+      | otherwise = do
+          compileType (unEl $ unDom a)
+          when (keepType && not onTop) $ tellExtension Hs.ScopedTypeVariables
+          let qualifier = if onTop then id else qualifyType (absName atel)
+          underAbstraction a atel $ \tel ->
+            go onTop tel (cont . qualifier)
 
 compileType' :: Term -> C (Strictness, Hs.Type ())
 compileType' t = do
@@ -115,6 +145,7 @@ compileType' t = do
     _        -> return Lazy
   (s,) <$> compileType t
 
+-- | Compile an Agda term into a Haskell type.
 compileType :: Term -> C (Hs.Type ())
 compileType t = do
   reportSDoc "agda2hs.compile.type" 12 $ text "Compiling type" <+> prettyTCM t
@@ -127,24 +158,29 @@ compileType t = do
         hsB <- underAbstraction a b (compileType . unEl)
         return $ constrainType hsA hsB
       DomDropped -> underAbstr a b (compileType . unEl)
-    Def f es
-      | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics f es
-      | Just args <- allApplyElims es ->
-        ifJustM (isUnboxRecord f) (\_ -> compileUnboxType f args) $
-        ifM (isTransparentFunction f) (compileTransparentType args) $ do
-          vs <- compileTypeArgs args
-          f <- compileQName f
-          return $ tApp (Hs.TyCon () f) vs
+    Def f es -> do
+      def <- getConstInfo f
+      if | not (usableModality def) ->
+            genericDocError
+              =<< text "Cannot use erased definition" <+> prettyTCM f
+              <+> text "in Haskell type"
+         | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics f es
+         | Just args <- allApplyElims es ->
+             ifJustM (isUnboxRecord f) (\_ -> compileUnboxType f args) $
+             ifM (isTransparentFunction f) (compileTransparentType args) $ do
+               vs <- compileTypeArgs args
+               f <- compileQName f
+               return $ tApp (Hs.TyCon () f) vs
+         | otherwise -> fail
     Var x es | Just args <- allApplyElims es -> do
-      unlessM (usableModality <$> lookupBV x) $ genericDocError =<<
-        text "Not supported by agda2hs: erased type variable" <+> prettyTCM (var x)
       vs <- compileTypeArgs args
       x  <- hsName <$> compileVar x
       return $ tApp (Hs.TyVar () x) vs
     Sort s -> return (Hs.TyStar ())
     Lam argInfo restAbs
-      | not (keepArg argInfo)   -> underAbstraction_ restAbs compileType
-    _ -> genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
+      | not (keepArg argInfo) -> underAbstraction_ restAbs compileType
+    _ -> fail
+  where fail = genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
 compileTypeArgs :: Args -> C [Hs.Type ()]
 compileTypeArgs args = mapM (compileType . unArg) $ filter keepArg args
@@ -159,7 +195,7 @@ compileUnboxType r pars = do
 
 compileTransparentType :: Args -> C (Hs.Type ())
 compileTransparentType args = compileTypeArgs args >>= \case
-  [] -> genericError "Not supported: underapplied type synonyms"
+  []     -> __IMPOSSIBLE__
   (v:vs) -> return $ v `tApp` vs
 
 compileDom :: ArgName -> Dom Type -> C CompiledDom

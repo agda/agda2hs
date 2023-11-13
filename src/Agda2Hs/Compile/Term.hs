@@ -208,6 +208,7 @@ compileLiteral (LitString t) = return $ Hs.Lit () $ Hs.String () s s
   where s = Text.unpack t
 compileLiteral l               = genericDocError =<< text "bad term:" <?> prettyTCM (Lit l)
 
+-- | Compile a variable. If the check is enabled, ensures the variable is usable and visible.
 compileVar :: Nat -> C String
 compileVar x = do
   (d, n) <- (fmap snd &&& fst . unDom) <$> lookupBV x

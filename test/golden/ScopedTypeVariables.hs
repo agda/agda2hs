@@ -13,3 +13,8 @@ bar x y f = baz y
     baz :: b -> b
     baz z = f (f z)
 
+data D = MakeD Bool
+
+mybool :: Bool
+mybool = False
+
