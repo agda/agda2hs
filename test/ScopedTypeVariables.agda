@@ -1,6 +1,6 @@
-module ScopedTypeVariables where
-
 open import Haskell.Prelude
+
+module ScopedTypeVariables (@0 x : Bool) where
 
 -- We can encode explicit `forall` quantification by module parameters in Agda.
 module _ {a : Set} {{_ : Eq a}} where
@@ -19,3 +19,11 @@ module _ {a b : Set} where
       baz : b → b
       baz z = f (f z)
 {-# COMPILE AGDA2HS bar #-}
+
+data D : Set where
+  MakeD : (y : Bool) → @0 x ≡ y → D
+{-# COMPILE AGDA2HS D #-}
+
+mybool : Bool
+mybool = False
+{-# COMPILE AGDA2HS mybool #-}

@@ -60,7 +60,8 @@ import IOInput
 import Issue200
 import Issue169
 import Issue210
-import The
+import TypeSignature
+import ModuleParameters
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -121,5 +122,6 @@ import IOInput
 import Issue200
 import Issue169
 import Issue210
-import The
+import TypeSignature
+import ModuleParameters
 #-}
