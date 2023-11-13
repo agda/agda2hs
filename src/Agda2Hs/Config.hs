@@ -2,19 +2,21 @@
 -- Read additional configuration options from a file.
 module Agda2Hs.Config (checkConfig) where
 
-import Control.Monad.IO.Class ( MonadIO )
+import Control.Monad.IO.Class ( MonadIO(liftIO) )
 import GHC.Generics
 
 import Data.Functor ( (<&>) )
 import Data.Foldable ( fold )
 import Data.Maybe ( fromMaybe )
-import Data.Aeson ( FromJSON(parseJSON), withObject, (.:), (.:?), (.:?=) )
+import Data.Aeson ( FromJSON(parseJSON), withObject, (.:), (.:?), (.!=) )
+import qualified Data.Aeson.Types as Aeson
 import qualified Data.Map.Strict as Map
-import qualified Data.Yaml as Yaml ( decodeFileThrow )
+import qualified Data.Yaml as Yaml
 
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Name ( toNameImport )
-import Agda.TypeChecking.Monad.Base (TCM)
+import Agda.TypeChecking.Monad.Base ( TCM, genericDocError )
+import Agda.Syntax.Common.Pretty
 
 -- | Config file data.
 data Config = Config
@@ -24,23 +26,33 @@ data Config = Config
 
 instance FromJSON Rewrite where
   parseJSON = withObject "rewrite rule" $ \v ->
-    Rewrite <$> v .: "from"
-            <*> v .: "to"
+    Rewrite <$> v .:  "from"
+            <*> v .:  "to"
             <*> v .:? "importing"
 
 instance FromJSON PreludeOptions where
   parseJSON = withObject "prelude options" $ \v ->
-    PreludeOpts <$> v .: "implicit"
+    PreludeOpts <$> v .:  "implicit"
                 <*> v .:? "using"
-                <*> v .:?= "hiding"
+                <*> v .:? "hiding" .!= []
 
 instance FromJSON Config where
-  parseJSON = withObject "config" $ \v ->
+  parseJSON (Aeson.Object v) =
     Config <$> v .:? "prelude"
            <*> v .:? "rewrites"
+  parseJSON Aeson.Null = pure $ Config Nothing Nothing
+  parseJSON invalid =
+    Aeson.prependFailure "parsing agda2hs config failed, "
+      (Aeson.typeMismatch "Object" invalid)
 
-readConfigFile :: MonadIO m => FilePath -> m Config
-readConfigFile = Yaml.decodeFileThrow
+readConfigFile :: FilePath -> TCM Config
+readConfigFile src = do
+  liftIO (Yaml.decodeFileEither src) >>= \case
+    Left err  -> genericDocError $ vcat
+      [ text "An error occured while trying to parse config file " <> text src <>":"
+      , multiLineText (Yaml.prettyPrintParseException err)
+      ]
+    Right cfg -> return cfg
 
 applyConfig :: Options -> Config -> Options
 applyConfig opts cfg =
