@@ -1,2 +1,2 @@
 test/Fail/ErasedRecordParameter.agda:4,8-10
-Not supported by agda2hs: erased type variable a
+Cannot use erased variable a

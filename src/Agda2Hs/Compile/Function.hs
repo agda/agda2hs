@@ -100,19 +100,32 @@ compileFun, compileFun' :: Bool -> Definition -> C [Hs.Decl ()]
 compileFun withSig def@Defn{..} = withFunctionLocals defName $ compileFun' withSig def
 -- inherit existing (instantiated) locals
 compileFun' withSig def@(Defn {..}) = do
-  reportSDoc "agda2hs.compile" 6 $ "compiling function: " <+> prettyTCM defName
+  reportSDoc "agda2hs.compile" 6 $ "Compiling function: " <+> prettyTCM defName
   when withSig $ whenJustM (liftTCM $ isDatatypeModule $ qnameModule defName) $ \_ ->
     genericDocError =<< text "not supported by agda2hs: functions inside a record module"
   let keepClause = maybe False keepArg . clauseType
   withCurrentModule m $ do
-    ifM (endsInSort defType) (ensureNoLocals err >> compileTypeDef x def) $ do
+    ifM (endsInSort defType)
+        -- if the function type ends in Sort, it's a type alias!
+        (ensureNoLocals err >> compileTypeDef x def) 
+        -- otherwise, we have to compile clauses.
+        $ do
       when withSig $ checkValidFunName x
       compileTopLevelType withSig defType $ \ty -> do
-        -- Instantiate the clauses to the current module parameters
+        let filtered = filter keepClause funClauses
+        weAreOnTop <- isJust <$> liftTCM  (currentModule >>= isTopLevelModule)
         pars <- getContextArgs
-        reportSDoc "agda2hs.compile" 10 $ "applying clauses to parameters: " <+> prettyTCM pars
-        let clauses = filter keepClause funClauses `apply` pars
+        -- We only instantiate the clauses to the current module parameters
+        -- if the current module isn't the toplevel module
+        unless weAreOnTop $
+          reportSDoc "agda2hs.compile.type" 6 $ "Applying module parameters to clauses: " <+> prettyTCM pars
+        let clauses = if weAreOnTop then filtered else filtered `apply` pars
         cs <- mapMaybeM (compileClause (qnameModule defName) x) clauses
+
+        when (null cs) $ genericDocError
+          =<< text "Functions defined with absurd patterns exclusively are not supported."
+          <+> text "Use function `error` from the Haskell.Prelude instead."
+
         return $ [Hs.TypeSig () [x] ty | withSig ] ++ [Hs.FunBind () cs]
   where
     Function{..} = theDef
@@ -128,7 +141,7 @@ compileClause :: ModuleName -> Hs.Name () -> Clause -> C (Maybe (Hs.Match ()))
 compileClause mod x c = withClauseLocals mod c $ compileClause' mod x c
 
 compileClause' :: ModuleName -> Hs.Name () -> Clause -> C (Maybe (Hs.Match ()))
-compileClause' curModule x c@Clause{ clauseBody = Nothing} = return Nothing
+compileClause' curModule x c@Clause{clauseBody = Nothing} = pure Nothing
 compileClause' curModule x c@Clause{..} = do
   reportSDoc "agda2hs.compile" 7 $ "compiling clause: " <+> prettyTCM c
   reportSDoc "agda2hs.compile" 17 $ "Old context: " <+> (prettyTCM =<< getContext)
