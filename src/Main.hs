@@ -1,6 +1,7 @@
 module Main where
 
 import Data.Maybe ( fromMaybe )
+import Data.Version ( showVersion )
 import Control.Monad.IO.Class ( MonadIO(liftIO) )
 
 import System.Console.GetOpt
@@ -16,9 +17,11 @@ import Agda.Compiler.Backend
 
 import Agda2Hs.Compile.Name ( defaultSpecialRules )
 import Agda2Hs.Compile
-import Agda2Hs.Config (checkConfig)
+import Agda2Hs.Config ( checkConfig )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Render
+
+import Paths_agda2hs ( version )
 
 defaultOptions :: Options
 defaultOptions = Options
@@ -48,7 +51,7 @@ extensionOpt ext opts = return opts{ optExtensions = Hs.parseExtension ext : opt
 backend :: Backend' Options Options ModuleEnv ModuleRes (CompiledDef, CompileOutput)
 backend = Backend'
   { backendName           = "agda2hs"
-  , backendVersion        = Just "1.0"
+  , backendVersion        = Just (showVersion version)
   , options               = defaultOptions
   , commandLineFlags      =
       [ Option ['d'] ["disable-backend"] (NoArg disableOpt)
