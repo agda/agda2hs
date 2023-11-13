@@ -896,15 +896,19 @@ testB = A.foo
 
 ## Rewrite rules
 
-User-defined rewrite rules for names can be defined through YAML configuration files. These should be provided via the `--rewrite-rules` option.
+User-defined rewrite rules can be defined through a YAML configuration
+file. It is enabled with the `--config` option.
 
-This feature is particularly useful if you have a project depending on a large library which is not agda2hs-compatible
-(the most evident example is probably the Agda standard library).
-In this case, you might not want to rewrite the entire library, but you might still have to use it for your proofs.
-User-defined rewrite rules can help you translate the library's functions to the ones in the Haskell Prelude,
-or even to those written by yourself.
-In the latter case, place a Haskell file (e.g. `Base.hs`) next to your `.agda` files that contains your custom definitions
-and provide this custom module in the `importing` clauses of the config file.
+This feature is particularly useful if you have a project depending on a large
+library which is not agda2hs-compatible (e.g the standard library).
+In this case, you might not want to rewrite the entire library, but may
+still rely on it for proofs.
+
+User-defined rewrite rules can help translating the library functions to ones available
+in the Haskell Prelude, or even to those written by yourself. In the latter
+case, place a Haskell file (e.g. `Base.hs`) next to your `.agda` files that
+contains your custom definitions and provide this custom module in the
+`importing` clauses of the config file.
 
 To an extent, this compromises the mathematically proven correctness of your project.
 But if you trust that your (or Prelude's) functions are equivalent to the original ones,
@@ -947,32 +951,31 @@ twoDenoms p = (ℕ.*) 2 (suc (denominator-1 p))
 
 Here, agda2hs doesn't know where to find these definitions; so it simply leaves them as they are.
 
-Run this again with the following rewrite rules:
+Run this again with the following config file:
 
 ```yaml
-- from: Agda.Builtin.Nat.Nat.suc
-  to: suc
-  importing: BaseExample
-- from: Agda.Builtin.Nat._*_
-  to: _*_
-  importing: Prelude
-
-- from: Agda.Builtin.Int.Int.pos
-  to: toInteger
-  importing: Prelude
-
-- from: Data.Rational.Unnormalised.Base.ℚᵘ
-  to: Rational
-  importing: Data.Ratio
-- from: Data.Rational.Unnormalised.Base._*_
-  to: _*_
-  importing: Prelude
-- from: Data.Rational.Unnormalised.Base._/_
-  to: _%_
-  importing: Data.Ratio
-- from: Data.Rational.Unnormalised.Base.ℚᵘ.denominator-1
-  to: denominatorMinus1
-  importing: BaseExample
+rewrites:
+  - from: "Agda.Builtin.Nat.Nat.suc"
+    to: "suc"
+    importing: "BaseExample"
+  - from: "Agda.Builtin.Nat._*_"
+    to: "_*_"
+    importing: "Prelude"
+  - from: "Agda.Builtin.Int.Int.pos"
+    to: "toInteger"
+    importing: "Prelude"
+  - from: "Data.Rational.Unnormalised.Base.ℚᵘ"
+    to: "Rational"
+    importing: "Data.Ratio"
+  - from: "Data.Rational.Unnormalised.Base._*_"
+    to: "_*_"
+    importing: "Prelude"
+  - from: "Data.Rational.Unnormalised.Base._/_"
+    to: "_%_"
+    importing: "Data.Ratio"
+  - from: "Data.Rational.Unnormalised.Base.ℚᵘ.denominator-1"
+    to: "denominatorMinus1"
+    importing: "BaseExample"
 ```
 
 The names are a bit difficult to find. It helps if you run agda2hs with a verbosity level of 26 and check the logs (specifically the parts beginning with `compiling name`).
@@ -1013,9 +1016,12 @@ See also `rewrite-rules-example.yaml` in the root of the repository.
 
 ## Handling of Prelude
 
-By default, agda2hs handles Prelude like other modules: it collects all the identifiers it finds we use from Prelude, and adds them to Prelude's import list.
+By default, agda2hs handles Prelude like other modules: it collects all the
+identifiers it finds we use from Prelude, and adds them to Prelude's import
+list.
 
-In the config YAML, we can specify a different behaviour. The format is:
+A different behaviour can be specified in a YAML configuration file.
+The format is the following:
 
 ```yaml
 # First, we specify how to handle Prelude.
@@ -1029,13 +1035,14 @@ prelude:
   #  - Num
 
 # Then the rules themselves.
-rules:
+rewrites:
 
   # The rational type.
-  - from: Data.Rational.Unnormalised.Base.ℚᵘ
-    to: Rational
-    importing: Data.Ratio
-  - [...]
+  - from: "Data.Rational.Unnormalised.Base.ℚᵘ"
+    to: "Rational"
+    importing: "Data.Ratio"
+
+  # ...
 ```
 
 If `implicit` is `true`, then everything gets imported from Prelude, except for those that are specified in the `hiding` list. This can cause clashes if you reuse names from Prelude, hence the opportunity for a `hiding` list. If there is no such list, then everything gets imported.
@@ -1067,7 +1074,7 @@ but all the usual backends are available, too.
 - Documentation and help string are simply taken from the vanilla Agda version.
 - Now, the output can only be written next to the `.agda` files;
   there is no option to collect these under a separate directory.
-- The `--rewrite-rules` option is not yet supported in Emacs mode.
+- The `--config` option is not yet supported in Emacs mode.
 - There might be problems when both the vanilla Agda mode and agda2hs-mode are installed.
   For now, it is recommended to install only the agda2hs version.
 
