@@ -61,6 +61,7 @@ import Issue200
 import Issue169
 import Issue210
 import ModuleParameters
+import ModuleParametersImports
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -122,4 +123,5 @@ import Issue200
 import Issue169
 import Issue210
 import ModuleParameters
+import ModuleParametersImports
 #-}
