@@ -21,6 +21,7 @@ import Agda.Syntax.TopLevelModuleName
 import Agda.TypeChecking.Monad ( topLevelModuleName )
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Substitute
+import Agda.TypeChecking.Reduce ( reduceDefCopy )
 
 import Agda.Utils.Either ( isRight )
 import Agda.Utils.List ( initMaybe )
@@ -104,3 +105,18 @@ getTopLevelModuleForQName = getTopLevelModuleForModuleName . qnameModule
 lookupModuleInCurrentModule :: C.Name -> TCM [AbstractModule]
 lookupModuleInCurrentModule x =
   List1.toList' . Map.lookup x . nsModules . thingsInScope [PublicNS, PrivateNS] <$> getCurrentScope
+
+-- | Try to unfold a definition if introduced by module application.
+maybeUnfoldCopy
+  :: PureTCM m
+  => QName -- ^ Name of the definition.
+  -> Elims
+  -> (Term -> m a)
+  -- ^ Callback if the definition is indeed a copy.
+  -> (QName -> Elims -> m a)
+  -- ^ Callback if the definition isn't a copy.
+  -> m a
+maybeUnfoldCopy f es onTerm onDef =
+  reduceDefCopy f es >>= \case
+    NoReduction ()   -> onDef f es
+    YesReduction _ t -> onTerm t
