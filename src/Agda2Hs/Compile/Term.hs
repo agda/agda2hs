@@ -230,25 +230,29 @@ compileTerm v = do
       hsVar s `app` es
     -- v currently we assume all record projections are instance
     -- args that need attention
-    Def f es
+    Def f es -> maybeUnfoldCopy f es compileTerm $ \f es -> if
       | Just semantics <- isSpecialTerm f -> do
-        reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of special function"
-        semantics f es
+          reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of special function"
+          semantics f es
       | otherwise -> isClassFunction f >>= \case
-        True  -> compileClassFunApp f es
-        False -> (isJust <$> isUnboxProjection f) `or2M` isTransparentFunction f >>= \case
-          True  -> compileErasedApp es
-          False -> do
-            reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of regular function"
-            -- Drop module parameters of local `where` functions
-            moduleArgs <- getDefFreeVars f
-            reportSDoc "agda2hs.compile.term" 15 $ text "Module arguments for" <+> (prettyTCM f <> text ":") <+> prettyTCM moduleArgs
-            (`app` drop moduleArgs es) . Hs.Var () =<< compileQName f
-    Con h i es
-      | Just semantics <- isSpecialCon (conName h) -> semantics h i es
-    Con h i es -> isUnboxConstructor (conName h) >>= \case
-      Just _  -> compileErasedApp es
-      Nothing -> (`app` es) . Hs.Con () =<< compileQName (conName h)
+          True  -> compileClassFunApp f es
+          False -> (isJust <$> isUnboxProjection f) `or2M` isTransparentFunction f >>= \case
+            True  -> compileErasedApp es
+            False -> do
+              reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of regular function"
+              -- Drop module parameters of local `where` functions
+              moduleArgs <- getDefFreeVars f
+              reportSDoc "agda2hs.compile.term" 15 $ text "Module arguments for" <+> (prettyTCM f <> text ":") <+> prettyTCM moduleArgs
+              (`app` drop moduleArgs es) . Hs.Var () =<< compileQName f
+    Con h i es -> do
+      reportSDoc "agda2hs.compile" 8 $ text "reached constructor:" <+> prettyTCM (conName h)
+      -- the constructor may be a copy introduced by module application,
+      -- therefore we need to find the original constructor
+      info <- getConstInfo (conName h)
+      if not (defCopy info)
+        then compileCon h i es
+        else let Constructor{conSrcCon = c} = theDef info in
+             compileCon c ConOSystem es
     Lit l -> compileLiteral l
     Lam v b | usableModality v, getOrigin v == UserWritten -> do
       when (patternInTeleName `isPrefixOf` absName b) $ genericDocError =<< do
@@ -272,7 +276,16 @@ compileTerm v = do
     t -> genericDocError =<< text "bad term:" <?> prettyTCM t
   where
     app :: Hs.Exp () -> Elims -> C (Hs.Exp ())
-    app hd es = eApp <$> pure hd <*> compileElims es
+    app hd es = eApp hd <$> compileElims es
+
+    compileCon :: ConHead -> ConInfo -> Elims -> C (Hs.Exp ())
+    compileCon h i es
+      | Just semantics <- isSpecialCon (conName h)
+      = semantics h i es
+    compileCon h i es =
+      isUnboxConstructor (conName h) >>= \case
+        Just _  -> compileErasedApp es
+        Nothing -> (`app` es) . Hs.Con () =<< compileQName (conName h)
 
 -- `compileErasedApp` compiles an application of an erased constructor
 -- or projection.

@@ -149,6 +149,8 @@ compileType' t = do
 compileType :: Term -> C (Hs.Type ())
 compileType t = do
   reportSDoc "agda2hs.compile.type" 12 $ text "Compiling type" <+> prettyTCM t
+  reportSDoc "agda2hs.compile.type" 22 $ text "Compiling type" <+> pretty t
+
   case t of
     Pi a b -> compileDom (absName b) a >>= \case
       DomType _ hsA -> do
@@ -158,7 +160,7 @@ compileType t = do
         hsB <- underAbstraction a b (compileType . unEl)
         return $ constrainType hsA hsB
       DomDropped -> underAbstr a b (compileType . unEl)
-    Def f es -> do
+    Def f es -> maybeUnfoldCopy f es compileType $ \f es -> do
       def <- getConstInfo f
       if | not (usableModality def) ->
             genericDocError
