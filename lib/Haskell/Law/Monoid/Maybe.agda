@@ -1,6 +1,7 @@
 module Haskell.Law.Monoid.Maybe where
 
 open import Haskell.Prim
+open import Haskell.Prim.Foldable
 open import Haskell.Prim.Maybe
 
 open import Haskell.Prim.Monoid
@@ -16,6 +17,11 @@ instance
 
   iLawfulMonoidMaybe .leftIdentity = λ { Nothing → refl; (Just _) → refl }
 
-  iLawfulMonoidMaybe .concatenation [] = refl
-  iLawfulMonoidMaybe .concatenation (x ∷ xs) = trustMe -- TODO
+  iLawfulMonoidMaybe .concatenation []              = refl
+  iLawfulMonoidMaybe .concatenation (Nothing ∷  xs) = begin
+    mconcat xs              ≡⟨  concatenation xs  ⟩
+    foldr _<>_ Nothing (xs) ∎
+  iLawfulMonoidMaybe .concatenation (Just x ∷ xs)   = begin
+    Just x <> mconcat (xs)             ≡⟨ cong ( Just x <>_) (concatenation xs)⟩
+    Just x <> (foldr _<>_ Nothing xs) ∎
 
