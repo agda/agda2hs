@@ -25,9 +25,7 @@ instance
     = refl
 
   iLawfulMonoidList .concatenation [] = refl
-  iLawfulMonoidList .concatenation ([] ∷ xs) = begin
-    mconcat xs              ≡⟨  concatenation xs  ⟩
-    foldr _<>_ [] (xs) ∎
-  iLawfulMonoidList .concatenation ((y ∷ ys) ∷ xs) = begin
-    (y ∷ ys) <> mconcat (xs)             ≡⟨ cong ( (y ∷ ys) <>_) (concatenation xs)⟩
-    (y ∷ ys) <> (foldr _<>_ [] xs) ∎
+  iLawfulMonoidList .concatenation (x ∷ xs) 
+    rewrite ++-[] (x ∷ xs)
+      | concatenation xs
+    = refl

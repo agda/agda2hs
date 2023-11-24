@@ -17,11 +17,7 @@ instance
 
   iLawfulMonoidMaybe .leftIdentity = λ { Nothing → refl; (Just _) → refl }
 
-  iLawfulMonoidMaybe .concatenation []              = refl
-  iLawfulMonoidMaybe .concatenation (Nothing ∷  xs) = begin
-    mconcat xs              ≡⟨  concatenation xs  ⟩
-    foldr _<>_ Nothing (xs) ∎
-  iLawfulMonoidMaybe .concatenation (Just x ∷ xs)   = begin
-    Just x <> mconcat (xs)             ≡⟨ cong ( Just x <>_) (concatenation xs)⟩
-    Just x <> (foldr _<>_ Nothing xs) ∎
-
+  iLawfulMonoidMaybe .concatenation [] = refl
+  iLawfulMonoidMaybe .concatenation (x ∷ xs) 
+    rewrite (concatenation xs)
+    = refl
