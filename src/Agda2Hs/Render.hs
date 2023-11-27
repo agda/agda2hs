@@ -1,7 +1,7 @@
 module Agda2Hs.Render where
 
 import Control.Monad ( unless )
-import Control.Monad.Except ( MonadIO(liftIO) )
+import Control.Monad.IO.Class ( MonadIO(liftIO) )
 
 import Data.Function ( on )
 import Data.List ( sortBy, nub )
