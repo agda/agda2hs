@@ -61,16 +61,17 @@ toNameImport x (Just mod) =
 -- | Default rewrite rules.
 defaultSpecialRules :: SpecialRules
 defaultSpecialRules = Map.fromList
-  [ "Agda.Builtin.Nat.Nat"          `to` "Natural" `importing` Just "Numeric.Natural"
-  , "Haskell.Control.Monad.guard"   `to` "guard"   `importing` Just "Control.Monad"
-  , "Agda.Builtin.Int.Int"          `to` "Integer" `importing` Nothing
-  , "Agda.Builtin.Word.Word64"      `to` "Word"    `importing` Nothing
-  , "Agda.Builtin.Float.Float"      `to` "Double"  `importing` Nothing
-  , "Agda.Builtin.Bool.Bool.false"  `to` "False"   `importing` Nothing
-  , "Agda.Builtin.Bool.Bool.true"   `to` "True"    `importing` Nothing
-  , "Haskell.Prim._∘_"              `to` "_._"     `importing` Nothing
-  , "Haskell.Prim.Monad.Dont._>>=_" `to` "_>>=_"   `importing` Nothing
-  , "Haskell.Prim.Monad.Dont._>>_"  `to` "_>>_"    `importing` Nothing
+  [ "Agda.Builtin.Nat.Nat"          `to` "Natural"      `importing` Just "Numeric.Natural"
+  , "Haskell.Control.Monad.guard"   `to` "guard"        `importing` Just "Control.Monad"
+  , "Haskell.Prelude.coerce"        `to` "unsafeCoerce" `importing` Just "Unsafe.Coerce"
+  , "Agda.Builtin.Int.Int"          `to` "Integer"      `importing` Nothing
+  , "Agda.Builtin.Word.Word64"      `to` "Word"         `importing` Nothing
+  , "Agda.Builtin.Float.Float"      `to` "Double"       `importing` Nothing
+  , "Agda.Builtin.Bool.Bool.false"  `to` "False"        `importing` Nothing
+  , "Agda.Builtin.Bool.Bool.true"   `to` "True"         `importing` Nothing
+  , "Haskell.Prim._∘_"              `to` "_._"          `importing` Nothing
+  , "Haskell.Prim.Monad.Dont._>>=_" `to` "_>>=_"        `importing` Nothing
+  , "Haskell.Prim.Monad.Dont._>>_"  `to` "_>>_"         `importing` Nothing
   ]
   where infixr 6 `to`, `importing`
         to = (,)
