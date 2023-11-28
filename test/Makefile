@@ -3,7 +3,7 @@
 
 ROOT=$(shell cd ..; pwd)/
 
-default : clean alltests cubicaltests fail compare
+default : alltests cubicaltests fail compare
 
 clean :
 	@rm -rf build/*
@@ -20,7 +20,7 @@ cubicaltests :
 	@echo == Running ghc ==
 	@(cd build; ghc -fno-code CubicalTests.hs)
 
-compare :
+compare : fail
 	@echo == Comparing output ==
 	@diff -r build golden
 
@@ -29,7 +29,7 @@ fail : print-fail $(patsubst Fail/%.agda,build/%.err,$(wildcard Fail/*.agda))
 print-fail :
 	@echo == Failing tests ==
 
-build/%.err : Fail/%.agda force-recompile
+build/%.err : Fail/%.agda force-recompile alltests
 	@echo Compiling $<
 	@(./agda2hs $< -o build -v0 && echo "UNEXPECTED SUCCESS" || true) | sed -e 's:'$(ROOT)'::g' > $@
 
