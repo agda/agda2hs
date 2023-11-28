@@ -60,4 +60,5 @@ import Issue169
 import Issue210
 import ModuleParameters
 import ModuleParametersImports
+import Coerce
 
