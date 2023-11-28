@@ -135,3 +135,8 @@ xs !! n = xs !!ᴺ intToNat n
 lookup : ⦃ Eq a ⦄ → a → List (a × b) → Maybe b
 lookup x []              = Nothing
 lookup x ((x₁ , y) ∷ xs) = if x == x₁ then Just y else lookup x xs
+
+private variable A B : Set
+
+coerce : @0 A ≡ B → A → B
+coerce refl x = x

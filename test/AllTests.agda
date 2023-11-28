@@ -62,6 +62,7 @@ import Issue169
 import Issue210
 import ModuleParameters
 import ModuleParametersImports
+import Coerce
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -124,4 +125,5 @@ import Issue169
 import Issue210
 import ModuleParameters
 import ModuleParametersImports
+import Coerce
 #-}
