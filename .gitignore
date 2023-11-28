@@ -3,6 +3,7 @@ dist
 dist-newstyle
 test/build
 test/agda2hs
+test/agda2hs-mode
 *~
 docs/build/
 test/*.hs
