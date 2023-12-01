@@ -15,8 +15,6 @@ description:
   The tool is implemented as an Agda backend, which means that `agda2hs` is a
   fully functional Agda compiler.
 
-data-dir:           src/data
-data-files:         emacs-mode/*.el
 extra-doc-files:    CHANGELOG.md
                     README.md
 
@@ -81,17 +79,4 @@ executable agda2hs
                        MultiWayIf
                        TupleSections
                        ScopedTypeVariables
-  ghc-options:         -Werror
-
-executable agda2hs-mode
-  import:              smuggler-options
-  hs-source-dirs:      src/agda2hs-mode
-  main-is:             Main.hs
-  other-modules:       Paths_agda2hs
-  build-depends:       base      >= 4.10    && < 4.18,
-                       directory >= 1.2.6.2 && < 1.4,
-                       filepath  >= 1.4.1.0 && < 1.5,
-                       process   >= 1.6.3.0 && < 1.7,
-  default-language:    Haskell2010
-  default-extensions:  ScopedTypeVariables
   ghc-options:         -Werror

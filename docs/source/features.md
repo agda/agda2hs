@@ -1056,25 +1056,14 @@ If `implicit` is `false`, Prelude gets imported explicitly, and only those ident
 
 # Emacs mode
 
-Since there is a full Agda typechecker in the `agda2hs` binary, using a "normal"
-Agda installation beside agda2hs can cause a problem: they will check every dependency
-again each time you switch from one to another. This problem becomes especially
-inconvenient when working with the Emacs mode.
+Since there is a full Agda typechecker in the `agda2hs` binary,
+you can readily use the Emacs mode of a pre-existing Agda installation (make sure it is the same version as the one `agda2hs` depends on) by changing the binary that `agda-mode` uses (Lisp variable `agda2-program-name`) to (the path to) `agda2hs` binary.
 
-That's why agda2hs comes with a full Agda mode, which uses the Agda typechecker
-built into the binary. Installation is roughly the same as with Agda, except that
-you use `agda2hs-mode` instead of `agda-mode`.
-
-With `C-c C-x C-c`, you can even call the `agda2hs` backend from inside Emacs;
-but all the usual backends are available, too.
+With `C-c C-x C-c`, you will now be able call the `agda2hs` backend from inside Emacs; all the other built-in backends still remain available.
 
 ## Known issues
 
-- Switching versions doesn't work yet.
-- Documentation and help string are simply taken from the vanilla Agda version.
 - Now, the output can only be written next to the `.agda` files;
   there is no option to collect these under a separate directory.
 - The `--config` option is not yet supported in Emacs mode.
-- There might be problems when both the vanilla Agda mode and agda2hs-mode are installed.
-  For now, it is recommended to install only the agda2hs version.
 
