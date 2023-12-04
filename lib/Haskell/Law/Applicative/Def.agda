@@ -39,7 +39,3 @@ instance postulate
   iLawfulApplicativeTuple₂ : ⦃ Monoid a ⦄ → Applicative (a ×_)
 
   iLawfulApplicativeTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → Applicative (a × b ×_)
-
-  iLawfulApplicativeTuple₄ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → ⦃ Monoid c ⦄ →
-    Applicative (λ d → Tuple (a ∷ b ∷ c ∷ d ∷ []))
-

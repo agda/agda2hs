@@ -58,18 +58,12 @@ isSpecialTerm q = case prettyShow q of
 
 isSpecialCon :: QName -> Maybe (ConHead -> ConInfo -> Elims -> C (Hs.Exp ()))
 isSpecialCon = prettyShow >>> \case
-  "Haskell.Prim.Tuple._;_" -> Just tupleTerm
+  "Haskell.Prim.Tuple._,_"         -> Just tupleTerm
+  "Haskell.Prim.Tuple._×_×_._,_,_" -> Just tupleTerm
   _ -> Nothing
 
 tupleTerm :: ConHead -> ConInfo -> Elims -> C (Hs.Exp ())
-tupleTerm cons i es = do
-  let v   = Con cons i es
-      err = sep [ text "Tuple value"
-                , nest 2 $ prettyTCM v
-                , text "does not have a known size." ]
-  xs <- makeList' "Agda.Builtin.Unit.tt" "Haskell.Prim.Tuple._;_" err v
-  ts <- mapM compileTerm xs
-  return $ Hs.Tuple () Hs.Boxed ts
+tupleTerm cons i es = compileElims es <&> Hs.Tuple () Hs.Boxed
 
 ifThenElse :: QName -> Elims -> C (Hs.Exp ())
 ifThenElse _ es = compileElims es >>= \case

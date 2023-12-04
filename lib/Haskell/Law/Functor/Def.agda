@@ -22,6 +22,3 @@ instance postulate
   iLawfulFunctorTuple₂ : IsLawfulFunctor (a ×_)
 
   iLawfulFunctorTuple₃ : IsLawfulFunctor (a × b ×_)
-
-  iLawfulFunctorTuple₄ : IsLawfulFunctor (λ d → Tuple (a ∷ b ∷ c ∷ d ∷ []))
-

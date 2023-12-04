@@ -88,15 +88,9 @@ instance
   iMonadTuple₂ = bind= λ (a , x) k → first (a <>_) (k x)
 
   iMonadTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → Monad (a × b ×_)
-  iMonadTuple₃ = bind= λ (a , b , x) k →
-    case k x of λ where
+  iMonadTuple₃ = bind= λ where
+    (a , b , x) k → case k x of λ where
       (a₁ , b₁ , y) → a <> a₁ , b <> b₁ , y
-
-  iMonadTuple₄ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → ⦃ Monoid c ⦄ →
-                 Monad (λ d → Tuple (a ∷ b ∷ c ∷ d ∷ []))
-  iMonadTuple₄ = bind= λ (a ; b ; c ; x ; tt) k →
-    case k x of λ where
-      (a₁ ; b₁ ; c₁ ; y ; tt) → a <> a₁ ; b <> b₁ ; c <> c₁ ; y ; tt
 
 instance postulate iMonadIO : Monad IO
 

@@ -85,9 +85,13 @@ postulate instance
 
   iLawfulEqUnit : IsLawfulEq ⊤
 
-  iLawfulEqTuple₀ : IsLawfulEq (Tuple [])
+  iLawfulEqTuple₂ : ⦃ iEqA : Eq a ⦄ ⦃ iEqB : Eq b ⦄
+                  → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄
+                  → IsLawfulEq (a × b)
 
-  iLawfulEqTuple : ⦃ iEqA : Eq a ⦄ → ⦃ iEqAs : Eq (Tuple as) ⦄ → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq (Tuple as) ⦄ → IsLawfulEq (Tuple (a ∷ as))
+  iLawfulEqTuple₃ : ⦃ iEqA : Eq a ⦄ ⦃ iEqB : Eq b ⦄ ⦃ iEqC : Eq c ⦄
+                  → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄ → ⦃ IsLawfulEq c ⦄
+                  → IsLawfulEq (a × b × c)
 
   iLawfulEqList : ⦃ iEqA : Eq a ⦄ → ⦃ IsLawfulEq a ⦄ → IsLawfulEq (List a)
 
