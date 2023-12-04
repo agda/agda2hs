@@ -1,6 +1,6 @@
 cabal-version:       2.2
 name:                agda2hs
-version:             1.2
+version:             1.1.20231204
 license:             BSD-3-Clause
 license-file:        LICENSE
 author:              Ulf Norell, Jesper Cockx, Orestis Melkonian, Sára Juhošová, James Chapman, Lucas Escot, Henry Blanchette
@@ -24,20 +24,7 @@ source-repository head
   type:     git
   location: https://github.com/agda/agda2hs.git
 
-flag smuggler2
-  description: Rewrite sources to cleanup imports, and create explicit exports
-  default:     False
-  manual:      True
-
-common smuggler-options
-  if flag(smuggler2)
-    ghc-options: -fplugin=Smuggler2.Plugin
-                 -fplugin-opt=Smuggler2.Plugin:MinimiseImports
-                 -fplugin-opt=Smuggler2.Plugin:NoExportProcessing
-    build-depends: smuggler2 >= 0.3 && < 0.4
-
 executable agda2hs
-  import:              smuggler-options
   hs-source-dirs:      src
   main-is:             Main.hs
   other-modules:       Agda2Hs.AgdaUtils,
@@ -82,10 +69,8 @@ executable agda2hs
                        MultiWayIf
                        TupleSections
                        ScopedTypeVariables
-  ghc-options:         -Werror
 
 executable agda2hs-mode
-  import:              smuggler-options
   hs-source-dirs:      src/agda2hs-mode
   main-is:             Main.hs
   other-modules:       Paths_agda2hs
@@ -95,4 +80,3 @@ executable agda2hs-mode
                        process   >= 1.6.3.0 && < 1.7,
   default-language:    Haskell2010
   default-extensions:  ScopedTypeVariables
-  ghc-options:         -Werror
