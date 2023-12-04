@@ -44,7 +44,3 @@ instance postulate
   iLawfulMonadTuple₂ : ⦃ Monoid a ⦄ → Monad (a ×_)
 
   iLawfulMonadTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → Monad (a × b ×_)
-
-  iLawfulMonadTuple₄ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → ⦃ Monoid c ⦄ →
-    Monad (λ d → Tuple (a ∷ b ∷ c ∷ d ∷ []))
-

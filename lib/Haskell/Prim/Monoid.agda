@@ -36,11 +36,12 @@ instance
   iSemigroupUnit : Semigroup ⊤
   iSemigroupUnit ._<>_ _ _ = tt
 
-  iSemigroupTuple₀ : Semigroup (Tuple [])
-  iSemigroupTuple₀ ._<>_ _ _ = tt
 
-  iSemigroupTuple : ⦃ Semigroup a ⦄ → ⦃ Semigroup (Tuple as) ⦄ → Semigroup (Tuple (a ∷ as))
-  iSemigroupTuple ._<>_ (x ; xs) (y ; ys) = x <> y ; xs <> ys
+  iSemigroupTuple₂ : ⦃ Semigroup a ⦄ → ⦃ Semigroup b ⦄ → Semigroup (a × b)
+  iSemigroupTuple₂ ._<>_ (x₁ , y₁) (x₂ , y₂) = x₁ <> x₂ , y₁ <> y₂
+
+  iSemigroupTuple₃ : ⦃ Semigroup a ⦄ → ⦃ Semigroup b ⦄ → ⦃ Semigroup c ⦄ → Semigroup (a × b × c)
+  iSemigroupTuple₃ ._<>_ (x₁ , y₁ , z₁) (x₂ , y₂ , z₂) = x₁ <> x₂ , y₁ <> y₂ , z₁ <> z₂
 
 
 --------------------------------------------------
@@ -89,11 +90,11 @@ instance
   iMonoidUnit : Monoid ⊤
   iMonoidUnit = mempty= tt
 
-  iMonoidTuple₀ : Monoid (Tuple [])
-  iMonoidTuple₀ = mempty= tt
+  iMonoidTuple₂ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → Monoid (a × b)
+  iMonoidTuple₂ = mempty= (mempty , mempty)
 
-  iMonoidTuple : ⦃ Monoid a ⦄ → ⦃ Monoid (Tuple as) ⦄ → Monoid (Tuple (a ∷ as))
-  iMonoidTuple = mempty= mempty ; mempty
+  iMonoidTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → ⦃ Monoid c ⦄ →  Monoid (a × b × c)
+  iMonoidTuple₃ = mempty= (mempty , mempty , mempty)
 
 open DefaultMonoid
 

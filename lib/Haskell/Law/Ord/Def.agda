@@ -162,9 +162,15 @@ postulate instance
 
   iLawfulOrdChar : IsLawfulOrd Char
 
-  iLawfulOrdTuple₀ : IsLawfulOrd (Tuple [])
+  iLawfulOrdUnit : IsLawfulOrd ⊤
 
-  iLawfulOrdTuple : ⦃ iOrdA : Ord a ⦄ → ⦃ iLawfulOrdA : Ord (Tuple as) ⦄ → ⦃ IsLawfulOrd a ⦄ → ⦃ IsLawfulOrd (Tuple as) ⦄ → IsLawfulOrd (Tuple (a ∷ as))
+  iLawfulOrdTuple₂ : ⦃ iOrdA : Ord a ⦄ ⦃ iOrdB : Ord b ⦄
+                   → ⦃ IsLawfulOrd a ⦄ → ⦃ IsLawfulOrd b ⦄
+                   → IsLawfulOrd (a × b)
+
+  iLawfulOrdTuple₃ : ⦃ iOrdA : Ord a ⦄ ⦃ iOrdB : Ord b ⦄ ⦃ iOrdC : Ord c ⦄
+                   → ⦃ IsLawfulOrd a ⦄ → ⦃ IsLawfulOrd b ⦄ → ⦃ IsLawfulOrd c ⦄
+                   → IsLawfulOrd (a × b × c)
 
   iLawfulOrdList : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄ → IsLawfulOrd (List a)
 

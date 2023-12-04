@@ -21,7 +21,7 @@ record Functor (f : Set → Set) : Set₁ where
     _<&>_ : f a → (a → b) → f b
     _<$_ : (@0 {{ b }} → a) → f b → f a
     _$>_ : f a → (@0 {{ a }} → b) → f b
-    void : f a → f (Tuple [])
+    void : f a → f ⊤
 -- ** defaults
 record DefaultFunctor (f : Set → Set) : Set₁ where
   field fmap : (a → b) → f a → f b
@@ -41,7 +41,7 @@ record DefaultFunctor (f : Set → Set) : Set₁ where
   _$>_ : f a → (@0 {{ a }} → b) → f b
   m $> x = x <$ m
 
-  void : f a → f (Tuple [])
+  void : f a → f ⊤
   void = tt <$_
 -- ** export
 open Functor ⦃...⦄ public
@@ -74,9 +74,6 @@ instance
   iFunctorTuple₂ = fmap= λ f (x , y) → x , f y
 
   iFunctorTuple₃ : Functor (a × b ×_)
-  iFunctorTuple₃ = fmap= λ f (x , y , z) → x , y , f z
-
-  iFunctorTuple₄ : Functor (λ d → Tuple (a ∷ b ∷ c ∷ d ∷ []))
-  iFunctorTuple₄ = fmap= λ f (x ; y ; z ; w ; tt) → x ; y ; z ; f w ; tt
+  iFunctorTuple₃ = fmap= λ where f (x , y , z) → x , y , f z
 
 instance postulate iFunctiorIO : Functor IO

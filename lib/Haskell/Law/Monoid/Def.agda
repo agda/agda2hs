@@ -28,9 +28,11 @@ postulate instance
 
   iLawfulMonoidUnit : IsLawfulMonoid ⊤
 
-  iLawfulMonoidTuple₀ : IsLawfulMonoid (Tuple [])
+  iLawfulMonoidTuple₂ : ⦃ iSemA : Monoid a ⦄ ⦃ iSemB : Monoid b ⦄
+                      → ⦃ IsLawfulMonoid a ⦄ → ⦃ IsLawfulMonoid b ⦄
+                      → IsLawfulMonoid (a × b)
 
-  iLawfulMonoidTuple : ⦃ iSemA : Monoid a ⦄ → ⦃ iSemA : Monoid (Tuple as) ⦄
-    → ⦃ IsLawfulMonoid a ⦄ → ⦃ IsLawfulMonoid (Tuple as) ⦄
-    → IsLawfulMonoid (Tuple (a ∷ as))
+  iLawfulMonoidTuple₃ : ⦃ iSemA : Monoid a ⦄ ⦃ iSemB : Monoid b ⦄ ⦃ iSemC : Monoid c ⦄
+                      → ⦃ IsLawfulMonoid a ⦄ → ⦃ IsLawfulMonoid b ⦄ → ⦃ IsLawfulMonoid c ⦄
+                      → IsLawfulMonoid (a × b × c)
 
