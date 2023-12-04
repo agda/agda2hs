@@ -77,14 +77,7 @@ instance
 
   iApplicativeTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → Applicative (a × b ×_)
   iApplicativeTuple₃ = mkApplicative λ where
-    .pure x                          → mempty , mempty , x
-    ._<*>_ (a , b , f) (a₁ , b₁ , x) → a <> a₁ , b <> b₁ , f x
-
-  iApplicativeTuple₄ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → ⦃ Monoid c ⦄ →
-    Applicative (λ d → Tuple (a ∷ b ∷ c ∷ d ∷ []))
-  iApplicativeTuple₄ = mkApplicative λ where
-    .pure x → mempty ; mempty ; mempty ; x ; tt
-    ._<*>_ (a ; b ; c ; f ; tt) (a₁ ; b₁ ; c₁ ; x ; tt) →
-      a <> a₁ ; b <> b₁ ; c <> c₁ ; f x ; tt
+    .pure x                → mempty , mempty , x
+    ._<*>_ (a , u , f) (b , v , x) → a <> b , u <> v , f x
 
 instance postulate iApplicativeIO : Applicative IO

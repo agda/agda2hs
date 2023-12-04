@@ -59,15 +59,25 @@ instance
   iBoundedAboveChar : BoundedAbove Char
   iBoundedAboveChar .maxBound = '\1114111'
 
-  iBoundedBelowTuple₀ : BoundedBelow (Tuple [])
-  iBoundedBelowTuple₀ .minBound = tt
-  iBoundedAboveTuple₀ : BoundedAbove (Tuple [])
-  iBoundedAboveTuple₀ .maxBound = tt
+  iBoundedBelowUnit : BoundedBelow ⊤
+  iBoundedBelowUnit .minBound = tt
 
-  iBoundedBelowTuple : ⦃ BoundedBelow a ⦄ → ⦃ BoundedBelow (Tuple as) ⦄ → BoundedBelow (Tuple (a ∷ as))
-  iBoundedBelowTuple .minBound = minBound ; minBound
-  iBoundedAboveTuple : ⦃ BoundedAbove a ⦄ → ⦃ BoundedAbove (Tuple as) ⦄ → BoundedAbove (Tuple (a ∷ as))
-  iBoundedAboveTuple .maxBound = maxBound ; maxBound
+  iBoundedAboveUnit : BoundedAbove ⊤
+  iBoundedAboveUnit .maxBound = tt
+
+  iBoundedBelowTuple₂ : ⦃ BoundedBelow a ⦄ → ⦃ BoundedBelow b ⦄
+                      → BoundedBelow (a × b)
+  iBoundedBelowTuple₂ .minBound = minBound , minBound
+  iBoundedAboveTuple₂ : ⦃ BoundedAbove a ⦄ → ⦃ BoundedAbove b ⦄
+                      → BoundedAbove (a × b)
+  iBoundedAboveTuple₂ .maxBound = maxBound , maxBound
+
+  iBoundedBelowTuple₃ : ⦃ BoundedBelow a ⦄ → ⦃ BoundedBelow b ⦄ → ⦃ BoundedBelow c ⦄
+                      → BoundedBelow (a × b × c)
+  iBoundedBelowTuple₃ .minBound = minBound , minBound , minBound
+  iBoundedAboveTuple₃ : ⦃ BoundedAbove a ⦄ → ⦃ BoundedAbove b ⦄ → ⦃ BoundedAbove c ⦄
+                      → BoundedAbove (a × b × c)
+  iBoundedAboveTuple₃ .maxBound = maxBound , maxBound , maxBound
 
   iBoundedBelowOrdering : BoundedBelow Ordering
   iBoundedBelowOrdering .minBound = LT

@@ -117,13 +117,12 @@ instance
   iShowEither = showsPrec= λ where
     p (Left  x) → showApp₁ p "Left"  x
     p (Right y) → showApp₁ p "Right" y
-private
-  -- Minus the parens
-  showTuple : ⦃ All Show as ⦄ → Tuple as → ShowS
-  showTuple ⦃ allNil  ⦄                 _        = showString ""
-  showTuple ⦃ allCons ⦃ is = allNil ⦄ ⦄ (x ; tt) = shows x
-  showTuple ⦃ allCons ⦄                 (x ; xs) = shows x
-                                                 ∘ showString ", " ∘ showTuple xs
+
 instance
-  iShowTuple : ⦃ All Show as ⦄ → Show (Tuple as)
-  iShowTuple = showsPrec= λ _ → showParen True ∘ showTuple
+  iShowTuple₂ : ⦃ Show a ⦄ → ⦃ Show b ⦄ → Show (a × b)
+  iShowTuple₂ = showsPrec= λ _ → λ where
+    (x , y) → showString "(" ∘ shows x ∘ showString ", " ∘ shows y ∘ showString ")"
+
+  iShowTuple₃ : ⦃ Show a ⦄ → ⦃ Show b ⦄ → ⦃ Show c ⦄ → Show (a × b × c)
+  iShowTuple₃ = showsPrec= λ _ → λ where
+    (x , y , z) → showString "(" ∘ shows x ∘ showString ", " ∘ shows y ∘ showString ", " ∘ shows z ∘ showString ")"
