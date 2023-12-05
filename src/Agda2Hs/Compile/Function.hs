@@ -44,7 +44,8 @@ import Agda.TypeChecking.Datatypes (isDataOrRecord)
 
 isSpecialPat :: QName -> Maybe (ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ()))
 isSpecialPat qn = case prettyShow qn of
-  "Haskell.Prim.Tuple._,_"   -> Just tuplePat
+  "Haskell.Prim.Tuple._,_"         -> Just tuplePat
+  "Haskell.Prim.Tuple._×_×_._,_,_" -> Just tuplePat
   "Agda.Builtin.Int.Int.pos" -> Just posIntPat
   "Agda.Builtin.Int.Int.negsuc" -> Just negSucIntPat
   s | s `elem` badConstructors -> Just $ \ _ _ _ -> genericDocError =<<
