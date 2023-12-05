@@ -20,3 +20,8 @@ pair = (1, 2)
 test :: Int
 test = fst pair + snd pair
 
+test2 :: Bool
+test2
+  = case t1 of
+        (a, b, c) -> c
+
