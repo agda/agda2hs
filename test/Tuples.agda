@@ -38,3 +38,10 @@ test : Int
 test = let (x , y) = pair in x + y
 
 {-# COMPILE AGDA2HS test #-}
+
+test2 : Bool
+test2 = case t1 of \where
+  (a , b , c) → c
+
+{-# COMPILE AGDA2HS test2 #-}
+
