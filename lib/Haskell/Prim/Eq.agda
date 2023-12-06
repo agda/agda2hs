@@ -53,11 +53,11 @@ instance
   iEqUnit : Eq ⊤
   iEqUnit ._==_ _ _ = True
 
-  iEqTuple₀ : Eq (Tuple [])
-  iEqTuple₀ ._==_ _ _ = True
+  iEqTuple₂ : ⦃ Eq a ⦄ → ⦃ Eq b ⦄ → Eq (a × b)
+  iEqTuple₂ ._==_ (x₁ , y₁) (x₂ , y₂) = x₁ == x₂ && y₂ == y₂
 
-  iEqTuple : ⦃ Eq a ⦄ → ⦃ Eq (Tuple as) ⦄ → Eq (Tuple (a ∷ as))
-  iEqTuple ._==_ (x ; xs) (y ; ys) = x == y && xs == ys
+  iEqTuple₃ : ⦃ Eq a ⦄ → ⦃ Eq b ⦄ → ⦃ Eq c ⦄ → Eq (a × b × c)
+  iEqTuple₃ ._==_ (x₁ , y₁ , z₁) (x₂ , y₂ , z₂) = x₁ == x₂ && y₂ == y₂ && z₁ == z₂
 
   iEqList : ⦃ Eq a ⦄ → Eq (List a)
   iEqList {a} ._==_ = eqList

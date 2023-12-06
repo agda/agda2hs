@@ -1,2 +1,0 @@
-test/Fail/TuplePat.agda:6,1-5
-Tuple pattern (_;_ x xs) does not have a known size.

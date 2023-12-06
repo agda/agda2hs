@@ -125,11 +125,16 @@ instance
     True  False → GT
     _     _     → EQ
 
-  iOrdTuple₀ : Ord (Tuple [])
-  iOrdTuple₀ = ordFromCompare λ _ _ → EQ
+  iOrdUnit : Ord ⊤
+  iOrdUnit = ordFromCompare λ _ _ → EQ
 
-  iOrdTuple : ⦃ Ord a ⦄ → ⦃ Ord (Tuple as) ⦄ → Ord (Tuple (a ∷ as))
-  iOrdTuple = ordFromCompare λ where (x ; xs) (y ; ys) → compare x y <> compare xs ys
+  iOrdTuple₂ : ⦃ Ord a ⦄ → ⦃ Ord b ⦄ → Ord (a × b)
+  iOrdTuple₂ = ordFromCompare λ where
+    (x₁ , y₁) (x₂ , y₂) → compare x₁ x₂ <> compare y₁ y₂
+
+  iOrdTuple₃ : ⦃ Ord a ⦄ → ⦃ Ord b ⦄ → ⦃ Ord c ⦄ → Ord (a × b × c)
+  iOrdTuple₃ = ordFromCompare λ where
+    (x₁ , y₁ , z₁) (x₂ , y₂ , z₂) → compare x₁ x₂ <> compare y₁ y₂ <> compare z₁ z₂
 
 compareList : ⦃ Ord a ⦄ → List a → List a → Ordering
 compareList []       []       = EQ

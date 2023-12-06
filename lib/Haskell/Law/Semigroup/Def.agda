@@ -17,9 +17,11 @@ postulate instance
 
   iLawfulSemigroupUnit : IsLawfulSemigroup ⊤
 
-  iLawfulSemigroupTuple₀ : IsLawfulSemigroup (Tuple [])
+  iLawfulSemigroupTuple₂ : ⦃ iSemA : Semigroup a ⦄ ⦃ iSemB : Semigroup b ⦄
+                         → ⦃ IsLawfulSemigroup a ⦄ → ⦃ IsLawfulSemigroup b ⦄
+                         → IsLawfulSemigroup (a × b)
 
-  iLawfulSemigroupTuple : ⦃ iSemA : Semigroup a ⦄ → ⦃ iSemA : Semigroup (Tuple as) ⦄
-    → ⦃ IsLawfulSemigroup a ⦄ → ⦃ IsLawfulSemigroup (Tuple as) ⦄
-    → IsLawfulSemigroup (Tuple (a ∷ as))
+  iLawfulSemigroupTuple₃ : ⦃ iSemA : Semigroup a ⦄ ⦃ iSemB : Semigroup b ⦄ ⦃ iSemC : Semigroup c ⦄
+                         → ⦃ IsLawfulSemigroup a ⦄ → ⦃ IsLawfulSemigroup b ⦄ → ⦃ IsLawfulSemigroup c ⦄
+                         → IsLawfulSemigroup (a × b × c)
 

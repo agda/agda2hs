@@ -44,7 +44,8 @@ import Agda.TypeChecking.Datatypes (isDataOrRecord)
 
 isSpecialPat :: QName -> Maybe (ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ()))
 isSpecialPat qn = case prettyShow qn of
-  "Haskell.Prim.Tuple._;_" -> Just tuplePat
+  "Haskell.Prim.Tuple._,_"         -> Just tuplePat
+  "Haskell.Prim.Tuple._×_×_._,_,_" -> Just tuplePat
   "Agda.Builtin.Int.Int.pos" -> Just posIntPat
   "Agda.Builtin.Int.Int.negsuc" -> Just negSucIntPat
   s | s `elem` badConstructors -> Just $ \ _ _ _ -> genericDocError =<<
@@ -61,14 +62,7 @@ isUnboxCopattern (ProjP _ q) = isJust <$> isUnboxProjection q
 isUnboxCopattern _           = return False
 
 tuplePat :: ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ())
-tuplePat cons i ps = do
-  let p = ConP cons i ps
-      err = sep [ "Tuple pattern"
-                , nest 2 $ prettyTCM p
-                , "does not have a known size." ]
-  xs <- makeListP' "Agda.Builtin.Unit.tt" "Haskell.Prim.Tuple._;_" err p
-  qs <- mapM compilePat xs
-  return $ Hs.PTuple () Hs.Boxed qs
+tuplePat cons i ps = mapM (compilePat . namedArg) ps <&> Hs.PTuple () Hs.Boxed
 
 -- Agda2Hs does not support natural number patterns directly (since
 -- they don't exist in Haskell), however they occur as part of
