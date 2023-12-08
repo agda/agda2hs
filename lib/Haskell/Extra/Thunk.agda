@@ -1,6 +1,6 @@
 {-# OPTIONS --sized-types #-}
 
-module Haskell.Prim.Thunk where
+module Haskell.Extra.Thunk where
 
 open import Agda.Builtin.Size public
 
