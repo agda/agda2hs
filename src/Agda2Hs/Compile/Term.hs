@@ -44,6 +44,7 @@ isSpecialTerm q = case prettyShow q of
   "Haskell.Prim.Enum.Enum.enumFromThen"         -> Just mkEnumFromThen
   "Haskell.Prim.Enum.Enum.enumFromThenTo"       -> Just mkEnumFromThenTo
   "Haskell.Prim.case_of_"                       -> Just caseOf
+  "Haskell.Prim.Let"                            -> Just hsLet
   "Haskell.Prim.Monad.Do.Monad._>>=_"           -> Just bind
   "Haskell.Prim.Monad.Do.Monad._>>_"            -> Just sequ
   "Agda.Builtin.FromNat.Number.fromNat"         -> Just fromNat
@@ -171,6 +172,12 @@ caseOf _ es = compileElims es >>= \case
     return $ eApp (Hs.Case () e [Hs.Alt () p (Hs.UnGuardedRhs () $ lam ps b) Nothing]) es'
   -- applied to non-lambda / partially applied
   _ -> genericError $ "case_of_ must be fully applied to a lambda"
+
+hsLet :: QName -> Elims -> C (Hs.Exp ())
+hsLet _ es = compileElims es >>= \case
+  v : (Hs.Lambda _ [Hs.PVar () p] body) : [] -> do
+    return $ Hs.Let () (Hs.BDecls () [Hs.FunBind () [Hs.Match () p [] (Hs.UnGuardedRhs () v) Nothing]]) body
+  _ -> genericError $ "Let must be fully applied to a lambda"
 
 lambdaCase :: QName -> Elims -> C (Hs.Exp ())
 lambdaCase q es = setCurrentRangeQ q $ do
