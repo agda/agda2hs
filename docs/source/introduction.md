@@ -7,7 +7,7 @@
 - [Haskell programming language](https://www.haskell.org)
 - [Haskell Cabal](https://www.haskell.org/cabal/)
 - [Agda programming language](https://github.com/agda/agda)
-  - version >= 2.6.3 && < 2.6.4
+  - version >= 2.6.4 && < 2.6.5
 - [Agda standard library](https://github.com/agda/agda-stdlib)
 - Agda library `agda2hs`
   - this Agda library is include in the `agda2hs` repository; see
