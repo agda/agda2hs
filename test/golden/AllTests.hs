@@ -61,4 +61,5 @@ import Issue210
 import ModuleParameters
 import ModuleParametersImports
 import Coerce
+import Inlining
 
