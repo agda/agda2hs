@@ -267,4 +267,4 @@ patToExp = \case
   _                   -> Nothing
 
 data Strictness = Lazy | Strict
-  deriving Show
+  deriving (Eq, Show)

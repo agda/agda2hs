@@ -191,9 +191,14 @@ isTransparentFunction :: QName -> C Bool
 isTransparentFunction q = do
   getConstInfo q >>= \case
     Defn{defName = r, theDef = Function{}} ->
-      processPragma r <&> \case
-        TransparentPragma -> True
-        _                 -> False
+      (TransparentPragma ==) <$> processPragma r
+    _ -> return False
+
+isInlinedFunction :: QName -> C Bool
+isInlinedFunction q = do
+  getConstInfo q >>= \case
+    Defn{defName = r, theDef = Function{}} ->
+      (InlinePragma ==) <$> processPragma r
     _ -> return False
 
 checkInstance :: Term -> C ()

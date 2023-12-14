@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns, NamedFieldPuns #-}
 module Agda2Hs.Compile.Term where
 
 import Control.Arrow ( (>>>), (&&&) )
@@ -7,6 +8,7 @@ import Control.Monad.Reader
 import Data.List ( isPrefixOf )
 import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text ( unpack )
+import qualified Data.Set as Set (singleton)
 
 import qualified Language.Haskell.Exts as Hs
 
@@ -18,8 +20,8 @@ import Agda.Syntax.Internal
 
 import Agda.TypeChecking.Monad
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Reduce ( instantiate )
-import Agda.TypeChecking.Substitute ( Apply(applyE) )
+import Agda.TypeChecking.Reduce ( instantiate, unfoldDefinitionStep )
+import Agda.TypeChecking.Substitute ( Apply(applyE), raise, mkAbs )
 
 import Agda.Utils.Lens
 
@@ -228,11 +230,9 @@ compileTerm v = do
       | Just semantics <- isSpecialTerm f -> do
           reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of special function"
           semantics f es
-      | otherwise -> isClassFunction f >>= \case
-          True  -> compileClassFunApp f es
-          False -> (isJust <$> isUnboxProjection f) `or2M` isTransparentFunction f >>= \case
-            True  -> compileErasedApp es
-            False -> do
+      | otherwise -> ifM (isClassFunction f) (compileClassFunApp f es) $ do
+          ifM ((isJust <$> isUnboxProjection f) `or2M` isTransparentFunction f) (compileErasedApp es) $ do
+            ifM (isInlinedFunction f) (compileInlineFunctionApp f es) $ do
               reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of regular function"
               -- Drop module parameters of local `where` functions
               moduleArgs <- getDefFreeVars f
@@ -281,14 +281,56 @@ compileTerm v = do
         Just _  -> compileErasedApp es
         Nothing -> (`app` es) . Hs.Con () =<< compileQName (conName h)
 
--- `compileErasedApp` compiles an application of an erased constructor
--- or projection.
+-- `compileErasedApp` compiles an application of an unboxed constructor
+-- or unboxed projection or transparent function.
+-- Precondition is that at most one elim is preserved.
 compileErasedApp :: Elims -> C (Hs.Exp ())
 compileErasedApp es = do
-  reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of erased function"
+  reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of transparent function or erased unboxed constructor"
   compileElims es >>= \case
-    []     -> return $ hsVar "id"
-    (v:vs) -> return $ v `eApp` vs
+    []  -> return $ hsVar "id"
+    [v] -> return v
+    _   -> __IMPOSSIBLE__
+
+-- | Compile the application of a function definition marked as inlinable.
+-- The provided arguments will get substituted in the function body, and the missing arguments
+-- will get quantified with lambdas.
+compileInlineFunctionApp :: QName -> Elims -> C (Hs.Exp ())
+compileInlineFunctionApp f es = do
+  reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of inline function"
+  Function { funClauses = cs } <- theDef <$> getConstInfo f
+  let [ Clause { namedClausePats = pats
+               , clauseBody = Just body
+               , clauseTel
+               } ] = filter (isJust . clauseBody) cs
+  etaExpand (drop (length es) pats) es >>= compileTerm
+  where
+    -- inline functions can only have transparent constructor patterns and variable patterns
+    extractPatName :: DeBruijnPattern -> ArgName
+    extractPatName (VarP _ v) = dbPatVarName v
+    extractPatName (ConP _ _ args) =
+      let arg = namedThing $ unArg $ head $ filter (usableModality `and2M` visible) args
+      in extractPatName arg
+    extractPatName _ = __IMPOSSIBLE__
+
+    extractName :: NamedArg DeBruijnPattern -> ArgName
+    extractName (unArg -> np)
+      | Just n <- nameOf np = rangedThing (woThing n)
+      | otherwise = extractPatName (namedThing np)
+
+    etaExpand :: NAPs -> Elims -> C Term
+    etaExpand [] es = do
+      r <- liftReduce 
+            $ locallyReduceDefs (OnlyReduceDefs $ Set.singleton f)
+            $ unfoldDefinitionStep (Def f es) f es
+      case r of
+        YesReduction _ t -> pure t
+        _ -> genericDocError =<< text "Could not reduce inline function" <+> prettyTCM f
+
+    etaExpand (p:ps) es =
+      let ai = argInfo p in
+      Lam ai . mkAbs (extractName p)
+        <$> etaExpand ps (raise 1 es ++ [ Apply $ Arg ai $ var 0 ])
 
 -- `compileClassFunApp` is used when we have a record projection and we want to
 -- drop the first visible arg (the record)

@@ -9,6 +9,7 @@ import qualified Data.Map as M
 import Agda.Compiler.Backend
 import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
 import Agda.TypeChecking.Pretty
+import Agda.TypeChecking.Monad.Signature ( isInlineFun )
 import Agda.Utils.Null
 import Agda.Utils.Monad ( whenM )
 
@@ -16,7 +17,7 @@ import qualified Language.Haskell.Exts.Extension as Hs
 
 import Agda2Hs.Compile.ClassInstance ( compileInstance )
 import Agda2Hs.Compile.Data ( compileData )
-import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma )
+import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkInlinePragma )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
 import Agda2Hs.Compile.Types
@@ -91,6 +92,8 @@ compile opts tlm _ def = withCurrentModule (qnameModule $ defName def) $ runC tl
             tag <$> compileFun True def
           (DefaultPragma ds, _, Record{}) ->
             tag . single <$> compileRecord (ToRecord ds) def
+          (InlinePragma, _, Function{}) -> do
+            checkInlinePragma def >> return []
           _ ->
             genericDocError =<< do
             text "Don't know how to compile" <+> prettyTCM (defName def)
