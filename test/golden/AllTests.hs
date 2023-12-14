@@ -62,4 +62,5 @@ import TypeSignature
 import ModuleParameters
 import ModuleParametersImports
 import Coerce
+import Inlining
 

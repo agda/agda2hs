@@ -48,6 +48,7 @@ getForeignPragmas exts = do
 
 data ParsedPragma
   = NoPragma
+  | InlinePragma
   | DefaultPragma [Hs.Deriving ()]
   | ClassPragma [String]
   | ExistingClassPragma
@@ -55,7 +56,7 @@ data ParsedPragma
   | TransparentPragma
   | NewTypePragma [Hs.Deriving ()]
   | DerivePragma (Maybe (Hs.DerivStrategy ()))
-  deriving Show
+  deriving (Eq, Show)
 
 derivePragma :: String
 derivePragma = "derive"
@@ -85,6 +86,7 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
   Nothing -> return NoPragma
   Just (CompilerPragma _ s)
     | "class" `isPrefixOf` s      -> return $ ClassPragma (words $ drop 5 s)
+    | s == "inline"               -> return InlinePragma
     | s == "existing-class"       -> return ExistingClassPragma
     | s == "unboxed"              -> return $ UnboxPragma Lazy
     | s == "unboxed-strict"       -> return $ UnboxPragma Strict

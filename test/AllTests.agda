@@ -64,6 +64,7 @@ import TypeSignature
 import ModuleParameters
 import ModuleParametersImports
 import Coerce
+import Inlining
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -128,4 +129,5 @@ import TypeSignature
 import ModuleParameters
 import ModuleParametersImports
 import Coerce
+import Inlining
 #-}
