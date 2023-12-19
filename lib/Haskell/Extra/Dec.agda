@@ -1,6 +1,6 @@
 module Haskell.Extra.Dec where
 
-open import Haskell.Prelude hiding (Reflects)
+open import Haskell.Prelude
 open import Haskell.Extra.Refinement
 open import Agda.Primitive
 

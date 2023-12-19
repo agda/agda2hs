@@ -1,5 +1,6 @@
 
 open import Haskell.Prelude hiding (max)
+open import Haskell.Law.Equality
 
 subst : {p : @0 a → Set} {@0 m n : a} → @0 m ≡ n → p m → p n
 subst refl t = t
