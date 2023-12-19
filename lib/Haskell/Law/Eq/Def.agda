@@ -12,6 +12,8 @@ open import Haskell.Prim.Either
 
 open import Haskell.Prim.Eq
 
+open import Haskell.Extra.Dec
+
 open import Haskell.Law.Bool
 open import Haskell.Law.Equality
 

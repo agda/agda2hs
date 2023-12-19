@@ -4,10 +4,32 @@ open import Haskell.Prelude
 open import Haskell.Extra.Refinement
 open import Agda.Primitive
 
-@0 Reflects : ∀ {ℓ} → Set ℓ → Bool → Set ℓ
+private variable
+  ℓ : Level
+  P : Set
+
+@0 Reflects : Set ℓ → Bool → Set ℓ
 Reflects P True  = P
 Reflects P False = P → ⊥
 
+of : {b : Bool} → if b then P else (P → ⊥) → Reflects P b
+of {b = False} np = np
+of {b = True}  p  = p
+
+invert : ∀ {b} → Reflects P b → if b then P else (P → ⊥)
+invert {b = False} np = np
+invert {b = True}  p  = p
+
+extractTrue : ∀ { b } → ⦃ true : b ≡ True ⦄ → Reflects P b → P
+extractTrue {b = True} p = p
+
+extractFalse : ∀ { b } → ⦃ true : b ≡ False ⦄ → Reflects P b → (P → ⊥)
+extractFalse {b = False} np = np
+
+mapReflects : ∀ {cond} → (a → b) → (b → a)
+            → Reflects a cond → Reflects b cond
+mapReflects {cond = False} f g x = x ∘ g
+mapReflects {cond = True}  f g x = f x
 
 Dec : ∀ {ℓ} → @0 Set ℓ → Set ℓ
 Dec P = ∃ Bool (Reflects P)

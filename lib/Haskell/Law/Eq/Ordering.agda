@@ -10,13 +10,13 @@ open import Haskell.Law.Equality
 instance
   iLawfulEqOrdering : IsLawfulEq Ordering
 
-  iLawfulEqOrdering .isEquality LT LT = ofY refl
-  iLawfulEqOrdering .isEquality LT EQ = ofN λ()
-  iLawfulEqOrdering .isEquality LT GT = ofN λ()
-  iLawfulEqOrdering .isEquality EQ LT = ofN λ()
-  iLawfulEqOrdering .isEquality EQ EQ = ofY refl
-  iLawfulEqOrdering .isEquality EQ GT = ofN λ()
-  iLawfulEqOrdering .isEquality GT LT = ofN λ()
-  iLawfulEqOrdering .isEquality GT EQ = ofN λ()
-  iLawfulEqOrdering .isEquality GT GT = ofY refl
+  iLawfulEqOrdering .isEquality LT LT = refl
+  iLawfulEqOrdering .isEquality LT EQ = λ()
+  iLawfulEqOrdering .isEquality LT GT = λ()
+  iLawfulEqOrdering .isEquality EQ LT = λ()
+  iLawfulEqOrdering .isEquality EQ EQ = refl
+  iLawfulEqOrdering .isEquality EQ GT = λ()
+  iLawfulEqOrdering .isEquality GT LT = λ()
+  iLawfulEqOrdering .isEquality GT EQ = λ()
+  iLawfulEqOrdering .isEquality GT GT = refl
 
