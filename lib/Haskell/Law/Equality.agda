@@ -54,29 +54,3 @@ _∎ _ = refl
 
 syntax step-≡  x y≡z x≡y = x ≡⟨  x≡y ⟩ y≡z
 syntax step-≡˘ x y≡z y≡x = x ≡˘⟨ y≡x ⟩ y≡z
-
---------------------------------------------------
--- Reflects idiom
-
-data Reflects {p} (P : Set p) : Bool → Set p where
-  ofY : ( p :   P )      → Reflects P True
-  ofN : ( np : (P → ⊥) ) → Reflects P False
-
-private
-  variable
-    p : Level
-    P : Set p
-
-of : ∀ {b} → if b then P else (P → ⊥) → Reflects P b
-of {b = False} np = ofN np
-of {b = True }  p = ofY p
-
-invert : ∀ {b} → Reflects P b → if b then P else (P → ⊥)
-invert (ofY  p) = p
-invert (ofN np) = np
-
-extractTrue : ∀ { b } → ⦃ true : b ≡ True ⦄ → Reflects P b → P
-extractTrue (ofY p) = p
-
-extractFalse : ∀ { b } → ⦃ true : b ≡ False ⦄ → Reflects P b → (P → ⊥)
-extractFalse (ofN np) = np
