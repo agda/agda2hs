@@ -1,4 +1,5 @@
 open import Haskell.Prelude
+open import Haskell.Law
 
 data Ordered (a : Set) : Set where
     Gt : ⦃ @0 iOrd : Ord a ⦄ → (a' : a) → (a'' : a) → ⦃ @0 pf : (a' > a'') ≡ True ⦄ → Ordered a
