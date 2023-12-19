@@ -57,6 +57,7 @@ isSpecialCon :: QName -> Maybe (ConHead -> ConInfo -> Elims -> C (Hs.Exp ()))
 isSpecialCon = prettyShow >>> \case
   "Haskell.Prim.Tuple._,_"         -> Just tupleTerm
   "Haskell.Prim.Tuple._×_×_._,_,_" -> Just tupleTerm
+  "Haskell.Extra.Erase.Erased"     -> Just (\_ _ _ -> erasedTerm)
   _ -> Nothing
 
 tupleTerm :: ConHead -> ConInfo -> Elims -> C (Hs.Exp ())
@@ -159,6 +160,9 @@ sequ q (e:es) = do
         _             -> return $ Hs.Do () [stmt1, Hs.Qualifier () v]
     vs -> return $ hsVar "_>>_" `eApp` vs
 sequ q [] = return $ hsVar "_>>_"
+
+erasedTerm :: C (Hs.Exp ())
+erasedTerm = return $ Hs.Tuple () Hs.Boxed []
 
 caseOf :: QName -> Elims -> C (Hs.Exp ())
 caseOf _ es = compileElims es >>= \case

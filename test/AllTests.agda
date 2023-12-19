@@ -64,6 +64,7 @@ import ModuleParameters
 import ModuleParametersImports
 import Coerce
 import Inlining
+import EraseType
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -128,4 +129,5 @@ import ModuleParameters
 import ModuleParametersImports
 import Coerce
 import Inlining
+import EraseType
 #-}

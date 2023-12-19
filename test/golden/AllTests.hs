@@ -62,4 +62,5 @@ import ModuleParameters
 import ModuleParametersImports
 import Coerce
 import Inlining
+import EraseType
 

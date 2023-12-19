@@ -43,6 +43,7 @@ isSpecialType :: QName -> Maybe (QName -> Elims -> C (Hs.Type ()))
 isSpecialType = prettyShow >>> \case
   "Haskell.Prim.Tuple._×_"   -> Just tupleType
   "Haskell.Prim.Tuple._×_×_" -> Just tupleType
+  "Haskell.Extra.Erase.Erase" -> Just erasedType
   _ -> Nothing
 
 tupleType :: QName -> Elims -> C (Hs.Type ())
@@ -50,6 +51,9 @@ tupleType q es = do
   let Just as = allApplyElims es
   ts <- mapM (compileType . unArg) as
   return $ Hs.TyTuple () Hs.Boxed ts
+
+erasedType :: QName -> Elims -> C (Hs.Type ())
+erasedType _ _ = return $ Hs.TyTuple () Hs.Boxed []
 
 -- | Add a class constraint to a Haskell type.
 constrainType
