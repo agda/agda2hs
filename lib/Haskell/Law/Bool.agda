@@ -61,3 +61,16 @@ not-not True = refl
 
 not-involution : ∀ (a b : Bool) → a ≡ not b → not a ≡ b
 not-involution .(not b) b refl = not-not b
+
+--------------------------------------------------
+-- if_then_else_
+
+ifFlip : ∀ (b) (t e : a) → (if b then t else e) ≡ (if not b then e else t)
+ifFlip False _ _ = refl
+ifFlip True  _ _ = refl
+
+ifTrueEqThen : ∀ (b : Bool) {thn els : a} → b ≡ True → (if b then thn else els) ≡ thn
+ifTrueEqThen .True refl = refl
+
+ifFalseEqElse : ∀ (b : Bool) {thn els : a} → b ≡ False → (if b then thn else els) ≡ els
+ifFalseEqElse .False refl = refl

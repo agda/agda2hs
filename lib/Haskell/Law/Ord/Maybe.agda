@@ -6,7 +6,6 @@ open import Haskell.Prim.Eq
 open import Haskell.Prim.Maybe
 open import Haskell.Prim.Ord
 
-open import Haskell.Law
 open import Haskell.Law.Bool
 open import Haskell.Law.Eq
 open import Haskell.Law.Equality hiding ( trustMe )
