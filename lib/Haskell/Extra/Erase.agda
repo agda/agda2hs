@@ -13,7 +13,6 @@ module Haskell.Extra.Erase where
     constructor Erased
     field @0 get : a
   open Erase public
-  {-# COMPILE AGDA2HS Erase #-}
 
   infixr 4 ⟨_⟩_
   record Σ0 (@0 a : Set) (b : @0 a → Set) : Set where
