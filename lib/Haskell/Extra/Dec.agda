@@ -11,7 +11,7 @@ Reflects P False = P → ⊥
 
 Dec : ∀ {ℓ} → @0 Set ℓ → Set ℓ
 Dec P = ∃ Bool (Reflects P)
-{-# COMPILE AGDA2HS Dec #-}
+{-# COMPILE AGDA2HS Dec inline #-}
 
 mapDec : @0 (a → b)
        → @0 (b → a)
