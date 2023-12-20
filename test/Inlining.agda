@@ -2,6 +2,14 @@ module Inlining where
 
 open import Haskell.Prelude
 
+Alias : Set
+Alias = Bool
+{-# COMPILE AGDA2HS Alias inline #-}
+
+aliased : Alias
+aliased = True
+{-# COMPILE AGDA2HS aliased #-}
+
 record Wrap (a : Set) : Set where
   constructor Wrapped
   field
