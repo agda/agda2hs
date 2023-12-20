@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications, NamedFieldPuns #-}
 
 module Agda2Hs.Compile.Type where
 
@@ -8,6 +8,7 @@ import Control.Monad.Trans ( lift )
 import Control.Monad.Reader ( asks )
 import Data.List ( find )
 import Data.Maybe ( mapMaybe, isJust )
+import qualified Data.Set as Set ( singleton )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
 import qualified Language.Haskell.Exts.Extension as Hs
@@ -20,7 +21,7 @@ import Agda.Syntax.Internal
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Reduce ( reduce )
+import Agda.TypeChecking.Reduce ( reduce, unfoldDefinitionStep )
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
 
@@ -150,7 +151,8 @@ compileType t = do
          | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics f es
          | Just args <- allApplyElims es ->
              ifJustM (isUnboxRecord f) (\_ -> compileUnboxType f args) $
-             ifM (isTransparentFunction f) (compileTransparentType args) $ do
+             ifM (isTransparentFunction f) (compileTransparentType args) $
+             ifM (isInlinedFunction f) (compileInlineType f es) $ do
                vs <- compileTypeArgs args
                f <- compileQName f
                return $ tApp (Hs.TyCon () f) vs
@@ -180,6 +182,25 @@ compileTransparentType :: Args -> C (Hs.Type ())
 compileTransparentType args = compileTypeArgs args >>= \case
   []     -> __IMPOSSIBLE__
   (v:vs) -> return $ v `tApp` vs
+
+compileInlineType :: QName -> Elims -> C (Hs.Type ())
+compileInlineType f args = do
+  Function { funClauses = cs } <- theDef <$> getConstInfo f
+
+  let [ Clause { namedClausePats = pats
+               , clauseBody = Just body
+               , clauseTel
+               } ] = filter (isJust . clauseBody) cs
+
+  when (length args < length pats) $ genericDocError =<<
+    text "Cannot compile inlinable type alias" <+> prettyTCM f <+> text "as it must be fully applied."
+
+  r <- liftReduce $ locallyReduceDefs (OnlyReduceDefs $ Set.singleton f)
+                  $ unfoldDefinitionStep (Def f args) f args
+
+  case r of
+    YesReduction _ t -> compileType t
+    _                -> genericDocError =<< text "Could not reduce inline function" <+> prettyTCM f
 
 compileDom :: ArgName -> Dom Type -> C CompiledDom
 compileDom x a
