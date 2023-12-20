@@ -1,10 +1,14 @@
 module EraseType where
 
-import Haskell.Extra.Erase (rezzErase)
-
 testRezz :: Int
 testRezz = 42
 
 testRezzErase :: ()
-testRezzErase = rezzErase
+testRezzErase = ()
+
+testCong :: Int
+testCong = 1 + testRezz
+
+rTail :: [Int] -> [Int]
+rTail = \ ys -> tail ys
 
