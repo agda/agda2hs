@@ -8,7 +8,7 @@ import Control.Monad.Reader
 import Data.List ( isPrefixOf )
 import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text ( unpack )
-import qualified Data.Set as Set (singleton)
+import qualified Data.Set as Set ( singleton )
 
 import qualified Language.Haskell.Exts as Hs
 
@@ -20,7 +20,7 @@ import Agda.Syntax.Internal
 
 import Agda.TypeChecking.Monad
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Reduce ( instantiate, unfoldDefinitionStep )
+import Agda.TypeChecking.Reduce ( unfoldDefinitionStep )
 import Agda.TypeChecking.Substitute ( Apply(applyE), raise, mkAbs )
 
 import Agda.Utils.Lens
@@ -230,14 +230,15 @@ compileTerm v = do
       | Just semantics <- isSpecialTerm f -> do
           reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of special function"
           semantics f es
-      | otherwise -> ifM (isClassFunction f) (compileClassFunApp f es) $ do
-          ifM ((isJust <$> isUnboxProjection f) `or2M` isTransparentFunction f) (compileErasedApp es) $ do
-            ifM (isInlinedFunction f) (compileInlineFunctionApp f es) $ do
-              reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of regular function"
-              -- Drop module parameters of local `where` functions
-              moduleArgs <- getDefFreeVars f
-              reportSDoc "agda2hs.compile.term" 15 $ text "Module arguments for" <+> (prettyTCM f <> text ":") <+> prettyTCM moduleArgs
-              (`app` drop moduleArgs es) . Hs.Var () =<< compileQName f
+      | otherwise ->
+          ifM (isClassFunction f) (compileClassFunApp f es) $
+          ifM ((isJust <$> isUnboxProjection f) `or2M` isTransparentFunction f) (compileErasedApp es) $
+          ifM (isInlinedFunction f) (compileInlineFunctionApp f es) $ do
+            reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of regular function"
+            -- Drop module parameters of local `where` functions
+            moduleArgs <- getDefFreeVars f
+            reportSDoc "agda2hs.compile.term" 15 $ text "Module arguments for" <+> (prettyTCM f <> text ":") <+> prettyTCM moduleArgs
+            (`app` drop moduleArgs es) . Hs.Var () =<< compileQName f
     Con h i es -> do
       reportSDoc "agda2hs.compile" 8 $ text "reached constructor:" <+> prettyTCM (conName h)
       -- the constructor may be a copy introduced by module application,
