@@ -24,6 +24,9 @@ sym refl = refl
 trans : ∀ {A : Set} {x y z : A} → x ≡ y → y ≡ z → x ≡ z
 trans refl refl = refl
 
+subst : ∀ {A : Set} (P : A → Set) {x y : A} → x ≡ y → P x → P y
+subst P refl z = z
+
 --------------------------------------------------
 -- Scary Things
 

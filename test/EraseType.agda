@@ -17,3 +17,13 @@ testRezzErase : Rezz (Erase Int) testErase
 testRezzErase = rezzErase
 
 {-# COMPILE AGDA2HS testRezzErase #-}
+
+testCong : Rezz Int (1 + get testErase)
+testCong = rezzCong (1 +_) testRezz
+
+{-# COMPILE AGDA2HS testCong #-}
+
+rTail : ∀ {@0 x xs} → Rezz (List Int) (x ∷ xs) → Rezz (List Int) xs
+rTail = rezzTail
+
+{-# COMPILE AGDA2HS rTail #-}

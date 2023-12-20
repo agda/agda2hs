@@ -3,7 +3,10 @@ module Haskell.Extra.Erase where
   open import Agda.Primitive
   open import Agda.Builtin.Sigma
   open import Agda.Builtin.Equality
+
   open import Haskell.Prim
+  open import Haskell.Prim.List
+  open import Haskell.Law.Equality
 
   private variable 
     @0 x y : a
@@ -41,24 +44,34 @@ module Haskell.Extra.Erase where
     rezz-id = rezz _
 
   rezzCong : {@0 a : Set} {@0 x : a} (f : a → b) → Rezz a x → Rezz b (f x)
-  rezzCong f (rezz x) = rezz (f x)
-  {-# COMPILE AGDA2HS rezzCong #-}
+  rezzCong f (Rezzed x p) = Rezzed (f x) (cong f p)
+  {-# COMPILE AGDA2HS rezzCong inline #-}
 
   rezzCong2 : (f : a → b → c) → Rezz a x → Rezz b y → Rezz c (f x y)
-  rezzCong2 f (rezz x) (rezz y) = rezz (f x y)
-  {-# COMPILE AGDA2HS rezzCong2 #-}
+  rezzCong2 f (Rezzed x p) (Rezzed y q) = Rezzed (f x y) (cong₂ f p q)
+  {-# COMPILE AGDA2HS rezzCong2 inline #-}
 
   rezzHead : Rezz (List a) (x ∷ xs) → Rezz a x
-  rezzHead (rezz (x ∷ xs)) = rezz x
-  {-# COMPILE AGDA2HS rezzHead #-}
+  rezzHead {x = x} (Rezzed ys p) =
+    Rezzed (head ys)
+           (subst (λ ys → ⦃ @0 _ : NonEmpty ys ⦄ → head ys ≡ x)
+              (sym p) refl)
+    where instance @0 ne : NonEmpty ys
+                   ne = subst NonEmpty (sym p) itsNonEmpty
+  {-# COMPILE AGDA2HS rezzHead inline #-}
 
   rezzTail : Rezz (List a) (x ∷ xs) → Rezz (List a) xs
-  rezzTail (rezz (x ∷ xs)) = rezz xs
-  {-# COMPILE AGDA2HS rezzTail #-}
+  rezzTail {xs = xs} (Rezzed ys p) =
+    Rezzed (tail ys)
+           (subst (λ ys → ⦃ @0 _ : NonEmpty ys ⦄ → tail ys ≡ xs)
+              (sym p) refl)
+    where instance @0 ne : NonEmpty ys
+                   ne = subst NonEmpty (sym p) itsNonEmpty
+  {-# COMPILE AGDA2HS rezzTail inline #-}
 
   rezzErase : Rezz (Erase a) (Erased x)
   rezzErase {x = x} = Rezzed (Erased x) refl
-  {-# COMPILE AGDA2HS rezzErase #-}
+  {-# COMPILE AGDA2HS rezzErase inline #-}
 
   erase-injective : Erased x ≡ Erased y → x ≡ y
   erase-injective refl = refl
