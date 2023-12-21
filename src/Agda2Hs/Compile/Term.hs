@@ -300,10 +300,7 @@ compileInlineFunctionApp :: QName -> Elims -> C (Hs.Exp ())
 compileInlineFunctionApp f es = do
   reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of inline function"
   Function { funClauses = cs } <- theDef <$> getConstInfo f
-  let [ Clause { namedClausePats = pats
-               , clauseBody = Just body
-               , clauseTel
-               } ] = filter (isJust . clauseBody) cs
+  let [ Clause { namedClausePats = pats } ] = filter (isJust . clauseBody) cs
   etaExpand (drop (length es) pats) es >>= compileTerm
   where
     -- inline functions can only have transparent constructor patterns and variable patterns
