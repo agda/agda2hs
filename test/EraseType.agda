@@ -6,7 +6,12 @@ open import Haskell.Extra.Erase
 testErase : Erase Int
 testErase = Erased 42
 
-{-# COMPILE AGDA2hs testErase #-}
+{-# COMPILE AGDA2HS testErase #-}
+
+testMatch : Erase Int → Erase Int
+testMatch (Erased x) = Erased (x + 1)
+
+{-# COMPILE AGDA2HS testMatch #-}
 
 testRezz : Rezz Int (get testErase)
 testRezz = rezz 42

@@ -1,5 +1,11 @@
 module EraseType where
 
+testErase :: ()
+testErase = ()
+
+testMatch :: () -> ()
+testMatch () = ()
+
 testRezz :: Int
 testRezz = 42
 
