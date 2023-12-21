@@ -299,21 +299,22 @@ checkInlinePragma :: Definition -> C ()
 checkInlinePragma def@Defn{defName = f} = do
   let Function{funClauses = cs} = theDef def
   case filter (isJust . clauseBody) cs of
-    [c] -> do
-      let Clause{clauseTel,namedClausePats = naps} = c
-      unlessM (allM (dget . dget <$> naps) allowedPat) $ genericDocError =<<
+    [c] ->
+      unlessM (allowedPats (namedClausePats c)) $ genericDocError =<<
         "Cannot make function" <+> prettyTCM (defName def) <+> "inlinable." <+>
-        "Inline functions can only use variable patterns, dot patterns, or transparent record constructor patterns."
+        "Inline functions can only use variable patterns or transparent record constructor patterns."
     _ ->
       genericDocError =<<
         "Cannot make function" <+> prettyTCM f <+> "inlinable." <+>
         "An inline function must have exactly one clause."
   where allowedPat :: DeBruijnPattern -> C Bool
         allowedPat VarP{} = pure True
-        allowedPat DotP{} = pure True
         -- only allow matching on (unboxed) record constructors
         allowedPat (ConP ch ci cargs) =
           isUnboxConstructor (conName ch) >>= \case
-            Just _  -> allM cargs (allowedPat . dget . dget)
+            Just _  -> allowedPats cargs
             Nothing -> pure False
         allowedPat _ = pure False
+
+        allowedPats :: NAPs -> C Bool
+        allowedPats pats = allM pats (allowedPat . dget . dget)

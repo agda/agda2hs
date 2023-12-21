@@ -187,10 +187,7 @@ compileInlineType :: QName -> Elims -> C (Hs.Type ())
 compileInlineType f args = do
   Function { funClauses = cs } <- theDef <$> getConstInfo f
 
-  let [ Clause { namedClausePats = pats
-               , clauseBody = Just body
-               , clauseTel
-               } ] = filter (isJust . clauseBody) cs
+  let [ Clause { namedClausePats = pats } ] = filter (isJust . clauseBody) cs
 
   when (length args < length pats) $ genericDocError =<<
     text "Cannot compile inlinable type alias" <+> prettyTCM f <+> text "as it must be fully applied."
@@ -200,7 +197,7 @@ compileInlineType f args = do
 
   case r of
     YesReduction _ t -> compileType t
-    _                -> genericDocError =<< text "Could not reduce inline function" <+> prettyTCM f
+    _                -> genericDocError =<< text "Could not reduce inline type alias " <+> prettyTCM f
 
 compileDom :: ArgName -> Dom Type -> C CompiledDom
 compileDom x a
