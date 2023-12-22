@@ -69,7 +69,7 @@ module Haskell.Extra.Erase where
                    ne = subst NonEmpty (sym p) itsNonEmpty
   {-# COMPILE AGDA2HS rezzTail inline #-}
 
-  rezzErase : Rezz (Erase a) (Erased x)
+  rezzErase : {@0 a : Set} {@0 x : a} → Rezz (Erase a) (Erased x)
   rezzErase {x = x} = Rezzed (Erased x) refl
   {-# COMPILE AGDA2HS rezzErase inline #-}
 
