@@ -7,3 +7,4 @@ module Agda2Hs.Compile.Type where
     import Agda2Hs.Compile.Types
 
     compileType :: Term -> C (Hs.Type ())
+
