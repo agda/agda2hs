@@ -29,6 +29,10 @@ import Agda.Utils.Size
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
+-- this is a cyclic dependency,
+-- but we need it to be able to use compileType
+-- for explicit type signatures
+import {-# SOURCE #-} Agda2Hs.Compile.Type ( compileType )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
@@ -39,6 +43,7 @@ isSpecialTerm :: QName -> Maybe (QName -> Elims -> C (Hs.Exp ()))
 isSpecialTerm q = case prettyShow q of
   _ | isExtendedLambdaName q                    -> Just lambdaCase
   "Haskell.Prim.if_then_else_"                  -> Just ifThenElse
+  "Haskell.Prim.the"                            -> Just expTypeSig
   "Haskell.Prim.Enum.Enum.enumFrom"             -> Just mkEnumFrom
   "Haskell.Prim.Enum.Enum.enumFromTo"           -> Just mkEnumFromTo
   "Haskell.Prim.Enum.Enum.enumFromThen"         -> Just mkEnumFromThen
@@ -71,7 +76,18 @@ ifThenElse _ es = compileElims es >>= \case
   -- fully applied
   b : t : f : es' -> return $ Hs.If () b t f `eApp` es'
   -- partially applied
-  _ -> genericError $ "if_then_else must be fully applied"
+  _ -> genericError $ "if_then_else_ must be fully applied"
+
+expTypeSig :: QName -> Elims -> C (Hs.Exp ())
+expTypeSig _ es = do
+  let args = fromMaybe __IMPOSSIBLE__ $ allApplyElims es
+  case args of
+    _ : typArg : expArg : args' -> do         -- the first one is the level; we throw that away
+      exp <- fromMaybe __IMPOSSIBLE__ <$> compileArg expArg -- this throws an error if it was Nothing
+      typ <- compileType (unArg typArg)
+      compArgs <- compileArgs args'
+      return $ eApp (Hs.ExpTypeSig () exp typ) compArgs
+    _ -> genericError $ "`the` must be fully applied"
 
 specialClassFunction :: Hs.Exp () -> ([Hs.Exp ()] -> Hs.Exp ()) -> Elims -> C (Hs.Exp ())
 specialClassFunction v f [] = return v

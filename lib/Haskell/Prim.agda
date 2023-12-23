@@ -23,7 +23,7 @@ open import Agda.Builtin.Strict     public
 open import Agda.Builtin.List       public
 
 variable
-  ℓ : Level
+  @0 ℓ : Level
   a b c d e : Set
   f m s t : Set → Set
 
@@ -60,6 +60,10 @@ infix -2 if_then_else_
 if_then_else_ : {@0 a : Set ℓ} → (flg : Bool) → (@0 {{ flg ≡ True }} → a) → (@0 {{ flg ≡ False }} → a) → a
 if False then x else y = y
 if True  then x else y = x
+
+-- for explicit type signatures (e. g. `4 :: Integer` is `the Int 4`)
+the : (@0 a : Set ℓ) -> a -> a
+the _ x = x
 
 --------------------------------------------------
 -- Agda strings
