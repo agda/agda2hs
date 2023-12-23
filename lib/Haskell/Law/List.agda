@@ -98,6 +98,14 @@ lengthNat-++ (x ∷ xs) = cong suc (lengthNat-++ xs)
 ∷-not-identity : ∀ x (xs ys : List a) → (x ∷ xs) ++ ys ≡ ys → ⊥
 ∷-not-identity x xs ys eq = []≠∷ x xs (sym $ ++-identity-left-unique (x ∷ xs) (sym eq))
 
+concatMap-++-distr : ∀ (xs ys : List a) (f : a → List b) → 
+  ((concatMap f xs) ++ (concatMap f ys)) ≡ (concatMap f (xs ++ ys))
+concatMap-++-distr [] ys f = refl
+concatMap-++-distr (x ∷ xs) ys f
+  rewrite ++-assoc (f x) (concatMap f xs) (concatMap f ys)
+  | concatMap-++-distr xs ys f
+ = refl
+
 --------------------------------------------------
 -- foldr
 

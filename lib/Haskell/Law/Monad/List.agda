@@ -3,7 +3,6 @@ module Haskell.Law.Monad.List where
 open import Haskell.Prim
 open import Haskell.Prim.Foldable
 open import Haskell.Prim.List
-open import Haskell.Prim.Monoid
 
 open import Haskell.Prim.Monad
 
@@ -39,7 +38,7 @@ instance
     = refl
   iLawfulMonadList .associativity (x ∷ xs) f g
     rewrite associativity xs f g
-    | concatMap-distr (f x) (concatMap f xs) g
+    | concatMap-++-distr (f x) (concatMap f xs) g
     = refl  
 
   iLawfulMonadList .pureIsReturn _ = refl
