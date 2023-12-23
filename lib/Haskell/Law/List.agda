@@ -4,6 +4,7 @@ open import Haskell.Law.Equality
 open import Haskell.Prim renaming (addNat to _+ₙ_)
 open import Haskell.Prim.Foldable
 open import Haskell.Prim.List
+open import Haskell.Prim.Applicative
 
 []≠∷ : ∀ x (xs : List a) → [] ≠ x ∷ xs
 []≠∷ x xs ()
@@ -37,10 +38,19 @@ map-∘ : ∀ (g : b → c) (f : a → b) xs → map (g ∘ f) xs ≡ (map g ∘
 map-∘ g f []       = refl
 map-∘ g f (x ∷ xs) = cong (_ ∷_) (map-∘ g f xs)
 
-map-concatMap : ∀ (f : a → b) (xs : List a) → (map f xs) ≡ concatMap (λ x2 → f x2 ∷ []) xs
+map-concatMap : ∀ (f : a → b) (xs : List a) → (map f xs) ≡ concatMap (λ g → f g ∷ []) xs
 map-concatMap f [] = refl
 map-concatMap f (x ∷ xs) 
   rewrite map-concatMap f xs
+  = refl
+
+map-<*>-recomp : {a b c : Set} → (xs : List (a → b)) → (ys : List a) → (u : (b → c))  
+  → ((map (u ∘_) xs) <*> ys) ≡ map u (xs <*> ys)
+map-<*>-recomp [] _ _  = refl
+map-<*>-recomp (x ∷ xs) ys u 
+  rewrite map-∘ u x ys
+    | map-++ u (map x ys) (xs <*> ys)
+    | map-<*>-recomp  xs ys u
   = refl
 
 --------------------------------------------------
@@ -131,5 +141,5 @@ foldr-fusion : (h : b → c) {f : a → b → b} {g : a → c → c} (e : b) →
                (∀ x y → h (f x y) ≡ g x (h y)) →
                ∀ (xs : List a) → h (foldr f e xs) ≡ foldr g (h e) xs
 foldr-fusion h {f} {g} e fuse =
-  foldr-universal (h ∘ foldr f e) g (h e) refl 
+  foldr-universal (h ∘ foldr f e) g (h e) refl
                   (λ x xs → fuse x (foldr f e xs))

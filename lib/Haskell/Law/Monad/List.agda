@@ -45,4 +45,4 @@ instance
     rewrite rSequence2rBind ma mb 
       | map-id mb 
     = refl
- 
+
