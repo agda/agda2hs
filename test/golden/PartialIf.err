@@ -1,2 +1,2 @@
 test/Fail/PartialIf.agda:5,1-11
-if_then_else must be fully applied
+if_then_else_ must be fully applied
