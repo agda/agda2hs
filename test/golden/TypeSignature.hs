@@ -1,4 +1,4 @@
-module The where
+module TypeSignature where
 
 import Numeric.Natural (Natural)
 

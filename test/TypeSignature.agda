@@ -1,4 +1,4 @@
-module The where
+module TypeSignature where
 
 open import Agda.Builtin.Nat
 open import Haskell.Prim
