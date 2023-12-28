@@ -170,9 +170,12 @@ compileRecord target def = do
 
 checkUnboxPragma :: Defn -> C ()
 checkUnboxPragma def
-  | Record{recFields} <- def
+  | Record{recFields, recMutual} <- def
   , length (filter keepArg recFields) == 1
-  , not (recRecursive def)
+  -- , not (recRecursive def)
+  --     can be used again after agda 2.6.4.2 is released
+  --     see: agda/agda#7042
+  , all null recMutual -- see agda/agda#7042
   = return ()
 
   | otherwise
