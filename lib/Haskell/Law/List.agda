@@ -4,6 +4,7 @@ open import Haskell.Law.Equality
 open import Haskell.Prim renaming (addNat to _+ₙ_)
 open import Haskell.Prim.Foldable
 open import Haskell.Prim.List
+open import Haskell.Prim.Applicative
 
 []≠∷ : ∀ x (xs : List a) → [] ≠ x ∷ xs
 []≠∷ x xs ()
@@ -36,6 +37,21 @@ lengthMap f (x ∷ xs) = cong suc (lengthMap f xs)
 map-∘ : ∀ (g : b → c) (f : a → b) xs → map (g ∘ f) xs ≡ (map g ∘ map f) xs
 map-∘ g f []       = refl
 map-∘ g f (x ∷ xs) = cong (_ ∷_) (map-∘ g f xs)
+
+map-concatMap : ∀ (f : a → b) (xs : List a) → (map f xs) ≡ concatMap (λ g → f g ∷ []) xs
+map-concatMap f [] = refl
+map-concatMap f (x ∷ xs) 
+  rewrite map-concatMap f xs
+  = refl
+
+map-<*>-recomp : {a b c : Set} → (xs : List (a → b)) → (ys : List a) → (u : (b → c))  
+  → ((map (u ∘_) xs) <*> ys) ≡ map u (xs <*> ys)
+map-<*>-recomp [] _ _  = refl
+map-<*>-recomp (x ∷ xs) ys u 
+  rewrite map-∘ u x ys
+    | map-++ u (map x ys) (xs <*> ys)
+    | map-<*>-recomp  xs ys u
+  = refl
 
 --------------------------------------------------
 -- _++_
@@ -97,6 +113,14 @@ lengthNat-++ (x ∷ xs) = cong suc (lengthNat-++ xs)
 
 ∷-not-identity : ∀ x (xs ys : List a) → (x ∷ xs) ++ ys ≡ ys → ⊥
 ∷-not-identity x xs ys eq = []≠∷ x xs (sym $ ++-identity-left-unique (x ∷ xs) (sym eq))
+
+concatMap-++-distr : ∀ (xs ys : List a) (f : a → List b) → 
+  ((concatMap f xs) ++ (concatMap f ys)) ≡ (concatMap f (xs ++ ys))
+concatMap-++-distr [] ys f = refl
+concatMap-++-distr (x ∷ xs) ys f
+  rewrite ++-assoc (f x) (concatMap f xs) (concatMap f ys)
+  | concatMap-++-distr xs ys f
+ = refl
 
 --------------------------------------------------
 -- foldr

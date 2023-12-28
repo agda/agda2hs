@@ -1,12 +1,10 @@
 module Haskell.Law.Monoid.List where
 
 open import Haskell.Prim
-open import Haskell.Prim.Foldable
 open import Haskell.Prim.List
 
 open import Haskell.Prim.Monoid
 
-open import Haskell.Law.Equality
 open import Haskell.Law.List
 open import Haskell.Law.Monoid.Def
 open import Haskell.Law.Semigroup.Def
@@ -25,6 +23,7 @@ instance
     = refl
 
   iLawfulMonoidList .concatenation [] = refl
-  iLawfulMonoidList .concatenation (x ∷ xs)
-    rewrite ++-[] x
-    = trustMe -- TODO
+  iLawfulMonoidList .concatenation (x ∷ xs) 
+    rewrite ++-[] (x ∷ xs)
+      | concatenation xs
+    = refl

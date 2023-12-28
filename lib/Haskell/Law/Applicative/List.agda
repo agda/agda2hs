@@ -22,7 +22,11 @@ private
   compositionList : {a b c : Set} → (u : List (b → c)) (v : List (a → b)) (w : List a)
     → ((((pure _∘_) <*> u) <*> v) <*> w) ≡ (u <*> (v <*> w))
   compositionList [] _  _  = refl
-  compositionList us vs ws = trustMe -- TODO
+  compositionList (u ∷ us) v w
+    rewrite sym $ concatMap-++-distr (map (u ∘_) v) (((pure _∘_) <*> us) <*> v) (λ f → map f w)
+      | sym $ map-<*>-recomp v w u
+      | compositionList us v w
+    = refl 
 
   interchangeList : {a b : Set} → (u : List (a → b)) → (y : a)
     → (u <*> (pure y)) ≡ (pure (_$ y) <*> u)

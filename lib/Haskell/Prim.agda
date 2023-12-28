@@ -99,6 +99,11 @@ data ⊥ : Set where
 magic : {A : Set} → ⊥ → A
 magic ()
 
+--principle of explosion
+exFalso : {x : Bool} → (x ≡ True) → (x ≡ False) → ⊥
+exFalso {False} () b 
+exFalso {True} a ()
+
 -- Use to bundle up constraints
 data All {a b} {A : Set a} (B : A → Set b) : List A → Set (a ⊔ b) where
   instance
