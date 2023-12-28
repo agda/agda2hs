@@ -1076,7 +1076,31 @@ If `implicit` is `false`, Prelude gets imported explicitly, and only those ident
 Since there is a full Agda typechecker in the `agda2hs` binary,
 you can readily use the Emacs mode of a pre-existing Agda installation (make sure it is the same version as the one `agda2hs` depends on) by changing the binary that `agda-mode` uses (Lisp variable `agda2-program-name`) to (the path to) `agda2hs` binary.
 
-With `C-c C-x C-c`, you will now be able call the `agda2hs` backend from inside Emacs; all the other built-in backends still remain available.
+- First, check the version of the Agda typechecker in the `agda2hs` binary by calling `agda2hs --version`.
+- Install this version of Agda. Perhaps the easiest way is to `git clone https://github.com/agda/agda`, checking out the tag corresponding to the correct version (e.g. `v2.6.4.1`; here `git fetch --tags` helps) and calling `cabal new-install`.
+- Run `agda-mode setup` and in Emacs, set the `agda2-program-name` variable to `agda2hs` (use `M-x customize-variable`). Alternatively, you can copy this into `~/.emacs`:
+
+```el
+(setenv "PATH" (concat (getenv "PATH") ":~/.cabal/bin"))
+  (setq exec-path (append exec-path '("~/.cabal/bin")))
+
+(load-file (let ((coding-system-for-read 'utf-8))
+                (shell-command-to-string "agda-mode locate")))
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(agda2-program-name "agda2hs"))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+```
+
+- With `C-c C-x C-c`, you will now be able call the `agda2hs` backend from inside Emacs; all the other built-in backends still remain available.
 
 ## Known issues
 
