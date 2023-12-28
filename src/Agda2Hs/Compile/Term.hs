@@ -80,7 +80,7 @@ expTypeSig _ es = do
   let args = fromMaybe __IMPOSSIBLE__ $ allApplyElims es
   case args of
     _ : typArg : expArg : args' -> do         -- the first one is the level; we throw that away
-      exp <- fromMaybe __IMPOSSIBLE__ <$> compileArg expArg -- this throws an error if it was Nothing
+      exp <- compileTerm $ unArg expArg -- this throws an error if it was Nothing
       typ <- compileType (unArg typArg)
       compArgs <- compileArgs args'
       return $ eApp (Hs.ExpTypeSig () exp typ) compArgs
