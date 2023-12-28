@@ -61,6 +61,9 @@ if_then_else_ : {@0 a : Set ℓ} → (flg : Bool) → (@0 {{ flg ≡ True }} →
 if False then x else y = y
 if True  then x else y = x
 
+Let : a → (a → b) → b
+Let x f = f x
+
 --------------------------------------------------
 -- Agda strings
 
