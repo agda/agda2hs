@@ -60,6 +60,7 @@ import IOInput
 import Issue200
 import Issue169
 import Issue210
+import TypeSignature
 import ModuleParameters
 import ModuleParametersImports
 import Coerce
@@ -126,6 +127,7 @@ import IOInput
 import Issue200
 import Issue169
 import Issue210
+import TypeSignature
 import ModuleParameters
 import ModuleParametersImports
 import Coerce

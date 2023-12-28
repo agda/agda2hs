@@ -279,6 +279,23 @@ createRangeCase low high
         False -> Nothing
 ```
 
+## Explicit type singatures
+
+Haskell's `::` syntax for explicit type signatures can be achieved using the `the` function in Haskell.Prim.
+
+Agda:
+```agda
+five : Nat
+five = the (Nat -> Nat) id 5
+{-# COMPILE AGDA2HS five #-}
+```
+
+Haskell:
+```hs
+five :: Natural
+five = (id :: Natural -> Natural) 5
+```
+
 (0-Quantity)=
 ## 0-Quantity Parameters
 
