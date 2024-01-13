@@ -12,4 +12,5 @@ open import Haskell.Law.List         public
 open import Haskell.Law.Maybe        public
 open import Haskell.Law.Monad        public
 open import Haskell.Law.Monoid       public
+open import Haskell.Law.Nat          public
 open import Haskell.Law.Ord          public
