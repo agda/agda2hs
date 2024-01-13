@@ -73,10 +73,6 @@ eqNegation : ⦃ iEq : Eq e ⦄ → ⦃ IsLawfulEq e ⦄
 eqNegation = refl
 
 postulate instance
-  iLawfulEqInteger : IsLawfulEq Integer
-
-  iLawfulEqInt : IsLawfulEq Int
-
   iLawfulEqWord : IsLawfulEq Word
 
   iLawfulEqDouble : IsLawfulEq Double
