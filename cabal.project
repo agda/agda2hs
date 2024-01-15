@@ -1,1 +1,2 @@
 packages: ./agda2hs.cabal
+constraints: Agda +debug
