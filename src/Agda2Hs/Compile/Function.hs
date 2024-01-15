@@ -57,6 +57,8 @@ isSpecialPat qn = case prettyShow qn of
     badConstructors =
       [ "Agda.Builtin.Nat.Nat.zero"
       , "Agda.Builtin.Nat.Nat.suc"
+      , "Haskell.Extra.Delay.Delay.now"
+      , "Haskell.Extra.Delay.Delay.later"
       ]
 
 isUnboxCopattern :: DeBruijnPattern -> C Bool

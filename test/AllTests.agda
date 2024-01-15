@@ -67,6 +67,7 @@ import Coerce
 import Inlining
 import EraseType
 import Issue257
+import Delay
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -133,4 +134,5 @@ import ModuleParametersImports
 import Coerce
 import Inlining
 import EraseType
+import Delay
 #-}

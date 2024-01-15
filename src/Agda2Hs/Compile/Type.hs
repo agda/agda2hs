@@ -44,6 +44,7 @@ isSpecialType = prettyShow >>> \case
   "Haskell.Prim.Tuple._×_"   -> Just tupleType
   "Haskell.Prim.Tuple._×_×_" -> Just tupleType
   "Haskell.Extra.Erase.Erase" -> Just erasedType
+  "Haskell.Extra.Delay.Delay" -> Just delayType
   _ -> Nothing
 
 tupleType :: QName -> Elims -> C (Hs.Type ())
@@ -54,6 +55,12 @@ tupleType q es = do
 
 erasedType :: QName -> Elims -> C (Hs.Type ())
 erasedType _ _ = return $ Hs.TyTuple () Hs.Boxed []
+
+delayType :: QName -> Elims -> C (Hs.Type ())
+delayType _ (Apply a : _) = compileType (unArg a)
+delayType _ (_ : _) = __IMPOSSIBLE__
+delayType _ [] = genericDocError =<< text "Cannot compile unapplied Delay type"
+
 
 -- | Add a class constraint to a Haskell type.
 constrainType

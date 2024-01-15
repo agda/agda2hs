@@ -53,6 +53,7 @@ isSpecialTerm q = case prettyShow q of
   "Haskell.Prim.case_of_"                       -> Just caseOf
   "Haskell.Prim.Monad.Do.Monad._>>=_"           -> Just bind
   "Haskell.Prim.Monad.Do.Monad._>>_"            -> Just sequ
+  "Haskell.Extra.Delay.runDelay"                -> Just $ const compileErasedApp
   "Agda.Builtin.FromNat.Number.fromNat"         -> Just fromNat
   "Agda.Builtin.FromNeg.Negative.fromNeg"       -> Just fromNeg
   "Agda.Builtin.FromString.IsString.fromString" -> Just fromString
@@ -63,6 +64,8 @@ isSpecialCon = prettyShow >>> \case
   "Haskell.Prim.Tuple._,_"         -> Just tupleTerm
   "Haskell.Prim.Tuple._×_×_._,_,_" -> Just tupleTerm
   "Haskell.Extra.Erase.Erased"     -> Just (\_ _ _ -> erasedTerm)
+  "Haskell.Extra.Delay.Delay.now"   -> Just $ \_ _ -> compileErasedApp
+  "Haskell.Extra.Delay.Delay.later" -> Just $ \_ _ -> compileErasedApp
   _ -> Nothing
 
 tupleTerm :: ConHead -> ConInfo -> Elims -> C (Hs.Exp ())
