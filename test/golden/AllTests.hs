@@ -64,4 +64,5 @@ import ModuleParametersImports
 import Coerce
 import Inlining
 import EraseType
+import Delay
 

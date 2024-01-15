@@ -124,7 +124,16 @@ lookup : ⦃ Eq a ⦄ → a → List (a × b) → Maybe b
 lookup x []              = Nothing
 lookup x ((x₁ , y) ∷ xs) = if x == x₁ then Just y else lookup x xs
 
-private variable A B : Set
+-------------------------------------------------
+-- Unsafe functions
 
-coerce : @0 A ≡ B → A → B
+coerce : @0 a ≡ b → a → b
 coerce refl x = x
+
+IsJust : Maybe a → Set
+IsJust Nothing  = ⊥
+IsJust (Just _) = ⊤
+
+fromJust : (x : Maybe a) → @0 {IsJust x} → a
+fromJust Nothing  = error "fromJust Nothing"
+fromJust (Just x) = x

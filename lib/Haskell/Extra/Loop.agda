@@ -3,14 +3,6 @@ open import Haskell.Prelude
 
 module Haskell.Extra.Loop where
 
-IsJust : Maybe a → Set
-IsJust Nothing  = ⊥
-IsJust (Just _) = ⊤
-
-fromJust : (x : Maybe a) → @0 {IsJust x} → a
-fromJust (Just x) = x
-fromJust Nothing  = error "fromJust called on Nothing"
-
 data Fuel (f : a → Either a b) : (x : Either a b) → Set where
   done : ∀ {y} → Fuel f (Right y)
   more : ∀ {x} → Fuel f (f x) → Fuel f (Left x)
