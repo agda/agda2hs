@@ -124,6 +124,11 @@ lookup : ⦃ Eq a ⦄ → a → List (a × b) → Maybe b
 lookup x []              = Nothing
 lookup x ((x₁ , y) ∷ xs) = if x == x₁ then Just y else lookup x xs
 
+
+subst0 : (p : @0 a → Set) {@0 x y : a} → @0 x ≡ y → p x → p y
+subst0 p refl z = z
+{-# COMPILE AGDA2HS subst0 transparent #-}
+
 -------------------------------------------------
 -- Unsafe functions
 
