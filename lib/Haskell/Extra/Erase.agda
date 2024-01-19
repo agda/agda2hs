@@ -42,6 +42,7 @@ module Haskell.Extra.Erase where
   instance
     rezz-id : {x : a} → Rezz a x
     rezz-id = rezz _
+  {-# COMPILE AGDA2HS rezz-id inline #-}
 
   rezzCong : {@0 a : Set} {@0 x : a} (f : a → b) → Rezz a x → Rezz b (f x)
   rezzCong f (Rezzed x p) = Rezzed (f x) (cong f p)
