@@ -18,3 +18,11 @@ mapRefine : {@0 P Q : a → Set ℓ} (@0 f : ∀ {x} → P x → Q x) → ∃ a 
 mapRefine f (x ⟨ p ⟩) = x ⟨ f p ⟩
 
 {-# COMPILE AGDA2HS mapRefine transparent #-}
+
+refineMaybe : {@0 P : a → Set ℓ} 
+            → (mx : Maybe a) → @0 (∀ {x} → mx ≡ Just x → P x)
+            → Maybe (∃ a P)
+refineMaybe Nothing f = Nothing
+refineMaybe (Just x) f = Just (x ⟨ f refl ⟩)
+
+{-# COMPILE AGDA2HS refineMaybe transparent #-}
