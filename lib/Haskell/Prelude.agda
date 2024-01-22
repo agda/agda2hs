@@ -101,7 +101,7 @@ errorWithoutStackTrace : {@0 @(tactic absurd) i : ⊥} → String → a
 errorWithoutStackTrace {i = ()} err
 
 
-subst0 : (@0 p : @0 a → Set) {@0 x y : a} → @0 x ≡ y → p x → p y
+subst0 : {@0 a : Set} (@0 p : @0 a → Set) {@0 x y : a} → @0 x ≡ y → p x → p y
 subst0 p refl z = z
 {-# COMPILE AGDA2HS subst0 transparent #-}
 
