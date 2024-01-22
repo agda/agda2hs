@@ -57,3 +57,11 @@ _∎ _ = refl
 
 syntax step-≡  x y≡z x≡y = x ≡⟨  x≡y ⟩ y≡z
 syntax step-≡˘ x y≡z y≡x = x ≡˘⟨ y≡x ⟩ y≡z
+
+
+-------------------------------------------------
+-- Utility Functions
+
+subst0 : {@0 a : Set} (@0 p : @0 a → Set) {@0 x y : a} → @0 x ≡ y → p x → p y
+subst0 p refl z = z
+{-# COMPILE AGDA2HS subst0 transparent #-}
