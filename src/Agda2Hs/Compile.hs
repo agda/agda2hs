@@ -1,8 +1,8 @@
 module Agda2Hs.Compile where
 
-import Control.Monad.Reader ( ReaderT(runReaderT) )
-import Control.Monad.Writer ( WriterT(runWriterT) )
-import Control.Monad.State ( StateT, evalStateT, get )
+import Control.Monad.RWS ( evalRWST )
+import Control.Monad.State ( gets )
+import Control.Arrow ((>>>))
 
 import qualified Data.Map as M
 
@@ -24,30 +24,28 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils ( setCurrentRangeQ, tellExtension )
 import Agda2Hs.Pragma
 
--- Needs a list of rewrite rules too.
 initCompileEnv :: TopLevelModuleName -> SpecialRules -> CompileEnv
 initCompileEnv tlm rewrites = CompileEnv
-  { currModule = tlm
-  , minRecordName = Nothing
-  , locals = []
+  { currModule        = tlm
+  , minRecordName     = Nothing
+  , locals            = []
   , copatternsEnabled = False
-  , checkVar = False
-  , rewrites = rewrites
+  , checkVar          = False
+  , rewrites          = rewrites
   }
 
 initCompileState :: CompileState
 initCompileState = CompileState { lcaseUsed = 0 }
 
 runC :: TopLevelModuleName -> SpecialRules -> C a -> TCM (a, CompileOutput)
-runC tlm rewrites = runWriterT
-     . flip runReaderT (initCompileEnv tlm rewrites)
-     . flip evalStateT initCompileState
+runC tlm rewrites c = evalRWST c (initCompileEnv tlm rewrites) initCompileState
 
 -- Main compile function
 ------------------------
 
-compile :: Options -> ModuleEnv -> IsMain -> Definition ->
-  TCM (CompiledDef, CompileOutput)
+compile
+  :: Options -> ModuleEnv -> IsMain -> Definition 
+  -> TCM (CompiledDef, CompileOutput)
 compile opts tlm _ def = withCurrentModule (qnameModule $ defName def) $ runC tlm (optRewrites opts) $
   compileAndTag <* postCompile
   where
@@ -75,11 +73,11 @@ compile opts tlm _ def = withCurrentModule (qnameModule $ defName def) $ runC tl
           (ClassPragma ms, _, Record{}) ->
             tag . single <$> compileRecord (ToClass ms) def
           (NewTypePragma ds, _, Record{}) ->
-            tag . single <$> compileRecord (ToRecordNewType ds) def
+            tag . single <$> compileRecord (ToRecord True ds) def
           (NewTypePragma ds, _, Datatype{}) ->
-            tag <$> compileData ToDataNewType ds def
+            tag <$> compileData True ds def
           (DefaultPragma ds, _, Datatype{}) ->
-            tag <$> compileData ToData ds def
+            tag <$> compileData False ds def
           (DerivePragma s, Just _, _) ->
             tag . single <$> compileInstance (ToDerivation s) def
           (DefaultPragma _, Just _, Axiom{}) ->
@@ -91,7 +89,7 @@ compile opts tlm _ def = withCurrentModule (qnameModule $ defName def) $ runC tl
           (DefaultPragma _, _, Function{}) ->
             tag <$> compileFun True def
           (DefaultPragma ds, _, Record{}) ->
-            tag . single <$> compileRecord (ToRecord ds) def
+            tag . single <$> compileRecord (ToRecord False ds) def
           (InlinePragma, _, Function{}) -> do
             checkInlinePragma def >> return []
           _ ->
@@ -99,6 +97,4 @@ compile opts tlm _ def = withCurrentModule (qnameModule $ defName def) $ runC tl
             text "Don't know how to compile" <+> prettyTCM (defName def)
 
     postCompile :: C ()
-    postCompile =
-      whenM ((> 0) . lcaseUsed <$> get) $
-        tellExtension Hs.LambdaCase
+    postCompile = whenM (gets $ lcaseUsed >>> (> 0)) $ tellExtension Hs.LambdaCase

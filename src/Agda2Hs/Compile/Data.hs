@@ -2,6 +2,7 @@ module Agda2Hs.Compile.Data where
 
 import qualified Language.Haskell.Exts.Syntax as Hs
 
+import Control.Monad ( when )
 import Agda.Compiler.Backend
 import Agda.Syntax.Common
 import Agda.Syntax.Internal
@@ -26,27 +27,25 @@ checkNewtype name cs = do
     Hs.QualConDecl () _ _ (Hs.ConDecl () cName types)
       -> checkSingleElement cName types "Newtype must have exactly one field in constructor"
 
-compileData :: DataTarget -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
-compileData target ds def = do
+compileData :: AsNewType -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
+compileData newtyp ds def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
   checkValidTypeName d
-  case theDef def of
-    Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} -> do
-      TelV tel t <- telViewUpTo n (defType def)
-      reportSDoc "agda2hs.data" 10 $ text "Datatype telescope:" <+> prettyTCM tel
-      allIndicesErased t
-      let params = teleArgs tel
-      addContext tel $ do
-        binds <- compileTeleBinds tel
-        cs <- mapM (compileConstructor params) cs
-        let hd = foldl (Hs.DHApp ()) (Hs.DHead () d) binds
+  let Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} = theDef def
+  TelV tel t <- telViewUpTo n (defType def)
+  reportSDoc "agda2hs.data" 10 $ text "Datatype telescope:" <+> prettyTCM tel
+  allIndicesErased t
+  let params = teleArgs tel
+  addContext tel $ do
+    binds <- compileTeleBinds tel
+    cs <- mapM (compileConstructor params) cs
+    let hd = foldl (Hs.DHApp ()) (Hs.DHead () d) binds
 
-        case target of
-          ToData -> return [Hs.DataDecl () (Hs.DataType ()) Nothing hd cs ds]
-          ToDataNewType -> do
-            checkNewtype d cs
-            return [Hs.DataDecl () (Hs.NewType ()) Nothing hd cs ds]
-    _ -> __IMPOSSIBLE__
+    let target = if newtyp then Hs.NewType () else Hs.DataType ()
+
+    when newtyp (checkNewtype d cs)
+
+    return [Hs.DataDecl () target Nothing hd cs ds]
   where
     allIndicesErased :: Type -> C ()
     allIndicesErased t = reduce (unEl t) >>= \case

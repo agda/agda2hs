@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Agda2Hs.Compile.Record where
 
-import Control.Monad ( unless )
+import Control.Monad ( unless, when )
 import Control.Monad.Reader ( MonadReader(local) )
 
 import Data.List ( (\\), nub )
@@ -105,15 +105,12 @@ compileRecord target def = do
               assts  -> Just (Hs.CxTuple () assts)
         defaultDecls <- compileMinRecords def ms
         return $ Hs.ClassDecl () context hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
-      ToRecord ds -> do
+      ToRecord newtyp ds -> do
         checkValidConName cName
         (constraints, fieldDecls) <- compileRecFields fieldDecl recFields fieldTel
-        compileDataRecord constraints fieldDecls (Hs.DataType ()) hd ds
-      ToRecordNewType ds -> do
-        checkValidConName cName
-        (constraints, fieldDecls) <- compileRecFields fieldDecl recFields fieldTel
-        checkSingleElement cName fieldDecls "Newtype must have exactly one field in constructor"
-        compileDataRecord constraints fieldDecls (Hs.NewType ()) hd ds
+        when newtyp $ checkSingleElement cName fieldDecls "Newtype must have exactly one field in constructor"
+        let target = if newtyp then Hs.NewType () else Hs.DataType ()
+        compileDataRecord constraints fieldDecls target hd ds
 
   where
     rName = hsName $ prettyShow $ qnameName $ defName def

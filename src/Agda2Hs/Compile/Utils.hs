@@ -29,7 +29,7 @@ import Agda.TypeChecking.InstanceArguments ( findInstance )
 import Agda.TypeChecking.Level ( isLevelType )
 import Agda.TypeChecking.MetaVars ( newInstanceMeta )
 import Agda.TypeChecking.Monad.SizedTypes ( isSizeType )
-import Agda.TypeChecking.Pretty ( Doc, (<+>), text, PrettyTCM(..) )
+import Agda.TypeChecking.Pretty ( Doc, (<+>), text, PrettyTCM(..), pretty )
 import Agda.TypeChecking.Records ( isRecordConstructor, getRecordOfField )
 import Agda.TypeChecking.Reduce ( instantiate, reduce )
 import Agda.TypeChecking.Substitute ( Subst, TelV(TelV), Apply(..) )
@@ -287,3 +287,22 @@ checkSingleElement name fs s = unless (length fs == 1) $ genericDocError =<< do
 
 checkingVars :: C a -> C a
 checkingVars = local $ \e -> e { checkVar = True }
+
+checkFixityLevel :: QName -> FixityLevel -> C (Maybe Int)
+checkFixityLevel name Unrelated = pure Nothing
+checkFixityLevel name (Related lvl) =
+  if lvl /= fromInteger (round lvl) || lvl < 0
+    then genericDocError =<< text "Invalid fixity" <+> pretty lvl
+                         <+> text "for operator"   <+> prettyTCM name
+    else pure (Just (round lvl))
+
+maybePrependFixity :: QName -> Fixity -> C [Hs.Decl ()] -> C [Hs.Decl ()]
+maybePrependFixity n f comp | f /= noFixity = do
+  hsLvl <- checkFixityLevel n (fixityLevel f)
+  let x = hsName $ prettyShow $ qnameName n
+  let hsAssoc = case fixityAssoc f of
+        NonAssoc   -> Hs.AssocNone ()
+        LeftAssoc  -> Hs.AssocLeft ()
+        RightAssoc -> Hs.AssocRight ()
+  (Hs.InfixDecl () hsAssoc hsLvl [Hs.VarOp () x]:) <$> comp
+maybePrependFixity n f comp = comp

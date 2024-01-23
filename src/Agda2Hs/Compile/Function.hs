@@ -97,34 +97,12 @@ negSucIntPat _ _ _ = __IMPOSSIBLE__
 -- The bool argument says whether we also want the type signature or just the body
 compileFun, compileFun' :: Bool -> Definition -> C [Hs.Decl ()]
 -- initialize locals when first stepping into a function
-compileFun withSig def@Defn{..} = setCurrentRangeQ defName $ do
-  -- check if the function is an operator with custom fixity,
-  -- then compile the function
-  maybePrependFixity $ withFunctionLocals defName $ compileFun' withSig def
-  where
-    Function{..} = theDef
-    m = qnameModule defName
-    n = qnameName defName
-    f@(Fixity _ lvl assoc) = n ^. lensFixity
-    x = hsName $ prettyShow n
+compileFun withSig def@Defn{..} =
+  setCurrentRangeQ defName
+    $ maybePrependFixity defName (defName ^. lensFixity) 
+    $ withFunctionLocals defName 
+    $ compileFun' withSig def
 
-    checkFixityLevel :: FixityLevel -> C (Maybe Int)
-    checkFixityLevel Unrelated = pure Nothing
-    checkFixityLevel (Related lvl) =
-      if lvl /= fromInteger (round lvl) || lvl < 0
-        then genericDocError =<< text "Invalid fixity" <+> pretty lvl
-                             <+> text "for operator" <+> prettyTCM defName
-        else pure (Just (round lvl))
-
-    maybePrependFixity comp | f /= noFixity = do
-      hsLvl <- checkFixityLevel lvl
-      let hsAssoc = case assoc of
-            NonAssoc   -> Hs.AssocNone ()
-            LeftAssoc  -> Hs.AssocLeft ()
-            RightAssoc -> Hs.AssocRight ()
-      (Hs.InfixDecl () hsAssoc hsLvl [Hs.VarOp () x]:) <$> comp
-    maybePrependFixity comp = comp
--- inherit existing (instantiated) locals
 compileFun' withSig def@(Defn {..}) = do
   reportSDoc "agda2hs.compile" 6 $ "Compiling function: " <+> prettyTCM defName
   when withSig $ whenJustM (liftTCM $ isDatatypeModule $ qnameModule defName) $ \_ ->
