@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeApplications, NamedFieldPuns #-}
 
+-- | Compilation to Haskell types.
 module Agda2Hs.Compile.Type where
 
 import Control.Arrow ( (>>>) )
@@ -40,12 +41,12 @@ import Agda2Hs.AgdaUtils
 import Agda2Hs.HsUtils
 
 isSpecialType :: QName -> Maybe (QName -> Elims -> C (Hs.Type ()))
-isSpecialType = prettyShow >>> \case
-  "Haskell.Prim.Tuple._×_"   -> Just tupleType
-  "Haskell.Prim.Tuple._×_×_" -> Just tupleType
+isSpecialType x = case prettyShow x of
+  "Haskell.Prim.Tuple._×_"    -> Just tupleType
+  "Haskell.Prim.Tuple._×_×_"  -> Just tupleType
   "Haskell.Extra.Erase.Erase" -> Just erasedType
   "Haskell.Extra.Delay.Delay" -> Just delayType
-  _ -> Nothing
+  _                           -> Nothing
 
 tupleType :: QName -> Elims -> C (Hs.Type ())
 tupleType q es = do
@@ -68,10 +69,10 @@ constrainType
   -> Hs.Type () -- ^ The type to constrain.
   -> Hs.Type ()
 constrainType c = \case
-  Hs.TyForall _ as (Just (Hs.CxTuple _ cs)) t -> Hs.TyForall () as (Just (Hs.CxTuple () (c:cs))) t
-  Hs.TyForall _ as (Just (Hs.CxSingle _ c')) t -> Hs.TyForall () as (Just (Hs.CxTuple () [c,c'])) t
-  Hs.TyForall _ as _ t -> Hs.TyForall () as (Just (Hs.CxSingle () c)) t
-  t -> Hs.TyForall () Nothing (Just (Hs.CxSingle () c)) t
+  Hs.TyForall _ as (Just (Hs.CxTuple _  cs)) t -> Hs.TyForall () as      (Just (Hs.CxTuple  () (c:cs))) t
+  Hs.TyForall _ as (Just (Hs.CxSingle _ c')) t -> Hs.TyForall () as      (Just (Hs.CxTuple  () [c,c'])) t
+  Hs.TyForall _ as Nothing                   t -> Hs.TyForall () as      (Just (Hs.CxSingle () c     )) t
+  t                                            -> Hs.TyForall () Nothing (Just (Hs.CxSingle () c     )) t
 
 -- | Add explicit quantification over a variable to a Haskell type.
 qualifyType
@@ -79,9 +80,9 @@ qualifyType
   -> Hs.Type () -- ^ Type to quantify.
   -> Hs.Type ()
 qualifyType s = \case
-    Hs.TyForall _ (Just as) cs t -> Hs.TyForall () (Just (a:as)) cs t
-    Hs.TyForall _ Nothing cs t -> Hs.TyForall () (Just [a]) cs t
-    t -> Hs.TyForall () (Just [a]) Nothing t
+    Hs.TyForall _ (Just as) cs t -> Hs.TyForall () (Just (a:as)) cs      t
+    Hs.TyForall _ Nothing   cs t -> Hs.TyForall () (Just [a]   ) cs      t
+    t                            -> Hs.TyForall () (Just [a]   ) Nothing t
   where
     a = Hs.UnkindedVar () $ Hs.Ident () s
 
@@ -230,7 +231,7 @@ compileTeleBinds tel =
     (uncurry compileKeptTeleBind)
   where
     checkArgDom (argName, argDom) | keepArg argName = Just (argName, argDom)
-    checkArgDom _ | otherwise = Nothing
+    checkArgDom _ = Nothing
 
     unArgDom (argName, argDom) = (hsName . unArg $ argName, unDom argDom)
 
