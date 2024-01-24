@@ -41,3 +41,7 @@ mapDec : @0 (a → b)
 mapDec f g (True  ⟨ x ⟩) = True  ⟨ f x   ⟩
 mapDec f g (False ⟨ h ⟩) = False ⟨ h ∘ g ⟩
 {-# COMPILE AGDA2HS mapDec transparent #-}
+
+ifDec : Dec a → (@0 {{a}} → b) → (@0 {{a → ⊥}} → b) → b
+ifDec (b ⟨ p ⟩) x y = if b then (λ where {{refl}} → x {{p}}) else (λ where {{refl}} → y {{p}})
+{-# COMPILE AGDA2HS ifDec inline #-}
