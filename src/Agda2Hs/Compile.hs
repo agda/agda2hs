@@ -3,6 +3,7 @@ module Agda2Hs.Compile where
 import Control.Monad.Trans.RWS.CPS ( evalRWST )
 import Control.Monad.State ( gets )
 import Control.Arrow ((>>>))
+import Data.Functor
 
 import qualified Data.Map as M
 
@@ -54,50 +55,34 @@ compile opts tlm _ def =
   where
     qname = defName def
     tag code = [(nameBindingSite $ qnameName qname, code)]
-    single x = [x]
 
     compileAndTag :: C CompiledDef
-    compileAndTag = do
+    compileAndTag = tag <$> do
       p <- processPragma qname
 
-      reportSDoc "agda2hs.compile" 5  $ text "Compiling definition: " <+> prettyTCM qname
-      reportSDoc "agda2hs.compile" 45 $ text "Pragma: " <+> text (show p)
-      reportSDoc "agda2hs.compile" 45 $ text "Compiling definition: " <+> pretty (theDef def)
+      reportSDoc "agda2hs.compile" 5  $ text "Compiling definition:" <+> prettyTCM qname
+      reportSDoc "agda2hs.compile" 45 $ text "Pragma:" <+> text (show p)
+      reportSDoc "agda2hs.compile" 45 $ text "Compiling definition:" <+> pretty (theDef def)
 
       case (p , defInstance def , theDef def) of
-        (NoPragma, _, _) ->
-          return []
-        (ExistingClassPragma, _, _) ->
-          return [] -- No code generation, but affects how projections are compiled
-        (UnboxPragma s, _, defn) ->
-          checkUnboxPragma defn >> return [] -- also no code generation
-        (TransparentPragma  , _, Function{}) ->
-          checkTransparentPragma def >> return [] -- also no code generation
-        (ClassPragma ms, _, Record{}) ->
-          tag . single <$> compileRecord (ToClass ms) def
-        (NewTypePragma ds, _, Record{}) ->
-          tag . single <$> compileRecord (ToRecord True ds) def
-        (NewTypePragma ds, _, Datatype{}) ->
-          tag <$> compileData True ds def
-        (DefaultPragma ds, _, Datatype{}) ->
-          tag <$> compileData False ds def
-        (DerivePragma s, Just _, _) ->
-          tag . single <$> compileInstance (ToDerivation s) def
-        (DefaultPragma _, Just _, Axiom{}) ->
-          tag . single <$> compileInstance (ToDerivation Nothing) def
-        (DefaultPragma _, Just _, _) ->
-          tag . single <$> compileInstance ToDefinition def
-        (DefaultPragma _, _, Axiom{}) ->
-          tag <$> compilePostulate def
-        (DefaultPragma _, _, Function{}) ->
-          tag <$> compileFun True def
-        (DefaultPragma ds, _, Record{}) ->
-          tag . single <$> compileRecord (ToRecord False ds) def
-        (InlinePragma, _, Function{}) -> do
-          checkInlinePragma def >> return []
-        _ ->
-          genericDocError =<< do
-          text "Don't know how to compile" <+> prettyTCM (defName def)
+        (NoPragma            , _      , _         ) -> return []
+        (ExistingClassPragma , _      , _         ) -> return []
+        (UnboxPragma s       , _      , defn      ) -> [] <$ checkUnboxPragma defn
+        (TransparentPragma   , _      , Function{}) -> [] <$ checkTransparentPragma def
+        (InlinePragma        , _      , Function{}) -> [] <$ checkInlinePragma def
+
+        (ClassPragma ms      , _      , Record{}  ) -> pure <$> compileRecord (ToClass ms) def
+        (NewTypePragma ds    , _      , Record{}  ) -> pure <$> compileRecord (ToRecord True ds) def
+        (NewTypePragma ds    , _      , Datatype{}) -> compileData True ds def
+        (DefaultPragma ds    , _      , Datatype{}) -> compileData False ds def
+        (DerivePragma s      , Just _ , _         ) -> pure <$> compileInstance (ToDerivation s) def
+        (DefaultPragma _     , Just _ , Axiom{}   ) -> pure <$> compileInstance (ToDerivation Nothing) def
+        (DefaultPragma _     , Just _ , _         ) -> pure <$> compileInstance ToDefinition def
+        (DefaultPragma _     , _      , Axiom{}   ) -> compilePostulate def
+        (DefaultPragma _     , _      , Function{}) -> compileFun True def
+        (DefaultPragma ds    , _      , Record{}  ) -> pure <$> compileRecord (ToRecord False ds) def
+
+        _ -> genericDocError =<<  text "Don't know how to compile" <+> prettyTCM (defName def)
 
     postCompile :: C ()
     postCompile = whenM (gets $ lcaseUsed >>> (> 0)) $ tellExtension Hs.LambdaCase
