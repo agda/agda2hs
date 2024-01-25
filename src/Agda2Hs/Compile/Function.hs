@@ -113,8 +113,10 @@ compileFun' withSig def@Defn{..} = do
 
   withCurrentModule m $ do
     ifM (endsInSort defType)
+
         -- if the function type ends in Sort, it's a type alias!
         (ensureNoLocals err >> compileTypeDef x def) 
+
         -- otherwise, we have to compile clauses.
         $ do
       when withSig $ checkValidFunName x

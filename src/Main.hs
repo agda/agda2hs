@@ -23,30 +23,32 @@ import Agda2Hs.Render
 
 import Paths_agda2hs ( version )
 
+
+-- | Agda2Hs default config
 defaultOptions :: Options
 defaultOptions = Options
-  { optIsEnabled = True
-  , optOutDir = Nothing
+  { optIsEnabled  = True
+  , optOutDir     = Nothing
   , optConfigFile = Nothing
   , optExtensions = []
-  , optPrelude = PreludeOpts False Nothing []
+  , optPrelude    = PreludeOpts False Nothing []
     -- by default the Prelude is imported explicitly
-  , optRewrites = defaultSpecialRules
+  , optRewrites   = defaultSpecialRules
   }
 
-disableOpt :: Monad m => Options -> m Options
-disableOpt opts = return opts{ optIsEnabled = False }
 
-outdirOpt :: Monad m => FilePath -> Options -> m Options
-outdirOpt dir opts = return opts{ optOutDir = Just dir }
+disableOpt :: Flag Options
+disableOpt opts = return opts { optIsEnabled = False }
 
-configOpt :: Monad m => FilePath -> Options -> m Options
-configOpt src opts = return opts{optConfigFile = Just src}
+outdirOpt :: FilePath -> Flag Options
+outdirOpt dir opts = return opts { optOutDir = Just dir }
 
-extensionOpt :: Monad m => String -> Options -> m Options
-extensionOpt ext opts = return opts{ optExtensions = Hs.parseExtension ext : optExtensions opts }
+configOpt :: FilePath -> Flag Options
+configOpt src opts = return opts { optConfigFile = Just src }
 
--- | Update options by reading the config, if any was specified.
+extensionOpt :: String -> Flag Options
+extensionOpt ext opts = return opts { optExtensions = Hs.parseExtension ext : optExtensions opts }
+
 
 backend :: Backend' Options Options ModuleEnv ModuleRes (CompiledDef, CompileOutput)
 backend = Backend'
@@ -55,13 +57,15 @@ backend = Backend'
   , options               = defaultOptions
   , commandLineFlags      =
       [ Option ['d'] ["disable-backend"] (NoArg disableOpt)
-        "Disable backend and fall back to vanilla Agda behaviour, without compilation (important for Emacs mode). Implied when run in interactive mode (with --interactive, --interaction or --interaction-json)."
+          "Disable backend and fall back to vanilla Agda behaviour, \
+          \without compilation (important for Emacs mode). \
+          \Implied when run in interactive mode (with --interactive, --interaction or --interaction-json)."
       , Option ['o'] ["out-dir"] (ReqArg outdirOpt "DIR")
-        "Write Haskell code to DIR. (default: project root)"
+          "Write Haskell code to DIR. (default: project root)"
       , Option ['X'] [] (ReqArg extensionOpt "EXTENSION")
-        "Enable Haskell language EXTENSION. Affects parsing of Haskell code in FOREIGN blocks."
+          "Enable Haskell language EXTENSION. Affects parsing of Haskell code in FOREIGN blocks."
       , Option [] ["config"] (ReqArg configOpt "FILE")
-        "Provide additional configuration to agda2hs with a YAML file."
+          "Provide additional configuration to agda2hs with a YAML file."
       ]
   , isEnabled             = optIsEnabled
   , preCompile            = checkConfig
@@ -83,6 +87,4 @@ isInteractive = do
 main = do
   -- Issue #201: disable backend when run in interactive mode
   isInt <- isInteractive
-  if isInt
-    then runAgda [Backend backend{isEnabled = const False}]
-    else runAgda [Backend backend]
+  runAgda [Backend backend | not isInt]
