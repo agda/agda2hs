@@ -1,11 +1,11 @@
-{-# LANGUAGE PatternSynonyms, FlexibleInstances, MultiParamTypeClasses  #-}
+{-# LANGUAGE PatternSynonyms, FlexibleInstances, MultiParamTypeClasses, InstanceSigs, TypeFamilies  #-}
 module Agda2Hs.Compile.Types where
 
 import Control.Applicative ( liftA2 )
 import Control.Monad ( join )
 import Control.Monad.Trans ( MonadTrans(lift) )
-import Control.Monad.RWS ( RWST(..) )
-import Control.Monad.RWS.Lazy ( runRWST )
+import Control.Monad.Trans.RWS.CPS (RWST(..), runRWST, rwsT )
+import Control.Monad.Trans.Control (MonadTransControl(..))
 import Control.Monad.State ( StateT(..) )
 import Control.DeepSeq ( NFData(..) )
 
@@ -135,19 +135,26 @@ newtype CompileState = CompileState
     --   Can be removed by subsequent program transformations, hence the StateT.
   }
 
--- TODO: see if we should use RWS.CPS
+
+-- NOTE: C should really be a newtype for abstraction's sake
+--       but none of the Agda instances are defined for RWST(.CPS)
+
 -- | Compilation monad.
 type C = RWST CompileEnv CompileOutput CompileState TCM
 
 -- some missing instances from the Agda side
 instance HasFresh i => MonadFresh i C
 instance MonadTCState C
+instance Monoid w => MonadTransControl (RWST r w s) where
+  type StT (RWST r w s) a = (a, s, w)
+  liftWith f = rwsT $ \r s -> fmap (, s, mempty) (f $ \t -> runRWST t r s)
+  restoreT mSt = rwsT $ \_ _ -> mSt
 instance MonadTCEnv C
 instance HasOptions C
 instance ReadTCState C
 instance MonadTCM C
 instance MonadTrace C where
-  traceClosureCall c f = RWST $ \ r s -> traceClosureCall c $ runRWST f r s
+  traceClosureCall c f = rwsT $ \ r s -> traceClosureCall c $ runRWST f r s
 instance MonadInteractionPoints C where
 instance MonadDebug C where
 instance HasConstInfo C where
@@ -155,10 +162,10 @@ instance MonadReduce C where
 instance MonadAddContext C where
 instance HasBuiltins C where
 instance MonadBlock C where
-  catchPatternErr h m = RWST $ \ r s ->
+  catchPatternErr h m = rwsT $ \ r s ->
     let run x = runRWST x r s in catchPatternErr (run . h) (run m)
 instance MonadStConcreteNames C where
-  runStConcreteNames m = RWST $ \r s -> runStConcreteNames $ StateT $ \ns -> do
+  runStConcreteNames m = rwsT $ \r s -> runStConcreteNames $ StateT $ \ns -> do
     ((x, ns'), s', w) <- runRWST (runStateT m ns) r s
     pure ((x, s', w), ns')
 instance IsString a => IsString (C a) where fromString = pure . fromString
@@ -167,6 +174,7 @@ instance Null a => Null (C a) where
   empty = lift empty
   null = __IMPOSSIBLE__
 instance Semigroup a => Semigroup (C a) where (<>) = liftA2 (<>)
+
 
 
 -- | Currently we can compile an Agda "Dom Type" in three ways:
