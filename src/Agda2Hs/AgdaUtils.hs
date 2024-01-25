@@ -3,7 +3,7 @@ module Agda2Hs.AgdaUtils where
 import Data.Data
 import Data.Monoid ( Any(..) )
 import qualified Data.Map as Map
-import Data.Maybe ( fromMaybe )
+import Data.Maybe ( fromMaybe, isJust )
 
 import Agda.Compiler.Backend hiding ( Args )
 
@@ -120,3 +120,8 @@ maybeUnfoldCopy f es onTerm onDef =
   reduceDefCopy f es >>= \case
     NoReduction ()   -> onDef f es
     YesReduction _ t -> onTerm t
+
+-- | Check whether the given definition comes from a record module.
+inRecordMod :: MonadTCM m => QName -> m Bool
+inRecordMod = liftTCM . fmap isJust . isDatatypeModule . qnameModule
+

@@ -113,12 +113,16 @@ underAbstr = underAbstraction' KeepNames
 underAbstr_ :: Subst a => Abs a -> (a -> C b) -> C b
 underAbstr_ = underAbstr __DUMMY_DOM__
 
--- Determine whether an argument should be kept or dropped.
+-- | Determine whether an argument should be kept or dropped.
 -- We drop all arguments that have quantity 0 (= run-time erased).
 -- We also drop hidden non-erased arguments (which should all be of
 -- type Level or Set l).
 keepArg :: (LensHiding a, LensModality a) => a -> Bool
 keepArg x = usableModality x && visible x
+
+
+keepClause :: Clause -> Bool
+keepClause = maybe False keepArg . clauseType
 
 -- Determine whether it is ok to erase arguments of this type,
 -- even in the absence of an erasure annotation.

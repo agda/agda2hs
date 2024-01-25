@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ViewPatterns, NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns, NamedFieldPuns, BlockArguments #-}
 module Agda2Hs.Compile.Function where
 
 import Control.Monad ( (>=>), filterM, forM_ )
@@ -94,20 +94,23 @@ negSucIntPat c i [p] = do
   return $ Hs.PLit () (Hs.Negative ()) (Hs.Int () n (show (negate n)))
 negSucIntPat _ _ _ = __IMPOSSIBLE__
 
--- The bool argument says whether we also want the type signature or just the body
-compileFun, compileFun' :: Bool -> Definition -> C [Hs.Decl ()]
--- initialize locals when first stepping into a function
+compileFun, compileFun'
+  :: Bool -- ^ Whether the type signature shuuld also be generated
+  -> Definition -> C [Hs.Decl ()]
+
 compileFun withSig def@Defn{..} =
-  setCurrentRangeQ defName
-    $ maybePrependFixity defName (defName ^. lensFixity) 
-    $ withFunctionLocals defName 
+  setCurrentRangeQ defName 
+    $ maybePrependFixity defName (defName ^. lensFixity)
+    -- initialize locals when first stepping into a function
+    $ withFunctionLocals defName
     $ compileFun' withSig def
 
-compileFun' withSig def@(Defn {..}) = do
+compileFun' withSig def@Defn{..} = do
   reportSDoc "agda2hs.compile" 6 $ "Compiling function: " <+> prettyTCM defName
-  when withSig $ whenJustM (liftTCM $ isDatatypeModule $ qnameModule defName) $ \_ ->
+
+  whenM ((withSig &&) <$> inRecordMod defName) $
     genericDocError =<< text "not supported by agda2hs: functions inside a record module"
-  let keepClause = maybe False keepArg . clauseType
+
   withCurrentModule m $ do
     ifM (endsInSort defType)
         -- if the function type ends in Sort, it's a type alias!
