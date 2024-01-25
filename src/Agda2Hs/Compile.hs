@@ -25,6 +25,7 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils ( setCurrentRangeQ, tellExtension )
 import Agda2Hs.Pragma
 
+
 initCompileEnv :: TopLevelModuleName -> SpecialRules -> CompileEnv
 initCompileEnv tlm rewrites = CompileEnv
   { currModule        = tlm
@@ -54,6 +55,8 @@ compile opts tlm _ def =
     $ compileAndTag <* postCompile
   where
     qname = defName def
+
+    tag []   = []
     tag code = [(nameBindingSite $ qnameName qname, code)]
 
     compileAndTag :: C CompiledDef

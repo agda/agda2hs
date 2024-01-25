@@ -40,6 +40,7 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
+
 isSpecialCon :: QName -> Maybe (Hs.QName ())
 isSpecialCon = prettyShow >>> \case
     "Agda.Builtin.List.List"     -> special Hs.ListCon
@@ -158,7 +159,6 @@ compileQName f
       (QualifiedAs as) -> Hs.Qual () (fromMaybe mod as) n
       Unqualified      -> Hs.UnQual () n
 
-    primModules = ["Agda.Builtin", "Haskell.Prim", "Haskell.Prelude"]
     primMonadModules = ["Haskell.Prim.Monad.Dont", "Haskell.Prim.Monad.Do"]
 
     -- Determine whether it is a type operator or an "ordinary" operator.

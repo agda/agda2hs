@@ -46,6 +46,18 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.HsUtils
 import Agda2Hs.Pragma
 
+
+-- | Primitive modules provided by the agda2hs library.
+-- None of those (and none of their children) will get processed.
+primModules =
+  [ "Agda.Builtin"
+  , "Agda.Primitive"
+  , "Haskell.Prim"
+  , "Haskell.Prelude"
+  , "Haskell.Law"
+  ]
+
+
 concatUnzip :: [([a], [b])] -> ([a], [b])
 concatUnzip = (concat *** concat) . unzip
 
