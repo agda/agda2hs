@@ -125,3 +125,14 @@ maybeUnfoldCopy f es onTerm onDef =
 inRecordMod :: MonadTCM m => QName -> m Bool
 inRecordMod = liftTCM . fmap isJust . isDatatypeModule . qnameModule
 
+
+-- | Check whether a pattern is forced.
+isForcedPat :: DeBruijnPattern -> Bool
+isForcedPat = \case
+  VarP{}        -> False
+  DotP{}        -> True
+  ConP c cpi ps -> conPLazy cpi
+  LitP{}        -> False
+  ProjP{}       -> False
+  IApplyP{}     -> False
+  DefP{}        -> False

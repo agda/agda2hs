@@ -40,62 +40,47 @@ import Agda2Hs.Compile.Utils
 import Agda2Hs.AgdaUtils
 import Agda2Hs.HsUtils
 
-isSpecialType :: QName -> Maybe (QName -> Elims -> C (Hs.Type ()))
+
+-- | Type definitions from the prelude that get special translation rules.
+isSpecialType :: QName -> Maybe (Elims -> C (Hs.Type ()))
 isSpecialType x = case prettyShow x of
   "Haskell.Prim.Tuple._×_"    -> Just tupleType
   "Haskell.Prim.Tuple._×_×_"  -> Just tupleType
-  "Haskell.Extra.Erase.Erase" -> Just erasedType
+  "Haskell.Extra.Erase.Erase" -> Just unitType
   "Haskell.Extra.Delay.Delay" -> Just delayType
   _                           -> Nothing
 
-tupleType :: QName -> Elims -> C (Hs.Type ())
-tupleType q es = do
+
+-- | Compile all the elims into a n-uple.
+tupleType :: Elims -> C (Hs.Type ())
+tupleType es = do
   let Just as = allApplyElims es
   ts <- mapM (compileType . unArg) as
   return $ Hs.TyTuple () Hs.Boxed ts
 
-erasedType :: QName -> Elims -> C (Hs.Type ())
-erasedType _ _ = return $ Hs.TyTuple () Hs.Boxed []
 
-delayType :: QName -> Elims -> C (Hs.Type ())
-delayType _ (Apply a : _) = compileType (unArg a)
-delayType _ (_ : _) = __IMPOSSIBLE__
-delayType _ [] = genericDocError =<< text "Cannot compile unapplied Delay type"
+-- | Ignore arguments and return the unit type.
+unitType :: Elims -> C (Hs.Type ())
+unitType _ = return $ Hs.TyTuple () Hs.Boxed []
 
 
--- | Add a class constraint to a Haskell type.
-constrainType
-  :: Hs.Asst () -- ^ The class assertion.
-  -> Hs.Type () -- ^ The type to constrain.
-  -> Hs.Type ()
-constrainType c = \case
-  Hs.TyForall _ as (Just (Hs.CxTuple _  cs)) t -> Hs.TyForall () as      (Just (Hs.CxTuple  () (c:cs))) t
-  Hs.TyForall _ as (Just (Hs.CxSingle _ c')) t -> Hs.TyForall () as      (Just (Hs.CxTuple  () [c,c'])) t
-  Hs.TyForall _ as Nothing                   t -> Hs.TyForall () as      (Just (Hs.CxSingle () c     )) t
-  t                                            -> Hs.TyForall () Nothing (Just (Hs.CxSingle () c     )) t
-
--- | Add explicit quantification over a variable to a Haskell type.
-qualifyType
-  :: String     -- ^ Name of the variable.
-  -> Hs.Type () -- ^ Type to quantify.
-  -> Hs.Type ()
-qualifyType s = \case
-    Hs.TyForall _ (Just as) cs t -> Hs.TyForall () (Just (a:as)) cs      t
-    Hs.TyForall _ Nothing   cs t -> Hs.TyForall () (Just [a]   ) cs      t
-    t                            -> Hs.TyForall () (Just [a]   ) Nothing t
-  where
-    a = Hs.UnkindedVar () $ Hs.Ident () s
+-- | Compile fully applied Delay type as its only type argument.
+delayType :: Elims -> C (Hs.Type ())
+delayType (Apply a : _) = compileType (unArg a)
+delayType (_       : _) = __IMPOSSIBLE__
+delayType [] = genericDocError =<< text "Cannot compile unapplied Delay type"
 
 
--- | Compile a top-level type, such that:
---
---   * erased parameters of the current module are dropped.
---   * usable hidden type parameters of the current module are explicitely quantified.
---   * usable instance parameters are added as type constraints.
---   * usable explicit parameters are forbidden (for now).
---
---   The continuation is called in an extended context with these type
---   arguments bound.
+{- | Compile a top-level type, such that:
+  
+   * erased parameters of the current module are dropped.
+   * usable hidden type parameters of the current module are explicitely quantified.
+   * usable instance parameters are added as type constraints.
+   * usable explicit parameters are forbidden (for now).
+  
+   The continuation is called in an extended context with these type
+   arguments bound.
+-}
 compileTopLevelType
     :: Bool
     -- ^ Whether the generated Haskell type will end up in
@@ -132,16 +117,21 @@ compileTopLevelType keepType t cont = do
           underAbstraction a atel $ \tel ->
             go onTop tel (cont . qualifier)
 
-compileType' :: Term -> C (Strictness, Hs.Type ())
-compileType' t = do
+
+-- | Compile an Agda term into a Haskell type, along with its strictness.
+compileTypeStrictness :: Term -> C (Strictness, Hs.Type ())
+compileTypeStrictness t = do
   s <- case t of
     Def f es -> fromMaybe Lazy <$> isUnboxRecord f
     _        -> return Lazy
-  (s,) <$> compileType t
+  ty <- compileType t
+  pure (s, ty)
+
 
 -- | Compile an Agda term into a Haskell type.
 compileType :: Term -> C (Hs.Type ())
 compileType t = do
+
   reportSDoc "agda2hs.compile.type" 12 $ text "Compiling type" <+> prettyTCM t
   reportSDoc "agda2hs.compile.type" 22 $ text "Compiling type" <+> pretty t
 
@@ -154,13 +144,14 @@ compileType t = do
         hsB <- underAbstraction a b (compileType . unEl)
         return $ constrainType hsA hsB
       DomDropped -> underAbstr a b (compileType . unEl)
+
     Def f es -> maybeUnfoldCopy f es compileType $ \f es -> do
       def <- getConstInfo f
       if | not (usableModality def) ->
             genericDocError
               =<< text "Cannot use erased definition" <+> prettyTCM f
               <+> text "in Haskell type"
-         | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics f es
+         | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics es
          | Just args <- allApplyElims es ->
              ifJustM (isUnboxRecord f) (\_ -> compileUnboxType f args) $
              ifM (isTransparentFunction f) (compileTransparentType args) $
@@ -169,31 +160,39 @@ compileType t = do
                f <- compileQName f
                return $ tApp (Hs.TyCon () f) vs
          | otherwise -> fail
+
     Var x es | Just args <- allApplyElims es -> do
       vs <- compileTypeArgs args
       x  <- hsName <$> compileVar x
       return $ tApp (Hs.TyVar () x) vs
+
     Sort s -> return (Hs.TyStar ())
+
     Lam argInfo restAbs
       | not (keepArg argInfo) -> underAbstraction_ restAbs compileType
+
     _ -> fail
   where fail = genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
+
 compileTypeArgs :: Args -> C [Hs.Type ()]
 compileTypeArgs args = mapM (compileType . unArg) $ filter keepArg args
+
 
 compileUnboxType :: QName -> Args -> C (Hs.Type ())
 compileUnboxType r pars = do
   def <- theDef <$> getConstInfo r
   let tel = telToList $ recTel def `apply` pars
   case find keepArg tel of
+    Just t  -> compileType $ unEl $ snd (unDom t)
     Nothing -> __IMPOSSIBLE__
-    Just t -> compileType $ unEl $ snd (unDom t)
+
 
 compileTransparentType :: Args -> C (Hs.Type ())
 compileTransparentType args = compileTypeArgs args >>= \case
-  []     -> __IMPOSSIBLE__
   (v:vs) -> return $ v `tApp` vs
+  []     -> __IMPOSSIBLE__
+
 
 compileInlineType :: QName -> Elims -> C (Hs.Type ())
 compileInlineType f args = do
@@ -215,12 +214,13 @@ compileDom :: ArgName -> Dom Type -> C CompiledDom
 compileDom x a
   | usableModality a = case getHiding a of
       Instance{} -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
-      NotHidden  -> uncurry DomType <$> compileType' (unEl $ unDom a)
+      NotHidden  -> uncurry DomType <$> compileTypeStrictness (unEl $ unDom a)
       Hidden     ->
         ifM (canErase $ unDom a)
             (return DomDropped)
             (genericDocError =<< do text "Implicit type argument not supported: " <+> prettyTCM x)
   | otherwise    = return DomDropped
+
 
 compileTeleBinds :: Telescope -> C [Hs.TyVarBind ()]
 compileTeleBinds tel =

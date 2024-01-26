@@ -234,6 +234,7 @@ checkInstance u | varOrDef u = liftTCM $ noConstraints $ do
     varOrDef Var{} = True
     varOrDef Def{} = True
     varOrDef _     = False
+
 -- We need to compile applications of `fromNat`, `fromNeg`, and
 -- `fromString` where the constraint type is ⊤ or IsTrue .... Ideally
 -- this constraint would be marked as erased but this would involve
