@@ -222,11 +222,15 @@ uses ty = not . null . usedTypesOf ty
 -- Ideally, our pretty-printing library should insert parenthesis where needed.
 -- However, hs-src-exts does not insert adequate parenthesis for infix
 -- operators so we need to insert some by hand (see issues #54 and #273).
+
+-- | Properly parenthesize an expression with regards to the default fixities.
 insertParens :: Data a => a -> a
 insertParens = everywhere (mkT $ insertPars $ fixityMap baseFixities)
   where
     fixityMap fxs = Map.fromList [ (q, fx) | fx@(Fixity _ _ q) <- fxs ]
 
+
+-- | Given fixities of operators, properly parenthesize an expression.
 insertPars :: Map (QName ()) Fixity -> Exp () -> Exp ()
 insertPars fixs = \case
   (InfixApp l e1 op e2) -> InfixApp l (parL op e1) op (parR op e2)
@@ -256,6 +260,7 @@ insertPars fixs = \case
       | need (getFix topOp) (getFix op) = Paren () e
     par _ _ e = e
 
+
 -- Patterns
 patToExp :: Pat l -> Maybe (Exp l)
 patToExp = \case
@@ -273,5 +278,31 @@ patToExp = \case
   PBangPat _ p        -> patToExp p
   _                   -> Nothing
 
+
 data Strictness = Lazy | Strict
   deriving (Eq, Show)
+
+
+-- | Add a class constraint to a Haskell type.
+constrainType
+  :: Asst () -- ^ The class assertion.
+  -> Type () -- ^ The type to constrain.
+  -> Type ()
+constrainType c = \case
+  TyForall _ as (Just (CxTuple _  cs)) t -> TyForall () as      (Just (CxTuple  () (c:cs))) t
+  TyForall _ as (Just (CxSingle _ c')) t -> TyForall () as      (Just (CxTuple  () [c,c'])) t
+  TyForall _ as Nothing                t -> TyForall () as      (Just (CxSingle () c     )) t
+  t                                      -> TyForall () Nothing (Just (CxSingle () c     )) t
+
+
+-- | Add explicit quantification over a variable to a Haskell type.
+qualifyType
+  :: String     -- ^ Name of the variable.
+  -> Type () -- ^ Type to quantify.
+  -> Type ()
+qualifyType s = \case
+    TyForall _ (Just as) cs t -> TyForall () (Just (a:as)) cs      t
+    TyForall _ Nothing   cs t -> TyForall () (Just [a]   ) cs      t
+    t                         -> TyForall () (Just [a]   ) Nothing t
+  where
+    a = UnkindedVar () $ Ident () s

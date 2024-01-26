@@ -43,16 +43,18 @@ import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 import Agda.TypeChecking.Datatypes (isDataOrRecord)
 
-isSpecialPat :: QName -> Maybe (ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ()))
-isSpecialPat qn = case prettyShow qn of
+
+-- | Pattern compilation rules for specific constructors.
+isSpecialCon :: QName -> Maybe (NAPs -> C (Hs.Pat ()))
+isSpecialCon qn = case prettyShow qn of
   "Haskell.Prim.Tuple._,_"         -> Just tuplePat
   "Haskell.Prim.Tuple._×_×_._,_,_" -> Just tuplePat
   "Haskell.Extra.Erase.Erased"     -> Just tuplePat
-  "Agda.Builtin.Int.Int.pos" -> Just posIntPat
-  "Agda.Builtin.Int.Int.negsuc" -> Just negSucIntPat
-  s | s `elem` badConstructors -> Just $ \ _ _ _ -> genericDocError =<<
+  "Agda.Builtin.Int.Int.pos"       -> Just posIntPat
+  "Agda.Builtin.Int.Int.negsuc"    -> Just negSucIntPat
+  s | s `elem` badConstructors     -> Just $ \ _ -> genericDocError =<<
     "constructor `" <> prettyTCM qn <> "` not supported in patterns"
-  _ -> Nothing
+  _                                -> Nothing
   where
     badConstructors =
       [ "Agda.Builtin.Nat.Nat.zero"
@@ -65,10 +67,29 @@ isUnboxCopattern :: DeBruijnPattern -> C Bool
 isUnboxCopattern (ProjP _ q) = isJust <$> isUnboxProjection q
 isUnboxCopattern _           = return False
 
-tuplePat :: ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ())
-tuplePat cons i ps =
+
+-- | Translate list of patterns into a Haskell n-uple pattern.
+tuplePat :: NAPs -> C (Hs.Pat ())
+tuplePat ps =
   mapM (compilePat . namedArg) (filter keepArg ps) 
   <&> Hs.PTuple () Hs.Boxed
+
+
+-- | Translate Int.pos pattern.
+posIntPat :: NAPs -> C (Hs.Pat ())
+posIntPat [p] = do
+  n <- compileLitNatPat (namedArg p)
+  return $ Hs.PLit () (Hs.Signless ()) (Hs.Int () n (show n))
+posIntPat _ = __IMPOSSIBLE__
+
+
+-- | Translate Int.negsuc pattern.
+negSucIntPat :: NAPs -> C (Hs.Pat ())
+negSucIntPat [p] = do
+  n <- (1+) <$> compileLitNatPat (namedArg p)
+  return $ Hs.PLit () (Hs.Negative ()) (Hs.Int () n (show (negate n)))
+negSucIntPat _ = __IMPOSSIBLE__
+
 
 -- Agda2Hs does not support natural number patterns directly (since
 -- they don't exist in Haskell), however they occur as part of
@@ -82,17 +103,6 @@ compileLitNatPat = \case
     , [p] <- ps -> (1+) <$> compileLitNatPat (namedArg p)
   p -> genericDocError =<< "not a literal natural number pattern:" <?> prettyTCM p
 
-posIntPat :: ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ())
-posIntPat c i [p] = do
-  n <- compileLitNatPat (namedArg p)
-  return $ Hs.PLit () (Hs.Signless ()) (Hs.Int () n (show n))
-posIntPat _ _ _ = __IMPOSSIBLE__
-
-negSucIntPat :: ConHead -> ConPatternInfo -> [NamedArg DeBruijnPattern] -> C (Hs.Pat ())
-negSucIntPat c i [p] = do
-  n <- (1+) <$> compileLitNatPat (namedArg p)
-  return $ Hs.PLit () (Hs.Negative ()) (Hs.Int () n (show (negate n)))
-negSucIntPat _ _ _ = __IMPOSSIBLE__
 
 compileFun, compileFun'
   :: Bool -- ^ Whether the type signature shuuld also be generated
@@ -177,22 +187,23 @@ compileClause' curModule x c@Clause{..} = do
           _                         -> Hs.Match () x ps rhs whereBinds
     return $ Just match
 
-noAsPatterns :: DeBruijnPattern -> C ()
-noAsPatterns = \case
+checkNoAsPatterns :: DeBruijnPattern -> C ()
+checkNoAsPatterns = \case
     VarP i _ -> checkPatternInfo i
     DotP i _ -> checkPatternInfo i
     ConP _ cpi ps -> do
       checkPatternInfo $ conPInfo cpi
-      forM_ ps $ noAsPatterns . namedArg
+      forM_ ps $ checkNoAsPatterns . namedArg
     LitP i _ -> checkPatternInfo i
     ProjP{} -> return ()
     IApplyP i _ _ _ -> checkPatternInfo i
     DefP i _ ps -> do
       checkPatternInfo i
-      forM_ ps $ noAsPatterns . namedArg
+      forM_ ps $ checkNoAsPatterns . namedArg
   where
     checkPatternInfo i = unless (null $ patAsNames i) $
       genericDocError =<< "not supported by agda2hs: as patterns"
+
 
 compilePats :: NAPs -> C [Hs.Pat ()]
 compilePats ps = mapM (compilePat . namedArg) =<< filterM keepPat ps
@@ -200,21 +211,13 @@ compilePats ps = mapM (compilePat . namedArg) =<< filterM keepPat ps
     keepPat :: NamedArg DeBruijnPattern -> C Bool
     keepPat p = do
       keep <- return (keepArg p) `and2M` (not <$> isUnboxCopattern (namedArg p))
-      when keep $ noAsPatterns $ namedArg p
+
+      when keep $ checkNoAsPatterns $ namedArg p
+
       -- We do not allow forced (dot) patterns for non-erased arguments (see issue #142).
       when (usableModality p && isForcedPat (namedArg p)) $
         genericDocError =<< "not supported by agda2hs: forced (dot) patterns in non-erased positions"
       return keep
-
-    isForcedPat :: DeBruijnPattern -> Bool
-    isForcedPat = \case
-      VarP{}        -> False
-      DotP{}        -> True
-      ConP c cpi ps -> conPLazy cpi
-      LitP{}        -> False
-      ProjP{}       -> False
-      IApplyP{}     -> False
-      DefP{}        -> False
 
 
 compilePat :: DeBruijnPattern -> C (Hs.Pat ())
@@ -225,7 +228,7 @@ compilePat p@(VarP o x)
       checkValidVarName n
       return $ Hs.PVar () n
 compilePat (ConP h i ps)
-  | Just semantics <- isSpecialPat (conName h) = setCurrentRange h $ semantics h i ps
+  | Just semantics <- isSpecialCon (conName h) = setCurrentRange h $ semantics ps
 compilePat (ConP h _ ps) = isUnboxConstructor (conName h) >>= \case
   Just s -> compileErasedConP ps >>= addPatBang s
   Nothing -> do
@@ -251,10 +254,12 @@ compileLitPat = \case
   LitChar c -> return $ Hs.charP c
   l -> genericDocError =<< "bad literal pattern:" <?> prettyTCM l
 
+
 -- Local (where) declarations ---------------------------------------------
 
--- | Before checking a function, grab all of its local declarations.
+
 -- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
+-- | Run a computation with all the local declarations in the state.
 withFunctionLocals :: QName -> C a -> C a
 withFunctionLocals q k = do
   ls <- takeWhile (isAnonymousModuleName . qnameModule)
@@ -265,9 +270,11 @@ withFunctionLocals q k = do
   reportSDoc "agda2hs.compile.locals" 17 $ "Function locals: "<+> prettyTCM ls
   withLocals ls k
 
--- | Retain only those local declarations that belong to current clause's module.
+
+-- | Filter local declarations that belong to the given module.
 zoomLocals :: ModuleName -> LocalDecls -> LocalDecls
 zoomLocals mname = filter ((mname `isLeParentModuleOf`) . qnameModule)
+
 
 -- | Before checking a clause, grab all of its local declarations.
 -- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
@@ -289,6 +296,8 @@ withClauseLocals curModule c@Clause{..} k = do
   reportSDoc "agda2hs.compile.locals" 18 $ "Clause locals: "<+> prettyTCM ls'
   withLocals ls' k
 
+
+-- | Ensure a definition can be defined as transparent.
 checkTransparentPragma :: Definition -> C ()
 checkTransparentPragma def = compileFun False def >>= \case
     [Hs.FunBind _ cls] ->
@@ -310,6 +319,8 @@ checkTransparentPragma def = compileFun False def >>= \case
       "Cannot make function" <+> prettyTCM (defName def) <+> "transparent." <+>
       "A transparent function must have exactly one non-erased argument and return it unchanged."
 
+
+-- | Ensure a definition can be defined as inline.
 checkInlinePragma :: Definition -> C ()
 checkInlinePragma def@Defn{defName = f} = do
   let Function{funClauses = cs} = theDef def
