@@ -1,5 +1,7 @@
 {-# LANGUAGE ViewPatterns, NamedFieldPuns #-}
-module Agda2Hs.Compile.Term where
+module Agda2Hs.Compile.Term
+  ( compileTerm
+  ) where
 
 import Control.Arrow ( (>>>), (&&&) )
 import Control.Monad ( unless )
@@ -42,24 +44,46 @@ import Agda2Hs.HsUtils
 import {-# SOURCE #-} Agda2Hs.Compile.Function ( compileClause' )
 
 
+-- * Compilation of special definitions
+
+-- | Custom compilation rules for special definitions.
 isSpecialTerm :: QName -> Maybe (Elims -> C (Hs.Exp ()))
 isSpecialTerm q = case prettyShow q of
   _ | isExtendedLambdaName q                    -> Just (lambdaCase q)
   "Haskell.Prim.if_then_else_"                  -> Just ifThenElse
+  "Haskell.Prim.case_of_"                       -> Just caseOf
   "Haskell.Prim.the"                            -> Just expTypeSig
+  "Haskell.Prim.Monad.Do.Monad._>>=_"           -> Just monadBind
+  "Haskell.Prim.Monad.Do.Monad._>>_"            -> Just monadSeq
+  "Haskell.Extra.Delay.runDelay"                -> Just compileErasedApp
+
   "Haskell.Prim.Enum.Enum.enumFrom"             -> Just mkEnumFrom
   "Haskell.Prim.Enum.Enum.enumFromTo"           -> Just mkEnumFromTo
   "Haskell.Prim.Enum.Enum.enumFromThen"         -> Just mkEnumFromThen
   "Haskell.Prim.Enum.Enum.enumFromThenTo"       -> Just mkEnumFromThenTo
-
-  "Haskell.Prim.case_of_"                       -> Just caseOf
-  "Haskell.Prim.Monad.Do.Monad._>>=_"           -> Just monadBind
-  "Haskell.Prim.Monad.Do.Monad._>>_"            -> Just monadSeq
-  "Haskell.Extra.Delay.runDelay"                -> Just compileErasedApp
   "Agda.Builtin.FromNat.Number.fromNat"         -> Just fromNat
   "Agda.Builtin.FromNeg.Negative.fromNeg"       -> Just fromNeg
   "Agda.Builtin.FromString.IsString.fromString" -> Just fromString
+
   _                                             -> Nothing
+
+
+-- | Compile a lambda-case to the equivalent @\case@ expression.
+lambdaCase :: QName -> Elims -> C (Hs.Exp ())
+lambdaCase q es = setCurrentRangeQ q $ do
+  Function{funClauses = cls, funExtLam = Just ExtLamInfo {extLamModule = mname}}
+    <- theDef <$> getConstInfo q
+  npars <- size <$> lookupSection mname
+  let (pars, rest) = splitAt npars es
+      cs           = applyE cls pars
+  cs <- mapMaybeM (compileClause' (qnameModule q) $ hsName "(lambdaCase)") cs
+  case cs of
+    -- If there is a single clause and all patterns got erased, we
+    -- simply return the body.
+    [Hs.Match _ _ [] (Hs.UnGuardedRhs _ rhs) _] -> return rhs
+    _ -> do
+      lcase <- hsLCase =<< mapM clauseToAlt cs -- Pattern lambdas cannot have where blocks
+      eApp lcase <$> compileElims rest
 
 
 -- | Compile @if_then_else_@ to a Haskell @if ... then ... else ... @ expression.
@@ -69,6 +93,19 @@ ifThenElse es = compileElims es >>= \case
   b : t : f : es' -> return $ Hs.If () b t f `eApp` es'
   -- partially applied
   _ -> genericError $ "if_then_else_ must be fully applied"
+
+
+-- | Compile @case_of_@ to Haskell @\case@ expression.
+caseOf :: Elims -> C (Hs.Exp ())
+caseOf es = compileElims es >>= \case
+  -- applied to pattern lambda (that we remove, hence decrementLCase)
+  e : Hs.LCase _ alts : es' -> decrementLCase $> eApp (Hs.Case () e alts) es'
+  -- applied to regular lambda
+  e : Hs.Lambda _ (p : ps) b : es' ->
+    let lam [] = id
+        lam qs = Hs.Lambda () qs
+    in return $ eApp (Hs.Case () e [Hs.Alt () p (Hs.UnGuardedRhs () $ lam ps b) Nothing]) es'
+  _ -> genericError "case_of_ must be fully applied to a lambda term."
 
 
 -- | Compile @the@ to an explicitly-annotated Haskell expression.
@@ -84,8 +121,8 @@ expTypeSig es = do
     _ -> genericError $ "`the` must be fully applied"
 
 
--- | Utility for translating class methods to their Haskell counterpart.
--- This runs an instance check on the instance.
+-- | Utility for translating class methods to special Haskell counterpart.
+-- This runs an instance check.
 specialClassFunction :: Hs.Exp () -> ([Hs.Exp ()] -> Hs.Exp ()) -> Elims -> C (Hs.Exp ())
 specialClassFunction v f [] = return v
 specialClassFunction v f (Apply w : es) = do
@@ -108,6 +145,20 @@ specialClassFunction3 v f = specialClassFunction v $ \case
   (a : b : c : es) -> f a b c `eApp` es
   es               -> v `eApp` es
 
+
+mkEnumFrom :: Elims -> C (Hs.Exp ())
+mkEnumFrom = specialClassFunction1 (hsVar "enumFrom") $ Hs.EnumFrom ()
+
+mkEnumFromTo :: Elims -> C (Hs.Exp ())
+mkEnumFromTo = specialClassFunction2 (hsVar "enumFromTo") $ Hs.EnumFromTo ()
+
+mkEnumFromThen :: Elims -> C (Hs.Exp ())
+mkEnumFromThen = specialClassFunction2 (hsVar "enumFromThen") $ Hs.EnumFromThen ()
+
+mkEnumFromThenTo :: Elims -> C (Hs.Exp ())
+mkEnumFromThenTo = specialClassFunction3 (hsVar "enumFromThenTo") $ Hs.EnumFromThenTo ()
+
+
 fromNat :: Elims -> C (Hs.Exp ())
 fromNat = specialClassFunction1 (hsVar "fromIntegral") $ \case
   n@Hs.Lit{} -> n
@@ -125,39 +176,6 @@ fromString :: Elims -> C (Hs.Exp ())
 fromString = specialClassFunction1 (hsVar "fromString") $ \case
   s@Hs.Lit{} -> s
   v          -> hsVar "fromString" `eApp` [v]
-
-
-mkEnumFrom :: Elims -> C (Hs.Exp ())
-mkEnumFrom = specialClassFunction1 (hsVar "enumFrom") $ Hs.EnumFrom ()
-
-mkEnumFromTo :: Elims -> C (Hs.Exp ())
-mkEnumFromTo = specialClassFunction2 (hsVar "enumFromTo") $ Hs.EnumFromTo ()
-
-mkEnumFromThen :: Elims -> C (Hs.Exp ())
-mkEnumFromThen = specialClassFunction2 (hsVar "enumFromThen") $ Hs.EnumFromThen ()
-
-mkEnumFromThenTo :: Elims -> C (Hs.Exp ())
-mkEnumFromThenTo = specialClassFunction3 (hsVar "enumFromThenTo") $ Hs.EnumFromThenTo ()
-
-
--- | Compile case_of_ to Haskell \case expression.
-caseOf :: Elims -> C (Hs.Exp ())
-caseOf es = compileElims es >>= \case
-  -- applied to pattern lambda (that we remove, hence decrementLCase)
-  e : Hs.LCase _ alts : es' -> decrementLCase $> eApp (Hs.Case () e alts) es'
-  -- applied to regular lambda
-  e : Hs.Lambda _ (p : ps) b : es' ->
-    let lam [] = id
-        lam qs = Hs.Lambda () qs
-    in return $ eApp (Hs.Case () e [Hs.Alt () p (Hs.UnGuardedRhs () $ lam ps b) Nothing]) es'
-  _ -> genericError "case_of_ must be fully applied to a lambda term."
-
-
-delay :: QName -> Elims -> C (Hs.Exp ())
-delay _ = compileErasedApp
-
-force :: QName -> Elims -> C (Hs.Exp ())
-force _ = compileErasedApp
 
 
 -- | Compile monadic bind operator _>>=_ to Haskell do notation.
@@ -179,6 +197,7 @@ monadBind (e:es) = do
 monadBind [] = return $ hsVar "_>>=_"
 
 
+-- | Compile monadic bind operator _>>_ to Haskell do notation.
 monadSeq :: Elims -> C (Hs.Exp ())
 monadSeq (e:es) = do
   checkInstance $ unArg $ isApplyElim' __IMPOSSIBLE__ e
@@ -192,54 +211,38 @@ monadSeq (e:es) = do
 monadSeq [] = return $ hsVar "_>>_"
 
 
-erasedTerm :: C (Hs.Exp ())
-erasedTerm = return $ Hs.Tuple () Hs.Boxed []
 
+-- * Compilation of special constructors
 
-lambdaCase :: QName -> Elims -> C (Hs.Exp ())
-lambdaCase q es = setCurrentRangeQ q $ do
-  Function{funClauses = cls, funExtLam = Just ExtLamInfo {extLamModule = mname}}
-    <- theDef <$> getConstInfo q
-  npars <- size <$> lookupSection mname
-  let (pars, rest) = splitAt npars es
-      cs           = applyE cls pars
-  cs <- mapMaybeM (compileClause' (qnameModule q) $ hsName "(lambdaCase)") cs
-  case cs of
-    -- If there is a single clause and all patterns got erased, we
-    -- simply return the body.
-    [Hs.Match _ _ [] (Hs.UnGuardedRhs _ rhs) _] -> return rhs
-    _ -> do
-      lcase <- hsLCase =<< mapM clauseToAlt cs -- Pattern lambdas cannot have where blocks
-      eApp lcase <$> compileElims rest
-
-
-isSpecialCon :: QName -> Maybe (ConHead -> ConInfo -> Elims -> C (Hs.Exp ()))
+-- | Custom compilation rules for special constructors.
+isSpecialCon :: QName -> Maybe (Elims -> C (Hs.Exp ()))
 isSpecialCon = prettyShow >>> \case
   "Haskell.Prim.Tuple._,_"          -> Just tupleTerm
   "Haskell.Prim.Tuple._×_×_._,_,_"  -> Just tupleTerm
-  "Haskell.Extra.Erase.Erased"      -> Just (\_ _ _ -> erasedTerm)
-  "Haskell.Extra.Delay.Delay.now"   -> Just $ \_ _ -> compileErasedApp
-  "Haskell.Extra.Delay.Delay.later" -> Just $ \_ _ -> compileErasedApp
-  _ -> Nothing
+  "Haskell.Extra.Erase.Erased"      -> Just erasedTerm
+  "Haskell.Extra.Delay.Delay.now"   -> Just compileErasedApp
+  "Haskell.Extra.Delay.Delay.later" -> Just compileErasedApp
+  _                                 -> Nothing
 
-tupleTerm :: ConHead -> ConInfo -> Elims -> C (Hs.Exp ())
-tupleTerm cons i es = compileElims es <&> Hs.Tuple () Hs.Boxed
+tupleTerm :: Elims -> C (Hs.Exp ())
+tupleTerm es = compileElims es <&> Hs.Tuple () Hs.Boxed
 
+erasedTerm :: Elims -> C (Hs.Exp ())
+erasedTerm es = tupleTerm []
 
-clauseToAlt :: Hs.Match () -> C (Hs.Alt ())
-clauseToAlt (Hs.Match _ _ [p] rhs wh) = pure $ Hs.Alt () p rhs wh
-clauseToAlt (Hs.Match _ _ ps _ _)     = genericError $ "Pattern matching lambdas must take a single argument"
-clauseToAlt Hs.InfixMatch{}           = __IMPOSSIBLE__
+-- | @compileErasedApp@ compiles the application of unboxed constructors,
+-- unboxed projections and transparent functions.
+-- Precondition is that at most one elim is preserved.
+compileErasedApp :: Elims -> C (Hs.Exp ())
+compileErasedApp es = do
+  reportSDoc "agda2hs.compile.term" 12 $
+    text "Compiling application of transparent function or erased unboxed constructor"
+  compileElims es >>= \case
+    []  -> return $ hsVar "id"
+    [v] -> return v
+    _   -> __IMPOSSIBLE__
 
-compileLiteral :: Literal -> C (Hs.Exp ())
-compileLiteral (LitNat n)    = return $ Hs.intE n
-compileLiteral (LitFloat d)  = return $ Hs.Lit () $ Hs.Frac () (toRational d) (show d)
-compileLiteral (LitWord64 w) = return $ Hs.Lit () $ Hs.PrimWord () (fromIntegral w) (show w)
-compileLiteral (LitChar c)   = return $ Hs.charE c
-compileLiteral (LitString t) = return $ Hs.Lit () $ Hs.String () s s
-  where s = Text.unpack t
-compileLiteral l               = genericDocError =<< text "bad term:" <?> prettyTCM (Lit l)
-
+-- * Term compilation
 
 compileTerm :: Term -> C (Hs.Exp ())
 compileTerm v = do
@@ -303,23 +306,12 @@ compileTerm v = do
     compileCon :: ConHead -> ConInfo -> Elims -> C (Hs.Exp ())
     compileCon h i es
       | Just semantics <- isSpecialCon (conName h)
-      = semantics h i es
+      = semantics es
     compileCon h i es =
       isUnboxConstructor (conName h) >>= \case
         Just _  -> compileErasedApp es
         Nothing -> (`app` es) . Hs.Con () =<< compileQName (conName h)
 
-
--- `compileErasedApp` compiles an application of an unboxed constructor
--- or unboxed projection or transparent function.
--- Precondition is that at most one elim is preserved.
-compileErasedApp :: Elims -> C (Hs.Exp ())
-compileErasedApp es = do
-  reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of transparent function or erased unboxed constructor"
-  compileElims es >>= \case
-    []  -> return $ hsVar "id"
-    [v] -> return v
-    _   -> __IMPOSSIBLE__
 
 -- | Compile the application of a function definition marked as inlinable.
 -- The provided arguments will get substituted in the function body, and the missing arguments
@@ -388,3 +380,17 @@ compileArg x = do
   if | keepArg x -> Just <$> compileTerm (unArg x)
      | isInstance x, usableModality x -> Nothing <$ checkInstance (unArg $ x)
      | otherwise -> return Nothing
+
+clauseToAlt :: Hs.Match () -> C (Hs.Alt ())
+clauseToAlt (Hs.Match _ _ [p] rhs wh) = pure $ Hs.Alt () p rhs wh
+clauseToAlt (Hs.Match _ _ ps _ _)     = genericError "Pattern matching lambdas must take a single argument"
+clauseToAlt Hs.InfixMatch{}           = __IMPOSSIBLE__
+
+compileLiteral :: Literal -> C (Hs.Exp ())
+compileLiteral (LitNat n)    = return $ Hs.intE n
+compileLiteral (LitFloat d)  = return $ Hs.Lit () $ Hs.Frac () (toRational d) (show d)
+compileLiteral (LitWord64 w) = return $ Hs.Lit () $ Hs.PrimWord () (fromIntegral w) (show w)
+compileLiteral (LitChar c)   = return $ Hs.charE c
+compileLiteral (LitString t) = return $ Hs.Lit () $ Hs.String () s s
+  where s = Text.unpack t
+compileLiteral l               = genericDocError =<< text "bad term:" <?> prettyTCM (Lit l)
