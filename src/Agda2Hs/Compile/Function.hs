@@ -35,7 +35,7 @@ import Agda.Utils.Monad
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
-import Agda2Hs.Compile.Term ( compileTerm, compileVar )
+import Agda2Hs.Compile.Term ( compileTerm )
 import Agda2Hs.Compile.Type ( compileTopLevelType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types

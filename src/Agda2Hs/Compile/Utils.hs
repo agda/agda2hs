@@ -1,6 +1,6 @@
 module Agda2Hs.Compile.Utils where
 
-import Control.Arrow ( Arrow((***)) )
+import Control.Arrow ( Arrow((***)), (&&&) )
 import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.Writer ( tell )
@@ -323,3 +323,16 @@ maybePrependFixity n f comp | f /= noFixity = do
         RightAssoc -> Hs.AssocRight ()
   (Hs.InfixDecl () hsAssoc hsLvl [Hs.VarOp () x]:) <$> comp
 maybePrependFixity n f comp = comp
+
+
+-- | Compile a variable. If variable check is enabled, ensure that the variable is usable and visible.
+compileVar :: Nat -> C String
+compileVar x = do
+  (d, n) <- (fmap snd &&& fst . unDom) <$> lookupBV x
+  let cn = prettyShow $ nameConcrete n
+  let b | notVisible d   = "hidden"
+        | hasQuantity0 d = "erased"
+        | otherwise      = ""
+  whenM (asks checkVar) $ unless (null b) $ genericDocError =<<
+    text ("Cannot use " <> b <> " variable " <> cn)
+  return cn
