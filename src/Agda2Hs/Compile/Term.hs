@@ -31,15 +31,14 @@ import Agda.Utils.Size
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
--- this is a cyclic dependency,
--- but we need it to be able to use compileType
--- for explicit type signatures
-import {-# SOURCE #-} Agda2Hs.Compile.Type ( compileType )
+
+import Agda2Hs.Compile.Type ( compileType )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
 import {-# SOURCE #-} Agda2Hs.Compile.Function ( compileClause' )
+
 
 isSpecialTerm :: QName -> Maybe (QName -> Elims -> C (Hs.Exp ()))
 isSpecialTerm q = case prettyShow q of
@@ -227,17 +226,6 @@ compileLiteral (LitString t) = return $ Hs.Lit () $ Hs.String () s s
   where s = Text.unpack t
 compileLiteral l               = genericDocError =<< text "bad term:" <?> prettyTCM (Lit l)
 
--- | Compile a variable. If the check is enabled, ensures the variable is usable and visible.
-compileVar :: Nat -> C String
-compileVar x = do
-  (d, n) <- (fmap snd &&& fst . unDom) <$> lookupBV x
-  let cn = prettyShow $ nameConcrete n
-  let b | notVisible d   = "hidden"
-        | hasQuantity0 d = "erased"
-        | otherwise      = ""
-  whenM (asks checkVar) $ unless (null b) $ genericDocError =<<
-    text ("Cannot use " <> b <> " variable " <> cn)
-  return cn
 
 compileTerm :: Term -> C (Hs.Exp ())
 compileTerm v = do

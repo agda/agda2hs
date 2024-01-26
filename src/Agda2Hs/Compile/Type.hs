@@ -34,7 +34,6 @@ import Agda.Utils.Size ( Sized(size) )
 import Agda.Utils.Functor ( ($>) )
 
 import Agda2Hs.Compile.Name ( compileQName )
-import Agda2Hs.Compile.Term ( compileVar )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.AgdaUtils
