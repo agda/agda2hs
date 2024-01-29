@@ -45,7 +45,7 @@ import Agda2Hs.HsUtils
 import Agda.TypeChecking.Datatypes (isDataOrRecord)
 
 
--- | Pattern compilation rules for specific constructors.
+-- | Compilation rules for specific constructors in patterns.
 isSpecialCon :: QName -> Maybe (NAPs -> C (Hs.Pat ()))
 isSpecialCon qn = case prettyShow qn of
   "Haskell.Prim.Tuple._,_"         -> Just tuplePat
@@ -125,14 +125,15 @@ compileFun' withSig def@Defn{..} = do
 
   withCurrentModule m $ do
     ifM (endsInSort defType)
-
         -- if the function type ends in Sort, it's a type alias!
         (ensureNoLocals err >> compileTypeDef x def) 
-
         -- otherwise, we have to compile clauses.
         $ do
+
       when withSig $ checkValidFunName x
+
       compileTopLevelType withSig defType $ \ty -> do
+
         let filtered = filter keepClause funClauses
         weAreOnTop <- isJust <$> liftTCM  (currentModule >>= isTopLevelModule)
         pars <- getContextArgs
@@ -164,11 +165,14 @@ compileClause mod x c = withClauseLocals mod c $ compileClause' mod x c
 compileClause' :: ModuleName -> Hs.Name () -> Clause -> C (Maybe (Hs.Match ()))
 compileClause' curModule x c@Clause{clauseBody = Nothing} = pure Nothing
 compileClause' curModule x c@Clause{..} = do
-  reportSDoc "agda2hs.compile" 7 $ "compiling clause: " <+> prettyTCM c
+  reportSDoc "agda2hs.compile" 7  $ "compiling clause: " <+> prettyTCM c
   reportSDoc "agda2hs.compile" 17 $ "Old context: " <+> (prettyTCM =<< getContext)
   reportSDoc "agda2hs.compile" 17 $ "Clause telescope: " <+> prettyTCM clauseTel
+  reportSDoc "agda2hs.compile" 17 $ "Clause type:      " <+> prettyTCM clauseType
+
   addContext (KeepNames clauseTel) $ do
     ps <- compilePats namedClausePats
+
     let isWhereDecl = not . isExtendedLambdaName
           /\ (curModule `isFatherModuleOf`) . qnameModule
     children <- filter isWhereDecl <$> asks locals
@@ -180,8 +184,13 @@ compileClause' curModule x c@Clause{..} = do
     let inWhereModule = case children of
           [] -> id
           (c:_) -> withCurrentModule $ qnameModule c
-    body <- inWhereModule $ compileTerm $ fromMaybe __IMPOSSIBLE__ clauseBody
-    let rhs = Hs.UnGuardedRhs () body
+
+    let Just body            = clauseBody
+        Just (unArg -> typ)  = clauseType
+
+    hsBody <- inWhereModule $ compileTerm typ body
+
+    let rhs = Hs.UnGuardedRhs () hsBody
         whereBinds | null whereDecls = Nothing
                    | otherwise       = Just $ Hs.BDecls () (concat whereDecls)
         match = case (x, ps) of
@@ -207,6 +216,9 @@ checkNoAsPatterns = \case
       genericDocError =<< "not supported by agda2hs: as patterns"
 
 
+-- TODO: when compiling clause patterns, use telView of function type (insted of ClauseTel) (or just the type)
+--       once we've compiled a pattern, we have to convert it to a term and absApp(/piApply) to the function type.
+--       nb: use patternToTerm
 compilePats :: NAPs -> C [Hs.Pat ()]
 compilePats ps = mapM (compilePat . namedArg) =<< filterM keepPat ps
   where
@@ -221,6 +233,7 @@ compilePats ps = mapM (compilePat . namedArg) =<< filterM keepPat ps
         genericDocError =<< "not supported by agda2hs: forced (dot) patterns in non-erased positions"
       return keep
 
+-- Look at CheckInternal:fullyApplyCon
 
 compilePat :: DeBruijnPattern -> C (Hs.Pat ())
 compilePat p@(VarP o x)
