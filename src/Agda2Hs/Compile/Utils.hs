@@ -136,15 +136,22 @@ keepArg x = usableModality x && visible x
 keepClause :: Clause -> Bool
 keepClause = any keepArg . clauseType
 
+isPropSort :: Sort  -> C Bool
+isPropSort s = reduce s <&> \case
+  Prop _ -> True
+  _      -> False
+  
+
 -- Determine whether it is ok to erase arguments of this type,
 -- even in the absence of an erasure annotation.
 canErase :: Type -> C Bool
 canErase a = do
   TelV tel b <- telView a
   addContext tel $ orM
-    [ isLevelType b
-    , isJust <$> isSizeType b
-    , ((isJust . isSort) <$> reduce (unEl b))
+    [ isLevelType b                       -- Level
+    , isJust <$> isSizeType b             -- Size
+    , isJust . isSort <$> reduce (unEl b) -- Set
+    , isPropSort (getSort b)              -- _ : Prop
     ]
 
 -- Exploits the fact that the name of the record type and the name of the record module are the
@@ -165,7 +172,7 @@ isClassModule m
           ClassPragma _       -> True
           ExistingClassPragma -> True
           _                   -> False
-      _                             -> return False
+      _                       -> return False
 
 -- Drops the last (record) module for typeclass methods
 dropClassModule :: ModuleName -> C ModuleName

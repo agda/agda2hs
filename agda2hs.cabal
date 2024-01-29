@@ -83,4 +83,7 @@ executable agda2hs
                        MultiWayIf
                        TupleSections
                        ScopedTypeVariables
+                       ViewPatterns
+                       NamedFieldPuns
+                       PatternSynonyms
   ghc-options:         -Werror

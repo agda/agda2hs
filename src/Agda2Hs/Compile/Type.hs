@@ -138,7 +138,7 @@ compileType t = do
   case t of
     Pi a b -> compileDom (absName b) a >>= \case
       DomType _ hsA -> do
-        hsB <- underAbstraction a b $ compileType . unEl
+        hsB <- underAbstraction a b (compileType . unEl)
         return $ Hs.TyFun () hsA hsB
       DomConstraint hsA -> do
         hsB <- underAbstraction a b (compileType . unEl)
@@ -210,16 +210,29 @@ compileInlineType f args = do
     YesReduction _ t -> compileType t
     _                -> genericDocError =<< text "Could not reduce inline type alias " <+> prettyTCM f
 
+
+-- Compile a function domain.
+-- A domain can either be:
+--
+-- - dropped if the argument is erased.
+-- - added as a class constraint.
+-- - kept as a regular explict argument.
 compileDom :: ArgName -> Dom Type -> C CompiledDom
 compileDom x a
   | usableModality a = case getHiding a of
       Instance{} -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
-      NotHidden  -> uncurry DomType <$> compileTypeWithStrictness (unEl $ unDom a)
-      Hidden     ->
-        ifM (canErase $ unDom a)
-            (return DomDropped)
-            (genericDocError =<< do text "Implicit type argument not supported: " <+> prettyTCM x)
-  | otherwise    = return DomDropped
+      _          -> ifM (canErase $ unDom a) (return DomDropped)
+                        (uncurry DomType <$> compileTypeWithStrictness (unEl $ unDom a))
+  | otherwise = return DomDropped
+
+data DomOutput = DOInstance | DODropped | DOKept
+
+compiledDom :: Dom Type -> C DomOutput
+compiledDom a
+  | usableModality a = case getHiding a of
+      Instance{} -> pure DOInstance
+      _          -> ifM (canErase $ unDom a) (pure DODropped) (pure DOKept)
+  | otherwise = pure DODropped
 
 
 compileTeleBinds :: Telescope -> C [Hs.TyVarBind ()]
