@@ -214,6 +214,7 @@ compileClause' curModule x ty c@Clause{..} = do
 -- TODO(flupe): projection-like definitions are missing the first (variable) patterns
 --             (that are however present in the type)
 --             so we should drop the first parameters in the input type (using funProjection.projLams)
+-- TODO(flupe): handle copatterns (that don't expect a Pi type) (See Unbox:sort2)
 compilePats :: Type -> NAPs -> C [Hs.Pat ()]
 compilePats _ [] = pure []
 compilePats ty ((namedArg -> pat):ps) | Pi a b <- unEl ty = do
