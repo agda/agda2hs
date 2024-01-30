@@ -224,7 +224,12 @@ monadSeq ((_, e):tes) = do
 
 -- | Custom compilation rules for special constructors.
 isSpecialCon :: QName -> Maybe (TElims -> C (Hs.Exp ()))
-isSpecialCon _ = Nothing
+isSpecialCon = prettyShow >>> \case
+  "Haskell.Prim.Tuple._,_"  -> Just tupleTerm
+  _                         -> Nothing
+
+tupleTerm :: TElims -> C (Hs.Exp ())
+tupleTerm tes = Hs.Tuple () Hs.Boxed . onlyArgs <$> compileElims tes
 {-
 isSpecialCon = prettyShow >>> \case
   "Haskell.Prim.Tuple._,_"          -> Just tupleTerm
@@ -234,8 +239,6 @@ isSpecialCon = prettyShow >>> \case
   "Haskell.Extra.Delay.Delay.later" -> Just compileErasedApp
   _                                 -> Nothing
 
-tupleTerm :: TElims -> C (Hs.Exp ())
-tupleTerm tes = compileElims tes <&> Hs.Tuple () Hs.Boxed
 
 erasedTerm :: TElims -> C (Hs.Exp ())
 erasedTerm _ = tupleTerm []
@@ -470,6 +473,11 @@ compileElims (ty, term, Proj po pn : es) = do
   (:) <$> (EProj . Hs.Var () <$> compileQName pn) <*> compileElims (ty', term . (Proj po pn:), es)
   -- TODO(flupe): should we check whether the projection is erased?
 compileElims _ = __IMPOSSIBLE__ -- cubical endpoint application not supported
+
+onlyArgs :: [CompiledElim] -> [Hs.Exp()]
+onlyArgs [] = []
+onlyArgs (EArg x:ces) = x:onlyArgs ces
+onlyArgs _ = __IMPOSSIBLE__
 
 {-
 clauseToAlt :: Hs.Match () -> C (Hs.Alt ())
