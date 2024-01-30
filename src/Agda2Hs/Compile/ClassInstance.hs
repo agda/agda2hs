@@ -210,7 +210,8 @@ compileInstanceClause curModule c = withClauseLocals curModule c $ do
         -- No minimal dictionary used, proceed with compiling as a regular clause.
         | otherwise -> do
           reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
-          ms <- disableCopatterns $ compileClause curModule uf c'
+          --TODO(flupe)
+          ms <- disableCopatterns $ compileClause curModule uf undefined c'
           return ([Hs.InsDecl () (Hs.FunBind () (toList ms))], [])
 
 

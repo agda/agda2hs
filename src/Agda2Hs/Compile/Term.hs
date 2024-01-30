@@ -351,17 +351,19 @@ compileLam ty argi abs =
       -- unusable domain, we remove the lambda and compile the body only
       if not (usableDom dom) then
         addContext dom $ compileTerm (absBody cod) (absBody abs)
-      
+
       -- usable domain, user-written lambda is preserved
       else if getOrigin argi == UserWritten then do
         when (patternInTeleName `isPrefixOf` absName abs) $ genericDocError =<<
           text "Record pattern translation not supported. Use a pattern matching lambda instead."
-      
+
         reportSDoc "agda2hs.compile" 17 $ text "compiling regular lambda"
-      
-        hsLambda (absName abs) <$> addContext dom (compileTerm (absBody cod) (absBody abs))
-        -- Lam v b | usableModality v , getOrigin v == UserWritten -> do
-      
+
+        let varName = absName abs
+            ctxElt  = (varName,) <$> dom
+
+        hsLambda varName <$> addContext ctxElt (compileTerm (absBody cod) (absBody abs))
+
       -- usable domain, generated lambda means we introduce a section
       else undefined
         -- TODO
@@ -470,23 +472,10 @@ compileElims (ty, term, Proj po pn : es) = do
 compileElims _ = __IMPOSSIBLE__ -- cubical endpoint application not supported
 
 {-
--- TODO(flupe): don't actually recompile dom
-compileTArg :: (Dom Type, Term) -> C (Maybe (Hs.Exp ()))
-compileTArg (d, x) = do
-  reportSDoc "agda2hs.compile" 8 $ text "compiling argument" <+> prettyTCM x
-  compiledDom "" d >>= \case
-    DODropped  -> do
-      reportSDoc "agda2hs.compile" 8 $ text "argument is dropped"
-      pure Nothing
-    DOInstance -> Nothing <$ checkInstance x
-    DOKept     -> Just <$> compileTerm (unDom d) x
-
-
 clauseToAlt :: Hs.Match () -> C (Hs.Alt ())
 clauseToAlt (Hs.Match _ _ [p] rhs wh) = pure $ Hs.Alt () p rhs wh
 clauseToAlt (Hs.Match _ _ ps _ _)     = genericError "Pattern matching lambdas must take a single argument"
 clauseToAlt Hs.InfixMatch{}           = __IMPOSSIBLE__
-
 -}
 
 compileLiteral :: Literal -> C (Hs.Exp ())
