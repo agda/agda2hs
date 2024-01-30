@@ -229,7 +229,8 @@ isSpecialCon = prettyShow >>> \case
   _                         -> Nothing
 
 tupleTerm :: TElims -> C (Hs.Exp ())
-tupleTerm tes = Hs.Tuple () Hs.Boxed . onlyArgs <$> compileElims tes
+tupleTerm = compileApp' (Hs.Tuple () Hs.Boxed)
+
 {-
 isSpecialCon = prettyShow >>> \case
   "Haskell.Prim.Tuple._,_"          -> Just tupleTerm
@@ -448,12 +449,14 @@ compileInlineFunctionApp f es = do
 --       return $ Hs.Var () hf `eApp` args
 
 compileApp :: Hs.Exp () -> TElims -> C (Hs.Exp ())
-compileApp hd tes = appCompiledElims hd <$> compileElims tes
-  -- NOTE(flupe): probably not that efficient
-  where appCompiledElims :: Hs.Exp () -> [CompiledElim] -> Hs.Exp ()
-        appCompiledElims x []              = x
-        appCompiledElims x (EArg  y : ces) = appCompiledElims (eApp x [y]) ces
-        appCompiledElims x (EProj p : ces) = appCompiledElims (eApp p [x]) ces
+compileApp = compileApp' . eApp
+
+compileApp' :: ([Hs.Exp ()] -> Hs.Exp ()) -> TElims -> C (Hs.Exp ())
+compileApp' acc tes = aux acc <$> compileElims tes
+  where aux :: ([Hs.Exp ()] -> Hs.Exp ()) -> [CompiledElim] -> Hs.Exp ()
+        aux acc []              = acc []
+        aux acc (EArg  y : ces) = aux (acc . (y:)) ces
+        aux acc (EProj p : ces) = aux (eApp (Hs.App () p (acc []))) ces
 
 -- | Elims get compiled to arguments or projections.
 -- We ignore path applications.
