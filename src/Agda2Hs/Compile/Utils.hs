@@ -1,5 +1,6 @@
 module Agda2Hs.Compile.Utils where
 
+import Control.Monad ( forM_ )
 import Control.Arrow ( Arrow((***)), (&&&) )
 import Control.Monad.Except
 import Control.Monad.Reader
@@ -334,3 +335,22 @@ maybePrependFixity n f comp | f /= noFixity = do
         RightAssoc -> Hs.AssocRight ()
   (Hs.InfixDecl () hsAssoc hsLvl [Hs.VarOp () x]:) <$> comp
 maybePrependFixity n f comp = comp
+
+
+checkNoAsPatterns :: DeBruijnPattern -> C ()
+checkNoAsPatterns = \case
+    VarP i _ -> checkPatternInfo i
+    DotP i _ -> checkPatternInfo i
+    ConP _ cpi ps -> do
+      checkPatternInfo $ conPInfo cpi
+      forM_ ps $ checkNoAsPatterns . namedArg
+    LitP i _ -> checkPatternInfo i
+    ProjP{} -> return ()
+    IApplyP i _ _ _ -> checkPatternInfo i
+    DefP i _ ps -> do
+      checkPatternInfo i
+      forM_ ps $ checkNoAsPatterns . namedArg
+  where
+    checkPatternInfo :: PatternInfo -> C ()
+    checkPatternInfo i = unless (null $ patAsNames i) $
+      genericDocError =<< text "not supported by agda2hs: as patterns"

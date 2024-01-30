@@ -17,6 +17,7 @@ import Agda.Compiler.Common
 
 import Agda.Syntax.Common
 import Agda.Syntax.Internal
+import Agda.Syntax.Internal.Pattern ( patternToTerm )
 import Agda.Syntax.Literal
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.Syntax.Scope.Monad ( isDatatypeModule )
@@ -36,7 +37,7 @@ import Agda.Utils.Monad
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Term ( compileTerm )
-import Agda2Hs.Compile.Type ( compileTopLevelType )
+import Agda2Hs.Compile.Type ( compileTopLevelType, compiledDom, DomOutput(..) )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
@@ -47,7 +48,10 @@ import Agda.TypeChecking.Datatypes (isDataOrRecord)
 
 -- | Compilation rules for specific constructors in patterns.
 isSpecialCon :: QName -> Maybe (NAPs -> C (Hs.Pat ()))
-isSpecialCon qn = case prettyShow qn of
+isSpecialCon qn = Nothing
+
+  {-
+  case prettyShow qn of
   "Haskell.Prim.Tuple._,_"         -> Just tuplePat
   "Haskell.Prim.Tuple._×_×_._,_,_" -> Just tuplePat
   "Haskell.Extra.Erase.Erased"     -> Just tuplePat
@@ -104,6 +108,7 @@ compileLitNatPat = \case
     , [p] <- ps -> (1+) <$> compileLitNatPat (namedArg p)
   p -> genericDocError =<< "not a literal natural number pattern:" <?> prettyTCM p
 
+-}
 
 compileFun, compileFun'
   :: Bool -- ^ Whether the type signature shuuld also be generated
@@ -137,12 +142,16 @@ compileFun' withSig def@Defn{..} = do
         let filtered = filter keepClause funClauses
         weAreOnTop <- isJust <$> liftTCM  (currentModule >>= isTopLevelModule)
         pars <- getContextArgs
+
         -- We only instantiate the clauses to the current module parameters
         -- if the current module isn't the toplevel module
         unless weAreOnTop $
           reportSDoc "agda2hs.compile.type" 6 $ "Applying module parameters to clauses: " <+> prettyTCM pars
         let clauses = if weAreOnTop then filtered else filtered `apply` pars
-        cs <- mapMaybeM (compileClause (qnameModule defName) x) clauses
+
+        -- TODO(flupe): check whether we need to "apply" module parameters to deftype
+        -- let typ = if weAreOnTop then defType else defType `apply` pars
+        cs <- mapMaybeM (compileClause (qnameModule defName) x defType) clauses
 
         when (null cs) $ genericDocError
           =<< text "Functions defined with absurd patterns exclusively are not supported."
@@ -159,19 +168,22 @@ compileFun' withSig def@Defn{..} = do
       addContext tel $ ifIsSort b (\_ -> return True) (return False)
     err = "Not supported: type definition with `where` clauses"
 
-compileClause :: ModuleName -> Hs.Name () -> Clause -> C (Maybe (Hs.Match ()))
-compileClause mod x c = withClauseLocals mod c $ compileClause' mod x c
 
-compileClause' :: ModuleName -> Hs.Name () -> Clause -> C (Maybe (Hs.Match ()))
-compileClause' curModule x c@Clause{clauseBody = Nothing} = pure Nothing
-compileClause' curModule x c@Clause{..} = do
+compileClause :: ModuleName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
+compileClause mod x t c = withClauseLocals mod c $ compileClause' mod x t c
+
+compileClause' :: ModuleName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
+compileClause' curModule x _  c@Clause{clauseBody = Nothing} = pure Nothing
+compileClause' curModule x ty c@Clause{..} = do
   reportSDoc "agda2hs.compile" 7  $ "compiling clause: " <+> prettyTCM c
   reportSDoc "agda2hs.compile" 17 $ "Old context: " <+> (prettyTCM =<< getContext)
   reportSDoc "agda2hs.compile" 17 $ "Clause telescope: " <+> prettyTCM clauseTel
   reportSDoc "agda2hs.compile" 17 $ "Clause type:      " <+> prettyTCM clauseType
+  reportSDoc "agda2hs.compile" 17 $ "Clause patterns:  " <+> text (prettyShow namedClausePats)
 
   addContext (KeepNames clauseTel) $ do
-    ps <- compilePats namedClausePats
+
+    ps <- compilePats ty namedClausePats
 
     let isWhereDecl = not . isExtendedLambdaName
           /\ (curModule `isFatherModuleOf`) . qnameModule
@@ -198,69 +210,64 @@ compileClause' curModule x c@Clause{..} = do
           _                         -> Hs.Match () x ps rhs whereBinds
     return $ Just match
 
-checkNoAsPatterns :: DeBruijnPattern -> C ()
-checkNoAsPatterns = \case
-    VarP i _ -> checkPatternInfo i
-    DotP i _ -> checkPatternInfo i
-    ConP _ cpi ps -> do
-      checkPatternInfo $ conPInfo cpi
-      forM_ ps $ checkNoAsPatterns . namedArg
-    LitP i _ -> checkPatternInfo i
-    ProjP{} -> return ()
-    IApplyP i _ _ _ -> checkPatternInfo i
-    DefP i _ ps -> do
-      checkPatternInfo i
-      forM_ ps $ checkNoAsPatterns . namedArg
-  where
-    checkPatternInfo i = unless (null $ patAsNames i) $
-      genericDocError =<< "not supported by agda2hs: as patterns"
 
+-- TODO(flupe): projection-like definitions are missing the first (variable) patterns
+--             (that are however present in the type)
+--             so we should drop the first parameters in the input type (using funProjection.projLams)
+compilePats :: Type -> NAPs -> C [Hs.Pat ()]
+compilePats _ [] = pure []
+compilePats ty ((namedArg -> pat):ps) | Pi a b <- unEl ty = do
+  reportSDoc "agda2hs.compile.pattern" 5 $ text "Compiling pattern:" <+> prettyTCM pat
+  let rest = compilePats (absApp b (patternToTerm pat)) ps
+  compiledDom a >>= \case
+    DOInstance -> rest
+    DODropped  -> rest
+    DOKept     -> do
+      when (isForcedPat pat) $ genericDocError =<< "not supported by agda2hs: forced (dot) patterns in non-erased positions"
+      checkNoAsPatterns pat
+      (:) <$> compilePat (unDom a) pat <*> rest
+compilePats ty _ = __IMPOSSIBLE__
 
--- TODO: when compiling clause patterns, use telView of function type (insted of ClauseTel) (or just the type)
---       once we've compiled a pattern, we have to convert it to a term and absApp(/piApply) to the function type.
---       nb: use patternToTerm
-compilePats :: NAPs -> C [Hs.Pat ()]
-compilePats ps = mapM (compilePat . namedArg) =<< filterM keepPat ps
-  where
-    keepPat :: NamedArg DeBruijnPattern -> C Bool
-    keepPat p = do
-      keep <- return (keepArg p) `and2M` (not <$> isUnboxCopattern (namedArg p))
-
-      when keep $ checkNoAsPatterns $ namedArg p
-
-      -- We do not allow forced (dot) patterns for non-erased arguments (see issue #142).
-      when (usableModality p && isForcedPat (namedArg p)) $
-        genericDocError =<< "not supported by agda2hs: forced (dot) patterns in non-erased positions"
-      return keep
-
--- Look at CheckInternal:fullyApplyCon
-
-compilePat :: DeBruijnPattern -> C (Hs.Pat ())
-compilePat p@(VarP o x)
+compilePat :: Type -> DeBruijnPattern -> C (Hs.Pat ())
+-- variable pattern
+compilePat ty p@(VarP o x)
   | PatOWild <- patOrigin o = return $ Hs.PWildCard ()
-  | otherwise               = do
+  | otherwise = do
       n <- hsName <$> compileDBVar (dbPatVarIndex x)
       checkValidVarName n
       return $ Hs.PVar () n
-compilePat (ConP h i ps)
+
+-- special constructor pattern
+compilePat ty (ConP h i ps)
   | Just semantics <- isSpecialCon (conName h) = setCurrentRange h $ semantics ps
-compilePat (ConP h _ ps) = isUnboxConstructor (conName h) >>= \case
-  Just s -> compileErasedConP ps >>= addPatBang s
-  Nothing -> do
-    ps <- compilePats ps
-    c <- compileQName (conName h)
-    return $ pApp c ps
-compilePat (LitP _ l) = compileLitPat l
-compilePat (ProjP _ q) = do
+
+-- TODO(flupe)
+-- regular constructor pattern
+compilePat ty (ConP h _ ps) =
+  isUnboxConstructor (conName h) >>= \case
+    Just s -> compileErasedConP ps >>= addPatBang s
+    Nothing -> do
+      ps <- compilePats undefined ps
+      c <- compileQName (conName h)
+      return $ pApp c ps
+
+-- literal patterns
+compilePat ty (LitP _ l) = compileLitPat l
+
+-- copatterns patterns
+compilePat ty (ProjP _ q) = do
   reportSDoc "agda2hs.compile" 6 $ "compiling copattern: " <+> text (prettyShow q)
   unlessM (asks copatternsEnabled) $
     genericDocError =<< "not supported in Haskell: copatterns"
   let x = hsName $ prettyShow q
   return $ Hs.PVar () x
-compilePat p = genericDocError =<< "bad pattern:" <?> prettyTCM p
+
+-- nothing else is supported
+compilePat _ p = genericDocError =<< "bad pattern:" <?> prettyTCM p
+
 
 compileErasedConP :: NAPs -> C (Hs.Pat ())
-compileErasedConP ps = compilePats ps <&> \case
+compileErasedConP ps = compilePats undefined ps <&> \case
   [p] -> p
   _   -> __IMPOSSIBLE__
 
@@ -348,6 +355,7 @@ checkInlinePragma def@Defn{defName = f} = do
       genericDocError =<<
         "Cannot make function" <+> prettyTCM f <+> "inlinable." <+>
         "An inline function must have exactly one clause."
+
   where allowedPat :: DeBruijnPattern -> C Bool
         allowedPat VarP{} = pure True
         -- only allow matching on (unboxed) record constructors
