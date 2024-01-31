@@ -58,6 +58,24 @@ primModules =
   , "Haskell.Law"
   ]
 
+-- | Convert the final 'Proj' projection elimination into a
+--   'Def' projection application, but typed.
+unSpine1' :: Type -> Term -> C (Term, Type)
+unSpine1' ty tm =
+  case tm of
+    -- Just (h, es) -> fromMaybe v $ loop h [] es
+    Var i es     -> fromMaybe (tm, ty) <$> loop (Var i) es
+    Def f es     -> undefined 
+    Con ch ci es -> undefined 
+    _ -> pure (tm, ty)
+  where
+    loop :: (Elims -> Term) -> Elims -> C (Maybe (Term, Type))
+    loop h es =
+      case es of
+        []            -> pure Nothing
+        Proj o f : es -> undefined -- Just $ fromMaybe (Def f (Apply (defaultArg v) : es')) $ loop h (Proj o f : res) es'
+        e        : es -> loop (h . (e:)) es -- loop h (e : res) es'
+
 
 concatUnzip :: [([a], [b])] -> ([a], [b])
 concatUnzip = (concat *** concat) . unzip

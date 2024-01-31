@@ -230,6 +230,7 @@ compilePats ty ((namedArg -> pat):ps) | Pi a b <- unEl ty = do
 compilePats ty _ = __IMPOSSIBLE__
 
 compilePat :: Type -> DeBruijnPattern -> C (Hs.Pat ())
+
 -- variable pattern
 compilePat ty p@(VarP o x)
   | PatOWild <- patOrigin o = return $ Hs.PWildCard ()
