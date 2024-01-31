@@ -3,7 +3,7 @@ module Agda2Hs.Compile.Term
   ) where
 
 import Control.Arrow ( (>>>), (&&&) )
-import Control.Monad ( unless )
+import Control.Monad ( unless, msum )
 import Control.Monad.Reader
 
 import Data.Foldable ( toList )
@@ -46,6 +46,7 @@ import Agda2Hs.HsUtils
 
 import {-# SOURCE #-} Agda2Hs.Compile.Function ( compileClause' )
 
+
 -- | Typed Elims.
 type TElims =
   ( Type          -- ^ type of the thing being applied.
@@ -56,13 +57,22 @@ type TElims =
 -- * Compilation of special definitions
 
 isSpecialDef :: QName -> Maybe (TElims -> C (Hs.Exp ()))
-isSpecialDef _ = Nothing
+isSpecialDef q = case prettyShow q of
+  _ | isExtendedLambdaName q            -> Just $ lambdaCase q
+  "Haskell.Prim.if_then_else_"          -> Just ifThenElse
+  "Haskell.Prim.case_of_"               -> Just caseOf
+  _                                     -> Nothing
+
+-- TODO(flupe): now that we DON'T unspine, handling special (class)
+-- projections is a tad more tricky
+isSpecialProj :: QName -> Maybe (TElims -> C (Hs.Exp ()))
+isSpecialProj q = case prettyShow q of
+  "Agda.Builtin.FromNat.Number.fromNat" -> Just fromNat
+  _                                     -> Nothing
 
   {-
 isSpecialDef q = case prettyShow q of
-  -- _ | isExtendedLambdaName q                    -> Just $ lambdaCase q
-  "Haskell.Prim.if_then_else_"                  -> Just ifThenElse
-  "Haskell.Prim.case_of_"                       -> Just caseOf
+  -- _ | isExtendedLambdaName q                 -> Just $ lambdaCase q
   --"Haskell.Prim.the"                            -> Just expTypeSig
   "Haskell.Prim.Monad.Do.Monad._>>=_"           -> Just monadBind
   "Haskell.Prim.Monad.Do.Monad._>>_"            -> Just monadSeq
@@ -71,43 +81,86 @@ isSpecialDef q = case prettyShow q of
   "Haskell.Prim.Enum.Enum.enumFromTo"           -> Just mkEnumFromTo
   "Haskell.Prim.Enum.Enum.enumFromThen"         -> Just mkEnumFromThen
   "Haskell.Prim.Enum.Enum.enumFromThenTo"       -> Just mkEnumFromThenTo
-  "Agda.Builtin.FromNat.Number.fromNat"         -> Just fromNat
   "Agda.Builtin.FromNeg.Negative.fromNeg"       -> Just fromNeg
   "Agda.Builtin.FromString.IsString.fromString" -> Just fromString
   _                                             -> Nothing
   -}
 
+-- should really be named compileVar, TODO: rename compileVar
+compileV :: Int -> Type -> Elims -> C (Hs.Exp ())
+compileV i ty es = do
+  reportSDoc "agda2hs.compile.term" 10 $ text "Reached variable: " <+> prettyTCM (Var i es)
+  name <- compileDBVar i
+  compileApp (hsVar name) (ty, Var i, es)
 
-  {-
+
+-- | Compile constructors, defs and vars by
+-- carefully moving projections out of elims and calling compileProj.
+compileSpined :: Type -> Term -> Maybe (C (Hs.Exp ()))
+compileSpined ty tm =
+  case tm of
+
+    Def f es     -> Just $ do
+      ty <- defType <$> getConstInfo f
+      aux (compileDef f (ty, Def f, es)) (Def f) ty es
+
+    Con ch ci es -> Just $ do
+      Just ((_, _, _), ty) <- getConType ch ty
+      aux (compileCon ch ci (ty, Con ch ci, es)) (Con ch ci) ty es
+
+    Var i es     -> Just $ do
+      ty <- typeOfBV i
+      aux (compileV i ty es) (Var i) ty es
+
+    _            -> Nothing
+  where
+    aux :: C (Hs.Exp ()) -> (Elims -> Term) -> Type -> Elims -> C (Hs.Exp ())
+    aux c tm ty [] = c
+    aux c tm ty (e@(Proj o q):es) = do
+      ty' <- shouldBeProjectible (tm []) ty o q
+      -- TODO(projection-like only should get compiled to defs, still)
+      aux (compileProj q ty (tm []) ty' es) (tm . (e:)) ty' es
+    aux c tm ty (e@(Apply x):es) | Pi a b <- unEl ty =
+      aux c (tm . (e:)) (absApp b (unArg x)) es
+    aux _    _  _  _             = __IMPOSSIBLE__
+
+
 -- | Compile a lambda-case to the equivalent @\case@ expression.
 lambdaCase :: QName -> TElims -> C (Hs.Exp ())
 lambdaCase q tes = setCurrentRangeQ q $ do
-  Function{funClauses = cls, funExtLam = Just ExtLamInfo {extLamModule = mname}}
-    <- theDef <$> getConstInfo q
+  Function
+    { funClauses = cls
+    , funExtLam  = Just ExtLamInfo {extLamModule = mname}
+    } <- theDef <$> getConstInfo q
+
   npars <- size <$> lookupSection mname
-  let (pars, rest) = splitAt npars tes
-      cs           = applys cls (snd <$> pars)
-  cs <- mapMaybeM (compileClause' (qnameModule q) $ hsName "(lambdaCase)") cs
+
+  let (ty, tm, es) = tes
+  let (pars, rest) = splitAt npars es
+      cs           = applyE cls pars
+      ty'          = undefined --applys ty pars
+
+  cs <- mapMaybeM (compileClause' (qnameModule q) (hsName "(lambdaCase)") undefined) cs
+
   case cs of
     -- If there is a single clause and all patterns got erased, we
     -- simply return the body.
     [Hs.Match _ _ [] (Hs.UnGuardedRhs _ rhs) _] -> return rhs
     _ -> do
       lcase <- hsLCase =<< mapM clauseToAlt cs -- Pattern lambdas cannot have where blocks
-      eApp lcase <$> compileElims rest
+      compileApp lcase (undefined, undefined, rest)
 
 -- | Compile @if_then_else_@ to a Haskell @if ... then ... else ... @ expression.
 ifThenElse :: TElims -> C (Hs.Exp ())
-ifThenElse tes = compileElims tes >>= \case
+ifThenElse tes = onlyArgs <$> compileElims tes >>= \case
   -- fully applied
   b : t : f : es' -> return $ Hs.If () b t f `eApp` es'
   -- partially applied
-  _ -> genericError "if_then_else_ must be fully applied"
-
+  _               -> genericError "if_then_else_ must be fully applied"
 
 -- | Compile @case_of_@ to Haskell @\case@ expression.
 caseOf :: TElims -> C (Hs.Exp ())
-caseOf tes = compileElims tes >>= \case
+caseOf tes = onlyArgs <$> compileElims tes >>= \case
   -- applied to pattern lambda (that we remove, hence decrementLCase)
   e : Hs.LCase _ alts : es' -> decrementLCase $> eApp (Hs.Case () e alts) es'
   -- applied to regular lambda
@@ -116,6 +169,11 @@ caseOf tes = compileElims tes >>= \case
         lam qs = Hs.Lambda () qs
     in return $ eApp (Hs.Case () e [Hs.Alt () p (Hs.UnGuardedRhs () $ lam ps b) Nothing]) es'
   _ -> genericError "case_of_ must be fully applied to a lambda term."
+
+  {-
+
+
+
 
 
 -- TODO(flupe)
@@ -131,19 +189,28 @@ caseOf tes = compileElims tes >>= \case
   --     return $ eApp (Hs.ExpTypeSig () exp typ) compArgs
   --   _ -> genericError "`the` must be fully applied"
 
+-}
 
 -- | Utility for translating class methods to special Haskell counterpart.
 -- This runs an instance check.
 specialClassFunction :: Hs.Exp () -> ([Hs.Exp ()] -> Hs.Exp ()) -> TElims -> C (Hs.Exp ())
-specialClassFunction v f [] = return v
-specialClassFunction v f ((t, w) : tes) = do
-  checkInstance w
-  f <$> compileElims tes -- TODO: tel
+specialClassFunction v f (ty, tm, [])         = pure v
+specialClassFunction v f (ty, tm, Apply w:es) | Pi a b <- unEl ty = do
+  checkInstance (unArg w)
+  compileApp' f (absApp b (unArg w), tm . (Apply w:), es)
+sepcialClassFunction v f _ = __IMPOSSIBLE__
 
 specialClassFunction1 :: Hs.Exp () -> (Hs.Exp () -> Hs.Exp ()) -> TElims -> C (Hs.Exp ())
 specialClassFunction1 v f = specialClassFunction v $ \case
   (a : es) -> f a `eApp` es
   []       -> v
+
+fromNat :: TElims -> C (Hs.Exp ())
+fromNat = specialClassFunction1 (hsVar "fromIntegral") $ \case
+  n@Hs.Lit{} -> n
+  v          -> hsVar "fromIntegral" `eApp` [v]
+
+{-
 
 specialClassFunction2 :: Hs.Exp () -> (Hs.Exp () -> Hs.Exp () -> Hs.Exp ()) -> TElims -> C (Hs.Exp ())
 specialClassFunction2 v f = specialClassFunction v $ \case
@@ -169,10 +236,6 @@ mkEnumFromThenTo :: TElims -> C (Hs.Exp ())
 mkEnumFromThenTo = specialClassFunction3 (hsVar "enumFromThenTo") $ Hs.EnumFromThenTo ()
 
 
-fromNat :: TElims -> C (Hs.Exp ())
-fromNat = specialClassFunction1 (hsVar "fromIntegral") $ \case
-  n@Hs.Lit{} -> n
-  v          -> hsVar "fromIntegral" `eApp` [v]
 
 fromNeg :: TElims -> C (Hs.Exp ())
 fromNeg = specialClassFunction1 negFromIntegral $ \case
@@ -225,38 +288,40 @@ monadSeq ((_, e):tes) = do
 -- | Custom compilation rules for special constructors.
 isSpecialCon :: QName -> Maybe (TElims -> C (Hs.Exp ()))
 isSpecialCon = prettyShow >>> \case
-  "Haskell.Prim.Tuple._,_"  -> Just tupleTerm
-  _                         -> Nothing
+  "Haskell.Prim.Tuple._,_"         -> Just tupleTerm
+  "Haskell.Prim.Tuple._×_×_._,_,_" -> Just tupleTerm
+  "Haskell.Extra.Erase.Erased"     -> Just erasedTerm
+  _                                -> Nothing
 
 tupleTerm :: TElims -> C (Hs.Exp ())
 tupleTerm = compileApp' (Hs.Tuple () Hs.Boxed)
 
+erasedTerm :: TElims -> C (Hs.Exp ())
+erasedTerm _ = pure (Hs.Tuple () Hs.Boxed [])
+
 {-
 isSpecialCon = prettyShow >>> \case
-  "Haskell.Prim.Tuple._,_"          -> Just tupleTerm
-  "Haskell.Prim.Tuple._×_×_._,_,_"  -> Just tupleTerm
-  "Haskell.Extra.Erase.Erased"      -> Just erasedTerm
   "Haskell.Extra.Delay.Delay.now"   -> Just compileErasedApp
   "Haskell.Extra.Delay.Delay.later" -> Just compileErasedApp
   _                                 -> Nothing
 
 
-erasedTerm :: TElims -> C (Hs.Exp ())
-erasedTerm _ = tupleTerm []
+
+-}
 
 -- | @compileErasedApp@ compiles the application of unboxed constructors,
 -- unboxed projections and transparent functions.
--- Precondition is that at most one elim is preserved.
+-- Precondition is that at most one elim is preserved, and it MUST be an argument
 compileErasedApp :: TElims -> C (Hs.Exp ())
 compileErasedApp tes = do
   reportSDoc "agda2hs.compile.term" 12 $
     text "Compiling application of transparent function or erased unboxed constructor"
   compileElims tes >>= \case
-    []  -> return $ hsVar "id"
-    [v] -> return v
-    _   -> __IMPOSSIBLE__
+    []       -> return $ hsVar "id"
+    [EArg v] -> return v
+    _        -> __IMPOSSIBLE__
 
--}
+
 -- TODO(flupe):
 -- maybeUnfoldCopy f es compileTerm $ \f es ->
 
@@ -270,7 +335,7 @@ compileDef f tes = do
   -- ifM (isClassFunction f) (compileClassFunApp f es) $
   -- ifM ((isJust <$> isUnboxProjection f) `or2M` isTransparentFunction f) (compileErasedApp tel es) $ do
   --   -- ifM (isInlinedFunction f) (compileInlineFunctionApp f es) $ do
-    reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of regular function"
+    reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of regular function:" <+> prettyTCM f
 
     -- Drop module parameters of local `where` functions
     -- TODO(flupe)
@@ -282,60 +347,60 @@ compileDef f tes = do
     compileApp (Hs.Var () hsName) tes -- (drop moduleArgs tes)
 
 
+compileProj
+  :: QName
+  -> Type  -- ^ Type of term the projection is being applied to
+  -> Term  -- ^ Term the projection is being applied to
+  -> Type  -- ^ Return type of the projection
+  -> Elims -- ^ Elims of the projection
+  -> C (Hs.Exp ())
+compileProj q _ _ ty es = do
+  reportSDoc "agda2hs.compile.term" 10 $ text "Compiling record projection(like):" <+> prettyTCM q
+  ifM (isJust <$> isUnboxProjection q)
+    (compileErasedApp (ty, undefined, es)) $ do
+    name <- compileQName q
+    compileApp (Hs.Var () name) (ty, undefined, es)
+
 
 compileCon :: ConHead -> ConInfo -> TElims -> C (Hs.Exp ())
+-- TODO(flupe:)
+-- -- the constructor may be a copy introduced by module application,
+-- -- therefore we need to find the original constructor
+-- info <- getConstInfo (conName h)
+-- if not (defCopy info)
+--   then compileCon h i es
+--   else let Constructor{conSrcCon = c} = theDef info in
+--        compileCon c ConOSystem es
 compileCon h i tes
   | Just semantics <- isSpecialCon (conName h)
   = semantics tes
 compileCon h i tes = do
-  con <- Hs.Con () <$> compileQName (conName h)
-  compileApp con tes
-  -- isUnboxConstructor (conName h) >>= \case
-  --   Just _  -> compileErasedApp tes
-  --   Nothing -> (`compileApp` tes) . Hs.Con () =<< compileQName (conName h)
+  isUnboxConstructor (conName h) >>= \case
+    Just _  -> compileErasedApp tes
+    Nothing -> do
+      con <- Hs.Con () <$> compileQName (conName h)
+      compileApp con tes
+
 
 -- * Term compilation
 
 compileTerm :: Type -> Term -> C (Hs.Exp ())
 compileTerm ty v = do
 
-  reportSDoc "agda2hs.compile" 7 $ text "compiling term:" <+> prettyTCM v
+  reportSDoc "agda2hs.compile" 7  $ text "compiling term:" <+> prettyTCM v
   reportSDoc "agda2hs.compile" 27 $ text "compiling term:" <+> pure (P.pretty $ unSpine1 v)
 
-  -- NOTE: we DON'T UNSPINE here, in order to be able to propagate the type of projections properly.
-  case v of
-
-    Var i es -> do
-      reportSDoc "agda2hs.compile.term" 50 $ text "Reached variable"
-      varName <- compileDBVar i
-      varType <- typeOfBV i
-      compileApp (hsVar varName) (varType, Var i, es)
-
-    Def f es -> do
-      reportSDoc "agda2hs.compile.term" 50 $ text "Reached definition: " <+> prettyTCM f
-      fType <- defType <$> getConstInfo f
-      compileDef f (fType, Def f, es)
-
-    Con ch ci es -> do
-      reportSDoc "agda2hs.compile.term" 50 $ text "Reached constructor:" <+> prettyTCM (conName ch)
-      Just ((_, _, args), ty) <- getConType ch ty
-      compileCon ch ci (ty, Con ch ci, es)
-      -- TODO(flupe:)
-      -- -- the constructor may be a copy introduced by module application,
-      -- -- therefore we need to find the original constructor
-      -- info <- getConstInfo (conName h)
-      -- if not (defCopy info)
-      --   then compileCon h i es
-      --   else let Constructor{conSrcCon = c} = theDef info in
-      --        compileCon c ConOSystem es
-
-    Lit l -> compileLiteral l
-
-    Lam v b -> do
-      reportSDoc "agda2hs.compile.term" 50 $ text "Reached lambda"
-      compileLam ty v b
-
-    t -> genericDocError =<< text "bad term:" <?> prettyTCM t
+  case compileSpined ty v of
+    Just cont -> cont
+    Nothing -> case unSpine1 v of
+      
+      Lit l -> compileLiteral l
+      
+      Lam v b -> do
+        reportSDoc "agda2hs.compile.term" 50 $ text "Reached lambda"
+        compileLam ty v b
+      
+      t -> genericDocError =<< text "bad term:" <?> prettyTCM t
 
 
 -- | Check whether a domain is usable on the Haskell side.
@@ -358,6 +423,7 @@ compileLam ty argi abs =
 
       -- usable domain, user-written lambda is preserved
       else if getOrigin argi == UserWritten then do
+
         when (patternInTeleName `isPrefixOf` absName abs) $ genericDocError =<<
           text "Record pattern translation not supported. Use a pattern matching lambda instead."
 
@@ -369,25 +435,23 @@ compileLam ty argi abs =
         hsLambda varName <$> addContext ctxElt (compileTerm (absBody cod) (absBody abs))
 
       -- usable domain, generated lambda means we introduce a section
-      else undefined
-        -- TODO
-        --   -- System-inserted lambda, no need to preserve the name.
-        --   underAbstraction_ b $ \ body -> do
-        --     x <- showTCM (Var 0 [])
-        --     let hsx = hsVar x
-        --     body <- compileTerm body
-        --     return $ case body of
-        --       Hs.InfixApp _ a op b | a == hsx ->
-        --         if pp op == "-" then -- Jesper: no right section for minus, as Haskell parses this as negation!
-        --           Hs.LeftSection () b (Hs.QConOp () $ Hs.UnQual () $ hsName "subtract")
-        --         else
-        --           Hs.RightSection () op b -- System-inserted visible lambdas can only come from sections
-        --       _            -> hsLambda x body         -- so we know x is not free in b.
-       -- ^ TODO(flupe): ensure that it is bound properly if Abs Term and Abs Type don't bind the same
+      else do
 
-    _ -> do
-      reportSDoc "agda2hs.compile" 17 $ text "Lambda type:" <+> prettyTCM ty
-      __IMPOSSIBLE__
+        let varName = absName abs
+            ctxElt  = (varName,) <$> dom
+
+        x <- compileDBVar 0
+
+        addContext ctxElt $ do
+          compileTerm (absBody cod) (absBody abs) <&> \case
+            Hs.InfixApp () a op b | a == hsVar x ->
+              if pp op == "-" then -- Jesper: no right section for minus, as Haskell parses this as negation!
+                Hs.LeftSection () b (Hs.QConOp () $ Hs.UnQual () $ hsName "subtract")
+              else
+                Hs.RightSection () op b -- System-inserted visible lambdas can only come from sections
+            body -> hsLambda x body
+
+    _ -> __IMPOSSIBLE__
 
 
 
@@ -462,6 +526,17 @@ compileApp' acc tes = aux acc <$> compileElims tes
 -- We ignore path applications.
 data CompiledElim = EArg (Hs.Exp ()) | EProj (Hs.Exp ())
 
+-- | Compile a list of arguments applied to a function of the given type.
+compileArgs :: Type -> [Term] -> C [Hs.Exp ()]
+compileArgs ty [] = pure []
+compileArgs ty (x:xs) | Pi a b <- unEl ty = do
+  let rest = compileArgs (absApp b x) xs
+  compiledDom a >>= \case
+    DODropped  -> rest
+    DOInstance -> checkInstance x *> rest
+    DOKept     -> (:) <$> compileTerm (unDom a) x
+                      <*> rest
+
 compileElims :: TElims -> C [CompiledElim]
 compileElims (ty, term, []) = pure []
 compileElims (ty, term, Apply at : es) | Pi a b <- unEl ty = do
@@ -473,21 +548,22 @@ compileElims (ty, term, Apply at : es) | Pi a b <- unEl ty = do
                       <*> rest
 compileElims (ty, term, Proj po pn : es) = do
   ty' <- shouldBeProjectible (term []) ty po pn
-  (:) <$> (EProj . Hs.Var () <$> compileQName pn) <*> compileElims (ty', term . (Proj po pn:), es)
-  -- TODO(flupe): should we check whether the projection is erased?
+  let rest = compileElims (ty', term . (Proj po pn:), es)
+  ifM (isJust <$> isUnboxProjection pn) rest $
+    (:) <$> (EProj . Hs.Var () <$> compileQName pn) <*> rest
+  -- NOTE(flupe): ^ should we check whether the projection is erased?
+
 compileElims _ = __IMPOSSIBLE__ -- cubical endpoint application not supported
 
 onlyArgs :: [CompiledElim] -> [Hs.Exp()]
-onlyArgs [] = []
-onlyArgs (EArg x:ces) = x:onlyArgs ces
-onlyArgs _ = __IMPOSSIBLE__
+onlyArgs []             = []
+onlyArgs (EArg x : ces) = x : onlyArgs ces
+onlyArgs _              = __IMPOSSIBLE__
 
-{-
 clauseToAlt :: Hs.Match () -> C (Hs.Alt ())
 clauseToAlt (Hs.Match _ _ [p] rhs wh) = pure $ Hs.Alt () p rhs wh
 clauseToAlt (Hs.Match _ _ ps _ _)     = genericError "Pattern matching lambdas must take a single argument"
 clauseToAlt Hs.InfixMatch{}           = __IMPOSSIBLE__
--}
 
 compileLiteral :: Literal -> C (Hs.Exp ())
 compileLiteral (LitNat n)    = return $ Hs.intE n

@@ -19,16 +19,16 @@ sort1 xs = xs [ looksfine ]
 
 {-# COMPILE AGDA2HS sort1 #-}
 
-sort2 : List Int → ∃ (List Int) IsSorted
-sort2 xs .el = xs
-sort2 xs .pf = looksfine
+-- sort2 : List Int → ∃ (List Int) IsSorted
+-- sort2 xs .el = xs
+-- sort2 xs .pf = looksfine
+-- 
+-- {-# COMPILE AGDA2HS sort2 #-}
 
-{-# COMPILE AGDA2HS sort2 #-}
-
-sort3 : List Int → ∃ (List Int) IsSorted
-sort3 xs = xs [ sort2 xs .pf ]
-
-{-# COMPILE AGDA2HS sort3 #-}
+-- sort3 : List Int → ∃ (List Int) IsSorted
+-- sort3 xs = xs [ sort2 xs .pf ]
+-- 
+-- {-# COMPILE AGDA2HS sort3 #-}
 
 sortAll : List (List Int)
 sortAll = map el (map (λ xs → xs [ looksfine {xs} ]) ((1 ∷ 2 ∷ []) ∷ (3 ∷ []) ∷ []))
