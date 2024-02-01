@@ -65,7 +65,7 @@ import TypeSignature
 -- import ModuleParametersImports
 import Coerce
 -- import Inlining
-import EraseType
+-- import EraseType
 import Issue257
 import Delay
 import Issue273
@@ -134,7 +134,7 @@ import TypeSignature
 -- import ModuleParametersImports
 import Coerce
 -- import Inlining
-import EraseType
+-- import EraseType
 import Delay
 import Issue273
 #-}

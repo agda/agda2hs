@@ -52,12 +52,23 @@ import Agda.TypeChecking.Datatypes (isDataOrRecord)
 -- | Compilation rules for specific constructors in patterns.
 isSpecialCon :: QName -> Maybe (Type -> NAPs -> C (Hs.Pat ()))
 isSpecialCon qn = case prettyShow qn of
+  s | s `elem` badConstructors     -> Just itsBad
   "Haskell.Prim.Tuple._,_"         -> Just tuplePat
   "Haskell.Prim.Tuple._×_×_._,_,_" -> Just tuplePat
   "Haskell.Extra.Erase.Erased"     -> Just tuplePat
   "Agda.Builtin.Int.Int.pos"       -> Just posIntPat
   "Agda.Builtin.Int.Int.negsuc"    -> Just negSucIntPat
   _                                -> Nothing
+  where
+    badConstructors =
+      [ "Agda.Builtin.Nat.Nat.zero"
+      , "Agda.Builtin.Nat.Nat.suc"
+      , "Haskell.Extra.Delay.Delay.now"
+      , "Haskell.Extra.Delay.Delay.later"
+      ]
+
+    itsBad :: Type -> NAPs -> C (Hs.Pat ())
+    itsBad _ _ = genericDocError =<< "constructor `" <> prettyTCM qn <> "` not supported in patterns"
 
 -- | Translate list of patterns into a Haskell n-uple pattern.
 tuplePat :: Type -> NAPs -> C (Hs.Pat ())
@@ -92,23 +103,6 @@ compileLitNatPat = \case
     , [p] <- ps -> (1+) <$> compileLitNatPat (namedArg p)
   p -> genericDocError =<< "not a literal natural number pattern:" <?> prettyTCM p
 
-  {-
-  case prettyShow qn of
-  s | s `elem` badConstructors     -> Just $ \ _ -> genericDocError =<<
-    "constructor `" <> prettyTCM qn <> "` not supported in patterns"
-  _                                -> Nothing
-  where
-    badConstructors =
-      [ "Agda.Builtin.Nat.Nat.zero"
-      , "Agda.Builtin.Nat.Nat.suc"
-      , "Haskell.Extra.Delay.Delay.now"
-      , "Haskell.Extra.Delay.Delay.later"
-      ]
-
-
-
-
--}
 
 compileFun, compileFun'
   :: Bool -- ^ Whether the type signature shuuld also be generated
@@ -218,10 +212,21 @@ compileClause' curModule x ty c@Clause{..} = do
 compilePats :: Type -> NAPs -> C [Hs.Pat ()]
 compilePats _ [] = pure []
 compilePats ty ((namedArg -> ProjP po pn):ps) = do
+  reportSDoc "agda2hs.compile" 6 $ "compiling copattern: " <+> text (prettyShow pn)
+  -- NOTE: should be fine for unboxed records
+  unlessM (asks copatternsEnabled `or2M` (isJust <$> isUnboxProjection pn)) $
+    genericDocError =<< "not supported in Haskell: copatterns"
   Just (unEl -> Pi a b) <- getDefType pn ty -- ????
   compilePats (absBody b) ps
 
--- TODO: use shouldBePi or mustBePi
+-- -- copatterns patterns
+-- compilePat ty (ProjP _ q) = do
+--   reportSDoc "agda2hs.compile" 6 $ "compiling copattern: " <+> text (prettyShow q)
+--   unlessM (asks copatternsEnabled) $
+--     genericDocError =<< "not supported in Haskell: copatterns"
+--   let x = hsName $ prettyShow q
+--   return $ Hs.PVar () x
+
 compilePats ty ((namedArg -> pat):ps) = do
   (a, b) <- mustBePi ty
   reportSDoc "agda2hs.compile.pattern" 5 $ text "Compiling pattern:" <+> prettyTCM pat
@@ -261,13 +266,6 @@ compilePat ty (ConP ch i ps) = do
 -- literal patterns
 compilePat ty (LitP _ l) = compileLitPat l
 
--- copatterns patterns
-compilePat ty (ProjP _ q) = do
-  reportSDoc "agda2hs.compile" 6 $ "compiling copattern: " <+> text (prettyShow q)
-  unlessM (asks copatternsEnabled) $
-    genericDocError =<< "not supported in Haskell: copatterns"
-  let x = hsName $ prettyShow q
-  return $ Hs.PVar () x
 
 -- nothing else is supported
 compilePat _ p = genericDocError =<< "bad pattern:" <?> prettyTCM p
