@@ -24,8 +24,11 @@ import Agda.Syntax.Scope.Monad ( isDatatypeModule )
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Substitute
-import Agda.TypeChecking.Telescope ( telView )
+import Agda.TypeChecking.Telescope ( telView, mustBePi, piApplyM )
 import Agda.TypeChecking.Sort ( ifIsSort )
+import Agda.TypeChecking.Datatypes ( getConType )
+import Agda.TypeChecking.Records ( getDefType )
+import Agda.TypeChecking.Reduce ( reduce )
 
 import Agda.Utils.Functor ( (<&>), dget)
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
@@ -47,54 +50,35 @@ import Agda.TypeChecking.Datatypes (isDataOrRecord)
 
 
 -- | Compilation rules for specific constructors in patterns.
-isSpecialCon :: QName -> Maybe (NAPs -> C (Hs.Pat ()))
-isSpecialCon qn = Nothing
-
-  {-
-  case prettyShow qn of
+isSpecialCon :: QName -> Maybe (Type -> NAPs -> C (Hs.Pat ()))
+isSpecialCon qn = case prettyShow qn of
   "Haskell.Prim.Tuple._,_"         -> Just tuplePat
   "Haskell.Prim.Tuple._×_×_._,_,_" -> Just tuplePat
   "Haskell.Extra.Erase.Erased"     -> Just tuplePat
   "Agda.Builtin.Int.Int.pos"       -> Just posIntPat
   "Agda.Builtin.Int.Int.negsuc"    -> Just negSucIntPat
-  s | s `elem` badConstructors     -> Just $ \ _ -> genericDocError =<<
-    "constructor `" <> prettyTCM qn <> "` not supported in patterns"
   _                                -> Nothing
-  where
-    badConstructors =
-      [ "Agda.Builtin.Nat.Nat.zero"
-      , "Agda.Builtin.Nat.Nat.suc"
-      , "Haskell.Extra.Delay.Delay.now"
-      , "Haskell.Extra.Delay.Delay.later"
-      ]
-
-isUnboxCopattern :: DeBruijnPattern -> C Bool
-isUnboxCopattern (ProjP _ q) = isJust <$> isUnboxProjection q
-isUnboxCopattern _           = return False
-
 
 -- | Translate list of patterns into a Haskell n-uple pattern.
-tuplePat :: NAPs -> C (Hs.Pat ())
-tuplePat ps =
-  mapM (compilePat . namedArg) (filter keepArg ps) 
+tuplePat :: Type -> NAPs -> C (Hs.Pat ())
+tuplePat ty ps =
+  compilePats ty ps
   <&> Hs.PTuple () Hs.Boxed
 
-
 -- | Translate Int.pos pattern.
-posIntPat :: NAPs -> C (Hs.Pat ())
-posIntPat [p] = do
+posIntPat :: Type -> NAPs -> C (Hs.Pat ())
+posIntPat ty [p] = do
   n <- compileLitNatPat (namedArg p)
   return $ Hs.PLit () (Hs.Signless ()) (Hs.Int () n (show n))
-posIntPat _ = __IMPOSSIBLE__
+posIntPat _ _ = __IMPOSSIBLE__
 
 
 -- | Translate Int.negsuc pattern.
-negSucIntPat :: NAPs -> C (Hs.Pat ())
-negSucIntPat [p] = do
+negSucIntPat :: Type -> NAPs -> C (Hs.Pat ())
+negSucIntPat ty [p] = do
   n <- (1+) <$> compileLitNatPat (namedArg p)
   return $ Hs.PLit () (Hs.Negative ()) (Hs.Int () n (show (negate n)))
-negSucIntPat _ = __IMPOSSIBLE__
-
+negSucIntPat _ _ = __IMPOSSIBLE__
 
 -- Agda2Hs does not support natural number patterns directly (since
 -- they don't exist in Haskell), however they occur as part of
@@ -107,6 +91,22 @@ compileLitNatPat = \case
     | prettyShow (conName ch) == "Agda.Builtin.Nat.Nat.suc"
     , [p] <- ps -> (1+) <$> compileLitNatPat (namedArg p)
   p -> genericDocError =<< "not a literal natural number pattern:" <?> prettyTCM p
+
+  {-
+  case prettyShow qn of
+  s | s `elem` badConstructors     -> Just $ \ _ -> genericDocError =<<
+    "constructor `" <> prettyTCM qn <> "` not supported in patterns"
+  _                                -> Nothing
+  where
+    badConstructors =
+      [ "Agda.Builtin.Nat.Nat.zero"
+      , "Agda.Builtin.Nat.Nat.suc"
+      , "Haskell.Extra.Delay.Delay.now"
+      , "Haskell.Extra.Delay.Delay.later"
+      ]
+
+
+
 
 -}
 
@@ -150,8 +150,8 @@ compileFun' withSig def@Defn{..} = do
         let clauses = if weAreOnTop then filtered else filtered `apply` pars
 
         -- TODO(flupe): check whether we need to "apply" module parameters to deftype
-        -- let typ = if weAreOnTop then defType else defType `apply` pars
-        cs <- mapMaybeM (compileClause (qnameModule defName) x defType) clauses
+        typ <- if weAreOnTop then pure defType else piApplyM defType pars
+        cs  <- mapMaybeM (compileClause (qnameModule defName) x typ) clauses
 
         when (null cs) $ genericDocError
           =<< text "Functions defined with absurd patterns exclusively are not supported."
@@ -176,7 +176,7 @@ compileClause' :: ModuleName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Mat
 compileClause' curModule x _  c@Clause{clauseBody = Nothing} = pure Nothing
 compileClause' curModule x ty c@Clause{..} = do
   reportSDoc "agda2hs.compile" 7  $ "compiling clause: " <+> prettyTCM c
-  reportSDoc "agda2hs.compile" 17 $ "Old context: " <+> (prettyTCM =<< getContext)
+  reportSDoc "agda2hs.compile" 17 $ "Old context: "      <+> (prettyTCM =<< getContext)
   reportSDoc "agda2hs.compile" 17 $ "Clause telescope: " <+> prettyTCM clauseTel
   reportSDoc "agda2hs.compile" 17 $ "Clause type:      " <+> prettyTCM clauseType
   reportSDoc "agda2hs.compile" 17 $ "Clause patterns:  " <+> text (prettyShow namedClausePats)
@@ -218,9 +218,12 @@ compileClause' curModule x ty c@Clause{..} = do
 compilePats :: Type -> NAPs -> C [Hs.Pat ()]
 compilePats _ [] = pure []
 compilePats ty ((namedArg -> ProjP po pn):ps) = do
-  genericDocError =<< text "flupe: copatterns not support yet"
+  Just (unEl -> Pi a b) <- getDefType pn ty -- ????
+  compilePats (absBody b) ps
 
-compilePats ty ((namedArg -> pat):ps) | Pi a b <- unEl ty = do
+-- TODO: use shouldBePi or mustBePi
+compilePats ty ((namedArg -> pat):ps) = do
+  (a, b) <- mustBePi ty
   reportSDoc "agda2hs.compile.pattern" 5 $ text "Compiling pattern:" <+> prettyTCM pat
   let rest = compilePats (absApp b (patternToTerm pat)) ps
   compiledDom a >>= \case
@@ -230,7 +233,6 @@ compilePats ty ((namedArg -> pat):ps) | Pi a b <- unEl ty = do
       when (isForcedPat pat) $ genericDocError =<< "not supported by agda2hs: forced (dot) patterns in non-erased positions"
       checkNoAsPatterns pat
       (:) <$> compilePat (unDom a) pat <*> rest
-compilePats ty _ = __IMPOSSIBLE__
 
 compilePat :: Type -> DeBruijnPattern -> C (Hs.Pat ())
 
@@ -243,18 +245,18 @@ compilePat ty p@(VarP o x)
       return $ Hs.PVar () n
 
 -- special constructor pattern
-compilePat ty (ConP h i ps)
-  | Just semantics <- isSpecialCon (conName h) = setCurrentRange h $ semantics ps
+compilePat ty (ConP ch i ps) = do
+  Just ((_, _, _), ty) <- getConType ch =<< reduce ty
 
--- TODO(flupe)
--- regular constructor pattern
-compilePat ty (ConP h _ ps) =
-  isUnboxConstructor (conName h) >>= \case
-    Just s -> compileErasedConP ps >>= addPatBang s
+  case isSpecialCon (conName ch) of
+    Just semantics -> setCurrentRange ch $ semantics ty ps
     Nothing -> do
-      ps <- compilePats undefined ps
-      c <- compileQName (conName h)
-      return $ pApp c ps
+      isUnboxConstructor (conName ch) >>= \case
+        Just s -> compileErasedConP ty ps >>= addPatBang s
+        Nothing -> do
+          ps <- compilePats ty ps
+          c <- compileQName (conName ch)
+          return $ pApp c ps
 
 -- literal patterns
 compilePat ty (LitP _ l) = compileLitPat l
@@ -271,8 +273,8 @@ compilePat ty (ProjP _ q) = do
 compilePat _ p = genericDocError =<< "bad pattern:" <?> prettyTCM p
 
 
-compileErasedConP :: NAPs -> C (Hs.Pat ())
-compileErasedConP ps = compilePats undefined ps <&> \case
+compileErasedConP :: Type -> NAPs -> C (Hs.Pat ())
+compileErasedConP ty ps = compilePats ty ps <&> \case
   [p] -> p
   _   -> __IMPOSSIBLE__
 
