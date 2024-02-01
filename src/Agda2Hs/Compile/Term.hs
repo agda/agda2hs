@@ -54,8 +54,6 @@ type DefCompileRule = Type -> [Term] -> C (Hs.Exp ())
 isSpecialDef q = case prettyShow q of
   -- _ | isExtendedLambdaName q                 -> Just $ lambdaCase q
   --"Haskell.Prim.the"                            -> Just expTypeSig
-  "Haskell.Prim.Monad.Do.Monad._>>=_"           -> Just monadBind
-  "Haskell.Prim.Monad.Do.Monad._>>_"            -> Just monadSeq
   "Haskell.Extra.Delay.runDelay"                -> Just compileErasedApp
   _                                             -> Nothing
   -}
@@ -153,16 +151,13 @@ compileSpined ty tm =
       let t = tm []
       ty' <- shouldBeProjectible t ty o q
       aux (compileProj q ty t ty') (tm . (e:)) ty' es
+    -- TODO: use mustBePi
     aux c tm ty (e@(Apply (unArg -> x)):es) | Pi a b <- unEl ty =
       aux (c . (x:)) (tm . (e:)) (absApp b x) es
     aux _ _ _ _ = __IMPOSSIBLE__
 
 
   {-
-
-
-
-
 
 -- TODO(flupe)
 -- | Compile @the@ to an explicitly-annotated Haskell expression.
@@ -247,6 +242,8 @@ isSpecialProj q = case prettyShow q of
   "Haskell.Prim.Enum.Enum.enumFromTo"     -> Just mkEnumFromTo
   "Haskell.Prim.Enum.Enum.enumFromThen"   -> Just mkEnumFromThen
   "Haskell.Prim.Enum.Enum.enumFromThenTo" -> Just mkEnumFromThenTo
+  "Haskell.Prim.Monad.Do.Monad._>>=_"     -> Just monadBind
+  "Haskell.Prim.Monad.Do.Monad._>>_"      -> Just monadSeq
   -- "Agda.Builtin.FromNeg.Negative.fromNeg"       -> Just fromNeg
   -- "Agda.Builtin.FromString.IsString.fromString" -> Just fromString
   _                                       -> Nothing
@@ -273,10 +270,13 @@ compileProj q tty t ty args = do
 -- | Utility for translating class methods to special Haskell counterpart.
 -- This runs an instance check.
 specialClassFunction :: Hs.Exp () -> ([Hs.Exp ()] -> Hs.Exp ()) -> ProjCompileRule
-specialClassFunction v f _ w ty args = do
+specialClassFunction v f = specialClassFunctionM v (pure . f)
+
+specialClassFunctionM :: Hs.Exp () -> ([Hs.Exp ()] -> C (Hs.Exp ())) -> ProjCompileRule
+specialClassFunctionM v f _ w ty args = do
   checkInstance w
-  compileApp' f ty args
-sepcialClassFunction v f _ _ = __IMPOSSIBLE__
+  f =<< compileArgs  ty args
+sepcialClassFunctionM v f _ _ = __IMPOSSIBLE__
 
 specialClassFunction1 :: Hs.Exp () -> (Hs.Exp () -> Hs.Exp ()) -> ProjCompileRule
 specialClassFunction1 v f = specialClassFunction v $ \case
@@ -316,6 +316,7 @@ fromNeg = specialClassFunction1 negFromIntegral $ \case
   v          -> negFromIntegral `eApp` [v]
   where
     negFromIntegral = hsVar "negate" `o` hsVar "fromIntegral"
+    -- TODO: move this to HsUtils
     f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ hsUnqualName "_._") g
 
 fromString :: ProjCompileRule
@@ -323,20 +324,13 @@ fromString = specialClassFunction1 (hsVar "fromString") $ \case
   s@Hs.Lit{} -> s
   v          -> hsVar "fromString" `eApp` [v]
 
-{-
-
-
-
 -- | Compile monadic bind operator _>>=_ to Haskell do notation.
-monadBind :: TElims -> C (Hs.Exp ())
-monadBind [] = return $ hsVar "_>>=_"
-monadBind ((_, e):tes) = do
-  checkInstance e
-  compileElims tes >>= \case
-    [u, Hs.Lambda _ [p] v] -> return (bind' u p v)
-    [u, Hs.LCase () [Hs.Alt () p (Hs.UnGuardedRhs () v) Nothing]] ->
-      decrementLCase >> return (bind' u p v)
-    vs -> return $ hsVar "_>>=_" `eApp` vs
+monadBind :: ProjCompileRule
+monadBind = specialClassFunctionM (hsVar "_>>=_") $ \case
+  [u, Hs.Lambda _ [p] v] -> pure $ bind' u p v
+  [u, Hs.LCase () [Hs.Alt () p (Hs.UnGuardedRhs () v) Nothing]] ->
+    decrementLCase >> return (bind' u p v)
+  vs -> return $ hsVar "_>>=_" `eApp` vs
   where
     bind' :: Hs.Exp () -> Hs.Pat () -> Hs.Exp () -> Hs.Exp ()
     bind' u p v =
@@ -346,19 +340,14 @@ monadBind ((_, e):tes) = do
         _             -> Hs.Do () [stmt1, Hs.Qualifier () v]
 
 -- | Compile monadic bind operator _>>_ to Haskell do notation.
-monadSeq :: TElims -> C (Hs.Exp ())
-monadSeq [] = return $ hsVar "_>>_"
-monadSeq ((_, e):tes) = do
-  checkInstance e
-  compileElims tes >>= \case
-    (u : v : vs) -> do
-      let stmt1 = Hs.Qualifier () u
-      case v of
-        Hs.Do _ stmts -> return $ Hs.Do () (stmt1 : stmts)
-        _             -> return $ Hs.Do () [stmt1, Hs.Qualifier () v]
-    vs -> return $ hsVar "_>>_" `eApp` vs
--}
-
+monadSeq :: ProjCompileRule-- TElims -> C (Hs.Exp ())
+monadSeq = specialClassFunction (hsVar "_>>_") $ \case
+  (u : v : vs) -> do
+    let stmt1 = Hs.Qualifier () u
+    case v of
+      Hs.Do _ stmts -> Hs.Do () (stmt1 : stmts)
+      _             -> Hs.Do () [stmt1, Hs.Qualifier () v]
+  vs -> hsVar "_>>_" `eApp` vs
 
 compileCon :: ConHead -> ConInfo -> Type -> [Term] -> C (Hs.Exp ())
 -- TODO(flupe:)
@@ -515,6 +504,7 @@ compileApp' acc ty args = acc <$> compileArgs ty args
 -- | Compile a list of arguments applied to a function of the given type.
 compileArgs :: Type -> [Term] -> C [Hs.Exp ()]
 compileArgs ty [] = pure []
+-- TODO(flupe): use mustBePi
 compileArgs ty (x:xs) | Pi a b <- unEl ty = do
   let rest = compileArgs (absApp b x) xs
   compiledDom a >>= \case

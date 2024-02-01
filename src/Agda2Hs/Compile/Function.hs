@@ -217,6 +217,9 @@ compileClause' curModule x ty c@Clause{..} = do
 -- TODO(flupe): handle copatterns (that don't expect a Pi type) (See Unbox:sort2)
 compilePats :: Type -> NAPs -> C [Hs.Pat ()]
 compilePats _ [] = pure []
+compilePats ty ((namedArg -> ProjP po pn):ps) = do
+  genericDocError =<< text "flupe: copatterns not support yet"
+
 compilePats ty ((namedArg -> pat):ps) | Pi a b <- unEl ty = do
   reportSDoc "agda2hs.compile.pattern" 5 $ text "Compiling pattern:" <+> prettyTCM pat
   let rest = compilePats (absApp b (patternToTerm pat)) ps

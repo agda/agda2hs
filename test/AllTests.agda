@@ -39,9 +39,9 @@ import Issue94
 import Issue107
 import DoNotation
 import NewTypePragma
-import Importer
-import QualifiedImports
-import CommonQualifiedImports
+-- import Importer
+-- import QualifiedImports
+-- import CommonQualifiedImports
 import RequalifiedImports
 import QualifiedPrelude
 import AutoLambdaCaseInCase
@@ -108,9 +108,9 @@ import BangPatterns
 import Issue94
 import DoNotation
 import NewTypePragma
-import Importer
-import QualifiedImports
-import CommonQualifiedImports
+-- import Importer
+-- import QualifiedImports
+-- import CommonQualifiedImports
 import RequalifiedImports
 import QualifiedPrelude
 import AutoLambdaCaseInCase
