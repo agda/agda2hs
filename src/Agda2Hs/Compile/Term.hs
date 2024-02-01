@@ -25,7 +25,7 @@ import Agda.TypeChecking.Records ( shouldBeProjectible )
 import Agda.TypeChecking.Datatypes ( getConType )
 import Agda.TypeChecking.Reduce ( unfoldDefinitionStep, reduce )
 import Agda.TypeChecking.Substitute
-import Agda.TypeChecking.Telescope ( telView )
+import Agda.TypeChecking.Telescope ( telView, mustBePi, piApplyM )
 
 import Agda.Utils.Lens
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
@@ -53,7 +53,6 @@ type DefCompileRule = Type -> [Term] -> C (Hs.Exp ())
   {-
 isSpecialDef q = case prettyShow q of
   -- _ | isExtendedLambdaName q                 -> Just $ lambdaCase q
-  --"Haskell.Prim.the"                            -> Just expTypeSig
   "Haskell.Extra.Delay.runDelay"                -> Just compileErasedApp
   _                                             -> Nothing
   -}
@@ -63,6 +62,7 @@ isSpecialDef q = case prettyShow q of
   _ | isExtendedLambdaName q   -> Just (lambdaCase q)
   "Haskell.Prim.if_then_else_" -> Just ifThenElse
   "Haskell.Prim.case_of_"      -> Just caseOf
+  "Haskell.Prim.the"           -> Just expTypeSig
   _                            -> Nothing
 
 -- | Compile a lambda-case to the equivalent @\case@ expression.
@@ -77,7 +77,8 @@ lambdaCase q ty args = setCurrentRangeQ q $ do
 
   let (pars, rest) = splitAt npars args
       cs           = applys cls pars
-      ty'          = undefined -- applys ty  pars
+
+  ty' <- piApplyM ty pars
 
   cs <- mapMaybeM (compileClause' (qnameModule q) (hsName "(lambdaCase)") ty') cs
 
@@ -87,7 +88,7 @@ lambdaCase q ty args = setCurrentRangeQ q $ do
     [Hs.Match _ _ [] (Hs.UnGuardedRhs _ rhs) _] -> return rhs
     _ -> do
       lcase <- hsLCase =<< mapM clauseToAlt cs -- Pattern lambdas cannot have where blocks
-      eApp lcase <$> ty' rest
+      eApp lcase <$> compileArgs ty' rest
       -- undefined -- compileApp lcase (undefined, undefined, rest)
 
 -- | Compile @if_then_else_@ to a Haskell @if ... then ... else ... @ expression.
@@ -109,6 +110,15 @@ caseOf ty args = compileArgs ty args >>= \case
         lam qs = Hs.Lambda () qs
     in return $ eApp (Hs.Case () e [Hs.Alt () p (Hs.UnGuardedRhs () $ lam ps b) Nothing]) es'
   _ -> genericError "case_of_ must be fully applied to a lambda term."
+
+-- | Compile @the@ to an explicitly-annotated Haskell expression.
+expTypeSig :: DefCompileRule
+expTypeSig ty args@(_:typ:_:_) = do
+    annot    <- compileType typ
+    exp:args <- compileArgs ty args
+    pure (Hs.ExpTypeSig () exp annot `eApp` args)
+expTypeSig _ _ = genericError "`the` must be fully applied"
+
 
 
 -- should really be named compileVar, TODO: rename compileVar
@@ -152,7 +162,8 @@ compileSpined ty tm =
       ty' <- shouldBeProjectible t ty o q
       aux (compileProj q ty t ty') (tm . (e:)) ty' es
     -- TODO: use mustBePi
-    aux c tm ty (e@(Apply (unArg -> x)):es) | Pi a b <- unEl ty =
+    aux c tm ty (e@(Apply (unArg -> x)):es) = do
+      (a, b) <- mustBePi ty
       aux (c . (x:)) (tm . (e:)) (absApp b x) es
     aux _ _ _ _ = __IMPOSSIBLE__
 
@@ -160,21 +171,162 @@ compileSpined ty tm =
   {-
 
 -- TODO(flupe)
--- | Compile @the@ to an explicitly-annotated Haskell expression.
--- expTypeSig :: TElims -> C (Hs.Exp ())
--- expTypeSig tes = compileElims tes >>= \case
-  
-  -- case tes of
-  --   _ : (_, typArg) : (_, expArg) : tes' -> do
-  --     exp      <- compileTerm undefined (unArg expArg)
-  --     typ      <- compileType (unArg typArg)
-  --     compArgs <- compileArgs args'
-  --     return $ eApp (Hs.ExpTypeSig () exp typ) compArgs
-  --   _ -> genericError "`the` must be fully applied"
 
 -}
 
--- * Compilation of special constructors
+-- TODO(flupe):
+-- maybeUnfoldCopy f es compileTerm $ \f es ->
+
+-- | Compile a definition.
+compileDef :: QName -> Type -> [Term] -> C (Hs.Exp ())
+compileDef f ty args | Just sem <- isSpecialDef f = do
+  reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of special function"
+  sem ty args
+
+compileDef f ty args = do
+  ifM (isTransparentFunction f) (compileErasedApp ty args) $ do
+  -- ifM (isInlinedFunction f) (compileInlineFunctionApp f es) $ do
+    reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of regular function:" <+> prettyTCM f
+
+    -- TODO(flupe): drop parameters again
+    -- Drop module parameters of local `where` functions
+    moduleArgs <- getDefFreeVars f
+    -- reportSDoc "agda2hs.compile.term" 15 $ text "Module arguments for" <+> (prettyTCM f <> text ":") <+> prettyTCM moduleArgs
+
+    hsName <- compileQName f
+
+    compileApp (Hs.Var () hsName) ty (drop moduleArgs args)
+
+
+-- * Compilation of projection(-like) definitions
+
+type ProjCompileRule = Type -> Term -> Type -> [Term] -> C (Hs.Exp ())
+
+
+isSpecialProj :: QName -> Maybe ProjCompileRule
+isSpecialProj q = case prettyShow q of
+  "Agda.Builtin.FromNat.Number.fromNat"         -> Just fromNat
+  "Haskell.Prim.Enum.Enum.enumFrom"             -> Just mkEnumFrom
+  "Haskell.Prim.Enum.Enum.enumFromTo"           -> Just mkEnumFromTo
+  "Haskell.Prim.Enum.Enum.enumFromThen"         -> Just mkEnumFromThen
+  "Haskell.Prim.Enum.Enum.enumFromThenTo"       -> Just mkEnumFromThenTo
+  "Haskell.Prim.Monad.Do.Monad._>>=_"           -> Just monadBind
+  "Haskell.Prim.Monad.Do.Monad._>>_"            -> Just monadSeq
+  "Agda.Builtin.FromNeg.Negative.fromNeg"       -> Just fromNeg
+  "Agda.Builtin.FromString.IsString.fromString" -> Just fromString
+  _                                             -> Nothing
+
+
+compileClassFun :: QName -> ProjCompileRule
+compileClassFun q _ w ty args = do
+  hf     <- compileQName q
+  curMod <- currentModule
+  unless (curMod `isLeChildModuleOf` qnameModule q) $ checkInstance w
+  eApp (Hs.Var () hf) <$> compileArgs ty args
+
+
+-- | Compile a projection(-like) definition
+compileProj
+  :: QName  -- ^ Name of the projection
+  -> Type   -- ^ Type of the term the projection is being applied to
+  -> Term   -- ^ Term the projection is being applied to
+  -> Type   -- ^ Return type of the projection
+  -> [Term] -- ^ Arguments the projection of the term is applied to
+  -> C (Hs.Exp ())
+compileProj q tty t ty args | Just rule <- isSpecialProj q = rule tty t ty args
+compileProj q tty t ty args =
+  -- unboxed projection: we drop the projection
+  ifM (isJust <$> isUnboxProjection q) (eApp <$> compileTerm tty t <*> compileArgs ty args) $
+  -- class projection: we check the instance and drop it
+  ifM (isClassFunction q) (compileClassFun q tty t ty args) $
+
+  -- NOTE(flupe): maybe we want Dom Type for the record arg
+  do
+    name <- compileQName q
+    arg  <- compileTerm tty t
+    compileApp (Hs.Var () name `eApp` [arg]) ty args
+
+-- | Utility for translating class methods to special Haskell counterpart.
+-- This runs an instance check.
+specialClassFunction :: ([Hs.Exp ()] -> Hs.Exp ()) -> ProjCompileRule
+specialClassFunction f = specialClassFunctionM (pure . f)
+
+specialClassFunctionM :: ([Hs.Exp ()] -> C (Hs.Exp ())) -> ProjCompileRule
+specialClassFunctionM f _ w ty args = checkInstance w >> (f =<< compileArgs ty args)
+
+specialClassFunction1 :: Hs.Exp () -> (Hs.Exp () -> Hs.Exp ()) -> ProjCompileRule
+specialClassFunction1 v f = specialClassFunction $ \case
+  (a : es) -> f a `eApp` es
+  []       -> v
+
+specialClassFunction2 :: Hs.Exp () -> (Hs.Exp () -> Hs.Exp () -> Hs.Exp ()) -> ProjCompileRule
+specialClassFunction2 v f = specialClassFunction $ \case
+  (a : b : es) -> f a b `eApp` es
+  es           -> v `eApp` es
+
+specialClassFunction3 :: Hs.Exp () -> (Hs.Exp () -> Hs.Exp () -> Hs.Exp () -> Hs.Exp ()) -> ProjCompileRule
+specialClassFunction3 v f = specialClassFunction $ \case
+  (a : b : c : es) -> f a b c `eApp` es
+  es               -> v `eApp` es
+
+fromNat :: ProjCompileRule
+fromNat = specialClassFunction1 (hsVar "fromIntegral") $ \case
+  n@Hs.Lit{} -> n
+  v          -> hsVar "fromIntegral" `eApp` [v]
+
+mkEnumFrom :: ProjCompileRule
+mkEnumFrom = specialClassFunction1 (hsVar "enumFrom") $ Hs.EnumFrom ()
+
+mkEnumFromTo :: ProjCompileRule
+mkEnumFromTo = specialClassFunction2 (hsVar "enumFromTo") $ Hs.EnumFromTo ()
+
+mkEnumFromThen :: ProjCompileRule
+mkEnumFromThen = specialClassFunction2 (hsVar "enumFromThen") $ Hs.EnumFromThen ()
+
+mkEnumFromThenTo :: ProjCompileRule
+mkEnumFromThenTo = specialClassFunction3 (hsVar "enumFromThenTo") $ Hs.EnumFromThenTo ()
+
+fromNeg :: ProjCompileRule
+fromNeg = specialClassFunction1 negFromIntegral $ \case
+  n@Hs.Lit{} -> Hs.NegApp () n
+  v          -> negFromIntegral `eApp` [v]
+  where
+    negFromIntegral = hsVar "negate" `o` hsVar "fromIntegral"
+    -- TODO: move this to HsUtils
+    f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ hsUnqualName "_._") g
+
+fromString :: ProjCompileRule
+fromString = specialClassFunction1 (hsVar "fromString") $ \case
+  s@Hs.Lit{} -> s
+  v          -> hsVar "fromString" `eApp` [v]
+
+-- | Compile monadic bind operator _>>=_ to Haskell do notation.
+monadBind :: ProjCompileRule
+monadBind = specialClassFunctionM $ \case
+  [u, Hs.Lambda _ [p] v] -> pure $ bind' u p v
+  [u, Hs.LCase () [Hs.Alt () p (Hs.UnGuardedRhs () v) Nothing]] ->
+    decrementLCase >> return (bind' u p v)
+  vs -> pure $ hsVar "_>>=_" `eApp` vs
+  where
+    bind' :: Hs.Exp () -> Hs.Pat () -> Hs.Exp () -> Hs.Exp ()
+    bind' u p v =
+      let stmt1 = Hs.Generator () p u in
+      case v of
+        Hs.Do _ stmts -> Hs.Do () (stmt1 : stmts)
+        _             -> Hs.Do () [stmt1, Hs.Qualifier () v]
+
+-- | Compile monadic bind operator _>>_ to Haskell do notation.
+monadSeq :: ProjCompileRule-- TElims -> C (Hs.Exp ())
+monadSeq = specialClassFunction $ \case
+  (u : v : vs) -> do
+    let stmt1 = Hs.Qualifier () u
+    case v of
+      Hs.Do _ stmts -> Hs.Do () (stmt1 : stmts)
+      _             -> Hs.Do () [stmt1, Hs.Qualifier () v]
+  vs -> hsVar "_>>_" `eApp` vs
+
+
+-- * Compilation of constructors
 
 type ConCompileRule = Type -> [Term] -> C (Hs.Exp ())
 
@@ -205,149 +357,6 @@ compileErasedApp ty args = do
     []  -> return $ hsVar "id"
     [v] -> return v
     _   -> __IMPOSSIBLE__
-
-
--- TODO(flupe):
--- maybeUnfoldCopy f es compileTerm $ \f es ->
-
--- | Compile a definition.
-compileDef :: QName -> Type -> [Term] -> C (Hs.Exp ())
-compileDef f ty args | Just sem <- isSpecialDef f = do
-  reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of special function"
-  sem ty args
-
-compileDef f ty args = do
-  -- ifM ((isJust <$> isUnboxProjection f) `or2M` isTransparentFunction f) (compileErasedApp tel es) $ do
-  --   -- ifM (isInlinedFunction f) (compileInlineFunctionApp f es) $ do
-    reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of regular function:" <+> prettyTCM f
-
-    -- TODO(flupe): drop parameters again
-    -- Drop module parameters of local `where` functions
-    -- moduleArgs <- getDefFreeVars f
-    -- reportSDoc "agda2hs.compile.term" 15 $ text "Module arguments for" <+> (prettyTCM f <> text ":") <+> prettyTCM moduleArgs
-
-    hsName <- compileQName f
-
-    compileApp (Hs.Var () hsName) ty args -- (drop moduleArgs tes)
-
-
--- * Compilation of projection(-like) definitions
-
-type ProjCompileRule = Type -> Term -> Type -> [Term] -> C (Hs.Exp ())
-
-isSpecialProj :: QName -> Maybe ProjCompileRule
-isSpecialProj q = case prettyShow q of
-  "Agda.Builtin.FromNat.Number.fromNat"   -> Just fromNat
-  "Haskell.Prim.Enum.Enum.enumFrom"       -> Just mkEnumFrom
-  "Haskell.Prim.Enum.Enum.enumFromTo"     -> Just mkEnumFromTo
-  "Haskell.Prim.Enum.Enum.enumFromThen"   -> Just mkEnumFromThen
-  "Haskell.Prim.Enum.Enum.enumFromThenTo" -> Just mkEnumFromThenTo
-  "Haskell.Prim.Monad.Do.Monad._>>=_"     -> Just monadBind
-  "Haskell.Prim.Monad.Do.Monad._>>_"      -> Just monadSeq
-  -- "Agda.Builtin.FromNeg.Negative.fromNeg"       -> Just fromNeg
-  -- "Agda.Builtin.FromString.IsString.fromString" -> Just fromString
-  _                                       -> Nothing
-
--- | Compile a projection(-like) definition
-compileProj
-  :: QName  -- ^ Name of the projection
-  -> Type   -- ^ Type of the term the projection is being applied to
-  -> Term   -- ^ Term the projection is being applied to
-  -> Type   -- ^ Return type of the projection
-  -> [Term] -- ^ Arguments the projection of the term is applied to
-  -> C (Hs.Exp ())
-compileProj q tty t ty args | Just rule <- isSpecialProj q = rule tty t ty args
-compileProj q tty t ty args = do
-  reportSDoc "agda2hs.compile.term" 10 $ text "Compiling record projection(like):" <+> prettyTCM q
-  ifM (isJust <$> isUnboxProjection q)
-    (compileErasedApp (mkPi (defaultDom ("_", tty)) ty) (t:args)) $ do
-    name <- compileQName q
-    arg <- compileTerm tty t
-    compileApp (Hs.Var () name `eApp` [arg]) ty args
-  -- TODO: (now, actually)
-  -- ifM (isClassFunction f) (compileClassFunApp f es) $
-
--- | Utility for translating class methods to special Haskell counterpart.
--- This runs an instance check.
-specialClassFunction :: Hs.Exp () -> ([Hs.Exp ()] -> Hs.Exp ()) -> ProjCompileRule
-specialClassFunction v f = specialClassFunctionM v (pure . f)
-
-specialClassFunctionM :: Hs.Exp () -> ([Hs.Exp ()] -> C (Hs.Exp ())) -> ProjCompileRule
-specialClassFunctionM v f _ w ty args = do
-  checkInstance w
-  f =<< compileArgs  ty args
-sepcialClassFunctionM v f _ _ = __IMPOSSIBLE__
-
-specialClassFunction1 :: Hs.Exp () -> (Hs.Exp () -> Hs.Exp ()) -> ProjCompileRule
-specialClassFunction1 v f = specialClassFunction v $ \case
-  (a : es) -> f a `eApp` es
-  []       -> v
-
-fromNat :: ProjCompileRule
-fromNat = specialClassFunction1 (hsVar "fromIntegral") $ \case
-  n@Hs.Lit{} -> n
-  v          -> hsVar "fromIntegral" `eApp` [v]
-
-specialClassFunction2 :: Hs.Exp () -> (Hs.Exp () -> Hs.Exp () -> Hs.Exp ()) -> ProjCompileRule
-specialClassFunction2 v f = specialClassFunction v $ \case
-  (a : b : es) -> f a b `eApp` es
-  es           -> v `eApp` es
-
-specialClassFunction3 :: Hs.Exp () -> (Hs.Exp () -> Hs.Exp () -> Hs.Exp () -> Hs.Exp ()) -> ProjCompileRule
-specialClassFunction3 v f = specialClassFunction v $ \case
-  (a : b : c : es) -> f a b c `eApp` es
-  es               -> v `eApp` es
-
-mkEnumFrom :: ProjCompileRule
-mkEnumFrom = specialClassFunction1 (hsVar "enumFrom") $ Hs.EnumFrom ()
-
-mkEnumFromTo :: ProjCompileRule
-mkEnumFromTo = specialClassFunction2 (hsVar "enumFromTo") $ Hs.EnumFromTo ()
-
-mkEnumFromThen :: ProjCompileRule
-mkEnumFromThen = specialClassFunction2 (hsVar "enumFromThen") $ Hs.EnumFromThen ()
-
-mkEnumFromThenTo :: ProjCompileRule
-mkEnumFromThenTo = specialClassFunction3 (hsVar "enumFromThenTo") $ Hs.EnumFromThenTo ()
-
-fromNeg :: ProjCompileRule
-fromNeg = specialClassFunction1 negFromIntegral $ \case
-  n@Hs.Lit{} -> Hs.NegApp () n
-  v          -> negFromIntegral `eApp` [v]
-  where
-    negFromIntegral = hsVar "negate" `o` hsVar "fromIntegral"
-    -- TODO: move this to HsUtils
-    f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ hsUnqualName "_._") g
-
-fromString :: ProjCompileRule
-fromString = specialClassFunction1 (hsVar "fromString") $ \case
-  s@Hs.Lit{} -> s
-  v          -> hsVar "fromString" `eApp` [v]
-
--- | Compile monadic bind operator _>>=_ to Haskell do notation.
-monadBind :: ProjCompileRule
-monadBind = specialClassFunctionM (hsVar "_>>=_") $ \case
-  [u, Hs.Lambda _ [p] v] -> pure $ bind' u p v
-  [u, Hs.LCase () [Hs.Alt () p (Hs.UnGuardedRhs () v) Nothing]] ->
-    decrementLCase >> return (bind' u p v)
-  vs -> return $ hsVar "_>>=_" `eApp` vs
-  where
-    bind' :: Hs.Exp () -> Hs.Pat () -> Hs.Exp () -> Hs.Exp ()
-    bind' u p v =
-      let stmt1 = Hs.Generator () p u in
-      case v of
-        Hs.Do _ stmts -> Hs.Do () (stmt1 : stmts)
-        _             -> Hs.Do () [stmt1, Hs.Qualifier () v]
-
--- | Compile monadic bind operator _>>_ to Haskell do notation.
-monadSeq :: ProjCompileRule-- TElims -> C (Hs.Exp ())
-monadSeq = specialClassFunction (hsVar "_>>_") $ \case
-  (u : v : vs) -> do
-    let stmt1 = Hs.Qualifier () u
-    case v of
-      Hs.Do _ stmts -> Hs.Do () (stmt1 : stmts)
-      _             -> Hs.Do () [stmt1, Hs.Qualifier () v]
-  vs -> hsVar "_>>_" `eApp` vs
 
 compileCon :: ConHead -> ConInfo -> Type -> [Term] -> C (Hs.Exp ())
 -- TODO(flupe:)
@@ -477,23 +486,6 @@ compileInlineFunctionApp f es = do
         <$> etaExpand ps (raise 1 es ++ [ Apply $ Arg ai $ var 0 ])
 -}
 
--- `compileClassFunApp` is used when we have a record projection and we want to
--- drop the first visible arg (the record)
--- compileClassFunApp :: QName -> Elims -> C (Hs.Exp ())
--- compileClassFunApp f es = do
---   reportSDoc "agda2hs.compile.term" 14 $ text "Compiling application of class function"
---   hf <- compileQName f
---   case dropWhile notVisible (fromMaybe __IMPOSSIBLE__ $ allApplyElims es) of
---     []     -> __IMPOSSIBLE__
---     (x:xs) -> do
---       curMod <- currentModule
---       reportSDoc "agda2hs.compile" 15 $ nest 2 $ vcat
---         [ text "symbol module:  " <+> prettyTCM (qnameModule f)
---         , text "current module: " <+> prettyTCM curMod
---         ]
---       unless (curMod `isLeChildModuleOf` qnameModule f) $ checkInstance $ unArg x
---       args <- compileArgs xs
---       return $ Hs.Var () hf `eApp` args
 
 compileApp :: Hs.Exp () -> Type -> [Term] -> C (Hs.Exp ())
 compileApp = compileApp' . eApp
@@ -505,7 +497,8 @@ compileApp' acc ty args = acc <$> compileArgs ty args
 compileArgs :: Type -> [Term] -> C [Hs.Exp ()]
 compileArgs ty [] = pure []
 -- TODO(flupe): use mustBePi
-compileArgs ty (x:xs) | Pi a b <- unEl ty = do
+compileArgs ty (x:xs) = do
+  (a, b) <- mustBePi ty
   let rest = compileArgs (absApp b x) xs
   compiledDom a >>= \case
     DODropped  -> rest

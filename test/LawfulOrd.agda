@@ -36,3 +36,5 @@ order left right =
     else
       Gt left right ⦃ nLtEq2Gt left right ⦄
   )
+
+{-# COMPILE AGDA2HS order #-}
