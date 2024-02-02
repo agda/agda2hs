@@ -49,23 +49,17 @@ import {-# SOURCE #-} Agda2Hs.Compile.Function ( compileClause' )
 
 type DefCompileRule = Type -> [Term] -> C (Hs.Exp ())
 
-
-  {-
-isSpecialDef q = case prettyShow q of
-  -- _ | isExtendedLambdaName q                 -> Just $ lambdaCase q
-  "Haskell.Extra.Delay.runDelay"                -> Just compileErasedApp
-  _                                             -> Nothing
-  -}
-
 isSpecialDef :: QName -> Maybe DefCompileRule
 isSpecialDef q = case prettyShow q of
-  _ | isExtendedLambdaName q   -> Just (lambdaCase q)
-  "Haskell.Prim.if_then_else_" -> Just ifThenElse
-  "Haskell.Prim.case_of_"      -> Just caseOf
-  "Haskell.Prim.the"           -> Just expTypeSig
-  _                            -> Nothing
+  _ | isExtendedLambdaName q     -> Just (lambdaCase q)
+  "Haskell.Prim.if_then_else_"   -> Just ifThenElse
+  "Haskell.Prim.case_of_"        -> Just caseOf
+  "Haskell.Prim.the"             -> Just expTypeSig
+  "Haskell.Extra.Delay.runDelay" -> Just compileErasedApp
+  _                              -> Nothing
 
--- | Compile a lambda-case to the equivalent @\case@ expression.
+
+-- | Compile a @\where@ to the equivalent @\case@ expression.
 lambdaCase :: QName -> DefCompileRule
 lambdaCase q ty args = setCurrentRangeQ q $ do
   Function
@@ -91,6 +85,7 @@ lambdaCase q ty args = setCurrentRangeQ q $ do
       eApp lcase <$> compileArgs ty' rest
       -- undefined -- compileApp lcase (undefined, undefined, rest)
 
+
 -- | Compile @if_then_else_@ to a Haskell @if ... then ... else ... @ expression.
 ifThenElse :: DefCompileRule
 ifThenElse ty args = compileArgs ty args >>= \case
@@ -98,6 +93,7 @@ ifThenElse ty args = compileArgs ty args >>= \case
   b : t : f : es' -> return $ Hs.If () b t f `eApp` es'
   -- partially applied
   _               -> genericError "if_then_else_ must be fully applied"
+
 
 -- | Compile @case_of_@ to Haskell @\case@ expression.
 caseOf :: DefCompileRule
@@ -111,6 +107,7 @@ caseOf ty args = compileArgs ty args >>= \case
     in return $ eApp (Hs.Case () e [Hs.Alt () p (Hs.UnGuardedRhs () $ lam ps b) Nothing]) es'
   _ -> genericError "case_of_ must be fully applied to a lambda term."
 
+
 -- | Compile @the@ to an explicitly-annotated Haskell expression.
 expTypeSig :: DefCompileRule
 expTypeSig ty args@(_:typ:_:_) = do
@@ -118,7 +115,6 @@ expTypeSig ty args@(_:typ:_:_) = do
     exp:args <- compileArgs ty args
     pure (Hs.ExpTypeSig () exp annot `eApp` args)
 expTypeSig _ _ = genericError "`the` must be fully applied"
-
 
 
 -- should really be named compileVar, TODO: rename compileVar
@@ -168,12 +164,6 @@ compileSpined ty tm =
     aux _ _ _ _ = __IMPOSSIBLE__
 
 
-  {-
-
--- TODO(flupe)
-
--}
-
 -- TODO(flupe):
 -- maybeUnfoldCopy f es compileTerm $ \f es ->
 
@@ -188,14 +178,27 @@ compileDef f ty args = do
   -- ifM (isInlinedFunction f) (compileInlineFunctionApp f es) $ do
     reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of regular function:" <+> prettyTCM f
 
-    -- TODO(flupe): drop parameters again
-    -- Drop module parameters of local `where` functions
-    moduleArgs <- getDefFreeVars f
-    -- reportSDoc "agda2hs.compile.term" 15 $ text "Module arguments for" <+> (prettyTCM f <> text ":") <+> prettyTCM moduleArgs
+    currentMod <- currentModule
+    let defMod = qnameModule f
+
+    (ty', args') <-
+
+      -- if the function is called from the same module it's defined in,
+      -- we drop the module parameters
+      -- TODO: in the future we're not always gonna be erasing module parameters
+      if prettyShow currentMod `isPrefixOf` prettyShow defMod then do
+        npars <- size <$> (lookupSection =<< currentModule)
+        let (pars, rest) = splitAt npars args
+        ty' <- piApplyM ty pars
+        pure (ty', rest)
+      else pure (ty, args)
+
+    reportSDoc "agda2hs.compile.term" 15 $ text " module args" <+> prettyTCM ty'
+    reportSDoc "agda2hs.compile.term" 15 $ text "args to def: " <+> prettyTCM args'
 
     hsName <- compileQName f
 
-    compileApp (Hs.Var () hsName) ty (drop moduleArgs args)
+    compileApp (Hs.Var () hsName) ty' args'
 
 
 -- * Compilation of projection(-like) definitions
@@ -358,15 +361,8 @@ compileErasedApp ty args = do
     [v] -> return v
     _   -> __IMPOSSIBLE__
 
+
 compileCon :: ConHead -> ConInfo -> Type -> [Term] -> C (Hs.Exp ())
--- TODO(flupe:)
--- -- the constructor may be a copy introduced by module application,
--- -- therefore we need to find the original constructor
--- info <- getConstInfo (conName h)
--- if not (defCopy info)
---   then compileCon h i es
---   else let Constructor{conSrcCon = c} = theDef info in
---        compileCon c ConOSystem es
 compileCon h i ty args
   | Just semantics <- isSpecialCon (conName h)
   = semantics ty args
@@ -374,8 +370,15 @@ compileCon h i ty args = do
   isUnboxConstructor (conName h) >>= \case
     Just _  -> compileErasedApp ty args
     Nothing -> do
-      con <- Hs.Con () <$> compileQName (conName h)
-      compileApp con ty args
+      info <- getConstInfo (conName h)
+      -- the constructor may be a copy introduced by module application,
+      -- therefore we need to find the original constructor
+      if defCopy info then
+        let Constructor{conSrcCon = ch'} = theDef info in
+        compileCon ch' i ty args
+      else do
+        con <- Hs.Con () <$> compileQName (conName h)
+        compileApp con ty args
 
 
 -- * Term compilation
@@ -407,43 +410,41 @@ usableDom dom = usableModality dom
 compileLam :: Type -> ArgInfo -> Abs Term -> C (Hs.Exp ())
 compileLam ty argi abs = do
   reportSDoc "agda2hs.compile.term" 50 $ text "Reached lambda"
-  reduce (unEl ty) >>= \case
-    Pi dom cod -> do
-      -- unusable domain, we remove the lambda and compile the body only
-      if not (usableDom dom) then
-        addContext dom $ compileTerm (absBody cod) (absBody abs)
+  (dom, cod) <- mustBePi ty
 
-      -- usable domain, user-written lambda is preserved
-      else if getOrigin argi == UserWritten then do
+  -- unusable domain, we remove the lambda and compile the body only
+  if not (usableDom dom) then
+    addContext dom $ compileTerm (absBody cod) (absBody abs)
 
-        when (patternInTeleName `isPrefixOf` absName abs) $ genericDocError =<<
-          text "Record pattern translation not supported. Use a pattern matching lambda instead."
+  -- usable domain, user-written lambda is preserved
+  else if getOrigin argi == UserWritten then do
 
-        reportSDoc "agda2hs.compile" 17 $ text "compiling regular lambda"
+    when (patternInTeleName `isPrefixOf` absName abs) $ genericDocError =<<
+      text "Record pattern translation not supported. Use a pattern matching lambda instead."
 
-        let varName = absName abs
-            ctxElt  = (varName,) <$> dom
+    reportSDoc "agda2hs.compile" 17 $ text "compiling regular lambda"
 
-        hsLambda varName <$> addContext ctxElt (compileTerm (absBody cod) (absBody abs))
+    let varName = absName abs
+        ctxElt  = (varName,) <$> dom
 
-      -- usable domain, generated lambda means we introduce a section
-      else do
+    hsLambda varName <$> addContext ctxElt (compileTerm (absBody cod) (absBody abs))
 
-        let varName = absName abs
-            ctxElt  = (varName,) <$> dom
+  -- usable domain, generated lambda means we introduce a section
+  else do
 
-        x <- compileDBVar 0
+    let varName = absName abs
+        ctxElt  = (varName,) <$> dom
 
-        addContext ctxElt $ do
-          compileTerm (absBody cod) (absBody abs) <&> \case
-            Hs.InfixApp () a op b | a == hsVar x ->
-              if pp op == "-" then -- Jesper: no right section for minus, as Haskell parses this as negation!
-                Hs.LeftSection () b (Hs.QConOp () $ Hs.UnQual () $ hsName "subtract")
-              else
-                Hs.RightSection () op b -- System-inserted visible lambdas can only come from sections
-            body -> hsLambda x body
+    addContext ctxElt $ do
+      x <- compileDBVar 0
+      compileTerm (absBody cod) (absBody abs) <&> \case
+        Hs.InfixApp () a op b | a == hsVar x ->
+          if pp op == "-" then -- Jesper: no right section for minus, as Haskell parses this as negation!
+            Hs.LeftSection () b (Hs.QConOp () $ Hs.UnQual () $ hsName "subtract")
+          else
+            Hs.RightSection () op b -- System-inserted visible lambdas can only come from sections
+        body -> hsLambda x body
 
-    _ -> __IMPOSSIBLE__
 
 
 

@@ -10,13 +10,13 @@ clean :
 
 alltests :
 	@echo == Compiling tests ==
-	./agda2hs AllTests.agda -o build
+	./agda2hs --no-projection-like AllTests.agda -o build
 	@echo == Running ghc ==
 	@(cd build; ghc -fno-code AllTests.hs)
 
 cubicaltests :
 	@echo == Compiling tests using cubical ==
-	./agda2hs CubicalTests.agda -o build
+	./agda2hs --no-projection-like CubicalTests.agda -o build
 	@echo == Running ghc ==
 	@(cd build; ghc -fno-code CubicalTests.hs)
 
@@ -31,7 +31,7 @@ print-fail :
 
 build/%.err : Fail/%.agda force-recompile alltests
 	@echo Compiling $<
-	@(./agda2hs $< -o build -v0 && echo "UNEXPECTED SUCCESS" || true) | sed -e 's:'$(ROOT)'::g' > $@
+	@(./agda2hs --no-projection-like $< -o build -v0 && echo "UNEXPECTED SUCCESS" || true) | sed -e 's:'$(ROOT)'::g' > $@
 
 force-recompile :
 

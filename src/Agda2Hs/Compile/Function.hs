@@ -143,8 +143,13 @@ compileFun' withSig def@Defn{..} = do
           reportSDoc "agda2hs.compile.type" 6 $ "Applying module parameters to clauses: " <+> prettyTCM pars
         let clauses = if weAreOnTop then filtered else filtered `apply` pars
 
-        -- TODO(flupe): check whether we need to "apply" module parameters to deftype
         typ <- if weAreOnTop then pure defType else piApplyM defType pars
+
+
+        -- TODO(flupe):
+        -- for projection-like functions, patterns only start at the record argument
+        -- so it is incorrect to use defType as a way to discard patterns, as they are not aligned
+
         cs  <- mapMaybeM (compileClause (qnameModule defName) x typ) clauses
 
         when (null cs) $ genericDocError
@@ -173,6 +178,7 @@ compileClause' curModule x ty c@Clause{..} = do
   reportSDoc "agda2hs.compile" 17 $ "Old context: "      <+> (prettyTCM =<< getContext)
   reportSDoc "agda2hs.compile" 17 $ "Clause telescope: " <+> prettyTCM clauseTel
   reportSDoc "agda2hs.compile" 17 $ "Clause type:      " <+> prettyTCM clauseType
+  reportSDoc "agda2hs.compile" 17 $ "Function type:    " <+> prettyTCM ty
   reportSDoc "agda2hs.compile" 17 $ "Clause patterns:  " <+> text (prettyShow namedClausePats)
 
   addContext (KeepNames clauseTel) $ do
