@@ -72,7 +72,7 @@ compileInstance ToDefinition def@Defn{..} =
     ir <- compileInstRule [] (unEl defType)
     withFunctionLocals defName $ do
       (ds, rs) <- concatUnzip
-              <$> mapM (compileInstanceClause (qnameModule defName)) funClauses
+              <$> mapM (compileInstanceClause (qnameModule defName) defType) funClauses
       when (length (nub rs) > 1) $
         genericDocError =<< fsep (pwords "More than one minimal record used.")
       return $ Hs.InstDecl () Nothing ir (Just ds)
@@ -128,8 +128,8 @@ etaExpandClause cl@Clause{namedClausePats = ps, clauseBody = Just t} = do
       " records) and cannot be defined using helper functions.")
 
 
-compileInstanceClause :: ModuleName -> Clause -> C ([Hs.InstDecl ()], [QName])
-compileInstanceClause curModule c = withClauseLocals curModule c $ do
+compileInstanceClause :: ModuleName -> Type -> Clause -> C ([Hs.InstDecl ()], [QName])
+compileInstanceClause curModule ty c = withClauseLocals curModule c $ do
   -- abuse compileClause:
   -- 1. drop any patterns before record projection to suppress the instance arg
   -- 2. use record proj. as function name
@@ -138,7 +138,7 @@ compileInstanceClause curModule c = withClauseLocals curModule c $ do
   -- TODO: check that the things we drop here are not doing any matching
   case dropWhile (isNothing . isProjP) (namedClausePats c) of
     [] ->
-      concatUnzip <$> (mapM (compileInstanceClause curModule) =<< etaExpandClause c)
+      concatUnzip <$> (mapM (compileInstanceClause curModule ty) =<< etaExpandClause c)
     p : ps -> do
       let c' = c {namedClausePats = ps}
           ProjP _ q = namedArg p
@@ -211,7 +211,7 @@ compileInstanceClause curModule c = withClauseLocals curModule c $ do
         | otherwise -> do
           reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
           --TODO(flupe)
-          ms <- disableCopatterns $ compileClause curModule uf undefined c'
+          ms <- disableCopatterns $ compileClause curModule uf ty c'
           return ([Hs.InsDecl () (Hs.FunBind () (toList ms))], [])
 
 
