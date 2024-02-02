@@ -62,8 +62,8 @@ import TypeSignature
 import ModuleParameters
 import ModuleParametersImports
 import Coerce
--- import Inlining
--- import EraseType
+import Inlining
+import EraseType
 import Delay
 import Issue273
 

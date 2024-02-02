@@ -173,9 +173,9 @@ compileDef f ty args | Just sem <- isSpecialDef f = do
   reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of special function"
   sem ty args
 
-compileDef f ty args = do
-  ifM (isTransparentFunction f) (compileErasedApp ty args) $ do
-  -- ifM (isInlinedFunction f) (compileInlineFunctionApp f es) $ do
+compileDef f ty args =
+  ifM (isTransparentFunction f) (compileErasedApp ty args) $
+  ifM (isInlinedFunction f) (compileInlineFunctionApp f ty args) $ do
     reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of regular function:" <+> prettyTCM f
 
     currentMod <- currentModule
@@ -356,6 +356,8 @@ erasedTerm _ _ = pure (Hs.Tuple () Hs.Boxed [])
 compileErasedApp :: Type -> [Term] -> C (Hs.Exp ())
 compileErasedApp ty args = do
   reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of transparent function or erased unboxed constructor"
+  reportSDoc "agda2hs.compile.term" 12 $ text "Args" <+> prettyTCM args
+  reportSDoc "agda2hs.compile.term" 12 $ text "Type" <+> prettyTCM ty
   compileArgs ty args >>= \case
     []  -> return $ hsVar "id"
     [v] -> return v
@@ -446,18 +448,23 @@ compileLam ty argi abs = do
         body -> hsLambda x body
 
 
-
-
-{-
 -- | Compile the application of a function definition marked as inlinable.
 -- The provided arguments will get substituted in the function body, and the missing arguments
 -- will get quantified with lambdas.
-compileInlineFunctionApp :: QName -> Elims -> C (Hs.Exp ())
-compileInlineFunctionApp f es = do
+compileInlineFunctionApp :: QName -> Type -> [Term] -> C (Hs.Exp ())
+compileInlineFunctionApp f ty args = do
   reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of inline function"
-  Function { funClauses = cs } <- theDef <$> getConstInfo f
-  let [ Clause { namedClausePats = pats } ] = filter (isJust . clauseBody) cs
-  etaExpand (drop (length es) pats) es >>= compileTerm
+
+  def <- getConstInfo f
+
+  let ty' = defType def
+  let Function{funClauses = cs} = theDef def
+  let [Clause{namedClausePats = pats}] = filter (isJust . clauseBody) cs
+
+  ty'' <- piApplyM ty args
+  -- NOTE(flupe): very flimsy, there has to be a better way
+  etaExpand (drop (length args) pats) ty' args >>= compileTerm ty''
+
   where
     -- inline functions can only have transparent constructor patterns and variable patterns
     extractPatName :: DeBruijnPattern -> ArgName
@@ -472,20 +479,19 @@ compileInlineFunctionApp f es = do
       | Just n <- nameOf np = rangedThing (woThing n)
       | otherwise = extractPatName (namedThing np)
 
-    etaExpand :: NAPs -> Elims -> C Term
-    etaExpand [] es = do
+    etaExpand :: NAPs -> Type -> [Term] -> C Term
+    etaExpand [] ty args = do
       r <- liftReduce 
             $ locallyReduceDefs (OnlyReduceDefs $ Set.singleton f)
-            $ unfoldDefinitionStep (Def f es) f es
+            $ unfoldDefinitionStep (Def f [] `applys` args) f (Apply . defaultArg <$> args)
       case r of
         YesReduction _ t -> pure t
         _ -> genericDocError =<< text "Could not reduce inline function" <+> prettyTCM f
 
-    etaExpand (p:ps) es =
-      let ai = argInfo p in
-      Lam ai . mkAbs (extractName p)
-        <$> etaExpand ps (raise 1 es ++ [ Apply $ Arg ai $ var 0 ])
--}
+    etaExpand (p:ps) ty args = do
+      (dom, cod) <- mustBePi ty
+      let ai = domInfo dom
+      Lam ai . mkAbs (extractName p) <$> etaExpand ps (absBody cod) (raise 1 args ++ [ var 0 ])
 
 
 compileApp :: Hs.Exp () -> Type -> [Term] -> C (Hs.Exp ())
