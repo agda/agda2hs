@@ -64,8 +64,8 @@ import TypeSignature
 import ModuleParameters
 import ModuleParametersImports
 import Coerce
--- import Inlining
--- import EraseType -- requires inlining
+import Inlining
+import EraseType
 import Issue257
 import Delay
 import Issue273
@@ -133,8 +133,8 @@ import TypeSignature
 import ModuleParameters
 import ModuleParametersImports
 import Coerce
--- import Inlining
--- import EraseType
+import Inlining
+import EraseType
 import Delay
 import Issue273
 #-}
