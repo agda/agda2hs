@@ -6,6 +6,7 @@ open import Haskell.Prim.Int
 open import Haskell.Extra.Dec
 
 open import Haskell.Law.Eq.Def
+open import Haskell.Law.Eq.Word
 open import Haskell.Law.Equality
 open import Haskell.Law.Int
 
