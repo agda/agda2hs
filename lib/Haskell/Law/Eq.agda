@@ -8,3 +8,4 @@ open import Haskell.Law.Eq.List     public
 open import Haskell.Law.Eq.Maybe    public
 open import Haskell.Law.Eq.Nat      public
 open import Haskell.Law.Eq.Ordering public
+open import Haskell.Law.Eq.Word     public
