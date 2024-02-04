@@ -77,8 +77,6 @@ postulate instance
 
   iLawfulEqChar : IsLawfulEq Char
 
-  iLawfulEqUnit : IsLawfulEq ⊤
-
   iLawfulEqTuple₂ : ⦃ iEqA : Eq a ⦄ ⦃ iEqB : Eq b ⦄
                   → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄
                   → IsLawfulEq (a × b)
