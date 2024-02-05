@@ -85,4 +85,3 @@ postulate instance
                   → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄ → ⦃ IsLawfulEq c ⦄
                   → IsLawfulEq (a × b × c)
 
-  iLawfulEqEither : ⦃ iEqA : Eq a ⦄ → ⦃ iEqB : Eq b ⦄ → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄ → Eq (Either a b)

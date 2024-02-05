@@ -5,6 +5,7 @@ open import Haskell.Prim.Bool
 
 open import Haskell.Law.Applicative  public
 open import Haskell.Law.Bool         public
+open import Haskell.Law.Either       public
 open import Haskell.Law.Eq           public
 open import Haskell.Law.Equality     public
 open import Haskell.Law.Functor      public
