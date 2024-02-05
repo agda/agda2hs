@@ -66,4 +66,5 @@ import Inlining
 import EraseType
 import Delay
 import Issue273
+import TypeDirected
 
