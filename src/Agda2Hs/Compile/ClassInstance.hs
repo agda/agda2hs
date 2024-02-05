@@ -38,31 +38,35 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
 
+
 enableCopatterns :: C a -> C a
 enableCopatterns = local $ \e -> e { copatternsEnabled = True }
 
 disableCopatterns :: C a -> C a
 disableCopatterns = local $ \e -> e { copatternsEnabled = False }
 
-enableStrategies :: Maybe (Hs.DerivStrategy ()) -> C ()
-enableStrategies Nothing = return ()
-enableStrategies (Just s) = do
-  tellExtension Hs.DerivingStrategies
-  enableStrategy s
 
-enableStrategy :: Hs.DerivStrategy () -> C ()
-enableStrategy (Hs.DerivStock ())    = return () -- is included in GHC
-enableStrategy (Hs.DerivAnyclass ()) = tellExtension Hs.DeriveAnyClass -- since 7.10.1
-enableStrategy (Hs.DerivNewtype ())  = tellExtension Hs.GeneralizedNewtypeDeriving -- since 6.8.1.
-enableStrategy (Hs.DerivVia () t)    = tellExtension Hs.DerivingVia -- since 8.6.1
+-- | Enable the approriate extensions for a given Haskell deriving strategy.
+enableStrategy :: Maybe (Hs.DerivStrategy ()) -> C ()
+enableStrategy Nothing = return ()
+enableStrategy (Just s) = do
+  tellExtension Hs.DerivingStrategies
+  case s of
+    Hs.DerivStock ()    -> return () -- is included in GHC
+    Hs.DerivAnyclass () -> tellExtension Hs.DeriveAnyClass -- since 7.10.1
+    Hs.DerivNewtype ()  -> tellExtension Hs.GeneralizedNewtypeDeriving -- since 6.8.1.
+    Hs.DerivVia () t    -> tellExtension Hs.DerivingVia -- since 8.6.1
+
 
 compileInstance :: InstanceTarget -> Definition -> C (Hs.Decl ())
+
 compileInstance (ToDerivation strategy) def@Defn{..} =
   setCurrentRangeQ defName $ do
     tellExtension Hs.StandaloneDeriving
-    enableStrategies strategy
+    enableStrategy strategy
     ir <- compileInstRule [] (unEl defType)
     return $ Hs.DerivDecl () strategy Nothing ir
+
 compileInstance ToDefinition def@Defn{..} =
   enableCopatterns $ setCurrentRangeQ defName $ do
     ir <- compileInstRule [] (unEl defType)
@@ -73,6 +77,7 @@ compileInstance ToDefinition def@Defn{..} =
         genericDocError =<< fsep (pwords "More than one minimal record used.")
       return $ Hs.InstDecl () Nothing ir (Just ds)
     where Function{..} = theDef
+
 
 compileInstRule :: [Hs.Asst ()] -> Term -> C (Hs.InstRule ())
 compileInstRule cs ty = case unSpine1 ty of
@@ -95,6 +100,7 @@ compileInstRule cs ty = case unSpine1 ty of
     DomType _ t -> __IMPOSSIBLE__
   _ -> __IMPOSSIBLE__
 
+
 -- Plan:
 --  - ✓ Eta-expand if no copatterns (top-level)
 --  - ✓ drop default implementations and chase definitions of primitive methods in minimal records + *checks*
@@ -104,6 +110,7 @@ compileInstRule cs ty = case unSpine1 ty of
 --  - ✓ Only one minimal record
 --  - ✓ all primitives of the minimal are projected from the same dictionary
 --  - ✓ default implementation that get dropped are also projected from that same dictionary
+
 
 etaExpandClause :: Clause -> C [Clause]
 etaExpandClause cl@Clause{clauseBody = Nothing} =
@@ -119,6 +126,7 @@ etaExpandClause cl@Clause{namedClausePats = ps, clauseBody = Just t} = do
     _ -> genericDocError =<< fsep (pwords $
       "Type class instances must be defined using copatterns (or top-level" ++
       " records) and cannot be defined using helper functions.")
+
 
 compileInstanceClause :: ModuleName -> Clause -> C ([Hs.InstDecl ()], [QName])
 compileInstanceClause curModule c = withClauseLocals curModule c $ do
@@ -205,6 +213,7 @@ compileInstanceClause curModule c = withClauseLocals curModule c $ do
           ms <- disableCopatterns $ compileClause curModule uf c'
           return ([Hs.InsDecl () (Hs.FunBind () (toList ms))], [])
 
+
 fieldArgInfo :: QName -> C ArgInfo
 fieldArgInfo f = do
   r <- maybe badness return =<< liftTCM (getRecordOfField f)
@@ -215,21 +224,24 @@ fieldArgInfo f = do
   where
     badness = genericDocError =<< text "Not a record field:" <+> prettyTCM f
 
+
 findDefinitions :: (QName -> Definition -> C Bool) -> ModuleName -> C [Definition]
 findDefinitions p m = do
-  localDefs    <- (^. sigDefinitions) <$> (^. stSignature) <$> getTCState
-  importedDefs <- (^. sigDefinitions) <$> (^. stImports)   <$> getTCState
+  localDefs    <- (^. sigDefinitions) . (^. stSignature) <$> getTCState
+  importedDefs <- (^. sigDefinitions) . (^. stImports)   <$> getTCState
   let allDefs = HMap.union localDefs importedDefs
       inMod = [ (x, def) | (x, def) <- HMap.toList allDefs, isInModule x m ]
   map snd <$> filterM (uncurry p) inMod
 
+
 resolveStringName :: String -> C QName
 resolveStringName s = do
   cqname <- liftTCM $ parseName noRange s
-  rname <- liftTCM $ resolveName cqname
+  rname  <- liftTCM $ resolveName cqname
   case rname of
     DefinedName _ aname _ -> return $ anameName aname
     _ -> genericDocError =<< text ("Couldn't find " ++ s)
+
 
 lookupDefaultImplementations :: QName -> [Hs.Name ()] -> C [Definition]
 lookupDefaultImplementations recName fields = do
