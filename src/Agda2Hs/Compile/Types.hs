@@ -195,6 +195,7 @@ data RecordTarget
   | ToClass [String]
 
 -- | Compilation target for an Agda instance declaration.
+-- Either to an actual declaration, or a derived instance.
 data InstanceTarget
   = ToDefinition
   | ToDerivation (Maybe (Hs.DerivStrategy ()))

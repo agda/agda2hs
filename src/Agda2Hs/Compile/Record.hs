@@ -53,6 +53,7 @@ compileMinRecord fieldNames m = do
   let declMap = Map.fromList [ (definedName c, def) | def@(Hs.FunBind _ (c : _)) <- compiled ]
   return (definedFields, declMap)
 
+
 compileMinRecords :: Definition -> [String] -> C [Hs.Decl ()]
 compileMinRecords def sls = do
 
@@ -87,6 +88,7 @@ compileMinRecords def sls = do
 
   -- TODO: order default implementations differently?
   return ([minPragma | not (null prims)] ++ Map.elems decls)
+
 
 compileRecord :: RecordTarget -> Definition -> C (Hs.Decl ())
 compileRecord target def = do
@@ -154,17 +156,21 @@ compileRecord target def = do
           DomDropped -> return (hsAssts , hsFields)
       (_, _) -> __IMPOSSIBLE__
 
-    compileDataRecord :: [Hs.Asst ()] -> [Hs.FieldDecl ()] -- compiled rec fields
-                         -> Hs.DataOrNew () -- whether to compile to data or newtype
-                         -> Hs.DeclHead () -- the head of the type declaration
-                         -> [Hs.Deriving ()] -- data extracted from the pragma
-                         -> C (Hs.Decl ())
+    compileDataRecord
+      :: [Hs.Asst ()]
+      -> [Hs.FieldDecl ()] -- ^ compiled rec fields
+      -> Hs.DataOrNew ()   -- ^ whether to compile to data or newtype
+      -> Hs.DeclHead ()    -- ^ the head of the type declaration
+      -> [Hs.Deriving ()]  -- ^ data extracted from the pragma
+      -> C (Hs.Decl ())
     compileDataRecord constraints fieldDecls don hd ds = do
       unless (null constraints) __IMPOSSIBLE__ -- no constraints for records
       mapM_ checkFieldInScope (map unDom recFields)
       let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
       return $ Hs.DataDecl () don Nothing hd [conDecl] ds
 
+
+-- | Check if record can be defined as unboxed.
 checkUnboxPragma :: Defn -> C ()
 checkUnboxPragma def
   | Record{recFields, recMutual} <- def
@@ -174,6 +180,5 @@ checkUnboxPragma def
   --     see: agda/agda#7042
   , all null recMutual -- see agda/agda#7042
   = return ()
-
   | otherwise
   = genericError "An unboxed type must be a non-recursive record type with exactly one non-erased field."
