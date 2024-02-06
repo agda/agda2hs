@@ -10,18 +10,18 @@ import LanguageConstructs
 import Numbers
 import Pragmas
 import Sections
--- import Test
+import Test
 import Tree
 import Tuples
 import Where
 import TypeSynonyms
--- import CanonicalInstance
+import CanonicalInstance
 import Coinduction
--- import ConstrainedInstance
+import ConstrainedInstance
 import Datatypes
 import Records
 import Default
--- import DefaultMethods
+import DefaultMethods
 import Vector
 import Issue90
 import Issue93
@@ -59,7 +59,7 @@ import IOFile
 import IOInput
 import Issue200
 import Issue169
--- import Issue210
+import Issue210
 import TypeSignature
 import ModuleParameters
 import ModuleParametersImports
@@ -81,18 +81,18 @@ import LanguageConstructs
 import Numbers
 import Pragmas
 import Sections
--- import Test
+import Test
 import Tree
 import Tuples
 import Where
 import TypeSynonyms
--- import CanonicalInstance
+import CanonicalInstance
 import Coinduction
--- import ConstrainedInstance
+import ConstrainedInstance
 import Datatypes
 import Records
 import Default
--- import DefaultMethods
+import DefaultMethods
 import Vector
 import Issue90
 import Issue93
@@ -129,7 +129,7 @@ import IOFile
 import IOInput
 import Issue200
 import Issue169
--- import Issue210
+import Issue210
 import TypeSignature
 import ModuleParameters
 import ModuleParametersImports

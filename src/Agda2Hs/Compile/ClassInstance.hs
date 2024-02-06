@@ -18,14 +18,17 @@ import Agda.Interaction.BasicOps ( parseName )
 
 import Agda.Syntax.Common hiding ( Ranged )
 import Agda.Syntax.Internal
+import Agda.Syntax.Internal.Pattern ( patternToTerm )
 import Agda.Syntax.Position ( noRange )
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad ( resolveName )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Substitute ( Apply(applyE) )
+import Agda.TypeChecking.Substitute ( Apply(applyE), absBody, absApp )
 import Agda.TypeChecking.Records
+import Agda.TypeChecking.Reduce ( reduce )
+import Agda.TypeChecking.Telescope (  mustBePi )
 
 import Agda.Utils.Lens
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
@@ -129,91 +132,118 @@ etaExpandClause cl@Clause{namedClausePats = ps, clauseBody = Just t} = do
 
 
 compileInstanceClause :: ModuleName -> Type -> Clause -> C ([Hs.InstDecl ()], [QName])
-compileInstanceClause curModule ty c = withClauseLocals curModule c $ do
-  -- abuse compileClause:
-  -- 1. drop any patterns before record projection to suppress the instance arg
-  -- 2. use record proj. as function name
-  -- 3. process remaing patterns as usual
+compileInstanceClause curModule ty c = do
+  let naps = namedClausePats c
 
-  -- TODO: check that the things we drop here are not doing any matching
-  case dropWhile (isNothing . isProjP) (namedClausePats c) of
-    [] ->
-      concatUnzip <$> (mapM (compileInstanceClause curModule ty) =<< etaExpandClause c)
-    p : ps -> do
-      let c' = c {namedClausePats = ps}
-          ProjP _ q = namedArg p
+  -- there are no projection patterns: we need to eta-expand the clause
+  if all (isNothing . isProjP) naps then
+    concatUnzip <$> (mapM (compileInstanceClause curModule ty) =<< etaExpandClause c)
 
-      -- We want the actual field name, not the instance-opened projection.
-      (q, _, _) <- origProjection q
-      arg <- fieldArgInfo q
+  -- otherwise we seek the first projection pattern
+  else addContext (KeepNames $ clauseTel c) $
+    withClauseLocals curModule c $ compileInstanceClause' curModule ty naps c { clauseTel = EmptyTel }
 
-      reportSDoc "agda2hs.compile.instance" 15 $
-        text "Compiling instance clause for" <+> prettyTCM (Arg arg $ Def q [])
+-- abuse compileClause:
+-- 1. drop any patterns before record projection to suppress the instance arg
+-- 2. use record proj. as function name
+-- 3. process remaing patterns as usual
+compileInstanceClause' :: ModuleName -> Type -> NAPs -> Clause -> C ([Hs.InstDecl ()], [QName])
+compileInstanceClause' curModule ty [] c = __IMPOSSIBLE__
+compileInstanceClause' curModule ty (p:ps) c
 
-      let uf = hsName $ prettyShow $ nameConcrete $ qnameName q
+  -- reached record projection
+  | ProjP _ q <- namedArg p = do
 
-      let
-        (.~) :: QName -> QName -> Bool
-        x .~ y = nameConcrete (qnameName x) == nameConcrete (qnameName y)
+    -- we put back the remaining patterns in the original clause 
+    let c' = c {namedClausePats = ps}
 
-        resolveExtendedLambda :: QName -> C QName
-        resolveExtendedLambda n | isExtendedLambdaName n = defName <$> getConstInfo n
-                                | otherwise              = return n
+    -- We want the actual field name, not the instance-opened projection.
+    (q, _, _) <- origProjection q
+    arg <- fieldArgInfo q
 
-        chaseDef :: QName -> C Definition
-        chaseDef n = do
-          d <- getConstInfo n
-          let Function {..} = theDef d
-          case funClauses of
-            [ Clause {clauseBody = Just (Def n' [])} ] -> do
-              chaseDef n'
-            _ -> return d
+    -- retrieve the type of the projection
+    Just (unEl -> Pi a b) <- getDefType q ty
+    let ty' = absBody b
 
-      if
-        | isInstance arg, usableModality arg -> do
-            unless (null ps) $ genericDocError =<< text "not allowed: explicitly giving superclass"
-            body <- case clauseBody c' of
-              Nothing -> genericDocError =<< text "not allowed: absurd clause for superclass"
-              Just b  -> return b
-            addContext (clauseTel c') $ checkInstance body
-            return ([], [])
-        | not (keepArg arg) -> return ([], [])
-        -- Projection of a primitive field: chase down definition and inline as instance clause.
-        | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
-        , [(_, f)] <- mapMaybe isProjElim es
-        , f .~ q -> do
-          reportSDoc "agda2hs.compile.instance" 20 $
-            text "Instance clause is projected from" <+> prettyTCM (Def n [])
-          reportSDoc "agda2hs.compile.instance" 20 $
-            text $ "raw projection:" ++ prettyShow (Def n [])
-          d <- chaseDef n
-          fc <- compileFun False d
-          let hd = hsName $ prettyShow $ nameConcrete $ qnameName $ defName d
-          let fc' = dropPatterns 1 $ replaceName hd uf fc
-          return (map (Hs.InsDecl ()) fc', [n])
+    reportSDoc "agda2hs.compile.instance" 15 $
+      text "Compiling instance clause for" <+> prettyTCM (Arg arg $ Def q [])
 
-         -- Projection of a default implementation: drop while making sure these are drawn from the
-         -- same (minimal) dictionary as the primitive fields.
-        | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
-        , n .~ q -> do
-          case map unArg . filter keepArg <$> allApplyElims es of
-            Just [ Def f _ ] -> do
-              reportSDoc "agda2hs.compile.instance" 20 $ vcat
-                  [ text "Dropping default instance clause" <+> prettyTCM c'
-                  , text "with minimal dictionary" <+> prettyTCM f
-                  ]
-              reportSDoc "agda2hs.compile.instance" 40 $
-                  text $ "raw dictionary:" ++ prettyShow f
-              return ([], [f])
-            _ -> genericDocError =<< text "illegal instance declaration: instances using default methods should use a named definition or an anonymous `λ where`."
+    reportSDoc "agda2hs.compile.instance" 15 $
+      text "Clause type: " <+> prettyTCM ty'
 
-        -- No minimal dictionary used, proceed with compiling as a regular clause.
-        | otherwise -> do
-          reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
-          --TODO(flupe)
-          ms <- disableCopatterns $ compileClause curModule uf ty c'
-          return ([Hs.InsDecl () (Hs.FunBind () (toList ms))], [])
+    reportSDoc "agda2hs.compile.instance" 15 $
+      text "Clause patterns:" <+> prettyTCM (namedArg <$> ps)
 
+    let uf = hsName $ prettyShow $ nameConcrete $ qnameName q
+
+    let
+      (.~) :: QName -> QName -> Bool
+      x .~ y = nameConcrete (qnameName x) == nameConcrete (qnameName y)
+
+      resolveExtendedLambda :: QName -> C QName
+      resolveExtendedLambda n | isExtendedLambdaName n = defName <$> getConstInfo n
+                              | otherwise              = return n
+
+      chaseDef :: QName -> C Definition
+      chaseDef n = do
+        d <- getConstInfo n
+        let Function {..} = theDef d
+        case funClauses of
+          [ Clause {clauseBody = Just (Def n' [])} ] -> do
+            chaseDef n'
+          _ -> return d
+
+    if
+      | isInstance arg, usableModality arg -> do
+          unless (null ps) $ genericDocError =<< text "not allowed: explicitly giving superclass"
+          body <- case clauseBody c' of
+            Nothing -> genericDocError =<< text "not allowed: absurd clause for superclass"
+            Just b  -> return b
+          checkInstance body
+          return ([], [])
+      | not (keepArg arg) -> return ([], [])
+      -- Projection of a primitive field: chase down definition and inline as instance clause.
+      | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
+      , [(_, f)] <- mapMaybe isProjElim es
+      , f .~ q -> do
+        reportSDoc "agda2hs.compile.instance" 20 $
+          text "Instance clause is projected from" <+> prettyTCM (Def n [])
+        reportSDoc "agda2hs.compile.instance" 20 $
+          text $ "raw projection:" ++ prettyShow (Def n [])
+        d <- chaseDef n
+        fc <- compileFun False d
+        let hd = hsName $ prettyShow $ nameConcrete $ qnameName $ defName d
+        let fc' = {- dropPatterns 1 $ -} replaceName hd uf fc
+        return (map (Hs.InsDecl ()) fc', [n])
+
+       -- Projection of a default implementation: drop while making sure these are drawn from the
+       -- same (minimal) dictionary as the primitive fields.
+      | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
+      , n .~ q -> do
+        case map unArg . filter keepArg <$> allApplyElims es of
+          Just [ Def f _ ] -> do
+            reportSDoc "agda2hs.compile.instance" 20 $ vcat
+                [ text "Dropping default instance clause" <+> prettyTCM c'
+                , text "with minimal dictionary" <+> prettyTCM f
+                ]
+            reportSDoc "agda2hs.compile.instance" 40 $
+                text $ "raw dictionary:" ++ prettyShow f
+            return ([], [f])
+
+          _ -> genericDocError =<< text "illegal instance declaration: instances using default methods should use a named definition or an anonymous `λ where`."
+
+      -- No minimal dictionary used, proceed with compiling as a regular clause.
+      | otherwise -> do
+        reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
+        ms <- disableCopatterns $ compileClause curModule uf ty' c'
+        return ([Hs.InsDecl () (Hs.FunBind () (toList ms))], [])
+
+-- finding a pattern other than a projection: we skip
+-- NOTE(flupe): actually I think we may want to throw hard errors here
+--              if there is something other than erased parameters
+compileInstanceClause' curModule ty (p:ps) c = do
+  (a, b) <- mustBePi ty
+  compileInstanceClause' curModule (absApp b (patternToTerm $ namedArg p)) ps c
 
 fieldArgInfo :: QName -> C ArgInfo
 fieldArgInfo f = do
