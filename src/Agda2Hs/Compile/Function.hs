@@ -39,7 +39,7 @@ import Agda.Utils.Monad
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
-import Agda2Hs.Compile.Term ( compileTerm )
+import Agda2Hs.Compile.Term ( compileTerm, usableDom )
 import Agda2Hs.Compile.Type ( compileTopLevelType, compiledDom, DomOutput(..) )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
@@ -189,6 +189,7 @@ compileClause' curModule x ty c@Clause{..} = do
           /\ (curModule `isFatherModuleOf`) . qnameModule
     children <- filter isWhereDecl <$> asks locals
     whereDecls <- mapM (getConstInfo >=> compileFun' True) children
+
     -- Jesper, 2023-10-30: We should compile the body in the module of the
     -- `where` declarations (if there are any) in order to drop the arguments
     -- that correspond to the pattern variables of this clause from the calls to
@@ -225,6 +226,7 @@ compilePats ty ((namedArg -> ProjP po pn):ps) = do
   Just (unEl -> Pi a b) <- getDefType pn ty -- ????
   compilePats (absBody b) ps
 
+
 -- -- copatterns patterns
 -- compilePat ty (ProjP _ q) = do
 --   reportSDoc "agda2hs.compile" 6 $ "compiling copattern: " <+> text (prettyShow q)
@@ -239,11 +241,13 @@ compilePats ty ((namedArg -> pat):ps) = do
   let rest = compilePats (absApp b (patternToTerm pat)) ps
   compiledDom a >>= \case
     DOInstance -> rest
-    DODropped  -> rest
+    DODropped  -> rest <* when (usableDom a) checkForced
     DOKept     -> do
-      when (isForcedPat pat) $ genericDocError =<< "not supported by agda2hs: forced (dot) patterns in non-erased positions"
+      checkForced
       checkNoAsPatterns pat
       (:) <$> compilePat (unDom a) pat <*> rest
+  where checkForced  = when (isForcedPat pat) $ genericDocError =<< "not supported by agda2hs: forced (dot) patterns in non-erased positions"
+
 
 compilePat :: Type -> DeBruijnPattern -> C (Hs.Pat ())
 
