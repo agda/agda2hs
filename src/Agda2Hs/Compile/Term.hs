@@ -389,11 +389,10 @@ compileTerm :: Type -> Term -> C (Hs.Exp ())
 compileTerm ty v = do
 
   reportSDoc "agda2hs.compile" 7  $ text "compiling term:" <+> prettyTCM v
-  reportSDoc "agda2hs.compile" 27 $ text "compiling term:" <+> pure (P.pretty $ unSpine1 v)
 
   case compileSpined ty v of
     Just cont -> cont
-    Nothing   -> case unSpine1 v of
+    Nothing   -> case v of
       Lit l   -> compileLiteral l
       Lam v b -> compileLam ty v b
       t       -> genericDocError =<< text "bad term:" <?> prettyTCM t
