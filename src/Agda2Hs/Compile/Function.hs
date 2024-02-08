@@ -215,25 +215,17 @@ compileClause' curModule x ty c@Clause{..} = do
 -- TODO(flupe): projection-like definitions are missing the first (variable) patterns
 --             (that are however present in the type)
 --             so we should drop the first parameters in the input type (using funProjection.projLams)
--- TODO(flupe): handle copatterns (that don't expect a Pi type) (See Unbox:sort2)
 compilePats :: Type -> NAPs -> C [Hs.Pat ()]
 compilePats _ [] = pure []
 compilePats ty ((namedArg -> ProjP po pn):ps) = do
   reportSDoc "agda2hs.compile" 6 $ "compiling copattern: " <+> text (prettyShow pn)
-  -- NOTE: should be fine for unboxed records
   unlessM (asks copatternsEnabled `or2M` (isJust <$> isUnboxProjection pn)) $
     genericDocError =<< "not supported in Haskell: copatterns"
-  Just (unEl -> Pi a b) <- getDefType pn ty -- ????
+
+  ty     <- fromMaybe __IMPOSSIBLE__ <$> getDefType pn ty
+  (a, b) <- mustBePi ty
+
   compilePats (absBody b) ps
-
-
--- -- copatterns patterns
--- compilePat ty (ProjP _ q) = do
---   reportSDoc "agda2hs.compile" 6 $ "compiling copattern: " <+> text (prettyShow q)
---   unlessM (asks copatternsEnabled) $
---     genericDocError =<< "not supported in Haskell: copatterns"
---   let x = hsName $ prettyShow q
---   return $ Hs.PVar () x
 
 compilePats ty ((namedArg -> pat):ps) = do
   (a, b) <- mustBePi ty
