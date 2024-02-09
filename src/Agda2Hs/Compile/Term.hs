@@ -282,14 +282,14 @@ compileTerm v = do
       -- System-inserted lambda, no need to preserve the name.
       underAbstraction_ b $ \ body -> do
         x <- showTCM (Var 0 [])
-        let hsx = hsVar x
         body <- compileTerm body
         return $ case body of
-          Hs.InfixApp _ a op b
-            | a == hsx
-            , pp op /= "-"             -- Jesper: no right section for minus, as Haskell parses this as negation!
-            -> Hs.RightSection () op b -- System-inserted visible lambdas can only come from sections
-          _            -> hsLambda x body         -- so we know x is not free in b.
+          Hs.InfixApp _ a op b | a == hsVar x ->
+            if pp op == "-" then -- Jesper: no right section for minus, as Haskell parses this as negation!
+              Hs.LeftSection () b (Hs.QConOp () $ Hs.UnQual () $ hsName "subtract")
+            else                       -- System-inserted visible lambdas can only come from sections
+              Hs.RightSection () op b  -- so we know x is not free in b.
+          _            -> hsLambda x body         
     Lam v b ->
       -- Drop erased lambdas (#65)
       underAbstraction_ b $ \ body -> compileTerm body

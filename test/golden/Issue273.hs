@@ -19,7 +19,7 @@ test5 :: (Int, Int) -> Int -> Int
 test5 = \ x _ -> (\ r -> snd r) $ x
 
 test6 :: Int -> Int
-test6 = \ section -> section - (1 + 1)
+test6 = ((1 + 1) `subtract`)
 
 test7 :: Int -> Int
 test7 = (+ (1 - 1))
