@@ -286,7 +286,9 @@ compileTerm v = do
         body <- compileTerm body
         return $ case body of
           Hs.InfixApp _ a op b
-            | a == hsx -> Hs.RightSection () op b -- System-inserted visible lambdas can only come from sections
+            | a == hsx
+            , pp op /= "-"             -- Jesper: no right section for minus, as Haskell parses this as negation!
+            -> Hs.RightSection () op b -- System-inserted visible lambdas can only come from sections
           _            -> hsLambda x body         -- so we know x is not free in b.
     Lam v b ->
       -- Drop erased lambdas (#65)

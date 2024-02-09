@@ -219,16 +219,22 @@ uses ty = not . null . usedTypesOf ty
 
 -- Fixities
 
+-- Ideally, our pretty-printing library should insert parenthesis where needed.
+-- However, hs-src-exts does not insert adequate parenthesis for infix
+-- operators so we need to insert some by hand (see issues #54 and #273).
 insertParens :: Data a => a -> a
 insertParens = everywhere (mkT $ insertPars $ fixityMap baseFixities)
   where
     fixityMap fxs = Map.fromList [ (q, fx) | fx@(Fixity _ _ q) <- fxs ]
 
 insertPars :: Map (QName ()) Fixity -> Exp () -> Exp ()
-insertPars fixs (InfixApp l e1 op e2) = InfixApp l (parL e1) op (parR e2)
+insertPars fixs = \case
+  (InfixApp l e1 op e2) -> InfixApp l (parL op e1) op (parR op e2)
+  (LeftSection l e1 op) -> LeftSection l (parL op e1) op
+  (RightSection l op e2) -> RightSection l op (parR op e2)
+  e -> e
   where
     getFix op = Map.lookup (qopName op) fixs
-    topFix    = getFix op
 
     qopName (QVarOp _ x) = x
     qopName (QConOp _ x) = x
@@ -241,13 +247,14 @@ insertPars fixs (InfixApp l e1 op e2) = InfixApp l (parL e1) op (parR e2)
     needParen _ Nothing _ = True  -- If we don't know, add parens
     needParen _ _ Nothing = True
 
-    parL = par $ needParen (AssocLeft () /=)
-    parR = par $ needParen (AssocRight () /=)
+    parL topOp = \case
+      e@Lambda{} -> Paren () e 
+      e -> par topOp (needParen (AssocLeft () /=)) e
+    parR topOp = par topOp (needParen (AssocRight () /=))
 
-    par need e@(InfixApp _ _ op _)
-      | need topFix (getFix op) = Paren () e
-    par _ e = e
-insertPars _ e = e
+    par topOp need e@(InfixApp _ _ op _)
+      | need (getFix topOp) (getFix op) = Paren () e
+    par _ _ e = e
 
 -- Patterns
 patToExp :: Pat l -> Maybe (Exp l)
