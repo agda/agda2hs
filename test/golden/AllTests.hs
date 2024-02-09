@@ -65,4 +65,5 @@ import Coerce
 import Inlining
 import EraseType
 import Delay
+import Issue273
 
