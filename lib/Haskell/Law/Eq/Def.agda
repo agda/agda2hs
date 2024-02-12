@@ -2,13 +2,7 @@ module Haskell.Law.Eq.Def where
 
 open import Haskell.Prim
 open import Haskell.Prim.Bool
-open import Haskell.Prim.Integer
-open import Haskell.Prim.Int
-open import Haskell.Prim.Word
 open import Haskell.Prim.Double
-open import Haskell.Prim.Tuple
-open import Haskell.Prim.Maybe
-open import Haskell.Prim.Either
 
 open import Haskell.Prim.Eq
 
@@ -76,12 +70,3 @@ postulate instance
   iLawfulEqDouble : IsLawfulEq Double
 
   iLawfulEqChar : IsLawfulEq Char
-
-  iLawfulEqTuple₂ : ⦃ iEqA : Eq a ⦄ ⦃ iEqB : Eq b ⦄
-                  → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄
-                  → IsLawfulEq (a × b)
-
-  iLawfulEqTuple₃ : ⦃ iEqA : Eq a ⦄ ⦃ iEqB : Eq b ⦄ ⦃ iEqC : Eq c ⦄
-                  → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄ → ⦃ IsLawfulEq c ⦄
-                  → IsLawfulEq (a × b × c)
-

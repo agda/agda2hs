@@ -34,3 +34,12 @@ second f (x , y) = x , f y
 
 _***_ : (a → b) → (c → d) → a × c → b × d
 (f *** g) (x , y) = f x , g y
+
+fst₃ : (a × b × c) → a
+fst₃ (x , _ , _) = x 
+
+snd₃ : (a × b × c) → b
+snd₃ (_ , y , _) = y
+
+thd₃ : (a × b × c) → c
+thd₃ (_ , _ , z) = z
