@@ -136,7 +136,7 @@ compileType t = do
   reportSDoc "agda2hs.compile.type" 22 $ text "Compiling type" <+> pretty t
 
   case t of
-    Pi a b -> compileDom (absName b) a >>= \case
+    Pi a b -> compileDomType (absName b) a >>= \case
       DomType _ hsA -> do
         hsB <- underAbstraction a b (compileType . unEl)
         return $ Hs.TyFun () hsA hsB
@@ -211,28 +211,27 @@ compileInlineType f args = do
     _                -> genericDocError =<< text "Could not reduce inline type alias " <+> prettyTCM f
 
 
--- Compile a function domain.
+data DomOutput = DOInstance | DODropped | DOKept
+
+compileDom :: Dom Type -> C DomOutput
+compileDom a
+  | usableModality a = case getHiding a of
+      Instance{} -> pure DOInstance
+      _          -> ifM (canErase $ unDom a) (pure DODropped) (pure DOKept)
+  | otherwise = pure DODropped
+
+-- | Compile a function type domain.
 -- A domain can either be:
 --
 -- - dropped if the argument is erased.
 -- - added as a class constraint.
 -- - kept as a regular explict argument.
-compileDom :: ArgName -> Dom Type -> C CompiledDom
-compileDom x a
-  | usableModality a = case getHiding a of
-      Instance{} -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
-      _          -> ifM (canErase $ unDom a) (return DomDropped)
-                        (uncurry DomType <$> compileTypeWithStrictness (unEl $ unDom a))
-  | otherwise = return DomDropped
-
-data DomOutput = DOInstance | DODropped | DOKept
-
-compiledDom :: Dom Type -> C DomOutput
-compiledDom a
-  | usableModality a = case getHiding a of
-      Instance{} -> pure DOInstance
-      _          -> ifM (canErase $ unDom a) (pure DODropped) (pure DOKept)
-  | otherwise = pure DODropped
+compileDomType :: ArgName -> Dom Type -> C CompiledDom
+compileDomType x a =
+  compileDom a >>= \case
+    DODropped  -> pure DomDropped
+    DOInstance -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
+    DOKept     -> uncurry DomType <$> compileTypeWithStrictness (unEl $ unDom a)
 
 
 compileTeleBinds :: Telescope -> C [Hs.TyVarBind ()]

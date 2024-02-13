@@ -96,7 +96,7 @@ compileInstRule cs ty = case unSpine1 ty of
           pars t@(Hs.TyVar () _) = t
           pars t@(Hs.TyCon () _) = t
           pars t = Hs.TyParen () t
-  Pi a b -> compileDom (absName b) a >>= \case
+  Pi a b -> compileDomType (absName b) a >>= \case
     DomDropped -> underAbstr a b (compileInstRule cs . unEl)
     DomConstraint hsA ->
       underAbstraction a b (compileInstRule (cs ++ [hsA]) . unEl)

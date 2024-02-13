@@ -26,7 +26,7 @@ import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.ClassInstance
 import Agda2Hs.Compile.Function ( compileFun )
-import Agda2Hs.Compile.Type ( compileDom, compileTeleBinds )
+import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
@@ -141,7 +141,7 @@ compileRecord target def = do
     compileRecFields decl ns tel = case (ns, tel) of
       (_   , EmptyTel          ) -> return ([], [])
       (n:ns, ExtendTel dom tel') -> do
-        hsDom <- compileDom (absName tel') dom
+        hsDom <- compileDomType (absName tel') dom
         (hsAssts, hsFields) <- underAbstraction dom tel' $ compileRecFields decl ns
         case hsDom of
           DomType s hsA -> do

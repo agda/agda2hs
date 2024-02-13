@@ -26,7 +26,7 @@ import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope ( telView, mustBePi, piApplyM )
 import Agda.TypeChecking.Sort ( ifIsSort )
-import Agda.TypeChecking.Datatypes ( getConType )
+import Agda.TypeChecking.Datatypes ( getConType, isDataOrRecord )
 import Agda.TypeChecking.Records ( getDefType )
 import Agda.TypeChecking.Reduce ( reduce )
 
@@ -40,13 +40,12 @@ import Agda.Utils.Monad
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Term ( compileTerm, usableDom )
-import Agda2Hs.Compile.Type ( compileTopLevelType, compiledDom, DomOutput(..) )
+import Agda2Hs.Compile.Type ( compileTopLevelType, compileDom, DomOutput(..) )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
 import Agda2Hs.HsUtils
-import Agda.TypeChecking.Datatypes (isDataOrRecord)
 
 
 -- | Compilation rules for specific constructors in patterns.
@@ -231,7 +230,7 @@ compilePats ty ((namedArg -> pat):ps) = do
   (a, b) <- mustBePi ty
   reportSDoc "agda2hs.compile.pattern" 5 $ text "Compiling pattern:" <+> prettyTCM pat
   let rest = compilePats (absApp b (patternToTerm pat)) ps
-  compiledDom a >>= \case
+  compileDom a >>= \case
     DOInstance -> rest
     DODropped  -> rest <* when (usableDom a) checkForced
     DOKept     -> do

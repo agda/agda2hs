@@ -36,7 +36,7 @@ import Agda.Utils.Tuple ( mapSndM )
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
 
-import Agda2Hs.Compile.Type ( compileType, compileDom, compiledDom, DomOutput(..) )
+import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..) )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
@@ -506,7 +506,7 @@ compileArgs ty [] = pure []
 compileArgs ty (x:xs) = do
   (a, b) <- mustBePi ty
   let rest = compileArgs (absApp b x) xs
-  compiledDom a >>= \case
+  compileDom a >>= \case
     DODropped  -> rest
     DOInstance -> checkInstance x *> rest
     DOKept     -> (:) <$> compileTerm (unDom a) x

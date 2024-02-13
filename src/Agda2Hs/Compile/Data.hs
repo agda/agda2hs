@@ -15,7 +15,7 @@ import Agda.TypeChecking.Telescope
 
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
-import Agda2Hs.Compile.Type ( compileDom, compileTeleBinds )
+import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
@@ -48,7 +48,7 @@ compileData newtyp ds def = do
   where
     allIndicesErased :: Type -> C ()
     allIndicesErased t = reduce (unEl t) >>= \case
-      Pi dom t -> compileDom (absName t) dom >>= \case
+      Pi dom t -> compileDomType (absName t) dom >>= \case
         DomDropped      -> allIndicesErased (unAbs t)
         DomType{}       -> genericDocError =<< text "Not supported: indexed datatypes"
         DomConstraint{} -> genericDocError =<< text "Not supported: constraints in types"
@@ -68,7 +68,7 @@ compileConstructor params c = checkingVars $ do
 
 compileConstructorArgs :: Telescope -> C [Hs.Type ()]
 compileConstructorArgs EmptyTel = return []
-compileConstructorArgs (ExtendTel a tel) = compileDom (absName tel) a >>= \case
+compileConstructorArgs (ExtendTel a tel) = compileDomType (absName tel) a >>= \case
   DomType s hsA     -> do
     ty <- addTyBang s hsA
     (ty :) <$> underAbstraction a tel compileConstructorArgs
