@@ -4,7 +4,7 @@ import Control.Monad ( unless )
 import Control.Monad.IO.Class ( MonadIO(liftIO) )
 
 import Data.Function ( on )
-import Data.List ( sortBy, nub, isPrefixOf )
+import Data.List ( sortBy, nub )
 import Data.Maybe ( fromMaybe, isNothing )
 import Data.Set ( Set )
 import qualified Data.Set as Set
@@ -19,7 +19,7 @@ import qualified Language.Haskell.Exts.ExactPrint as Hs
 import qualified Language.Haskell.Exts.Extension as Hs
 
 import Agda.Compiler.Backend
-import Agda.Compiler.Common ( curIF, compileDir )
+import Agda.Compiler.Common ( compileDir )
 
 import Agda.TypeChecking.Pretty
 import qualified Agda.Syntax.Concrete.Name as C
@@ -76,15 +76,6 @@ moduleFileName opts name = do
   outDir <- compileDir
   return $ fromMaybe outDir (optOutDir opts) </> moduleNameToFileName name "hs"
 
--- NOTE: what does this have to do with rendering?
-moduleSetup :: Options -> IsMain -> TopLevelModuleName -> Maybe FilePath -> TCM (Recompile ModuleEnv ModuleRes)
-moduleSetup _ _ m _ = do
-  -- we never compile primitive modules
-  if any (`isPrefixOf` prettyShow m) primModules then pure $ Skip ()
-  else do
-    reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
-    setScope . iInsideScope =<< curIF
-    return $ Recompile m
 
 ensureDirectory :: FilePath -> IO ()
 ensureDirectory = createDirectoryIfMissing True . takeDirectory
