@@ -4,11 +4,14 @@ import Control.Monad.Trans.RWS.CPS ( evalRWST )
 import Control.Monad.State ( gets )
 import Control.Arrow ((>>>))
 import Data.Functor
+import Data.List ( isPrefixOf )
 
 import qualified Data.Map as M
 
 import Agda.Compiler.Backend
+import Agda.Compiler.Common ( curIF )
 import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
+import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Monad.Signature ( isInlineFun )
 import Agda.Utils.Null
@@ -22,7 +25,7 @@ import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkInlin
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
 import Agda2Hs.Compile.Types
-import Agda2Hs.Compile.Utils ( setCurrentRangeQ, tellExtension )
+import Agda2Hs.Compile.Utils ( setCurrentRangeQ, tellExtension, primModules )
 import Agda2Hs.Pragma
 
 
@@ -41,6 +44,16 @@ initCompileState = CompileState { lcaseUsed = 0 }
 
 runC :: TopLevelModuleName -> SpecialRules -> C a -> TCM (a, CompileOutput)
 runC tlm rewrites c = evalRWST c (initCompileEnv tlm rewrites) initCompileState
+
+moduleSetup :: Options -> IsMain -> TopLevelModuleName -> Maybe FilePath -> TCM (Recompile ModuleEnv ModuleRes)
+moduleSetup _ _ m _ = do
+  -- we never compile primitive modules
+  if any (`isPrefixOf` prettyShow m) primModules then pure $ Skip ()
+  else do
+    reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
+    setScope . iInsideScope =<< curIF
+    return $ Recompile m
+
 
 -- Main compile function
 ------------------------
