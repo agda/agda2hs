@@ -22,7 +22,6 @@ sort1 xs = xs [ looksfine ]
 sort2 : List Int → ∃ (List Int) IsSorted
 sort2 xs .el = xs
 sort2 xs .pf = looksfine
- 
 {-# COMPILE AGDA2HS sort2 #-}
 
 sort3 : List Int → ∃ (List Int) IsSorted
