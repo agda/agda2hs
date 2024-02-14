@@ -17,6 +17,7 @@ import Agda.Utils.Monad
 import Agda2Hs.Compile.Type ( compileType )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
+import Agda2Hs.Compile.Var ( compileDBVar )
 import Agda2Hs.HsUtils
 
 
@@ -41,7 +42,7 @@ compileTypeArgs ps = mapM (compileTypeArg . namedArg) $ filter keepArg ps
 
 compileTypeArg :: DeBruijnPattern -> C (Hs.TyVarBind ())
 compileTypeArg p@(VarP o i) = do
-  name <- hsName <$> compileVar (dbPatVarIndex i)
+  name <- hsName <$> compileDBVar (dbPatVarIndex i)
   checkValidTyVarName name
   return $ Hs.UnkindedVar () name
 compileTypeArg _ = genericError "Not supported: type definition by pattern matching"

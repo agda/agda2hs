@@ -36,6 +36,7 @@ import Agda.Utils.Functor ( ($>) )
 import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
+import Agda2Hs.Compile.Var
 import Agda2Hs.AgdaUtils
 import Agda2Hs.HsUtils
 
@@ -162,7 +163,7 @@ compileType t = do
 
     Var x es | Just args <- allApplyElims es -> do
       vs <- compileTypeArgs args
-      x  <- hsName <$> compileVar x
+      x  <- hsName <$> compileDBVar x
       return $ tApp (Hs.TyVar () x) vs
 
     Sort s -> return (Hs.TyStar ())
