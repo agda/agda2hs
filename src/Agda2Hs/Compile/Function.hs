@@ -40,6 +40,7 @@ import Agda2Hs.Compile.Type ( compileTopLevelType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
+import Agda2Hs.Compile.Var ( compileDBVar )
 import Agda2Hs.HsUtils
 import Agda.TypeChecking.Datatypes (isDataOrRecord)
 
@@ -224,7 +225,7 @@ compilePat :: DeBruijnPattern -> C (Hs.Pat ())
 compilePat p@(VarP o x)
   | PatOWild <- patOrigin o = return $ Hs.PWildCard ()
   | otherwise               = do
-      n <- hsName <$> compileVar (dbPatVarIndex x)
+      n <- hsName <$> compileDBVar (dbPatVarIndex x)
       checkValidVarName n
       return $ Hs.PVar () n
 compilePat (ConP h i ps)

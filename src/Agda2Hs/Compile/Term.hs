@@ -35,6 +35,7 @@ import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Type ( compileType )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
+import Agda2Hs.Compile.Var ( compileDBVar )
 import Agda2Hs.HsUtils
 
 import {-# SOURCE #-} Agda2Hs.Compile.Function ( compileClause' )
@@ -233,7 +234,7 @@ compileTerm v = do
   reportSDoc "agda2hs.compile" 27 $ text "compiling term:" <+> pure (P.pretty $ unSpine1 v)
   case unSpine1 v of
     Var x es   -> do
-      s <- compileVar x
+      s <- compileDBVar x
       hsVar s `app` es
     -- v currently we assume all record projections are instance
     -- args that need attention
