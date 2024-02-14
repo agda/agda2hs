@@ -1,4 +1,4 @@
-{-# LANGUAGE PatternSynonyms, FlexibleInstances, MultiParamTypeClasses, InstanceSigs, TypeFamilies  #-}
+{-# LANGUAGE PatternSynonyms, FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
 module Agda2Hs.Compile.Types where
 
 import Control.Applicative ( liftA2 )
@@ -177,14 +177,14 @@ instance Semigroup a => Semigroup (C a) where (<>) = liftA2 (<>)
 
 
 
--- | Currently we can compile an Agda "Dom Type" in three ways:
--- To a type in Haskell (with perhaps a strictness annotation)
--- To a typeclass constraint in Haskell
--- To nothing (e.g. for proofs)
+-- | Agda @Dom Type@ can get compiled in three ways.
 data CompiledDom
   = DomType Strictness (Hs.Type ())
+    -- ^ To a Haskell type (with perhaps a strictness annotation)
   | DomConstraint (Hs.Asst ())
+    -- ^ To a typeclass constraint
   | DomDropped
+    -- ^ To nothing (e.g. erased proofs)
 
 -- | Whether a datatype/record should be compiled as a @newtype@ haskell definition.
 type AsNewType = Bool

@@ -110,7 +110,7 @@ compileRecord target def = do
       ToRecord newtyp ds -> do
         checkValidConName cName
         (constraints, fieldDecls) <- compileRecFields fieldDecl recFields fieldTel
-        when newtyp $ checkSingleElement cName fieldDecls "Newtype must have exactly one field in constructor"
+        when newtyp $ checkNewtypeCon cName fieldDecls
         let target = if newtyp then Hs.NewType () else Hs.DataType ()
         compileDataRecord constraints fieldDecls target hd ds
 

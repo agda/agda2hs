@@ -134,7 +134,7 @@ keepArg x = usableModality x && visible x
 
 
 keepClause :: Clause -> Bool
-keepClause = maybe False keepArg . clauseType
+keepClause = any keepArg . clauseType
 
 -- Determine whether it is ok to erase arguments of this type,
 -- even in the absence of an erasure annotation.
@@ -301,6 +301,10 @@ addTyBang Lazy   ty = return ty
 checkSingleElement :: Hs.Name () -> [b] -> String -> C ()
 checkSingleElement name fs s = unless (length fs == 1) $ genericDocError =<< do
   text (s ++ ":") <+> text (Hs.prettyPrint name)
+
+checkNewtypeCon :: Hs.Name () -> [b] -> C ()
+checkNewtypeCon name tys =
+  checkSingleElement name tys "Newtype must have exactly one field in constructor"
 
 checkingVars :: C a -> C a
 checkingVars = local $ \e -> e { checkVar = True }
