@@ -297,7 +297,7 @@ constrainType c = \case
 
 -- | Add explicit quantification over a variable to a Haskell type.
 qualifyType
-  :: String     -- ^ Name of the variable.
+  :: String  -- ^ Name of the variable.
   -> Type () -- ^ Type to quantify.
   -> Type ()
 qualifyType s = \case

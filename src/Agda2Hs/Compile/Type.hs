@@ -43,7 +43,7 @@ import Agda2Hs.HsUtils
 
 -- | Type definitions from the prelude that get special translation rules.
 isSpecialType :: QName -> Maybe (Elims -> C (Hs.Type ()))
-isSpecialType x = case prettyShow x of
+isSpecialType = prettyShow >>> \case
   "Haskell.Prim.Tuple._×_"    -> Just tupleType
   "Haskell.Prim.Tuple._×_×_"  -> Just tupleType
   "Haskell.Extra.Erase.Erase" -> Just unitType
@@ -119,8 +119,8 @@ compileTopLevelType keepType t cont = do
 
 
 -- | Compile an Agda term into a Haskell type, along with its strictness.
-compileTypeStrictness :: Term -> C (Strictness, Hs.Type ())
-compileTypeStrictness t = do
+compileTypeWithStrictness :: Term -> C (Strictness, Hs.Type ())
+compileTypeWithStrictness t = do
   s <- case t of
     Def f es -> fromMaybe Lazy <$> isUnboxRecord f
     _        -> return Lazy
@@ -214,7 +214,7 @@ compileDom :: ArgName -> Dom Type -> C CompiledDom
 compileDom x a
   | usableModality a = case getHiding a of
       Instance{} -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
-      NotHidden  -> uncurry DomType <$> compileTypeStrictness (unEl $ unDom a)
+      NotHidden  -> uncurry DomType <$> compileTypeWithStrictness (unEl $ unDom a)
       Hidden     ->
         ifM (canErase $ unDom a)
             (return DomDropped)

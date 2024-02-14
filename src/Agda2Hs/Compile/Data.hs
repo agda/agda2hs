@@ -24,8 +24,7 @@ checkNewtype :: Hs.Name () -> [Hs.QualConDecl ()] -> C ()
 checkNewtype name cs = do
   checkSingleElement name cs "Newtype must have exactly one constructor in definition"
   case head cs of
-    Hs.QualConDecl () _ _ (Hs.ConDecl () cName types)
-      -> checkSingleElement cName types "Newtype must have exactly one field in constructor"
+    Hs.QualConDecl () _ _ (Hs.ConDecl () cName types) -> checkNewtypeCon cName types
 
 compileData :: AsNewType -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
 compileData newtyp ds def = do

@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ViewPatterns, NamedFieldPuns, BlockArguments #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Agda2Hs.Compile.Function where
 
 import Control.Monad ( (>=>), filterM, forM_ )
@@ -116,6 +116,7 @@ compileFun withSig def@Defn{..} =
     $ withFunctionLocals defName
     $ compileFun' withSig def
 
+-- inherit existing (instantiated) locals
 compileFun' withSig def@Defn{..} = do
   reportSDoc "agda2hs.compile" 6 $ "Compiling function: " <+> prettyTCM defName
 
