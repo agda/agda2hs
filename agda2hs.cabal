@@ -86,4 +86,4 @@ executable agda2hs
                        ViewPatterns
                        NamedFieldPuns
                        PatternSynonyms
-  ghc-options:         -Werror
+  ghc-options:         -Werror -rtsopts
