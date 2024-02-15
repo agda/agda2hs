@@ -196,7 +196,7 @@ instance
   iEnumUnit = boundedEnumViaInteger (λ _ → 0) λ _ → tt
 
   iEnumChar : Enum Char
-  iEnumChar = boundedEnumViaInteger (pos ∘ primCharToNat)
+  iEnumChar = boundedEnumViaInteger (pos ∘ c2n)
                                     λ where (pos n) → primNatToChar n; _ → '_'
 
   -- Missing:

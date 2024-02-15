@@ -11,7 +11,7 @@ open import Agda.Primitive          public
 open import Agda.Builtin.Bool       public renaming (true to True; false to False)
 open import Agda.Builtin.Int        public renaming (Int to Integer)
 open import Agda.Builtin.Nat        public renaming (_==_ to eqNat; _<_ to ltNat; _+_ to addNat; _-_ to monusNat; _*_ to mulNat)
-open import Agda.Builtin.Char       public
+open import Agda.Builtin.Char       public renaming (primCharToNat to c2n)
 open import Agda.Builtin.Unit       public
 open import Agda.Builtin.Equality   public
 open import Agda.Builtin.FromString public

@@ -18,6 +18,7 @@ open import Haskell.Prim.Absurd      public
 open import Haskell.Prim.Applicative public
 open import Haskell.Prim.Bool        public
 open import Haskell.Prim.Bounded     public
+open import Haskell.Prim.Char        public
 open import Haskell.Prim.Double      public
 open import Haskell.Prim.Either      public
 open import Haskell.Prim.Enum        public
