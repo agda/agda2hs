@@ -3,6 +3,7 @@ module Haskell.Prim.Eq where
 
 open import Haskell.Prim
 open import Haskell.Prim.Bool
+open import Haskell.Prim.Char
 open import Haskell.Prim.Integer
 open import Haskell.Prim.Int
 open import Haskell.Prim.Word
@@ -48,7 +49,7 @@ instance
   iEqBool ._==_ _     _     = False
 
   iEqChar : Eq Char
-  iEqChar ._==_ = primCharEquality
+  iEqChar ._==_ = eqChar
 
   iEqUnit : Eq ⊤
   iEqUnit ._==_ _ _ = True

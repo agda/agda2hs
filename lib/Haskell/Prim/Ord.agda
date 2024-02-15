@@ -117,7 +117,7 @@ instance
   iOrdDouble = ordFromLessThan primFloatLess
 
   iOrdChar : Ord Char
-  iOrdChar = ordFromLessThan λ x y → primCharToNat x < primCharToNat y
+  iOrdChar = ordFromLessThan λ x y → c2n x < c2n y
 
   iOrdBool : Ord Bool
   iOrdBool = ordFromCompare λ where
