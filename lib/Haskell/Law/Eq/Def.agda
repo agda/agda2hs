@@ -68,5 +68,3 @@ eqNegation = refl
 
 postulate instance
   iLawfulEqDouble : IsLawfulEq Double
-
-  iLawfulEqChar : IsLawfulEq Char
