@@ -2,5 +2,7 @@ module Haskell.Law.Nat where
 
 open import Haskell.Prim
 
-suc-injective : ∀ { a b : Nat } → suc a ≡ suc b → a ≡ b
+open import Haskell.Law.Def
+
+suc-injective : Injective suc
 suc-injective refl = refl

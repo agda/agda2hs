@@ -1,7 +1,9 @@
 module Haskell.Law.Int where
 
 open import Haskell.Prim
-open import Haskell.Prim.Int
+open import Haskell.Prim.Int using ( int64 )
 
-int64-injective : ∀ {a b : Word64} → (int64 a) ≡ (int64 b) → a ≡ b
+open import Haskell.Law.Def
+
+int64-injective : Injective int64
 int64-injective refl = refl 

@@ -3,6 +3,7 @@ module Haskell.Law where
 open import Haskell.Prim
 open import Haskell.Prim.Bool
 
+open import Haskell.Law.Def          public
 open import Haskell.Law.Applicative  public
 open import Haskell.Law.Bool         public
 open import Haskell.Law.Either       public
