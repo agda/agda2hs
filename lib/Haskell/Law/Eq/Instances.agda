@@ -1,6 +1,6 @@
 module Haskell.Law.Eq.Instances where
 
-open import Agda.Builtin.Char.Properties  renaming (primCharToNatInjective to c2n-injective)
+open import Agda.Builtin.Char.Properties renaming (primCharToNatInjective to c2n-injective)
 open import Agda.Builtin.Word.Properties renaming (primWord64ToNatInjective to w2n-injective)
 
 open import Haskell.Prim
@@ -60,12 +60,12 @@ instance
   iLawfulEqEither : ⦃ iEqA : Eq a ⦄ → ⦃ iEqB : Eq b ⦄ 
     → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄ 
     → IsLawfulEq (Either a b)
-  iLawfulEqEither .isEquality   (Left  _)   (Right _) = λ ()
-  iLawfulEqEither .isEquality   (Right _)   (Left  _) = λ ()
-  iLawfulEqEither .isEquality a@(Left  x) b@(Left  y) = mapReflects 
-    (cong Left) (Left-injective a b) (isEquality x y)
-  iLawfulEqEither .isEquality a@(Right x) b@(Right y) = mapReflects 
-    (cong Right) (Right-injective a b) (isEquality x y)
+  iLawfulEqEither .isEquality (Left  _) (Right _) = λ ()
+  iLawfulEqEither .isEquality (Right _) (Left  _) = λ ()
+  iLawfulEqEither .isEquality (Left  x) (Left  y) = mapReflects 
+    (cong Left) (Left-injective) (isEquality x y)
+  iLawfulEqEither .isEquality (Right x) (Right y) = mapReflects 
+    (cong Right) (Right-injective) (isEquality x y)
 
   iLawfulEqInt : IsLawfulEq Int
   iLawfulEqInt .isEquality (int64 x) (int64 y) = mapReflects
@@ -92,11 +92,11 @@ instance
   ... | False = λ h → (nequality x y h₁) (∷-injective-left h)
 
   iLawfulEqMaybe : ⦃ iEqA : Eq a ⦄ → ⦃ IsLawfulEq a ⦄ → IsLawfulEq (Maybe a)
-  iLawfulEqMaybe .isEquality Nothing Nothing = refl
-  iLawfulEqMaybe .isEquality Nothing (Just _) = λ()
-  iLawfulEqMaybe .isEquality (Just _) Nothing = λ()
+  iLawfulEqMaybe .isEquality Nothing  Nothing  = refl
+  iLawfulEqMaybe .isEquality Nothing  (Just _) = λ()
+  iLawfulEqMaybe .isEquality (Just _) Nothing  = λ()
   iLawfulEqMaybe .isEquality (Just x) (Just y) = mapReflects 
-    (cong Just) injective (isEquality x y)
+    (cong Just) Just-injective (isEquality x y)
 
   iLawfulEqOrdering : IsLawfulEq Ordering
   iLawfulEqOrdering .isEquality LT LT = refl
@@ -112,7 +112,8 @@ instance
   iLawfulEqTuple₂ : ⦃ iEqA : Eq a ⦄ ⦃ iEqB : Eq b ⦄
     → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄
     → IsLawfulEq (a × b)
-  iLawfulEqTuple₂ .isEquality (x₁ , x₂) (y₁ , y₂) with (x₁ == y₁) in h₁
+  iLawfulEqTuple₂ .isEquality (x₁ , x₂) (y₁ , y₂)
+    with (x₁ == y₁) in h₁
   ... | True  = mapReflects
     (λ h → cong₂ _,_ (equality x₁ y₁ h₁) h) 
     (cong snd) 
@@ -122,7 +123,8 @@ instance
   iLawfulEqTuple₃ : ⦃ iEqA : Eq a ⦄ ⦃ iEqB : Eq b ⦄ ⦃ iEqC : Eq c ⦄
     → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄ → ⦃ IsLawfulEq c ⦄
     → IsLawfulEq (a × b × c)
-  iLawfulEqTuple₃ .isEquality (x₁ , x₂ , x₃) (y₁ , y₂ , y₃) with (x₁ == y₁) in h₁ 
+  iLawfulEqTuple₃ .isEquality (x₁ , x₂ , x₃) (y₁ , y₂ , y₃) 
+    with (x₁ == y₁) in h₁ 
   ... | True  = mapReflects
     (λ h → cong₂ (λ a (b , c) → a , b , c) (equality x₁ y₁ h₁) h) 
     (cong λ h → snd₃ h , thd₃ h) 
