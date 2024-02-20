@@ -1,3 +1,4 @@
+{-# OPTIONS --no-projection-like #-}
 open import Haskell.Prelude hiding (a)
 
 module ModuleParameters

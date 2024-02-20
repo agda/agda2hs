@@ -26,6 +26,7 @@ import Agda.TypeChecking.Datatypes ( getConType )
 import Agda.TypeChecking.Reduce ( unfoldDefinitionStep, reduce )
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope ( telView, mustBePi, piApplyM )
+import Agda.TypeChecking.ProjectionLike ( reduceProjectionLike )
 
 import Agda.Utils.Lens
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
@@ -74,11 +75,11 @@ lambdaCase q ty args = setCurrentRangeQ q $ do
 
   ty' <- piApplyM ty pars
 
-  cs <- mapMaybeM (compileClause' (qnameModule q) (hsName "(lambdaCase)") ty') cs
+  cs <- mapMaybeM (compileClause' (qnameModule q) (Just q) (hsName "(lambdaCase)") ty') cs
 
   case cs of
     -- If there is a single clause and all patterns got erased, we
-    -- simply return the body.
+    -- simply return the body. do
     [Hs.Match _ _ [] (Hs.UnGuardedRhs _ rhs) _] -> return rhs
     _ -> do
       lcase <- hsLCase =<< mapM clauseToAlt cs -- Pattern lambdas cannot have where blocks
@@ -131,7 +132,7 @@ compileSpined :: Type -> Term -> Maybe (C (Hs.Exp ()))
 compileSpined ty tm =
   case tm of
 
-    Def f es     -> Just $ do
+    Def f es -> Just $ do
       ty <- defType <$> getConstInfo f
       aux (compileDef f ty) (Def f) ty es
 
@@ -165,7 +166,6 @@ compileSpined ty tm =
 
 
 -- TODO(flupe):
--- maybeUnfoldCopy f es compileTerm $ \f es ->
 
 -- | Compile a definition.
 compileDef :: QName -> Type -> [Term] -> C (Hs.Exp ())
@@ -185,7 +185,7 @@ compileDef f ty args =
 
       -- if the function is called from the same module it's defined in,
       -- we drop the module parameters
-      -- TODO: in the future we're not always gonna be erasing module parameters
+      -- NOTE(flupe): in the future we're not always gonna be erasing module parameters
       if prettyShow currentMod `isPrefixOf` prettyShow defMod then do
         npars <- size <$> (lookupSection =<< currentModule)
         let (pars, rest) = splitAt npars args
@@ -193,7 +193,7 @@ compileDef f ty args =
         pure (ty', rest)
       else pure (ty, args)
 
-    reportSDoc "agda2hs.compile.term" 15 $ text " module args" <+> prettyTCM ty'
+    reportSDoc "agda2hs.compile.term" 15 $ text "module args" <+> prettyTCM ty'
     reportSDoc "agda2hs.compile.term" 15 $ text "args to def: " <+> prettyTCM args'
 
     hsName <- compileQName f
@@ -390,7 +390,7 @@ compileTerm ty v = do
 
   reportSDoc "agda2hs.compile" 7  $ text "compiling term:" <+> prettyTCM v
 
-  case compileSpined ty v of
+  reduceProjectionLike v <&> compileSpined ty >>= \case
     Just cont -> cont
     Nothing   -> case v of
       Lit l   -> compileLiteral l

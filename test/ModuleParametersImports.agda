@@ -1,3 +1,4 @@
+{-# OPTIONS --no-projection-like #-}
 module ModuleParametersImports where
 
 open import Haskell.Prelude
