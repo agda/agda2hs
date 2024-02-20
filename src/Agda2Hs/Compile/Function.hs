@@ -36,6 +36,7 @@ import Agda.Utils.Lens ((^.))
 import Agda.Utils.List
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
+import Agda.Utils.Size ( Sized(size) )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
@@ -144,12 +145,7 @@ compileFun' withSig def@Defn{..} = do
 
         typ <- if weAreOnTop then pure defType else piApplyM defType pars
 
-
-        -- TODO(flupe):
-        -- for projection-like functions, patterns only start at the record argument
-        -- so it is incorrect to use defType as a way to discard patterns, as they are not aligned
-
-        cs  <- mapMaybeM (compileClause (qnameModule defName) x typ) clauses
+        cs  <- mapMaybeM (compileClause m (Just defName) x typ) clauses
 
         when (null cs) $ genericDocError
           =<< text "Functions defined with absurd patterns exclusively are not supported."
@@ -167,12 +163,14 @@ compileFun' withSig def@Defn{..} = do
     err = "Not supported: type definition with `where` clauses"
 
 
-compileClause :: ModuleName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
-compileClause mod x t c = withClauseLocals mod c $ compileClause' mod x t c
+compileClause :: ModuleName -> Maybe QName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
+compileClause curModule mproj x t c =
+  withClauseLocals curModule c $ do
+    compileClause' curModule mproj x t c
 
-compileClause' :: ModuleName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
-compileClause' curModule x _  c@Clause{clauseBody = Nothing} = pure Nothing
-compileClause' curModule x ty c@Clause{..} = do
+compileClause' :: ModuleName -> Maybe QName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
+compileClause' curModule projName x _  c@Clause{clauseBody = Nothing} = pure Nothing
+compileClause' curModule projName x ty c@Clause{..} = do
   reportSDoc "agda2hs.compile" 7  $ "compiling clause: " <+> prettyTCM c
   reportSDoc "agda2hs.compile" 17 $ "Old context: "      <+> (prettyTCM =<< getContext)
   reportSDoc "agda2hs.compile" 17 $ "Clause telescope: " <+> prettyTCM clauseTel
@@ -182,11 +180,24 @@ compileClause' curModule x ty c@Clause{..} = do
 
   addContext (KeepNames clauseTel) $ do
 
+    toDrop <- case projName of
+      Nothing -> pure 0
+      Just q  -> maybe 0 (pred . projIndex) <$> isProjection q
+
+    reportSDoc "agda2hs.compile" 17 $ "Args to drop (proj-like): " <+> prettyTCM toDrop
+
+    -- NOTE(flupe: for projection-like definitions, we drop the first parameters)
+    let ntel = size clauseTel
+    ty <- ty `piApplyM` [Var (ntel - k - 1) [] | k <- [0.. (toDrop - 1)]]
+
+    reportSDoc "agda2hs.compile" 17 $ "Corrected type: " <+> prettyTCM ty
+
     ps <- compilePats ty namedClausePats
 
     let isWhereDecl = not . isExtendedLambdaName
           /\ (curModule `isFatherModuleOf`) . qnameModule
-    children <- filter isWhereDecl <$> asks locals
+
+    children   <- filter isWhereDecl <$> asks locals
     whereDecls <- mapM (getConstInfo >=> compileFun' True) children
 
     -- Jesper, 2023-10-30: We should compile the body in the module of the
@@ -194,7 +205,7 @@ compileClause' curModule x ty c@Clause{..} = do
     -- that correspond to the pattern variables of this clause from the calls to
     -- the functions defined in the `where` block.
     let inWhereModule = case children of
-          [] -> id
+          []    -> id
           (c:_) -> withCurrentModule $ qnameModule c
 
     let Just body            = clauseBody

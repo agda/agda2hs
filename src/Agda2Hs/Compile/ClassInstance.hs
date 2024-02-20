@@ -235,7 +235,7 @@ compileInstanceClause' curModule ty (p:ps) c
       -- No minimal dictionary used, proceed with compiling as a regular clause.
       | otherwise -> do
         reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
-        ms <- disableCopatterns $ compileClause curModule uf ty' c'
+        ms <- disableCopatterns $ compileClause curModule Nothing uf ty' c'
         return ([Hs.InsDecl () (Hs.FunBind () (toList ms))], [])
 
 -- finding a pattern other than a projection: we skip
