@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeApplications, NamedFieldPuns #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Compilation to Haskell types.
 module Agda2Hs.Compile.Type where

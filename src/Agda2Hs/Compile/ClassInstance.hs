@@ -27,8 +27,7 @@ import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Substitute ( Apply(applyE), absBody, absApp )
 import Agda.TypeChecking.Records
-import Agda.TypeChecking.Reduce ( reduce )
-import Agda.TypeChecking.Telescope (  mustBePi )
+import Agda.TypeChecking.Telescope ( mustBePi )
 
 import Agda.Utils.Lens
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )

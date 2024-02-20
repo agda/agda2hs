@@ -1,4 +1,4 @@
-{-# LANGUAGE PatternSynonyms, FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
 module Agda2Hs.Compile.Types where
 
 import Control.Applicative ( liftA2 )

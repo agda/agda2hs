@@ -22,7 +22,6 @@ import Agda.TypeChecking.Monad ( topLevelModuleName )
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Reduce ( reduceDefCopy )
-import Agda.TypeChecking.Records ( shouldBeProjectible )
 
 import Agda.Utils.Either ( isRight )
 import Agda.Utils.List ( initMaybe )

@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 module Agda2Hs.Compile.Record where
 
 import Control.Monad ( unless, when )
