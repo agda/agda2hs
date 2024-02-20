@@ -1,7 +1,7 @@
 module Agda2Hs.Compile.Term where
 
 import Control.Arrow ( (>>>), (&&&) )
-import Control.Monad ( unless, msum )
+import Control.Monad ( unless )
 import Control.Monad.Reader
 
 import Data.Foldable ( toList )
@@ -23,7 +23,7 @@ import Agda.TypeChecking.Monad
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Records ( shouldBeProjectible )
 import Agda.TypeChecking.Datatypes ( getConType )
-import Agda.TypeChecking.Reduce ( unfoldDefinitionStep, reduce )
+import Agda.TypeChecking.Reduce ( unfoldDefinitionStep )
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope ( telView, mustBePi, piApplyM )
 import Agda.TypeChecking.ProjectionLike ( reduceProjectionLike )
@@ -32,7 +32,6 @@ import Agda.Utils.Lens
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Monad
 import Agda.Utils.Size
-import Agda.Utils.Tuple ( mapSndM )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
@@ -106,7 +105,7 @@ caseOf ty args = compileArgs ty args >>= \case
     let lam [] = id
         lam qs = Hs.Lambda () qs
     in return $ eApp (Hs.Case () e [Hs.Alt () p (Hs.UnGuardedRhs () $ lam ps b) Nothing]) es'
-  _ -> genericError "case_of_ must be fully applied to a lambda term."
+  _ -> genericError "case_of_ must be fully applied to a lambda term"
 
 
 -- | Compile @the@ to an explicitly-annotated Haskell expression.
@@ -119,8 +118,8 @@ expTypeSig _ _ = genericError "`the` must be fully applied"
 
 
 -- should really be named compileVar, TODO: rename compileVar
-compileV :: Int -> Type -> [Term] -> C (Hs.Exp ())
-compileV i ty es = do
+compileVar :: Int -> Type -> [Term] -> C (Hs.Exp ())
+compileVar i ty es = do
   reportSDoc "agda2hs.compile.term" 10 $ text "Reached variable"
   name <- compileDBVar i
   compileApp (hsVar name) ty es
@@ -142,7 +141,7 @@ compileSpined ty tm =
 
     Var i es     -> Just $ do
       ty <- typeOfBV i
-      aux (compileV i ty) (Var i) ty es
+      aux (compileVar i ty) (Var i) ty es
 
     _            -> Nothing
   where
@@ -502,7 +501,6 @@ compileApp' acc ty args = acc <$> compileArgs ty args
 -- | Compile a list of arguments applied to a function of the given type.
 compileArgs :: Type -> [Term] -> C [Hs.Exp ()]
 compileArgs ty [] = pure []
--- TODO(flupe): use mustBePi
 compileArgs ty (x:xs) = do
   (a, b) <- mustBePi ty
   let rest = compileArgs (absApp b x) xs

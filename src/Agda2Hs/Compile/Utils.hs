@@ -137,7 +137,7 @@ keepArg x = usableModality x && visible x
 keepClause :: Clause -> Bool
 keepClause = any keepArg . clauseType
 
-isPropSort :: Sort  -> C Bool
+isPropSort :: Sort -> C Bool
 isPropSort s = reduce s <&> \case
   Prop _ -> True
   _      -> False
