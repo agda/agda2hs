@@ -72,6 +72,7 @@ import Issue273
 import TypeDirected
 import ProjLike
 import Issue286
+import NonClassInstance
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -143,4 +144,5 @@ import Issue273
 import TypeDirected
 import ProjLike
 import Issue286
+import NonClassInstance
 #-}
