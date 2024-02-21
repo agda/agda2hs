@@ -280,7 +280,7 @@ specialClassFunction3 v f = specialClassFunction $ \case
   es               -> v `eApp` es
 
 fromNat :: ProjCompileRule
-fromNat = specialClassFunction1 (hsVar "fromIntegral") $ \case
+fromNat = specialClassFunction2 (hsVar "fromIntegral") $ \v _ -> case v of
   n@Hs.Lit{} -> n
   v          -> hsVar "fromIntegral" `eApp` [v]
 
@@ -297,7 +297,7 @@ mkEnumFromThenTo :: ProjCompileRule
 mkEnumFromThenTo = specialClassFunction3 (hsVar "enumFromThenTo") $ Hs.EnumFromThenTo ()
 
 fromNeg :: ProjCompileRule
-fromNeg = specialClassFunction1 negFromIntegral $ \case
+fromNeg = specialClassFunction2 negFromIntegral $ \v _ -> case v of
   n@Hs.Lit{} -> Hs.NegApp () n
   v          -> negFromIntegral `eApp` [v]
   where
@@ -306,7 +306,7 @@ fromNeg = specialClassFunction1 negFromIntegral $ \case
     f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ hsUnqualName "_._") g
 
 fromString :: ProjCompileRule
-fromString = specialClassFunction1 (hsVar "fromString") $ \case
+fromString = specialClassFunction2 (hsVar "fromString") $ \v _ -> case v of
   s@Hs.Lit{} -> s
   v          -> hsVar "fromString" `eApp` [v]
 

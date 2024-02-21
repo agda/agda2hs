@@ -177,6 +177,13 @@ isClassName q = getConstInfo' q >>= \case
       _                   -> False
   _                       -> return False
 
+isClassType :: Type -> C Bool
+isClassType a = do
+  TelV _ t <- telView a
+  case unEl t of
+    Def cl _ -> isClassName cl
+    _        -> return False
+
 -- Drops the last (record) module for typeclass methods
 dropClassModule :: ModuleName -> C ModuleName
 dropClassModule m@(MName ns) = isClassModule m >>= \case
