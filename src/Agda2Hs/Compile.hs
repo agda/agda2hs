@@ -25,7 +25,7 @@ import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkInlin
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
 import Agda2Hs.Compile.Types
-import Agda2Hs.Compile.Utils ( setCurrentRangeQ, tellExtension, primModules )
+import Agda2Hs.Compile.Utils ( setCurrentRangeQ, tellExtension, primModules, isClassName )
 import Agda2Hs.Pragma
 
 
@@ -80,23 +80,27 @@ compile opts tlm _ def =
       reportSDoc "agda2hs.compile" 45 $ text "Pragma:" <+> text (show p)
       reportSDoc "agda2hs.compile" 45 $ text "Compiling definition:" <+> pretty (theDef def)
 
-      case (p , defInstance def , theDef def) of
-        (NoPragma            , _      , _         ) -> return []
-        (ExistingClassPragma , _      , _         ) -> return []
-        (UnboxPragma s       , _      , defn      ) -> [] <$ checkUnboxPragma defn
-        (TransparentPragma   , _      , Function{}) -> [] <$ checkTransparentPragma def
-        (InlinePragma        , _      , Function{}) -> [] <$ checkInlinePragma def
+      isInstance <- case defInstance def of
+        Just cl -> isClassName cl
+        Nothing -> return False
 
-        (ClassPragma ms      , _      , Record{}  ) -> pure <$> compileRecord (ToClass ms) def
-        (NewTypePragma ds    , _      , Record{}  ) -> pure <$> compileRecord (ToRecord True ds) def
-        (NewTypePragma ds    , _      , Datatype{}) -> compileData True ds def
-        (DefaultPragma ds    , _      , Datatype{}) -> compileData False ds def
-        (DerivePragma s      , Just _ , _         ) -> pure <$> compileInstance (ToDerivation s) def
-        (DefaultPragma _     , Just _ , Axiom{}   ) -> pure <$> compileInstance (ToDerivation Nothing) def
-        (DefaultPragma _     , Just _ , _         ) -> pure <$> compileInstance ToDefinition def
-        (DefaultPragma _     , _      , Axiom{}   ) -> compilePostulate def
-        (DefaultPragma _     , _      , Function{}) -> compileFun True def
-        (DefaultPragma ds    , _      , Record{}  ) -> pure <$> compileRecord (ToRecord False ds) def
+      case (p , theDef def) of
+        (NoPragma            , _         ) -> return []
+        (ExistingClassPragma , _         ) -> return []
+        (UnboxPragma s       , defn      ) -> [] <$ checkUnboxPragma defn
+        (TransparentPragma   , Function{}) -> [] <$ checkTransparentPragma def
+        (InlinePragma        , Function{}) -> [] <$ checkInlinePragma def
+
+        (ClassPragma ms      , Record{}  ) -> pure <$> compileRecord (ToClass ms) def
+        (NewTypePragma ds    , Record{}  ) -> pure <$> compileRecord (ToRecord True ds) def
+        (NewTypePragma ds    , Datatype{}) -> compileData True ds def
+        (DefaultPragma ds    , Datatype{}) -> compileData False ds def
+        (DerivePragma s      , _         ) | isInstance -> pure <$> compileInstance (ToDerivation s) def
+        (DefaultPragma _     , Axiom{}   ) | isInstance -> pure <$> compileInstance (ToDerivation Nothing) def
+        (DefaultPragma _     , _         ) | isInstance -> pure <$> compileInstance ToDefinition def
+        (DefaultPragma _     , Axiom{}   ) -> compilePostulate def
+        (DefaultPragma _     , Function{}) -> compileFun True def
+        (DefaultPragma ds    , Record{}  ) -> pure <$> compileRecord (ToRecord False ds) def
 
         _ -> genericDocError =<<  text "Don't know how to compile" <+> prettyTCM (defName def)
 

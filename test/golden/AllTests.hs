@@ -69,4 +69,5 @@ import Issue273
 import TypeDirected
 import ProjLike
 import Issue286
+import NonClassInstance
 
