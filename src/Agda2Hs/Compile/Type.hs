@@ -29,7 +29,7 @@ import Agda.TypeChecking.Telescope
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.List ( downFrom )
 import Agda.Utils.Maybe ( ifJustM, fromMaybe )
-import Agda.Utils.Monad ( ifM, unlessM )
+import Agda.Utils.Monad ( ifM, unlessM, and2M, or2M )
 import Agda.Utils.Size ( Sized(size) )
 import Agda.Utils.Functor ( ($>) )
 
@@ -215,11 +215,13 @@ compileInlineType f args = do
 data DomOutput = DOInstance | DODropped | DOKept
 
 compileDom :: Dom Type -> C DomOutput
-compileDom a
-  | usableModality a = case getHiding a of
-      Instance{} -> pure DOInstance
-      _          -> ifM (canErase $ unDom a) (pure DODropped) (pure DOKept)
-  | otherwise = pure DODropped
+compileDom a = do
+  isErasable <- pure (not $ usableModality a) `or2M` canErase (unDom a)
+  isClassConstraint <- pure (isInstance a) `and2M` isClassType (unDom a)
+  return $ if 
+    | isErasable        -> DODropped
+    | isClassConstraint -> DOInstance
+    | otherwise         -> DOKept
 
 -- | Compile a function type domain.
 -- A domain can either be:

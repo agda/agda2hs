@@ -64,19 +64,19 @@ record Enum (a : Set) : Set₁ where
     maxInt ⦃ _ ⦄ = fromEnum maxBound
 
   field
-    toEnum : (n : Int) → ⦃ TrueIfLB (minInt <= n) ⦄ → ⦃ TrueIfUB (n <= maxInt) ⦄ → a
-    succ   : (x : a) → ⦃ FalseIfUB (fromEnum x == maxInt) ⦄ → a
-    pred   : (x : a) → ⦃ FalseIfLB (fromEnum x == minInt) ⦄ → a
+    toEnum : (n : Int) → @0 ⦃ TrueIfLB (minInt <= n) ⦄ → @0 ⦃ TrueIfUB (n <= maxInt) ⦄ → a
+    succ   : (x : a) → @0 ⦃ FalseIfUB (fromEnum x == maxInt) ⦄ → a
+    pred   : (x : a) → @0 ⦃ FalseIfLB (fromEnum x == minInt) ⦄ → a
 
-    enumFrom       : ⦃ IsBoundedAbove ⦄ → a → List a
+    enumFrom       : @0 ⦃ IsBoundedAbove ⦄ → a → List a
     enumFromTo     : a → a → List a
     -- In the Prelude Enum instances `enumFromThenTo x x y` gives the
     -- infinite list of `x`s. The constraint is a little bit stronger than it needs to be,
     -- since it rules out different x and x₁ that maps to the same Int, but this saves us
     -- requiring an Eq instance for `a`, and it's not a terrible limitation to not be able to
     -- write [0, 2^64 .. 2^66].
-    enumFromThenTo : (x x₁ : a) → ⦃ IsFalse (fromEnum x == fromEnum x₁) ⦄ → a → List a
-    enumFromThen   : ⦃ IsBoundedBelow ⦄ → ⦃ IsBoundedAbove ⦄ → (x x₁ : a) → ⦃ IsFalse (fromEnum x == fromEnum x₁) ⦄ → List a
+    enumFromThenTo : (x x₁ : a) → @0 ⦃ IsFalse (fromEnum x == fromEnum x₁) ⦄ → a → List a
+    enumFromThen   : @0 ⦃ IsBoundedBelow ⦄ → @0 ⦃ IsBoundedAbove ⦄ → (x x₁ : a) → @0 ⦃ IsFalse (fromEnum x == fromEnum x₁) ⦄ → List a
 
 open Enum ⦃...⦄ public
 
@@ -104,7 +104,7 @@ private
   integerFromTo : Integer → Integer → List Integer
   integerFromTo a b = maybe [] (integerFromCount a 1 ∘ suc) (diff b a)
 
-  integerFromThenTo : (a a₁ : Integer) → ⦃ IsFalse (integerToInt a == integerToInt a₁) ⦄ → Integer → List Integer
+  integerFromThenTo : (a a₁ : Integer) → @0 ⦃ IsFalse (integerToInt a == integerToInt a₁) ⦄ → Integer → List Integer
   integerFromThenTo a a₁ b =
     case compare a a₁ of λ where
       LT → maybe [] (λ d → integerFromCount a (a₁ - a) (suc (divNat d (unsafeIntegerToNat (a₁ - a))))) (diff b a)
@@ -127,7 +127,7 @@ module _ (from : a → Integer) (to : Integer → a) where
     fromTo : a → a → List a
     fromTo a b = map to (enumFromTo (from a) (from b))
 
-    fromThenTo : (x x₁ : a) → ⦃ IsFalse (fromEnum (from x) == fromEnum (from x₁)) ⦄ → a → List a
+    fromThenTo : (x x₁ : a) → @0 ⦃ IsFalse (fromEnum (from x) == fromEnum (from x₁)) ⦄ → a → List a
     fromThenTo a a₁ b = map to (enumFromThenTo (from a) (from a₁) (from b))
 
   unboundedEnumViaInteger : Enum a
