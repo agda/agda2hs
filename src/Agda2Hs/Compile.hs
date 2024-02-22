@@ -15,7 +15,7 @@ import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Monad.Signature ( isInlineFun )
 import Agda.Utils.Null
-import Agda.Utils.Monad ( whenM )
+import Agda.Utils.Monad ( whenM, anyM )
 
 import qualified Language.Haskell.Exts.Extension as Hs
 
@@ -80,9 +80,7 @@ compile opts tlm _ def =
       reportSDoc "agda2hs.compile" 45 $ text "Pragma:" <+> text (show p)
       reportSDoc "agda2hs.compile" 45 $ text "Compiling definition:" <+> pretty (theDef def)
 
-      isInstance <- case defInstance def of
-        Just cl -> isClassName cl
-        Nothing -> return False
+      isInstance <- anyM (defInstance def) isClassName 
 
       case (p , theDef def) of
         (NoPragma            , _         ) -> return []
