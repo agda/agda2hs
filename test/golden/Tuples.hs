@@ -1,5 +1,7 @@
 module Tuples where
 
+import Numeric.Natural (Natural)
+
 swap :: (a, b) -> (b, a)
 swap (a, b) = (b, a)
 
@@ -24,4 +26,7 @@ test2 :: Bool
 test2
   = case t1 of
         (a, b, c) -> c
+
+t4 :: (Natural, Bool)
+t4 = (3, True)
 
