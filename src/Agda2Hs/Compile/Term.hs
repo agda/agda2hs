@@ -337,6 +337,7 @@ isSpecialCon :: QName -> Maybe ConCompileRule
 isSpecialCon = prettyShow >>> \case
   "Haskell.Prim.Tuple._,_"          -> Just tupleTerm
   "Haskell.Prim.Tuple._×_×_._,_,_"  -> Just tupleTerm
+  "Haskell.Extra.Sigma._,_"         -> Just tupleTerm
   "Haskell.Extra.Erase.Erased"      -> Just erasedTerm
   "Haskell.Extra.Delay.Delay.now"   -> Just compileErasedApp
   "Haskell.Extra.Delay.Delay.later" -> Just compileErasedApp

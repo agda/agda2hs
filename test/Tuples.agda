@@ -45,3 +45,12 @@ test2 = case t1 of \where
 
 {-# COMPILE AGDA2HS test2 #-}
 
+open import Haskell.Extra.Sigma as S using (Σ-syntax)
+open import Haskell.Extra.Dec
+open import Haskell.Prim using (itsTrue)
+open import Haskell.Extra.Refinement
+
+t4 : Σ[ n ∈ Nat ] (Dec (IsTrue (n <= 5)))
+t4 = 3 S., (True ⟨ itsTrue ⟩)
+
+{-# COMPILE AGDA2HS t4 #-}

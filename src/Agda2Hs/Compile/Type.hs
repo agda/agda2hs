@@ -46,6 +46,7 @@ isSpecialType :: QName -> Maybe (Elims -> C (Hs.Type ()))
 isSpecialType = prettyShow >>> \case
   "Haskell.Prim.Tuple._×_"    -> Just tupleType
   "Haskell.Prim.Tuple._×_×_"  -> Just tupleType
+  "Haskell.Extra.Sigma.Σ"     -> Just tupleType
   "Haskell.Extra.Erase.Erase" -> Just unitType
   "Haskell.Extra.Delay.Delay" -> Just delayType
   _                           -> Nothing
