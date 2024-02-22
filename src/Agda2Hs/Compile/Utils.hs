@@ -167,6 +167,7 @@ isClassModule m
     minRec <- asks minRecordName
     if Just m == minRec then return True else isClassName (mnameToQName m)
 
+-- | Check if the given name corresponds to a type class in Haskell.
 isClassName :: QName -> C Bool
 isClassName q = getConstInfo' q >>= \case
   Right Defn{defName = r, theDef = Record{}} ->
@@ -177,6 +178,7 @@ isClassName q = getConstInfo' q >>= \case
       _                   -> False
   _                       -> return False
 
+-- | Check if the given type corresponds to a class constraint in Haskell.
 isClassType :: Type -> C Bool
 isClassType a = do
   TelV _ t <- telView a
