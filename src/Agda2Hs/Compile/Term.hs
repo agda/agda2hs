@@ -279,6 +279,9 @@ specialClassFunction3 v f = specialClassFunction $ \case
   (a : b : c : es) -> f a b c `eApp` es
   es               -> v `eApp` es
 
+-- Note: currently the second (instance) argument {{_ : Constraint n}}
+-- is compiled and then dropped here, ideally it would not be compiled
+-- at all.
 fromNat :: ProjCompileRule
 fromNat = specialClassFunction2 (hsVar "fromIntegral") $ \v _ -> case v of
   n@Hs.Lit{} -> n
@@ -296,6 +299,7 @@ mkEnumFromThen = specialClassFunction2 (hsVar "enumFromThen") $ Hs.EnumFromThen 
 mkEnumFromThenTo :: ProjCompileRule
 mkEnumFromThenTo = specialClassFunction3 (hsVar "enumFromThenTo") $ Hs.EnumFromThenTo ()
 
+-- Same comment as for fromNat
 fromNeg :: ProjCompileRule
 fromNeg = specialClassFunction2 negFromIntegral $ \v _ -> case v of
   n@Hs.Lit{} -> Hs.NegApp () n
@@ -305,6 +309,7 @@ fromNeg = specialClassFunction2 negFromIntegral $ \v _ -> case v of
     -- TODO: move this to HsUtils
     f `o` g = Hs.InfixApp () f (Hs.QVarOp () $ hsUnqualName "_._") g
 
+-- Same comment as for fromNat
 fromString :: ProjCompileRule
 fromString = specialClassFunction2 (hsVar "fromString") $ \v _ -> case v of
   s@Hs.Lit{} -> s
