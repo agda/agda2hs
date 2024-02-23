@@ -132,47 +132,24 @@ compileVar i ty es = do
   name <- compileDBVar i
   compileApp (hsVar name) ty es
 
-
 -- | Compile constructors, defs and vars by
 -- carefully moving projections out of elims and calling compileProj.
-compileSpined :: Type -> Term -> Maybe (C (Hs.Exp ()))
-compileSpined ty tm =
-  case tm of
-
-    Def f es -> Just $ do
-      ty <- defType <$> getConstInfo f
-      aux (compileDef f ty) (Def f) ty es
-
-    Con ch ci es -> Just $ do
-      Just ((_, _, _), ty) <- getConType ch ty
-      aux (compileCon ch ci ty) (Con ch ci) ty es
-
-    Var i es     -> Just $ do
-      ty <- typeOfBV i
-      aux (compileVar i ty) (Var i) ty es
-
-    _            -> Nothing
-  where
-    -- walk through the elims to seek projections
-    aux
+compileSpined
       :: ([Term] -> C (Hs.Exp ()))  -- Compilation continuation
       -> (Elims -> Term)            -- Term begin constructed
       -> Type                       -- Type of term
       -> Elims                      -- Elims the term is applied to
       -> C (Hs.Exp ())
-    aux c tm ty [] = c []
-    aux c tm ty (e@(Proj o q):es) = do
-      let t = tm []
-      ty' <- shouldBeProjectible t ty o q
-      aux (compileProj q ty t ty') (tm . (e:)) ty' es
-    -- TODO: use mustBePi
-    aux c tm ty (e@(Apply (unArg -> x)):es) = do
-      (a, b) <- mustBePi ty
-      aux (c . (x:)) (tm . (e:)) (absApp b x) es
-    aux _ _ _ _ = __IMPOSSIBLE__
-
-
--- TODO(flupe):
+compileSpined c tm ty [] = c []
+compileSpined c tm ty (e@(Proj o q):es) = do
+  let t = tm []
+  ty' <- shouldBeProjectible t ty o q
+  compileSpined (compileProj q ty t ty') (tm . (e:)) ty' es
+-- TODO: use mustBePi
+compileSpined c tm ty (e@(Apply (unArg -> x)):es) = do
+  (a, b) <- mustBePi ty
+  compileSpined (c . (x:)) (tm . (e:)) (absApp b x) es
+compileSpined _ _ _ _ = __IMPOSSIBLE__
 
 -- | Compile a definition.
 compileDef :: QName -> Type -> [Term] -> C (Hs.Exp ())
@@ -408,13 +385,35 @@ compileTerm ty v = do
 
   reportSDoc "agda2hs.compile" 7  $ text "compiling term:" <+> prettyTCM v
 
-  reduceProjectionLike v <&> compileSpined ty >>= \case
-    Just cont -> cont
-    Nothing   -> case v of
-      Lit l   -> compileLiteral l
-      Lam v b -> compileLam ty v b
-      t       -> genericDocError =<< text "bad term:" <?> prettyTCM t
+  let bad s t = genericDocError =<< vcat
+        [ text "agda2hs: cannot compile" <+> text (s ++ ":")
+        , nest 2 $ prettyTCM t
+        ]
 
+  reduceProjectionLike v >>= \case
+
+    Def f es -> do
+      ty <- defType <$> getConstInfo f
+      compileSpined (compileDef f ty) (Def f) ty es
+
+    Con ch ci es -> do
+      Just ((_, _, _), ty) <- getConType ch ty
+      compileSpined (compileCon ch ci ty) (Con ch ci) ty es
+
+    Var i es     -> do
+      ty <- typeOfBV i
+      compileSpined (compileVar i ty) (Var i) ty es
+
+    Lit l   -> compileLiteral l
+
+    Lam v b -> compileLam ty v b
+      
+    v@Pi{} -> bad "function type" v
+    v@Sort{} -> bad "sort type" v
+    v@Level{} -> bad "level term" v
+    v@MetaV{} -> bad "unsolved metavariable" v
+    v@DontCare{} -> bad "irrelevant term" v
+    v@Dummy{} -> bad "dummy term" v
 
 -- | Check whether a domain is usable on the Haskell side.
 --
