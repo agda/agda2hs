@@ -140,7 +140,7 @@ compileFun' withSig def@Defn{..} = do
         -- We only instantiate the clauses to the current module parameters
         -- if the current module isn't the toplevel module
         unless weAreOnTop $
-          reportSDoc "agda2hs.compile.type" 6 $ "Applying module parameters to clauses: " <+> prettyTCM pars
+          reportSDoc "agda2hs.compile.type" 8 $ "Applying module parameters to clauses: " <+> prettyTCM pars
         let clauses = if weAreOnTop then filtered else filtered `apply` pars
 
         typ <- if weAreOnTop then pure defType else piApplyM defType pars
@@ -228,7 +228,7 @@ compileClause' curModule projName x ty c@Clause{..} = do
 compilePats :: Type -> NAPs -> C [Hs.Pat ()]
 compilePats _ [] = pure []
 compilePats ty ((namedArg -> ProjP po pn):ps) = do
-  reportSDoc "agda2hs.compile" 6 $ "compiling copattern: " <+> text (prettyShow pn)
+  reportSDoc "agda2hs.compile" 10 $ "compiling copattern: " <+> text (prettyShow pn)
   unlessM (asks copatternsEnabled `or2M` (isJust <$> isUnboxProjection pn)) $
     genericDocError =<< "not supported in Haskell: copatterns"
 
@@ -239,7 +239,7 @@ compilePats ty ((namedArg -> ProjP po pn):ps) = do
 
 compilePats ty ((namedArg -> pat):ps) = do
   (a, b) <- mustBePi ty
-  reportSDoc "agda2hs.compile.pattern" 5 $ text "Compiling pattern:" <+> prettyTCM pat
+  reportSDoc "agda2hs.compile.pattern" 10 $ text "Compiling pattern:" <+> prettyTCM pat
   let rest = compilePats (absApp b (patternToTerm pat)) ps
   compileDom a >>= \case
     DOInstance -> rest

@@ -128,7 +128,7 @@ primWord64FromNat ty args = compileArgs ty args >>= \case
 -- should really be named compileVar, TODO: rename compileVar
 compileVar :: Int -> Type -> [Term] -> C (Hs.Exp ())
 compileVar i ty es = do
-  reportSDoc "agda2hs.compile.term" 10 $ text "Reached variable"
+  reportSDoc "agda2hs.compile.term" 15 $ text "Reached variable"
   name <- compileDBVar i
   compileApp (hsVar name) ty es
 
@@ -383,7 +383,7 @@ compileCon h i ty args = do
 compileTerm :: Type -> Term -> C (Hs.Exp ())
 compileTerm ty v = do
 
-  reportSDoc "agda2hs.compile" 7  $ text "compiling term:" <+> prettyTCM v
+  reportSDoc "agda2hs.compile.term" 10  $ text "compiling term:" <+> prettyTCM v
 
   let bad s t = genericDocError =<< vcat
         [ text "agda2hs: cannot compile" <+> text (s ++ ":")

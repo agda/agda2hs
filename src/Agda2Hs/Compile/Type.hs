@@ -91,7 +91,7 @@ compileTopLevelType
     -> (Hs.Type () -> C a) -- ^ Continuation with the compiled type.
     -> C a
 compileTopLevelType keepType t cont = do
-    reportSDoc "agda2hs.compile.type" 12 $ text "Compiling top-level type" <+> prettyTCM t
+    reportSDoc "agda2hs.compile.type" 8 $ text "Compiling top-level type" <+> prettyTCM t
     -- NOTE(flupe): even though we only quantify variable for definitions inside anonymous modules,
     --              they will still get quantified over the toplevel module parameters.
     weAreOnTop <- isJust <$> liftTCM  (currentModule >>= isTopLevelModule)

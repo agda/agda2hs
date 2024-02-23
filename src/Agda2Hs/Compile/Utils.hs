@@ -238,7 +238,7 @@ isInlinedFunction q = do
 
 checkInstance :: Term -> C ()
 checkInstance u | varOrDef u = liftTCM $ noConstraints $ do
-  reportSDoc "agda2hs.checkInstance" 5 $ text "checkInstance" <+> prettyTCM u
+  reportSDoc "agda2hs.checkInstance" 12 $ text "checkInstance" <+> prettyTCM u
   t <- infer u
   reportSDoc "agda2hs.checkInstance" 15 $ text "  inferred type:" <+> prettyTCM t
   (m, v) <- newInstanceMeta "" t
