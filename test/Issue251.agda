@@ -3,8 +3,12 @@ open import Haskell.Prelude
 instance
   favoriteNumber : Int
   favoriteNumber = 42
-{-# INLINE favoriteNumber #-}
+{-# COMPILE AGDA2HS favoriteNumber inline #-}
 
-test : {{Int}} → Int
-test {{x}} = x
+get : {{Int}} → Int
+get {{x}} = x
+{-# COMPILE AGDA2HS get #-}
+
+test : Int
+test = get
 {-# COMPILE AGDA2HS test #-}

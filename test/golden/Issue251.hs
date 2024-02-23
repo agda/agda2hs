@@ -1,5 +1,8 @@
 module Issue251 where
 
-test :: Int -> Int
-test x = x
+get :: Int -> Int
+get x = x
+
+test :: Int
+test = get 42
 
