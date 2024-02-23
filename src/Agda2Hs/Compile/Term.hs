@@ -56,6 +56,7 @@ isSpecialDef q = case prettyShow q of
   "Haskell.Prim.case_of_"        -> Just caseOf
   "Haskell.Prim.the"             -> Just expTypeSig
   "Haskell.Extra.Delay.runDelay" -> Just compileErasedApp
+  "Agda.Builtin.Word.primWord64FromNat" -> Just primWord64FromNat
   _                              -> Nothing
 
 
@@ -115,6 +116,13 @@ expTypeSig ty args@(_:typ:_:_) = do
     exp:args <- compileArgs ty args
     pure (Hs.ExpTypeSig () exp annot `eApp` args)
 expTypeSig _ _ = genericError "`the` must be fully applied"
+
+primWord64FromNat :: DefCompileRule
+primWord64FromNat ty args = compileArgs ty args >>= \case
+  -- literal
+  n@Hs.Lit{} : _ -> return n
+  -- anything else
+  _ -> genericError "primWord64FromNat must be applied to a literal"
 
 
 -- should really be named compileVar, TODO: rename compileVar
@@ -337,6 +345,7 @@ isSpecialCon :: QName -> Maybe ConCompileRule
 isSpecialCon = prettyShow >>> \case
   "Haskell.Prim.Tuple._,_"          -> Just tupleTerm
   "Haskell.Prim.Tuple._×_×_._,_,_"  -> Just tupleTerm
+  "Haskell.Prim.Int.Int.int64"      -> Just int64Term
   "Haskell.Extra.Sigma._,_"         -> Just tupleTerm
   "Haskell.Extra.Erase.Erased"      -> Just erasedTerm
   "Haskell.Extra.Delay.Delay.now"   -> Just compileErasedApp
@@ -349,6 +358,10 @@ tupleTerm = compileApp' (Hs.Tuple () Hs.Boxed)
 erasedTerm :: ConCompileRule
 erasedTerm _ _ = pure (Hs.Tuple () Hs.Boxed [])
 
+int64Term :: ConCompileRule
+int64Term ty args = compileArgs ty args >>= \case
+  n@Hs.Lit{} : _ -> return n
+  _ -> genericError "int64 must be applied to a literal"
 
 -- | @compileErasedApp@ compiles the application of unboxed constructors
 -- and transparent functions.

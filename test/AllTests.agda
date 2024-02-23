@@ -71,6 +71,7 @@ import Delay
 import Issue273
 import TypeDirected
 import ProjLike
+import Issue286
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -141,4 +142,5 @@ import Delay
 import Issue273
 import TypeDirected
 import ProjLike
+import Issue286
 #-}
