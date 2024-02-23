@@ -68,4 +68,5 @@ import Delay
 import Issue273
 import TypeDirected
 import ProjLike
+import Issue286
 
