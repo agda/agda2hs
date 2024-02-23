@@ -2,40 +2,14 @@
 
 # agda2hs
 
-Agda2hs is a tool for producing verified and readable Haskell code by
-extracting it from a (lightly annotated) Agda program. For example,
-the following Agda program encodes well-formed binary search trees:
-
-```agda
-open import Haskell.Prelude
-
-_≤_ : {{Ord a}} → a → a → Set
-x ≤ y = (x <= y) ≡ True
-
-data BST (a : Set) {{@0 _ : Ord a}} (@0 lower upper : a) : Set where
-  Leaf : (@0 pf : lower ≤ upper) → BST a lower upper
-  Node : (x : a) (l : BST a lower x) (r : BST a x upper) → BST a lower upper
-
-{-# COMPILE AGDA2HS BST #-}
-```
-
-agda2hs translates this to the following Haskell datatype:
-
-```haskell
-module BST where
-
-data BST a = Leaf
-           | Node a (BST a) (BST a)
-```
-
-## Objective
-
-The goal of this project is *not* to translate arbitrary Agda code to Haskell.
-Rather it is to carve out a common sublanguage between Agda and Haskell,
-with a straightforward translation from the Agda side to the Haskell side.
-This lets you write your program in the Agda fragment, using full Agda
-to prove properties about it, and then translate it to nice looking readable
-Haskell code that you can show your Haskell colleagues without shame.
+Agda2hs is a tool for producing verified and readable Haskell code by extracting
+it from a (lightly annotated) Agda program. The goal of this project is *not* to
+translate arbitrary Agda code to Haskell. Rather it is to carve out a common
+sublanguage between Agda and Haskell, with a straightforward translation from
+the Agda side to the Haskell side. This lets you write your program in the Agda
+fragment, using full Agda to prove properties about it, and then translate it to
+nice looking readable Haskell code that you can show your Haskell colleagues
+without shame.
 
 ## Documentation
 
