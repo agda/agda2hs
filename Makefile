@@ -1,17 +1,21 @@
 .PHONY : test install repl agda
 
 install :
-	cabal new-install --overwrite-policy=always
+	cabal install --overwrite-policy=always
 
 agda :
-	cabal new-install Agda --program-suffix=-erased --overwrite-policy=always
+	cabal install Agda --program-suffix=-erased --overwrite-policy=always
 
 repl :
-	cabal new-repl # e.g. `:set args -itest -otest/build test/AllTests.agda ... main ... :r ... main`
+	cabal repl # e.g. `:set args -itest -otest/build test/AllTests.agda ... main ... :r ... main`
 
 test :
-	cabal new-install agda2hs --overwrite-policy=always --installdir=test --install-method=copy
+	cabal install agda2hs --overwrite-policy=always --installdir=test --install-method=copy
 	make -C test
+
+libHtml :
+	cabal run agda2hs -- --html lib/Haskell/Prelude.agda
+	cp html/Haskell.Prelude.html html/index.html
 
 golden :
 	make -C test golden

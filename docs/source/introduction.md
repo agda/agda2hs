@@ -10,8 +10,9 @@
   - version >= 2.6.4 && < 2.6.5
 - [Agda standard library](https://github.com/agda/agda-stdlib)
 - Agda library `agda2hs`
-  - this Agda library is include in the `agda2hs` repository; see
+  - this Agda library is included in the `agda2hs` repository; see
     [`agda2hs.agda-lib`](https://github.com/agda/agda2hs/blob/master/agda2hs.agda-lib)
+  - you can navigate the library in [HTML format](https://agda.github.io/agda2hs/lib/)
 
 ### Installation
 
