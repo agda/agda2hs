@@ -5,8 +5,10 @@ test/build
 test/agda2hs
 test/agda2hs-mode
 *~
+html/
 docs/build/
 test/*.hs
 test/Haskell
 *.hi
 *.o
+
