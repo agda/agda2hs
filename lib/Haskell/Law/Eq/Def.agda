@@ -66,5 +66,3 @@ eqNegation : ⦃ iEq : Eq e ⦄ → ⦃ IsLawfulEq e ⦄
            → ∀ { x y : e } → (x /= y) ≡ not (x == y)
 eqNegation = refl
 
-postulate instance
-  iLawfulEqDouble : IsLawfulEq Double
