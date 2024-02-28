@@ -17,6 +17,8 @@ open import Haskell.Prim.Tuple
 -- ** base
 record Applicative (f : Set → Set) : Set₁ where
   infixl 4 _<*>_
+  infixl 4 _<*_
+  infixl 4 _*>_
   field
     pure  : a → f a
     _<*>_ : f (a → b) → f a → f b
@@ -27,6 +29,8 @@ record Applicative (f : Set → Set) : Set₁ where
 record DefaultApplicative (f : Set → Set) : Set₁ where
   constructor mk
   infixl 4 _<*>_
+  infixl 4 _<*_
+  infixl 4 _*>_
   field
     pure  : a → f a
     _<*>_ : f (a → b) → f a → f b

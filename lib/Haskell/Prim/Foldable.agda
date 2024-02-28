@@ -86,6 +86,7 @@ record DefaultFoldable (t : Set → Set) : Set₁ where
 -- ** export
 open Foldable ⦃...⦄ public
 {-# COMPILE AGDA2HS Foldable existing-class #-}
+
 -- ** instances
 private
   mkFoldable : DefaultFoldable t → Foldable t
