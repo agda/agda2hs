@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>agda2hs Documentation &mdash; agda2hs  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Introduction" href="introduction.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="#" class="icon icon-home"> agda2hs
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html#imports">Imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html#rewrite-rules-and-prelude-imports">Rewrite rules and Prelude imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html#emacs-mode">Emacs mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">agda2hs</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home"></a></li>
+      <li class="breadcrumb-item active">agda2hs Documentation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="agda2hs-documentation">
+<h1>agda2hs Documentation<a class="headerlink" href="#agda2hs-documentation" title="Permalink to this heading"></a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> is a tool for producing verified and readable Haskell code by
+extracting it from a (lightly annotated) Agda program. For example,
+the following Agda program encodes well-formed binary search trees:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">open</span><span class="w"> </span><span class="kr">import</span><span class="w"> </span><span class="n">Haskell.Prelude</span>
+
+<span class="nf">_≤_</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">{{</span>Ord<span class="w"> </span>a<span class="o">}}</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span><span class="kt">Set</span>
+x<span class="w"> </span>≤<span class="w"> </span>y<span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="o">(</span>x<span class="w"> </span>&lt;=<span class="w"> </span>y<span class="o">)</span><span class="w"> </span>≡<span class="w"> </span>True
+
+<span class="kr">data</span><span class="w"> </span>BST<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="o">{{</span>@0<span class="w"> </span>_<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Ord<span class="w"> </span>a<span class="o">}}</span><span class="w"> </span><span class="o">(</span>@0<span class="w"> </span>lower<span class="w"> </span>upper<span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="nf">Leaf</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">(</span>@0<span class="w"> </span>pf<span class="w"> </span><span class="ow">:</span><span class="w"> </span>lower<span class="w"> </span>≤<span class="w"> </span>upper<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span>BST<span class="w"> </span>a<span class="w"> </span>lower<span class="w"> </span>upper
+<span class="w">  </span><span class="nf">Node</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">(</span>x<span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="o">)</span><span class="w"> </span><span class="o">(</span>l<span class="w"> </span><span class="ow">:</span><span class="w"> </span>BST<span class="w"> </span>a<span class="w"> </span>lower<span class="w"> </span>x<span class="o">)</span><span class="w"> </span><span class="o">(</span>r<span class="w"> </span><span class="ow">:</span><span class="w"> </span>BST<span class="w"> </span>a<span class="w"> </span>x<span class="w"> </span>upper<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span>BST<span class="w"> </span>a<span class="w"> </span>lower<span class="w"> </span>upper
+
+<span class="cm">{-# COMPILE AGDA2HS BST #-}</span>
+</pre></div>
+</div>
+<p>agda2hs translates this to the following Haskell datatype:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kr">module</span><span class="w"> </span><span class="nn">BST</span><span class="w"> </span><span class="kr">where</span>
+
+<span class="kr">data</span><span class="w"> </span><span class="kt">BST</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Leaf</span>
+<span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="kt">Node</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">(</span><span class="kt">BST</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">BST</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> is intended to be used together with the provided <code class="docutils literal notranslate"><span class="pre">Haskell.Prelude</span></code>
+module, which provides an Agda implementation of (a large subset of) the Haskell
+Prelude. It also provides proofs for reasoning about Haskell functions under the
+<code class="docutils literal notranslate"><span class="pre">Haskell.Law</span></code> namespace. <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> is <em>not</em> compatible with other Agda libraries
+such as the Agda standard library.</p>
+<section id="objective">
+<h2>Objective<a class="headerlink" href="#objective" title="Permalink to this heading"></a></h2>
+<p>The goal of this project is <em>not</em> to translate arbitrary Agda code to Haskell.
+Rather it is to carve out a common sublanguage between Agda and Haskell,
+with a straightforward translation from the Agda side to the Haskell side.
+This lets you write your program in the Agda fragment, using full Agda
+to prove properties about it, and then translate it to nice looking readable
+Haskell code that you can show your Haskell colleagues without shame.</p>
+<p>If you want to compile arbitrary Agda programs to runnable (but not readable)
+Haskell, you should instead use the built-in
+<a class="reference external" href="https://agda.readthedocs.io/en/v2.6.4/tools/compilers.html#ghc-backend">GHC backend of Agda</a>
+(a.k.a. MAlonzo).</p>
+</section>
+<section id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading"></a></h2>
+<p>The documentation you are currently reading is a work in progress, so if you
+have been using <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> and want to contribute in some way, adding
+documentation or examples would be very welcome.</p>
+<p>agda2hs was introduced in the Haskell Symposium ‘22 paper <a class="reference external" href="https://jesper.sikanda.be/files/reasonable-agda-is-correct-haskell.pdf">Reasonable Agda is
+Correct Haskell: Writing Verified Haskell using
+agda2hs</a>.</p>
+</section>
+<section id="future-work">
+<h2>Future work<a class="headerlink" href="#future-work" title="Permalink to this heading"></a></h2>
+<p>Currently <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> is under active development, please take a look at the
+<a class="reference external" href="https://github.com/agda/agda2hs/issues">issue tracker</a>. If you have a
+suggestion for a new feature that is not yet on the issue tracker, you are
+welcome to create a new issue or a PR. Feature requests should be of the form
+“Add support for Haskell feature X”, <em>not</em> “Add support for Agda feature Y” (see
+“Objective” above). If you want to compile arbitrary Agda code to Haskell, you
+are advised to use Agda’s built-in GHC backend instead.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html#imports">Imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html#rewrite-rules-and-prelude-imports">Rewrite rules and Prelude imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html#emacs-mode">Emacs mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="introduction.html" class="btn btn-neutral float-right" title="Introduction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Jexper Cockx, Orestis Melkonian, Lucas Escot, James Chapman, Ulf Norell.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

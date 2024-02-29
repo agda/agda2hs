@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Features &mdash; agda2hs  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Tutorials" href="tutorials.html" />
+    <link rel="prev" title="Introduction" href="introduction.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> agda2hs
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#data-type-declarations">Data &amp; Type Declarations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#types">Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#datatypes">Datatypes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#records">Records</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#newtypes">Newtypes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pattern-matching-on-datatype-values">Pattern Matching on Datatype Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flow-control">Flow Control</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#flow-witnesses">Flow Witnesses</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#explicit-type-singatures">Explicit type singatures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#quantity-parameters">0-Quantity Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#coinduction">Coinduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#type-classes">Type Classes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#constrained-typeclass-instance">Constrained Typeclass Instance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#constrained-typeclass">Constrained Typeclass</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#default-typeclass-field-implementations">Default Typeclass Field Implementations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#copatterns-in-type-class-instances">Copatterns in Type Class Instances</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deriving-type-class-instances">Deriving Type Class Instances</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#partial-application">Partial Application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mutual-recursion">Mutual Recursion</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#mutually-recursive-functions">Mutually Recursive Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mutually-recursive-datatype-and-function">Mutually Recursive Datatype and Function</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#implicit-record-field">Implicit Record Field</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#haskell-language-extensions">Haskell Language Extensions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#imports">Imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#rewrite-rules-and-prelude-imports">Rewrite rules and Prelude imports</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#rewrite-rules">Rewrite rules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#handling-of-prelude">Handling of Prelude</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#known-issues">Known issues</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#emacs-mode">Emacs mode</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id1">Known issues</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">agda2hs</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a></li>
+      <li class="breadcrumb-item active">Features</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/features.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="features">
+<h1>Features<a class="headerlink" href="#features" title="Permalink to this heading"></a></h1>
+<p>By default, all of the following Agda examples are implicitly prefixed (if
+necessary) with the following snippet.</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">open</span><span class="w"> </span><span class="kr">import</span><span class="w"> </span><span class="n">Haskell.Prelude</span>
+</pre></div>
+</div>
+<section id="data-type-declarations">
+<h2>Data &amp; Type Declarations<a class="headerlink" href="#data-type-declarations" title="Permalink to this heading"></a></h2>
+<section id="types">
+<h3>Types<a class="headerlink" href="#types" title="Permalink to this heading"></a></h3>
+<p>Creating a type synonym using the <code class="docutils literal notranslate"><span class="pre">type</span></code> keyword requires only a simple declaration in Agda.</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span>Entry<span class="w"> </span><span class="ow">=</span><span class="w"> </span>Int<span class="w"> </span>×<span class="w"> </span>List<span class="w"> </span>String
+
+<span class="cm">{-# COMPILE AGDA2HS Entry #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">type</span><span class="w"> </span><span class="kt">Entry</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="kt">Int</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="kt">String</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="datatypes">
+<h3>Datatypes<a class="headerlink" href="#datatypes" title="Permalink to this heading"></a></h3>
+<p>Standard data type declarations have a simple equivalent in Agda.</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Nat<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="nf">Zero</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat<span class="w"> </span>
+<span class="w">    </span><span class="nf">Suc</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Nat
+
+<span class="cm">{-# COMPILE AGDA2HS Nat #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Nat</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Zero</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="kt">Suc</span><span class="w"> </span><span class="kt">Nat</span>
+</pre></div>
+</div>
+<p>You can also use polymorphic types in the data declarations.</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Tree<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="nf">Leaf</span><span class="w">   </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Tree<span class="w"> </span>a
+<span class="w">    </span><span class="nf">Branch</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Tree<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Tree<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Tree<span class="w"> </span>a
+<span class="w">    </span>
+<span class="cm">{-# COMPILE AGDA2HS Tree #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Leaf</span><span class="w"> </span><span class="n">a</span>
+<span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="kt">Branch</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">(</span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>UNSUPPORTED: term-indexed datatypes</strong></p>
+</section>
+<section id="records">
+<h3>Records<a class="headerlink" href="#records" title="Permalink to this heading"></a></h3>
+<p>Data definitions with fields are represented by records on the Agda side.</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Citation<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">field</span>
+<span class="w">        </span><span class="nf">id</span><span class="w">     </span><span class="ow">:</span><span class="w"> </span>Int
+<span class="w">        </span><span class="nf">author</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>String
+<span class="w">        </span><span class="nf">title</span><span class="w">  </span><span class="ow">:</span><span class="w"> </span>String
+<span class="w">        </span><span class="nf">url</span><span class="w">    </span><span class="ow">:</span><span class="w"> </span>String
+<span class="w">        </span><span class="nf">year</span><span class="w">   </span><span class="ow">:</span><span class="w"> </span>Int
+<span class="kr">open</span><span class="w"> </span>Citation<span class="w"> </span>public
+
+<span class="cm">{-# COMPILE AGDA2HS Citation #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Citation</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Citation</span><span class="p">{</span><span class="n">id</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="p">,</span><span class="w"> </span><span class="n">author</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="p">,</span>
+<span class="w">                         </span><span class="n">title</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="p">,</span><span class="w"> </span><span class="n">url</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="p">,</span><span class="w"> </span><span class="n">year</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="newtypes">
+<h3>Newtypes<a class="headerlink" href="#newtypes" title="Permalink to this heading"></a></h3>
+<p>Data declaration using the <code class="docutils literal notranslate"><span class="pre">newtype</span></code> keyword can be created by adding a <code class="docutils literal notranslate"><span class="pre">newtype</span></code> annotation to the compile pragma.</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="c1">-- data newtype</span>
+<span class="kr">data</span><span class="w"> </span>Indexed<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="nf">MkIndexed</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Int<span class="w"> </span>×<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Indexed<span class="w"> </span>a
+
+<span class="cm">{-# COMPILE AGDA2HS Indexed newtype #-}</span>
+
+<span class="c1">-- data newtype with deriving</span>
+<span class="kr">data</span><span class="w"> </span>Pair<span class="w"> </span><span class="o">(</span>a<span class="w"> </span>b<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="nf">MkPair</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span>×<span class="w"> </span>b<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Pair<span class="w"> </span>a<span class="w"> </span>b
+
+<span class="cm">{-# COMPILE AGDA2HS Pair newtype deriving ( Show, Eq ) #-}</span>
+
+<span class="c1">-- record newtype</span>
+<span class="kr">record</span><span class="w"> </span>Identity<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">constructor</span><span class="w"> </span>MkIdentity
+<span class="w">    </span><span class="kr">field</span>
+<span class="w">        </span><span class="nf">runIdentity</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a
+<span class="kr">open</span><span class="w"> </span>Identity<span class="w"> </span>public
+
+<span class="cm">{-# COMPILE AGDA2HS Identity newtype #-}</span>
+
+<span class="c1">-- record newtype with erased proof</span>
+<span class="kr">record</span><span class="w"> </span>Equal<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">constructor</span><span class="w"> </span>MkEqual
+<span class="w">    </span><span class="kr">field</span>
+<span class="w">        </span><span class="nf">pair</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span>×<span class="w"> </span>a
+<span class="w">        </span>@0<span class="w"> </span>proof<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">(</span>fst<span class="w"> </span>pair<span class="o">)</span><span class="w"> </span>≡<span class="w"> </span><span class="o">(</span>snd<span class="w"> </span>pair<span class="o">)</span>
+<span class="kr">open</span><span class="w"> </span>Equal<span class="w"> </span>public
+
+<span class="cm">{-# COMPILE AGDA2HS Equal newtype #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="c1">-- data newtype</span>
+<span class="kr">newtype</span><span class="w"> </span><span class="kt">Indexed</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">MkIndexed</span><span class="w"> </span><span class="p">(</span><span class="kt">Int</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+
+<span class="c1">-- data newtype with deriving</span>
+<span class="kr">newtype</span><span class="w"> </span><span class="kt">Pair</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">MkPair</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">)</span>
+<span class="w">                     </span><span class="kr">deriving</span><span class="w"> </span><span class="p">(</span><span class="kt">Show</span><span class="p">,</span><span class="w"> </span><span class="kt">Eq</span><span class="p">)</span>
+
+<span class="c1">-- record newtype</span>
+<span class="kr">newtype</span><span class="w"> </span><span class="kt">Identity</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">MkIdentity</span><span class="p">{</span><span class="n">runIdentity</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="p">}</span>
+
+<span class="c1">-- record newtype with erased proof</span>
+<span class="kr">newtype</span><span class="w"> </span><span class="kt">Equal</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">MkEqual</span><span class="p">{</span><span class="n">pair</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">)}</span>
+</pre></div>
+</div>
+<p>Unfortunately, Agda does not allow the constructor name to be the same as the data/record name.
+However, it <em>is</em> possible to achieve this with Agda2HS if you do not explicitly add a constructor name to a record definition (this requires the use of <code class="docutils literal notranslate"><span class="pre">record</span> <span class="pre">{</span> <span class="pre">...</span> <span class="pre">}</span></code> syntax on the Agda side):</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Duo<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">field</span>
+<span class="w">        </span><span class="nf">duo</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span>×<span class="w"> </span>a
+<span class="kr">open</span><span class="w"> </span>Duo<span class="w"> </span>public
+
+<span class="cm">{-# COMPILE AGDA2HS Duo newtype #-}</span>
+
+<span class="nf">createDuo</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Duo<span class="w"> </span>a
+createDuo<span class="w"> </span>a<span class="w"> </span>b<span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">record</span><span class="w"> </span><span class="o">{</span><span class="w"> </span>duo<span class="w"> </span><span class="ow">=</span><span class="w"> </span>a<span class="w"> </span>,<span class="w"> </span>b<span class="w"> </span><span class="o">}</span>
+
+<span class="cm">{-# COMPILE AGDA2HS createDuo #-}</span>
+</pre></div>
+</div>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">newtype</span><span class="w"> </span><span class="kt">Duo</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Duo</span><span class="p">{</span><span class="n">duo</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">)}</span>
+
+<span class="nf">createDuo</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Duo</span><span class="w"> </span><span class="n">a</span>
+<span class="nf">createDuo</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Duo</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="pattern-matching-on-datatype-values">
+<h2>Pattern Matching on Datatype Values<a class="headerlink" href="#pattern-matching-on-datatype-values" title="Permalink to this heading"></a></h2>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="cm">{-# FOREIGN AGDA2HS {-# LANGUAGE LambdaCase #-} #-}</span>
+
+<span class="nf">negate</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Bool<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
+negate<span class="w"> </span>True<span class="w"> </span><span class="ow">=</span><span class="w"> </span>False
+negate<span class="w"> </span>False<span class="w"> </span><span class="ow">=</span><span class="w"> </span>True
+
+<span class="nf">negate&#39;</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Bool<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
+negate&#39;<span class="w"> </span>x<span class="w"> </span><span class="ow">=</span><span class="w"> </span>case<span class="w"> </span>x<span class="w"> </span>of<span class="w"> </span><span class="ow">λ</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span>True<span class="w"> </span><span class="ow">→</span><span class="w"> </span>False
+<span class="w">    </span>False<span class="w"> </span><span class="ow">→</span><span class="w"> </span>True
+
+<span class="nf">negate&#39;&#39;</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Bool<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
+negate&#39;&#39;<span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="ow">λ</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span>True<span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span>False
+<span class="w">    </span>False<span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span>True
+</pre></div>
+</div>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="cm">{-# LANGUAGE LambdaCase #-}</span>
+
+<span class="nf">negate</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
+<span class="nf">negate</span><span class="w"> </span><span class="kt">True</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">False</span>
+<span class="nf">negate</span><span class="w"> </span><span class="kt">False</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">True</span>
+
+<span class="nf">negate&#39;</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
+<span class="nf">negate&#39;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">case</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="kr">of</span><span class="w"> </span>
+<span class="w">    </span><span class="kt">True</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">False</span>
+<span class="w">    </span><span class="kt">False</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">True</span>
+
+<span class="nf">negate&#39;&#39;</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
+<span class="nf">negate&#39;&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="nf">\</span><span class="kr">case</span>
+<span class="w">    </span><span class="kt">True</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">False</span>
+<span class="w">    </span><span class="kt">False</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">True</span>
+</pre></div>
+</div>
+</section>
+<section id="flow-control">
+<h2>Flow Control<a class="headerlink" href="#flow-control" title="Permalink to this heading"></a></h2>
+<p>Agda2HS provides native support for the Haskell <code class="docutils literal notranslate"><span class="pre">if_then_else_</span></code> and <code class="docutils literal notranslate"><span class="pre">case_of_</span></code> constructs.</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="nf">ifThenElse</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Int<span class="w"> </span><span class="ow">→</span><span class="w"> </span>String
+ifThenElse<span class="w"> </span>n<span class="w"> </span><span class="ow">=</span><span class="w"> </span>if<span class="w"> </span>n<span class="w"> </span>&gt;=<span class="w"> </span><span class="mi">10</span><span class="w"> </span>then<span class="w"> </span><span class="s">&quot;big&quot;</span><span class="w"> </span>else<span class="w"> </span><span class="s">&quot;small&quot;</span>
+<span class="cm">{-# COMPILE AGDA2HS ifThenElse #-}</span>
+
+<span class="nf">mhead</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>List<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Maybe<span class="w"> </span>a
+mhead<span class="w"> </span>xs<span class="w"> </span><span class="ow">=</span><span class="w"> </span>case<span class="w"> </span>xs<span class="w"> </span>of<span class="w"> </span><span class="ow">λ</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span>[]<span class="w">      </span><span class="ow">→</span><span class="w"> </span>Nothing
+<span class="w">  </span><span class="o">(</span>x<span class="w"> </span>∷<span class="w"> </span>_<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span>Just<span class="w"> </span>x
+<span class="cm">{-# COMPILE AGDA2HS mhead #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">ifThenElse</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">String</span>
+<span class="nf">ifThenElse</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">if</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="s">&quot;big&quot;</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="s">&quot;small&quot;</span>
+
+<span class="nf">mhead</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">[</span><span class="n">a</span><span class="p">]</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Maybe</span><span class="w"> </span><span class="n">a</span>
+<span class="nf">mhead</span><span class="w"> </span><span class="n">xs</span>
+<span class="w">  </span><span class="ow">=</span><span class="w"> </span><span class="kr">case</span><span class="w"> </span><span class="n">xs</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">        </span><span class="kt">[]</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Nothing</span>
+<span class="w">        </span><span class="n">x</span><span class="w"> </span><span class="kt">:</span><span class="w"> </span><span class="kr">_</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Just</span><span class="w"> </span><span class="n">x</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p><strong>It is NOT possible to partially apply these two constructs.</strong>
+This means that you must explicitly write <code class="docutils literal notranslate"><span class="pre">λ</span> <span class="pre">x</span> <span class="pre">→</span> <span class="pre">if</span> <span class="pre">x</span> <span class="pre">then</span> <span class="pre">2</span> <span class="pre">else</span> <span class="pre">3</span></code> instead of <code class="docutils literal notranslate"><span class="pre">if_then</span> <span class="pre">2</span> <span class="pre">else</span> <span class="pre">3</span></code>. (This copies the impossibility of the second implementation in Haskell.)</p>
+</div></blockquote>
+<section id="flow-witnesses">
+<h3>Flow Witnesses<a class="headerlink" href="#flow-witnesses" title="Permalink to this heading"></a></h3>
+<p>While in Haskell such a thing is never necessary, in Agda there are cases when it is useful for a branch to contain a “witness” (proof) of the condition on which it split (i.e. the true branch of <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">x</span> <span class="pre">&lt;</span> <span class="pre">2</span> <span class="pre">then</span> <span class="pre">...</span> <span class="pre">else</span> <span class="pre">...</span></code> knows that <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">&lt;</span> <span class="pre">2</span> <span class="pre">=</span> <span class="pre">True</span></code>).</p>
+<p>The type signatures of both <code class="docutils literal notranslate"><span class="pre">if_then_else_</span></code> and <code class="docutils literal notranslate"><span class="pre">case_of_</span></code> on the Agda side contain instances of these proofs which can be used to work with e.g. intrinsic verification.</p>
+<p>This allows for the following Agda code to type check:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Range<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="nf">MkRange</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">(</span>low<span class="w"> </span>high<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Int<span class="o">)</span>
+<span class="w">            </span><span class="ow">→</span><span class="w"> </span><span class="o">{{</span><span class="w"> </span>@0<span class="w"> </span>h<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">((</span>low<span class="w"> </span>&lt;=<span class="w"> </span>high<span class="o">)</span><span class="w"> </span>≡<span class="w"> </span>True<span class="o">)</span><span class="w"> </span><span class="o">}}</span>
+<span class="w">            </span><span class="ow">→</span><span class="w"> </span>Range
+
+<span class="cm">{-# COMPILE AGDA2HS Range #-}</span>
+
+<span class="nf">createRange</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Int<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Int<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Maybe<span class="w"> </span>Range
+createRange<span class="w"> </span>low<span class="w"> </span>high<span class="w"> </span><span class="ow">=</span><span class="w"> </span>if<span class="w"> </span>low<span class="w"> </span>&lt;=<span class="w"> </span>high<span class="w"> </span>then<span class="w"> </span>Just<span class="w"> </span><span class="o">(</span>MkRange<span class="w"> </span>low<span class="w"> </span>high<span class="o">)</span><span class="w"> </span>else<span class="w"> </span>Nothing
+
+<span class="cm">{-# COMPILE AGDA2HS createRange #-}</span>
+
+<span class="nf">createRangeCase</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Int<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Int<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Maybe<span class="w"> </span>Range
+createRangeCase<span class="w"> </span>low<span class="w"> </span>high<span class="w"> </span><span class="ow">=</span><span class="w"> </span>
+<span class="w">    </span>case<span class="w"> </span>low<span class="w"> </span>&lt;=<span class="w"> </span>high<span class="w"> </span>of<span class="w"> </span><span class="ow">λ</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">        </span>True<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Just<span class="w"> </span><span class="o">(</span>MkRange<span class="w"> </span>low<span class="w"> </span>high<span class="o">)</span>
+<span class="w">        </span>False<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Nothing
+
+<span class="cm">{-# COMPILE AGDA2HS createRangeCase #-}</span>
+</pre></div>
+</div>
+<p>and compile to this simplified Haskell code:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Range</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">MkRange</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="kt">Int</span>
+
+<span class="nf">createRange</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Maybe</span><span class="w"> </span><span class="kt">Range</span>
+<span class="nf">createRange</span><span class="w"> </span><span class="n">low</span><span class="w"> </span><span class="n">high</span>
+<span class="w">  </span><span class="ow">=</span><span class="w"> </span><span class="kr">if</span><span class="w"> </span><span class="n">low</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">high</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="kt">Just</span><span class="w"> </span><span class="p">(</span><span class="kt">MkRange</span><span class="w"> </span><span class="n">low</span><span class="w"> </span><span class="n">high</span><span class="p">)</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="kt">Nothing</span>
+
+<span class="nf">createRangeCase</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Maybe</span><span class="w"> </span><span class="kt">Range</span>
+<span class="nf">createRangeCase</span><span class="w"> </span><span class="n">low</span><span class="w"> </span><span class="n">high</span>
+<span class="w">  </span><span class="ow">=</span><span class="w"> </span><span class="kr">case</span><span class="w"> </span><span class="n">low</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">high</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">        </span><span class="kt">True</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Just</span><span class="w"> </span><span class="p">(</span><span class="kt">MkRange</span><span class="w"> </span><span class="n">low</span><span class="w"> </span><span class="n">high</span><span class="p">)</span>
+<span class="w">        </span><span class="kt">False</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Nothing</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="explicit-type-singatures">
+<h2>Explicit type singatures<a class="headerlink" href="#explicit-type-singatures" title="Permalink to this heading"></a></h2>
+<p>Haskell’s <code class="docutils literal notranslate"><span class="pre">::</span></code> syntax for explicit type signatures can be achieved using the <code class="docutils literal notranslate"><span class="pre">the</span></code> function in Haskell.Prim.</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="nf">five</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat
+five<span class="w"> </span><span class="ow">=</span><span class="w"> </span>the<span class="w"> </span><span class="o">(</span>Nat<span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span>Nat<span class="o">)</span><span class="w"> </span>id<span class="w"> </span><span class="mi">5</span>
+<span class="cm">{-# COMPILE AGDA2HS five #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="nf">five</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Natural</span>
+<span class="nf">five</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Natural</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Natural</span><span class="p">)</span><span class="w"> </span><span class="mi">5</span>
+</pre></div>
+</div>
+</section>
+<section id="quantity-parameters">
+<span id="quantity"></span><h2>0-Quantity Parameters<a class="headerlink" href="#quantity-parameters" title="Permalink to this heading"></a></h2>
+<p>Parameters can be annotated with a <em>quantity</em> of either <code class="docutils literal notranslate"><span class="pre">0</span></code> or <code class="docutils literal notranslate"><span class="pre">ω</span></code> (the default quantity is <code class="docutils literal notranslate"><span class="pre">ω</span></code> if no quantity is explicitly annotated). Such parameters are irrelevant to evaluation, so they are irrelevant to the compiled Haskell program, and so agda2hs erases them.</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>GhostInt<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="nf">MakeGhostInt</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>@0<span class="w"> </span>Int<span class="w"> </span><span class="ow">→</span><span class="w"> </span>GhostInt
+
+<span class="c1">-- fails</span>
+<span class="nf">fromGhostInt</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>GhostInt<span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span>Int
+fromGhostInt<span class="w"> </span><span class="o">(</span>MakeGhostInt<span class="w"> </span>i<span class="o">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span>i
+
+<span class="c1">-- passes</span>
+<span class="nf">addGhostInts</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>GhostInt<span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span>GhostInt<span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span>GhostInt
+addGhostInts<span class="w"> </span><span class="o">(</span>MakeGhostInt<span class="w"> </span>i<span class="o">)</span><span class="w"> </span><span class="o">(</span>MakeGhostInt<span class="w"> </span>j<span class="o">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span>MakeGhostInt<span class="w"> </span><span class="o">(</span>i<span class="w"> </span>+<span class="w"> </span>j<span class="o">)</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">GhostInt</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">MakeGhostInt</span>
+
+<span class="nf">addGhostInts</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">GhostInt</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">GhostInt</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">GhostInt</span>
+<span class="nf">addGhostInts</span><span class="w"> </span><span class="kt">MakeGhostInt</span><span class="w"> </span><span class="kt">MakeGhostInt</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">MakeGhostInt</span>
+</pre></div>
+</div>
+</section>
+<section id="coinduction">
+<h2>Coinduction<a class="headerlink" href="#coinduction" title="Permalink to this heading"></a></h2>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Stream<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="o">(</span>@0<span class="w"> </span>i<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Size<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="nf">Nil</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Stream<span class="w"> </span>a<span class="w"> </span>i
+<span class="w">    </span><span class="nf">Cons</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Thunk<span class="w"> </span><span class="o">(</span>Stream<span class="w"> </span>a<span class="o">)</span><span class="w"> </span>i<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Stream<span class="w"> </span>a<span class="w"> </span>i
+<span class="cm">{-# COMPILE AGDA2HS Stream #-}</span>
+
+repeat<span class="w"> </span><span class="o">{</span>a<span class="o">}</span><span class="w"> </span><span class="o">{</span>i<span class="o">}</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Stream<span class="w"> </span>a<span class="w"> </span>i
+repeat<span class="w"> </span>x<span class="w"> </span><span class="ow">=</span><span class="w"> </span>Cons<span class="w"> </span>x<span class="w"> </span><span class="ow">λ</span><span class="w"> </span><span class="kr">where</span><span class="w"> </span><span class="ow">.</span>force<span class="w"> </span><span class="ow">→</span><span class="w"> </span>repeat<span class="w"> </span>x
+<span class="cm">{-# COMPILE AGDA2HS repeat #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Stream</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Nil</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="kt">Cons</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">(</span><span class="kt">Stream</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+
+<span class="nf">repeat</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Stream</span><span class="w"> </span><span class="n">a</span>
+<span class="nf">repeat</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Cons</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="p">(</span><span class="n">repeat</span><span class="w"> </span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="type-classes">
+<h2>Type Classes<a class="headerlink" href="#type-classes" title="Permalink to this heading"></a></h2>
+<p>To construct an instance of a type class, you can simply do the following:</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Circle<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">constructor</span><span class="w"> </span>MkCircle
+<span class="w">    </span><span class="kr">field</span>
+<span class="w">        </span><span class="nf">radius</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Int
+<span class="kr">open</span><span class="w"> </span>Circle<span class="w"> </span>public
+
+<span class="cm">{-# COMPILE AGDA2HS Circle newtype #-}</span>
+
+<span class="kr">instance</span>
+<span class="w">  </span><span class="nf">iCircleEq</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Eq<span class="w"> </span>Circle
+<span class="w">  </span>iCircleEq<span class="w"> </span><span class="ow">.</span>_==_<span class="w"> </span><span class="o">(</span>MkCircle<span class="w"> </span>r1<span class="o">)</span><span class="w"> </span><span class="o">(</span>MkCircle<span class="w"> </span>r2<span class="o">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span>r1<span class="w"> </span><span class="ow">==</span><span class="w"> </span>r2
+
+<span class="cm">{-# COMPILE AGDA2HS iCircleEq #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">newtype</span><span class="w"> </span><span class="kt">Circle</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">MkCircle</span><span class="p">{</span><span class="n">radius</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="p">}</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="kt">Eq</span><span class="w"> </span><span class="kt">Circle</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kt">MkCircle</span><span class="w"> </span><span class="n">r1</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kt">MkCircle</span><span class="w"> </span><span class="n">r2</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">r1</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">r2</span>
+</pre></div>
+</div>
+<p>In some cases (especially when writing proofs), it might be necessary to use the properties (laws) that a type class instance should uphold.
+In this case, you can also implement the <code class="docutils literal notranslate"><span class="pre">IsLawful</span></code> instance for the data type and use it’s (erased) properties.</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Equal<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">constructor</span><span class="w"> </span>MkEqual
+<span class="w">    </span><span class="kr">field</span>
+<span class="w">        </span><span class="nf">pair</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span>×<span class="w"> </span>a
+<span class="w">        </span>@0<span class="w"> </span>proof<span class="w"> </span><span class="ow">:</span><span class="w"> </span>fst<span class="w"> </span>pair<span class="w"> </span>≡<span class="w"> </span>snd<span class="w"> </span>pair
+<span class="kr">open</span><span class="w"> </span>Equal<span class="w"> </span>public
+
+<span class="cm">{-# COMPILE AGDA2HS Equal newtype #-}</span>
+
+<span class="nf">constructEqual</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>⦃<span class="w"> </span>iEqA<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Eq<span class="w"> </span>a<span class="w"> </span>⦄<span class="w"> </span><span class="ow">→</span><span class="w"> </span>@0<span class="w"> </span>⦃<span class="w"> </span>IsLawfulEq<span class="w"> </span>a<span class="w"> </span>⦄<span class="w"> </span><span class="ow">→</span><span class="w"> </span><span class="o">(</span>c<span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span><span class="o">(</span>d<span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span>Maybe<span class="w"> </span><span class="o">(</span>Equal<span class="w"> </span>a<span class="o">)</span>
+constructEqual<span class="w"> </span>a<span class="w"> </span>b<span class="w"> </span><span class="ow">=</span><span class="w"> </span>
+<span class="w">  </span>if<span class="w"> </span>a<span class="w"> </span><span class="ow">==</span><span class="w"> </span>b<span class="w"> </span>then
+<span class="w">    </span><span class="o">(</span><span class="ow">λ</span><span class="w"> </span>⦃<span class="w"> </span>h<span class="w"> </span>⦄<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Just<span class="w"> </span><span class="o">(</span>MkEqual<span class="w"> </span><span class="o">(</span>a<span class="w"> </span>,<span class="w"> </span>b<span class="o">)</span><span class="w"> </span><span class="o">(</span>equality<span class="w"> </span>a<span class="w"> </span>b<span class="w"> </span>h<span class="o">)))</span>
+<span class="w">  </span>else<span class="w"> </span>Nothing
+
+<span class="cm">{-# COMPILE AGDA2HS constructEqual #-}</span>
+
+<span class="kr">instance</span>
+<span class="w">  </span><span class="nf">iLawfulCircleEq</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>IsLawfulEq<span class="w"> </span>Circle
+<span class="w">  </span>iLawfulCircleEq<span class="w"> </span><span class="ow">.</span>isEquality<span class="w"> </span><span class="o">(</span>MkCircle<span class="w"> </span>r1<span class="o">)</span><span class="w"> </span><span class="o">(</span>MkCircle<span class="w"> </span>r2<span class="o">)</span>
+<span class="w">    </span><span class="kr">with</span><span class="w"> </span>r1<span class="w"> </span><span class="ow">==</span><span class="w"> </span>r2<span class="w"> </span><span class="kr">in</span><span class="w"> </span>eq
+<span class="w">  </span><span class="ow">...</span><span class="w"> </span><span class="ow">|</span><span class="w"> </span>True<span class="w">  </span><span class="ow">=</span><span class="w"> </span>ofY<span class="w"> </span><span class="o">(</span>cong<span class="w"> </span>MkCircle<span class="w"> </span><span class="o">(</span>equality<span class="w"> </span>r1<span class="w"> </span>r2<span class="w"> </span>eq<span class="o">))</span>
+<span class="w">  </span><span class="ow">...</span><span class="w"> </span><span class="ow">|</span><span class="w"> </span>False<span class="w"> </span><span class="ow">=</span><span class="w"> </span>ofN<span class="w"> </span><span class="ow">λ</span><span class="w"> </span>ceq<span class="w"> </span><span class="ow">→</span><span class="w"> </span><span class="o">(</span>nequality<span class="w"> </span>r1<span class="w"> </span>r2<span class="w"> </span>eq<span class="o">)</span><span class="w"> </span><span class="o">(</span>cong<span class="w"> </span>radius<span class="w"> </span>ceq<span class="o">)</span>
+
+<span class="nf">constructEqualCircle</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">(</span>c<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Circle<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span><span class="o">(</span>d<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Circle<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span>Maybe<span class="w"> </span><span class="o">(</span>Equal<span class="w"> </span>Circle<span class="o">)</span>
+constructEqualCircle<span class="w"> </span>c<span class="w"> </span>d<span class="w"> </span><span class="ow">=</span><span class="w"> </span>constructEqual<span class="w"> </span>c<span class="w"> </span>d
+
+<span class="cm">{-# COMPILE AGDA2HS constructEqualCircle #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">newtype</span><span class="w"> </span><span class="kt">Equal</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">MkEqual</span><span class="p">{</span><span class="n">pair</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">)}</span>
+
+<span class="nf">constructEqual</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Eq</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Maybe</span><span class="w"> </span><span class="p">(</span><span class="kt">Equal</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+<span class="nf">constructEqual</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">b</span>
+<span class="w">  </span><span class="ow">=</span><span class="w"> </span><span class="kr">if</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="kt">Just</span><span class="w"> </span><span class="p">(</span><span class="kt">MkEqual</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">))</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="kt">Nothing</span>
+
+<span class="nf">constructEqualCircle</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Circle</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Circle</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Maybe</span><span class="w"> </span><span class="p">(</span><span class="kt">Equal</span><span class="w"> </span><span class="kt">Circle</span><span class="p">)</span>
+<span class="nf">constructEqualCircle</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">constructEqual</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="n">d</span>
+</pre></div>
+</div>
+<section id="constrained-typeclass-instance">
+<h3>Constrained Typeclass Instance<a class="headerlink" href="#constrained-typeclass-instance" title="Permalink to this heading"></a></h3>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Class1<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">field</span>
+<span class="w">        </span><span class="nf">field1</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a
+<span class="cm">{-# COMPILE AGDA2HS Class1 class #-}</span>
+
+<span class="kr">record</span><span class="w"> </span>Class2<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">field</span>
+<span class="w">        </span><span class="nf">field2</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a
+<span class="cm">{-# COMPILE AGDA2HS Class2 class #-}</span>
+
+class1-implies-class2<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Class1<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Class2<span class="w"> </span>a
+class1-implies-class2<span class="w"> </span>_<span class="w"> </span>class1<span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">record</span><span class="w"> </span><span class="o">{</span><span class="w"> </span>field2<span class="w"> </span><span class="ow">=</span><span class="w"> </span>class1.field1<span class="w"> </span><span class="o">}</span>
+<span class="cm">{-# COMPILE AGDA2HS class1-implies-class2 #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">Class1</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">field1</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span>
+
+<span class="kr">class</span><span class="w"> </span><span class="kt">Class2</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">field2</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="kt">Class1</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Class2</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">field2</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">field1</span>
+</pre></div>
+</div>
+</section>
+<section id="constrained-typeclass">
+<h3>Constrained Typeclass<a class="headerlink" href="#constrained-typeclass" title="Permalink to this heading"></a></h3>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Class1<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">field</span>
+<span class="w">        </span><span class="nf">field1</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a
+<span class="cm">{-# COMPILE AGDA2HS Class1 class #-}</span>
+
+<span class="kr">record</span><span class="w"> </span>Class2<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">field</span>
+<span class="w">        </span><span class="kr">overlap</span><span class="w"> </span>⦃<span class="w"> </span>super<span class="w"> </span>⦄<span class="w"> </span><span class="ow">:</span><span class="w"> </span>ClassA<span class="w"> </span>b
+<span class="w">        </span><span class="nf">field2</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a
+<span class="cm">{-# COMPILE AGDA2HS Class2 class #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">Class1</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">field1</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span>
+
+<span class="kr">class</span><span class="w"> </span><span class="kt">Class1</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Class2</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">field2</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span>
+</pre></div>
+</div>
+</section>
+<section id="default-typeclass-field-implementations">
+<h3>Default Typeclass Field Implementations<a class="headerlink" href="#default-typeclass-field-implementations" title="Permalink to this heading"></a></h3>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Ord<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="kr">field</span>
+<span class="w">    </span>_&lt;_<span class="w"> </span>_&gt;_<span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
+
+<span class="kr">record</span><span class="w"> </span>Ord₁<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="kr">field</span>
+<span class="w">    </span><span class="nf">_&lt;_</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
+
+<span class="w">  </span><span class="nf">_&gt;_</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
+<span class="w">  </span>x<span class="w"> </span>&gt;<span class="w"> </span>y<span class="w"> </span><span class="ow">=</span><span class="w"> </span>y<span class="w"> </span>&lt;<span class="w"> </span>x
+
+<span class="kr">record</span><span class="w"> </span>Ord₂<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="kr">field</span>
+<span class="w">    </span><span class="nf">_&gt;_</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
+
+<span class="w">  </span><span class="nf">_&lt;_</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
+<span class="w">  </span>_&lt;_<span class="w"> </span><span class="ow">=</span><span class="w"> </span>flip<span class="w"> </span>_&gt;_
+
+<span class="kr">open</span><span class="w"> </span>Ord<span class="w"> </span>⦃<span class="w"> </span><span class="ow">...</span><span class="w"> </span>⦄
+
+<span class="cm">{-# COMPILE AGDA2HS Ord class Ord₁ Ord₂ #-}</span>
+
+<span class="kr">instance</span><span class="w"> </span>
+<span class="w">    </span><span class="nf">Ord₁-Bool</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Ord₁<span class="w"> </span>Bool
+<span class="w">    </span>Ord₁-Bool<span class="w"> </span><span class="ow">.</span>Ord₁._&lt;_<span class="w"> </span>False<span class="w"> </span>b<span class="w"> </span><span class="ow">=</span><span class="w"> </span>b
+<span class="w">    </span>Ord₁-Bool<span class="w"> </span><span class="ow">.</span>Ord₁._&lt;_<span class="w"> </span>True<span class="w"> </span>_<span class="w"> </span><span class="ow">=</span><span class="w"> </span>False
+
+<span class="kr">instance</span>
+<span class="w">   </span><span class="nf">Ord₂-Bool</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Ord₂<span class="w"> </span>Bool
+<span class="w">   </span>Ord₂-Bool<span class="w"> </span><span class="ow">.</span>Ord₂.
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">Ord</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="p">(</span><span class="o">&lt;</span><span class="p">)</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
+<span class="w">    </span><span class="p">(</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
+<span class="w">    </span><span class="cm">{-# MINIMAL (&lt;) | (&gt;) #-}</span>
+<span class="w">    </span><span class="p">(</span><span class="o">&lt;</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">flip</span><span class="w"> </span><span class="p">(</span><span class="o">&gt;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">x</span>
+</pre></div>
+</div>
+</section>
+<section id="copatterns-in-type-class-instances">
+<h3>Copatterns in Type Class Instances<a class="headerlink" href="#copatterns-in-type-class-instances" title="Permalink to this heading"></a></h3>
+<p>Agda copatterns are <em>not</em> supported by agda2hs in full generality. They <em>can</em> be
+used to define fields of typeclass instances, for example:</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>HasId<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w">  </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">field</span><span class="w"> </span>id<span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>a
+<span class="cm">{-# COMPILE AGDA2HS HasId class #-}</span>
+
+<span class="kr">instance</span>
+<span class="w">    </span><span class="nf">UnitHasId</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>HasId
+<span class="w">    </span>UnitHasId<span class="w"> </span><span class="ow">.</span>id<span class="w"> </span>x<span class="w"> </span><span class="ow">=</span><span class="w"> </span>x
+<span class="cm">{-# COMPILE AGDA2HS UnitHasId #-}</span>
+</pre></div>
+</div>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">HasId</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="kt">HasId</span><span class="w"> </span><span class="nb">()</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">x</span>
+</pre></div>
+</div>
+</section>
+<section id="deriving-type-class-instances">
+<h3>Deriving Type Class Instances<a class="headerlink" href="#deriving-type-class-instances" title="Permalink to this heading"></a></h3>
+<p>If the derived instance is not needed on the Agda side and needs to only be generated in Haskell, the deriving clause can simply be added to the compilation pragma (this also works with the <code class="docutils literal notranslate"><span class="pre">newtype</span></code> pragma):</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Planet<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="nf">Mercury</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Planet
+<span class="w">  </span><span class="nf">Venus</span><span class="w">   </span><span class="ow">:</span><span class="w"> </span>Planet
+<span class="w">  </span><span class="nf">Earth</span><span class="w">   </span><span class="ow">:</span><span class="w"> </span>Planet
+<span class="w">  </span><span class="nf">Mars</span><span class="w">    </span><span class="ow">:</span><span class="w"> </span>Planet
+<span class="w">  </span><span class="nf">Jupiter</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Planet
+<span class="w">  </span><span class="nf">Saturn</span><span class="w">  </span><span class="ow">:</span><span class="w"> </span>Planet
+<span class="w">  </span><span class="nf">Uranus</span><span class="w">  </span><span class="ow">:</span><span class="w"> </span>Planet
+<span class="w">  </span><span class="nf">Neptune</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Planet
+<span class="w">  </span><span class="nf">Pluto</span><span class="w">   </span><span class="ow">:</span><span class="w"> </span>Planet
+
+<span class="cm">{-# COMPILE AGDA2HS Planet deriving ( Read ) #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Planet</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Mercury</span>
+<span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="kt">Venus</span>
+<span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="kt">Earth</span>
+<span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="kt">Mars</span>
+<span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="kt">Jupiter</span>
+<span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="kt">Saturn</span>
+<span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="kt">Uranus</span>
+<span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="kt">Neptune</span>
+<span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="kt">Pluto</span>
+<span class="w">                </span><span class="kr">deriving</span><span class="w"> </span><span class="p">(</span><span class="kt">Read</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>It is also possible to include a standalone <code class="docutils literal notranslate"><span class="pre">deriving</span></code> clause which makes the instance available on the Agda side by</p>
+<ul class="simple">
+<li><p>adding the <code class="docutils literal notranslate"><span class="pre">derive</span></code> pragma to an implemented instance,</p></li>
+<li><p>or postulating the instance.</p></li>
+</ul>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">instance</span>
+<span class="w">  </span><span class="nf">iPlanetEq</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Eq<span class="w"> </span>Planet
+<span class="w">  </span>iPlanetEq<span class="w"> </span><span class="ow">.</span>_==_<span class="w"> </span>Mercury<span class="w"> </span>Mercury<span class="w"> </span><span class="ow">=</span><span class="w"> </span>True
+<span class="w">  </span>iPlanetEq<span class="w"> </span><span class="ow">.</span>_==_<span class="w"> </span>Venus<span class="w">   </span>Venus<span class="w">   </span><span class="ow">=</span><span class="w"> </span>True
+<span class="w">  </span>iPlanetEq<span class="w"> </span><span class="ow">.</span>_==_<span class="w"> </span>Earth<span class="w">   </span>Earth<span class="w">   </span><span class="ow">=</span><span class="w"> </span>True
+<span class="w">  </span>iPlanetEq<span class="w"> </span><span class="ow">.</span>_==_<span class="w"> </span>Mars<span class="w">    </span>Mars<span class="w">    </span><span class="ow">=</span><span class="w"> </span>True
+<span class="w">  </span>iPlanetEq<span class="w"> </span><span class="ow">.</span>_==_<span class="w"> </span>Jupiter<span class="w"> </span>Jupiter<span class="w"> </span><span class="ow">=</span><span class="w"> </span>True
+<span class="w">  </span>iPlanetEq<span class="w"> </span><span class="ow">.</span>_==_<span class="w"> </span>Saturn<span class="w">  </span>Saturn<span class="w">  </span><span class="ow">=</span><span class="w"> </span>True
+<span class="w">  </span>iPlanetEq<span class="w"> </span><span class="ow">.</span>_==_<span class="w"> </span>Uranus<span class="w">  </span>Uranus<span class="w">  </span><span class="ow">=</span><span class="w"> </span>True
+<span class="w">  </span>iPlanetEq<span class="w"> </span><span class="ow">.</span>_==_<span class="w"> </span>Neptune<span class="w"> </span>Neptune<span class="w"> </span><span class="ow">=</span><span class="w"> </span>True
+<span class="w">  </span>iPlanetEq<span class="w"> </span><span class="ow">.</span>_==_<span class="w"> </span>Pluto<span class="w">   </span>Pluto<span class="w">   </span><span class="ow">=</span><span class="w"> </span>True
+<span class="w">  </span>iPlanetEq<span class="w"> </span><span class="ow">.</span>_==_<span class="w"> </span>_<span class="w">       </span>_<span class="w">       </span><span class="ow">=</span><span class="w"> </span>False
+
+<span class="cm">{-# COMPILE AGDA2HS iPlanetEq derive #-}</span>
+
+<span class="kr">postulate</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span>iPlanetOrd<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Ord<span class="w"> </span>Planet
+
+<span class="cm">{-# COMPILE AGDA2HS iPlanetOrd #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">deriving</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span><span class="kt">Eq</span><span class="w"> </span><span class="kt">Planet</span>
+
+<span class="kr">deriving</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span><span class="kt">Ord</span><span class="w"> </span><span class="kt">Planet</span>
+</pre></div>
+</div>
+<p>This is also possible with more complicated instance definitions, such as in the example below.</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Optional<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="nf">Of</span><span class="w">    </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Optional<span class="w"> </span>a
+<span class="w">  </span><span class="nf">Empty</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Optional<span class="w"> </span>a
+
+<span class="cm">{-# COMPILE AGDA2HS Optional #-}</span>
+
+<span class="kr">postulate</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span>iOptionalEq<span class="w"> </span><span class="ow">:</span><span class="w"> </span>⦃<span class="w"> </span>Eq<span class="w"> </span>a<span class="w"> </span>⦄<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Eq<span class="w"> </span><span class="o">(</span>Optional<span class="w"> </span>a<span class="o">)</span>
+
+<span class="cm">{-# COMPILE AGDA2HS iOptionalEq #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Optional</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Of</span><span class="w"> </span><span class="n">a</span>
+<span class="w">                </span><span class="o">|</span><span class="w"> </span><span class="kt">Empty</span>
+
+<span class="kr">deriving</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span><span class="p">(</span><span class="kt">Eq</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Eq</span><span class="w"> </span><span class="p">(</span><span class="kt">Optional</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Or even with deriving strategies, by specifying them within the derive pragma (Agda2HS will also automatically set the language flags):</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">postulate</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span>iPlanetShow<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Show<span class="w"> </span>Planet
+
+<span class="cm">{-# COMPILE AGDA2HS iPlanetShow derive stock #-}</span>
+
+<span class="kr">record</span><span class="w"> </span>Clazz<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="kr">field</span>
+<span class="w">    </span><span class="nf">foo</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Int
+<span class="w">    </span><span class="nf">bar</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
+
+<span class="kr">open</span><span class="w"> </span>Clazz<span class="w"> </span>⦃...⦄<span class="w"> </span>public
+
+<span class="cm">{-# COMPILE AGDA2HS Clazz class #-}</span>
+
+<span class="kr">postulate</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span>iPlanetClazz<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Clazz<span class="w"> </span>Planet
+
+<span class="cm">{-# COMPILE AGDA2HS iPlanetClazz derive anyclass #-}</span>
+
+<span class="kr">data</span><span class="w"> </span>Duo<span class="w"> </span><span class="o">(</span>a<span class="w"> </span>b<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="nf">MkDuo</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">(</span>a<span class="w"> </span>×<span class="w"> </span>b<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span>Duo<span class="w"> </span>a<span class="w"> </span>b
+
+<span class="cm">{-# COMPILE AGDA2HS Duo newtype #-}</span>
+
+<span class="kr">postulate</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span>iDuoEq<span class="w"> </span><span class="ow">:</span><span class="w"> </span>⦃<span class="w"> </span>Eq<span class="w"> </span>a<span class="w"> </span>⦄<span class="w"> </span><span class="ow">→</span><span class="w"> </span>⦃<span class="w"> </span>Eq<span class="w"> </span>b<span class="w"> </span>⦄<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Eq<span class="w"> </span><span class="o">(</span>Duo<span class="w"> </span>a<span class="w"> </span>b<span class="o">)</span>
+
+<span class="cm">{-# COMPILE AGDA2HS iDuoEq derive newtype #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="cm">{-# LANGUAGE StandaloneDeriving, DerivingStrategies,</span>
+<span class="cm">  DeriveAnyClass, GeneralizedNewtypeDeriving #-}</span>
+
+<span class="kr">deriving</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span><span class="kt">Show</span><span class="w"> </span><span class="kt">Planet</span>
+
+<span class="kr">class</span><span class="w"> </span><span class="kt">Clazz</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">foo</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="w">    </span><span class="n">bar</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
+
+<span class="kr">deriving</span><span class="w"> </span><span class="n">anyclass</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span><span class="kt">Clazz</span><span class="w"> </span><span class="kt">Planet</span>
+
+<span class="kr">newtype</span><span class="w"> </span><span class="kt">Duo</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">MkDuo</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">)</span>
+
+<span class="kr">deriving</span><span class="w"> </span><span class="kr">newtype</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span><span class="p">(</span><span class="kt">Eq</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Eq</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Eq</span><span class="w"> </span><span class="p">(</span><span class="kt">Duo</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">b</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="partial-application">
+<h2>Partial Application<a class="headerlink" href="#partial-application" title="Permalink to this heading"></a></h2>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="nf">add1</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Nat
+add1<span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span>+_
+<span class="cm">{-# COMPILE AGDA2HS add1 #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="nf">add1</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Nat</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Nat</span><span class="w"> </span>
+<span class="nf">add1</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="mutual-recursion">
+<h2>Mutual Recursion<a class="headerlink" href="#mutual-recursion" title="Permalink to this heading"></a></h2>
+<section id="mutually-recursive-functions">
+<h3>Mutually Recursive Functions<a class="headerlink" href="#mutually-recursive-functions" title="Permalink to this heading"></a></h3>
+<p>Agda</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">mutual</span>
+<span class="w">    </span><span class="nf">even</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
+<span class="w">    </span>even<span class="w"> </span>Zero<span class="w"> </span><span class="ow">=</span><span class="w"> </span>True
+<span class="w">    </span>even<span class="w"> </span><span class="o">(</span>Suc<span class="w"> </span>n<span class="o">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span>odd<span class="w"> </span>n
+
+<span class="w">    </span><span class="nf">odd</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
+<span class="w">    </span>odd<span class="w"> </span>Zero<span class="w"> </span><span class="ow">=</span><span class="w"> </span>False
+<span class="w">    </span>odd<span class="w"> </span><span class="o">(</span>Suc<span class="w"> </span>n<span class="o">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span>even<span class="w"> </span>n
+</pre></div>
+</div>
+<p>Haskell</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="nf">even</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Nat</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
+<span class="nf">even</span><span class="w"> </span><span class="kt">Zero</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">True</span>
+<span class="nf">even</span><span class="w"> </span><span class="p">(</span><span class="kt">Suc</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">odd</span><span class="w"> </span><span class="n">n</span>
+
+<span class="nf">odd</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Nat</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
+<span class="nf">odd</span><span class="w"> </span><span class="kt">Zero</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">False</span>
+<span class="nf">odd</span><span class="w"> </span><span class="p">(</span><span class="kt">Suc</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">even</span><span class="w"> </span><span class="n">n</span><span class="w"> </span>
+</pre></div>
+</div>
+</section>
+<section id="mutually-recursive-datatype-and-function">
+<h3>Mutually Recursive Datatype and Function<a class="headerlink" href="#mutually-recursive-datatype-and-function" title="Permalink to this heading"></a></h3>
+<p>Agda</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">mutual</span>
+
+<span class="w">  </span><span class="kr">data</span><span class="w"> </span>Map<span class="w"> </span><span class="o">(</span>k<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="nf">Bin</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">(</span>sz<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span><span class="o">(</span>kx<span class="w"> </span><span class="ow">:</span><span class="w"> </span>k<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span><span class="o">(</span>x<span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="o">)</span>
+<span class="w">          </span><span class="ow">→</span><span class="w"> </span><span class="o">(</span>l<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Map<span class="w"> </span>k<span class="w"> </span>a<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span><span class="o">(</span>r<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Map<span class="w"> </span>k<span class="w"> </span>a<span class="o">)</span>
+<span class="w">          </span><span class="ow">→</span><span class="w"> </span><span class="o">{{</span>@0<span class="w"> </span>szVal<span class="w"> </span><span class="ow">:</span><span class="w"> </span>sz<span class="w"> </span>≡<span class="w"> </span><span class="o">(</span>size<span class="w"> </span>l<span class="o">)</span><span class="w"> </span>+<span class="w"> </span><span class="o">(</span>size<span class="w"> </span>r<span class="o">)</span><span class="w"> </span>+<span class="w"> </span><span class="mi">1</span><span class="o">}}</span>
+<span class="w">          </span><span class="ow">→</span><span class="w"> </span>Map<span class="w"> </span>k<span class="w"> </span>a
+<span class="w">    </span><span class="nf">Tip</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Map<span class="w"> </span>k<span class="w"> </span>a
+<span class="w">  </span><span class="cm">{-# COMPILE AGDA2HS Map #-}</span>
+
+<span class="w">  </span><span class="nf">size</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">{</span>k<span class="w"> </span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">}</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span>Map<span class="w"> </span>k<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Nat
+<span class="w">  </span>size<span class="w"> </span>Tip<span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">  </span>size<span class="w"> </span><span class="o">(</span>Bin<span class="w"> </span>sz<span class="w"> </span>_<span class="w"> </span>_<span class="w"> </span>_<span class="w"> </span>_<span class="o">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span>sz
+<span class="w">  </span><span class="cm">{-# COMPILE AGDA2HS size #-}</span>
+</pre></div>
+</div>
+<p>Haskell</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Map</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Bin</span><span class="w"> </span><span class="kt">Natural</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">(</span><span class="kt">Map</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">Map</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+<span class="w">             </span><span class="o">|</span><span class="w"> </span><span class="kt">Tip</span>
+
+<span class="nf">size</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Map</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Natural</span>
+<span class="nf">size</span><span class="w"> </span><span class="kt">Tip</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="nf">size</span><span class="w"> </span><span class="p">(</span><span class="kt">Bin</span><span class="w"> </span><span class="n">sz</span><span class="w"> </span><span class="kr">_</span><span class="w"> </span><span class="kr">_</span><span class="w"> </span><span class="kr">_</span><span class="w"> </span><span class="kr">_</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">sz</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="implicit-record-field">
+<h2>Implicit Record Field<a class="headerlink" href="#implicit-record-field" title="Permalink to this heading"></a></h2>
+<p>Agda</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>ImplicitField<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">field</span>
+<span class="w">        </span><span class="nf">aField</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a
+<span class="w">        </span>@0<span class="w"> </span><span class="o">{</span>anImplicitField<span class="o">}</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a
+<span class="kr">open</span><span class="w"> </span>ImplicitField<span class="w"> </span>public
+<span class="cm">{-# COMPILE AGDA2HS ImplicitField class #-}</span>
+</pre></div>
+</div>
+<p>Haskell</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">ImplicitField</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">aField</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span>
+</pre></div>
+</div>
+</section>
+<section id="haskell-language-extensions">
+<h2>Haskell Language Extensions<a class="headerlink" href="#haskell-language-extensions" title="Permalink to this heading"></a></h2>
+<p>Required haskell language extensions will be automatically inferred and enabled.</p>
+<p>A Haskell language extension can also be enabled manually as follows:</p>
+<p>Agda</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="cm">{-# FOREIGN AGDA2HS {-# LANGUAGE LambdaCase #-} #-}</span>
+</pre></div>
+</div>
+<p>Haskell</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="cm">{-# LANGUAGE LambdaCase #-}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="imports">
+<h1>Imports<a class="headerlink" href="#imports" title="Permalink to this heading"></a></h1>
+<p>Agda supports import statements anywhere in a file, but all generated Haskell imports
+will be placed at the top of the file.</p>
+<p>Agda</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">open</span><span class="w"> </span><span class="kr">import</span><span class="w"> </span><span class="n">M1</span><span class="w"> </span><span class="c1">-- imports datatype `A` with constructor `mkA`</span>
+
+<span class="nf">a</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>A
+a<span class="w"> </span><span class="ow">=</span><span class="w"> </span>mkA
+<span class="cm">{-# COMPILE AGDA2HS a #-}</span>
+
+<span class="kr">open</span><span class="w"> </span><span class="kr">import</span><span class="w"> </span><span class="n">M2</span><span class="w"> </span><span class="c1">-- imports datatype `B` with constructor `mkB`</span>
+
+<span class="nf">b</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>B
+b<span class="w"> </span><span class="ow">=</span><span class="w"> </span>mkB
+<span class="cm">{-# COMPILE AGDA2HS b #-}</span>
+</pre></div>
+</div>
+<p>Haskell</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">import</span><span class="w"> </span><span class="nn">M1</span><span class="w"> </span><span class="p">(</span><span class="kt">A</span><span class="p">(</span><span class="nf">mkA</span><span class="p">))</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">M2</span><span class="w"> </span><span class="p">(</span><span class="kt">B</span><span class="p">(</span><span class="nf">mkB</span><span class="p">))</span>
+
+<span class="nf">a</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">A</span>
+<span class="nf">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">mkA</span>
+
+<span class="nf">b</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">B</span>
+<span class="nf">b</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">bar</span>
+</pre></div>
+</div>
+<p>Note that on the Haskell side all imports are <em>explicit</em>,
+i.e. indicate the imported identifiers.</p>
+<p>Imports can be qualified, but not hidden
+(although one can still do this manually using FOREIGN).</p>
+<p>Agda</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">import</span><span class="w"> </span><span class="n">MyModule</span><span class="w"> </span>as<span class="w"> </span>M<span class="w"> </span><span class="c1">-- imports type X and function foo</span>
+
+<span class="nf">test</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>M.X<span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span>M.X
+test<span class="w"> </span><span class="ow">=</span><span class="w"> </span>M.foo
+<span class="cm">{-# COMPILE AGDA2HS test #-}</span>
+</pre></div>
+</div>
+<p>Haskell</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">MyModule</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">M</span><span class="w"> </span><span class="p">(</span><span class="kt">X</span><span class="p">,</span><span class="w"> </span><span class="n">foo</span><span class="p">)</span>
+
+<span class="nf">test</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">M</span><span class="o">.</span><span class="kt">X</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">M</span><span class="o">.</span><span class="kt">X</span>
+<span class="nf">test</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">M</span><span class="o">.</span><span class="n">foo</span>
+</pre></div>
+</div>
+<p>Other supported features include</p>
+<ul class="simple">
+<li><p>qualifying the Haskell prelude,</p></li>
+<li><p>automatically inserting necessary packages for built-in types</p></li>
+<li><p>sharing a qualifier across different modules to make a common namespace</p></li>
+</ul>
+<p>Agda</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">import</span><span class="w"> </span><span class="n">Haskell.Prelude</span><span class="w"> </span>as<span class="w"> </span>Pre
+
+<span class="nf">_+_</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Pre.Nat<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Pre.Nat<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Pre.Nat
+x<span class="w"> </span>+<span class="w"> </span>y<span class="w"> </span><span class="ow">=</span><span class="w"> </span>x
+<span class="cm">{-# COMPILE AGDA2HS _+_ #-}</span>
+
+<span class="nf">test</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Pre.Nat
+test<span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span>Pre.+<span class="w"> </span><span class="mi">1</span><span class="w"> </span>+<span class="w"> </span><span class="mi">0</span>
+<span class="cm">{-# COMPILE AGDA2HS test #-}</span>
+</pre></div>
+</div>
+<p>Haskell</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">import</span><span class="w"> </span><span class="nn">Numeric.Natural</span><span class="w"> </span><span class="p">(</span><span class="kt">Natural</span><span class="p">)</span>
+<span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">Prelude</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">Pre</span><span class="w"> </span><span class="p">((</span><span class="o">+</span><span class="p">))</span>
+
+<span class="p">(</span><span class="o">+</span><span class="p">)</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Natural</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Natural</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Natural</span>
+<span class="nf">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">x</span>
+
+<span class="nf">test</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Natural</span>
+<span class="nf">test</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="kt">Pre</span><span class="o">.+</span><span class="p">)</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>An important difference is that multiple qualifications of the same module
+will be absorbed in a single qualifier,
+specifically the lexicographically smallest one
+based on each character’s ASCII value,
+independent of the order the imports appear in the source file:</p>
+<p>Agda</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">import</span><span class="w"> </span><span class="n">MyModule</span><span class="w"> </span>as<span class="w"> </span>C
+
+testC<span class="w"> </span><span class="ow">=</span><span class="w"> </span>C.foo
+<span class="cm">{-# COMPILE AGDA2HS testC #-}</span>
+
+<span class="kr">import</span><span class="w"> </span><span class="n">MyModule</span><span class="w"> </span>as<span class="w"> </span>A
+
+testA<span class="w"> </span><span class="ow">=</span><span class="w"> </span>A.foo
+<span class="cm">{-# COMPILE AGDA2HS testA #-}</span>
+
+testB<span class="w"> </span><span class="ow">=</span><span class="w"> </span>B.foo
+<span class="kr">import</span><span class="w"> </span><span class="n">MyModule</span><span class="w"> </span>as<span class="w"> </span>B
+<span class="cm">{-# COMPILE AGDA2HS testB #-}</span>
+</pre></div>
+</div>
+<p>Haskell</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">MyModule</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="p">(</span><span class="n">foo</span><span class="p">)</span>
+
+<span class="nf">testC</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">A</span><span class="o">.</span><span class="n">foo</span>
+<span class="nf">testA</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">A</span><span class="o">.</span><span class="n">foo</span>
+<span class="nf">testB</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">A</span><span class="o">.</span><span class="n">foo</span>
+</pre></div>
+</div>
+</section>
+<section id="rewrite-rules-and-prelude-imports">
+<h1>Rewrite rules and Prelude imports<a class="headerlink" href="#rewrite-rules-and-prelude-imports" title="Permalink to this heading"></a></h1>
+<section id="rewrite-rules">
+<h2>Rewrite rules<a class="headerlink" href="#rewrite-rules" title="Permalink to this heading"></a></h2>
+<p>User-defined rewrite rules can be defined through a YAML configuration
+file. It is enabled with the <code class="docutils literal notranslate"><span class="pre">--config</span></code> option.</p>
+<p>This feature is particularly useful if you have a project depending on a large
+library which is not agda2hs-compatible (e.g the standard library).
+In this case, you might not want to rewrite the entire library, but may
+still rely on it for proofs.</p>
+<p>User-defined rewrite rules can help translating the library functions to ones available
+in the Haskell Prelude, or even to those written by yourself. In the latter
+case, place a Haskell file (e.g. <code class="docutils literal notranslate"><span class="pre">Base.hs</span></code>) next to your <code class="docutils literal notranslate"><span class="pre">.agda</span></code> files that
+contains your custom definitions and provide this custom module in the
+<code class="docutils literal notranslate"><span class="pre">importing</span></code> clauses of the config file.</p>
+<p>To an extent, this compromises the mathematically proven correctness of your project.
+But if you trust that your (or Prelude’s) functions are equivalent to the original ones,
+this might not be a problem.
+You can also prove the equivalence of the two definitions to be safe.</p>
+<p>For example, let’s suppose we want to compile the following file:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">open</span><span class="w"> </span><span class="kr">import</span><span class="w"> </span><span class="n">Data.Nat</span><span class="w"> </span>as<span class="w"> </span>ℕ
+<span class="kr">open</span><span class="w"> </span><span class="kr">import</span><span class="w"> </span><span class="n">Data.Integer</span><span class="w"> </span>as<span class="w"> </span>ℤ
+<span class="kr">open</span><span class="w"> </span><span class="kr">import</span><span class="w"> </span><span class="n">Data.Rational.Unnormalised</span><span class="w"> </span>as<span class="w"> </span>ℚ
+
+<span class="nf">double</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>ℚᵘ<span class="w"> </span><span class="ow">→</span><span class="w"> </span>ℚᵘ
+double<span class="w"> </span>p<span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="o">(</span>+<span class="w"> </span><span class="mi">2</span><span class="w"> </span>/<span class="w"> </span><span class="mi">1</span><span class="o">)</span><span class="w"> </span>ℚ.*<span class="w"> </span>p
+<span class="cm">{-# COMPILE AGDA2HS double #-}</span>
+
+<span class="c1">-- this will use denominator-1 and suc from BaseExample.hs</span>
+<span class="nf">twoDenoms</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>ℚᵘ<span class="w"> </span><span class="ow">→</span><span class="w"> </span>ℕ
+twoDenoms<span class="w"> </span>p<span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span>ℕ.*<span class="w"> </span><span class="o">(</span>ℕ.suc<span class="w"> </span><span class="o">(</span>ℚᵘ.denominator-1<span class="w"> </span>p<span class="o">))</span>
+<span class="cm">{-# COMPILE AGDA2HS twoDenoms #-}</span>
+</pre></div>
+</div>
+<p>By default, the output would be this:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span>module Example where
+
+import Data.Rational.Unnormalised.Base (ℚᵘ(denominator-1), (/))
+import qualified Data.Rational.Unnormalised.Base as ℚ ((*))
+import Numeric.Natural (Natural)
+import qualified Prelude as ℕ ((*))
+
+double :: ℚᵘ -&gt; ℚᵘ
+double p = (ℚ.*) (pos 2 / 1) p
+
+twoDenoms :: ℚᵘ -&gt; Natural
+twoDenoms p = (ℕ.*) 2 (suc (denominator-1 p))
+</pre></div>
+</div>
+<p>Here, agda2hs doesn’t know where to find these definitions; so it simply leaves them as they are.</p>
+<p>Run this again with the following config file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">rewrites</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Agda.Builtin.Nat.Nat.suc&quot;</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;suc&quot;</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;BaseExample&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Agda.Builtin.Nat._*_&quot;</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;_*_&quot;</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Prelude&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Agda.Builtin.Int.Int.pos&quot;</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;toInteger&quot;</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Prelude&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Rational.Unnormalised.Base.ℚᵘ&quot;</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Rational&quot;</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Ratio&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Rational.Unnormalised.Base._*_&quot;</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;_*_&quot;</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Prelude&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Rational.Unnormalised.Base._/_&quot;</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;_%_&quot;</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Ratio&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Rational.Unnormalised.Base.ℚᵘ.denominator-1&quot;</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;denominatorMinus1&quot;</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;BaseExample&quot;</span>
+</pre></div>
+</div>
+<p>The names are a bit difficult to find. It helps if you run agda2hs with a verbosity level of 26 and check the logs (specifically the parts beginning with <code class="docutils literal notranslate"><span class="pre">compiling</span> <span class="pre">name</span></code>).</p>
+<p>The output is now this:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">module</span><span class="w"> </span><span class="nn">Example</span><span class="w"> </span><span class="kr">where</span>
+
+<span class="kr">import</span><span class="w"> </span><span class="nn">BaseExample</span><span class="w"> </span><span class="p">(</span><span class="nf">denominatorMinus1</span><span class="p">,</span><span class="w"> </span><span class="nf">suc</span><span class="p">)</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Data.Ratio</span><span class="w"> </span><span class="p">(</span><span class="kt">Rational</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="o">%</span><span class="p">))</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Numeric.Natural</span><span class="w"> </span><span class="p">(</span><span class="kt">Natural</span><span class="p">)</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Prelude</span><span class="w"> </span><span class="p">(</span><span class="nf">toInteger</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">))</span>
+
+<span class="nf">double</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Rational</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Rational</span>
+<span class="nf">double</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">toInteger</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">p</span>
+
+<span class="nf">twoDenoms</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Rational</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Natural</span>
+<span class="nf">twoDenoms</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">suc</span><span class="w"> </span><span class="p">(</span><span class="n">denominatorMinus1</span><span class="w"> </span><span class="n">p</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>With a manually written <code class="docutils literal notranslate"><span class="pre">BaseExample.hs</span></code> file like this, GHCi accepts it:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">module</span><span class="w"> </span><span class="nn">BaseExample</span><span class="w"> </span><span class="kr">where</span>
+
+<span class="kr">import</span><span class="w"> </span><span class="nn">Numeric.Natural</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Data.Ratio</span>
+
+<span class="nf">suc</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Natural</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Natural</span>
+<span class="nf">suc</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="p">)</span>
+
+<span class="nf">denominatorMinus1</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Rational</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Natural</span>
+<span class="nf">denominatorMinus1</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">fromIntegral</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">denominator</span>
+</pre></div>
+</div>
+<p>See also <code class="docutils literal notranslate"><span class="pre">rewrite-rules-example.yaml</span></code> in the root of the repository.</p>
+</section>
+<section id="handling-of-prelude">
+<h2>Handling of Prelude<a class="headerlink" href="#handling-of-prelude" title="Permalink to this heading"></a></h2>
+<p>By default, agda2hs handles Prelude like other modules: it collects all the
+identifiers it finds we use from Prelude, and adds them to Prelude’s import
+list.</p>
+<p>A different behaviour can be specified in a YAML configuration file.
+The format is the following:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># First, we specify how to handle Prelude.</span>
+<span class="nt">prelude</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">implicit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">hiding</span><span class="p">:</span><span class="w">           </span><span class="c1"># if implicit is true</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">seq</span>
+
+<span class="w">  </span><span class="c1">#using:           # if implicit is false</span>
+<span class="w">  </span><span class="c1">#  - +</span>
+<span class="w">  </span><span class="c1">#  - Num</span>
+
+<span class="c1"># Then the rules themselves.</span>
+<span class="nt">rewrites</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># The rational type.</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Rational.Unnormalised.Base.ℚᵘ&quot;</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Rational&quot;</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Ratio&quot;</span>
+
+<span class="w">  </span><span class="c1"># ...</span>
+</pre></div>
+</div>
+<p>If <code class="docutils literal notranslate"><span class="pre">implicit</span></code> is <code class="docutils literal notranslate"><span class="pre">true</span></code>, then everything gets imported from Prelude, except for those that are specified in the <code class="docutils literal notranslate"><span class="pre">hiding</span></code> list. This can cause clashes if you reuse names from Prelude, hence the opportunity for a <code class="docutils literal notranslate"><span class="pre">hiding</span></code> list. If there is no such list, then everything gets imported.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">implicit</span></code> is <code class="docutils literal notranslate"><span class="pre">false</span></code>, Prelude gets imported explicitly, and only those identifiers that are specified in the <code class="docutils literal notranslate"><span class="pre">using</span></code> list. If there is no such list, agda2hs reverts to the default behaviour (it tries to collect imports by itself).</p>
+</section>
+<section id="known-issues">
+<h2>Known issues<a class="headerlink" href="#known-issues" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>Rewrite rules only work for things you do use, not for those that you only define. This causes a problem with class instances: if you choose the default behaviour, then write an instance of the Num class and define signum but do not use it, it will not get into Prelude’s import list, and so GHC will complain.</p></li>
+<li><p>You cannot change to a version with arguments of different modality without getting useless code. So if you rewrite a function to a version which has some of its parameters erased, the parameters remain there; probably because rewriting happens only after compiling the type signature.</p></li>
+</ul>
+</section>
+</section>
+<section id="emacs-mode">
+<h1>Emacs mode<a class="headerlink" href="#emacs-mode" title="Permalink to this heading"></a></h1>
+<p>Since there is a full Agda typechecker in the <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> binary,
+you can readily use the Emacs mode of a pre-existing Agda installation (make sure it is the same version as the one <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> depends on) by changing the binary that <code class="docutils literal notranslate"><span class="pre">agda-mode</span></code> uses (Lisp variable <code class="docutils literal notranslate"><span class="pre">agda2-program-name</span></code>) to (the path to) <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> binary.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">C-c</span> <span class="pre">C-x</span> <span class="pre">C-c</span></code>, you will now be able call the <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> backend from inside Emacs; all the other built-in backends still remain available.</p>
+<section id="id1">
+<h2>Known issues<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>Now, the output can only be written next to the <code class="docutils literal notranslate"><span class="pre">.agda</span></code> files;
+there is no option to collect these under a separate directory.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">--config</span></code> option is not yet supported in Emacs mode.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="introduction.html" class="btn btn-neutral float-left" title="Introduction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tutorials.html" class="btn btn-neutral float-right" title="Tutorials" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Jexper Cockx, Orestis Melkonian, Lucas Escot, James Chapman, Ulf Norell.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
