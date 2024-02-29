@@ -87,4 +87,6 @@ isInteractive = do
 main = do
   -- Issue #201: disable backend when run in interactive mode
   isInt <- isInteractive
-  runAgda [Backend backend | not isInt]
+  if isInt
+    then runAgda [Backend backend{isEnabled = const False}]
+    else runAgda [Backend backend]
