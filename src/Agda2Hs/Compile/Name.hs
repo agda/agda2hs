@@ -8,7 +8,7 @@ import Control.Monad.Reader
 
 import Data.Functor ( (<&>) )
 import Data.Bifunctor ( bimap )
-import Data.List ( intercalate, isPrefixOf )
+import Data.List ( intercalate, isPrefixOf, stripPrefix )
 import Data.Text ( unpack )
 import qualified Data.Map.Strict as Map
 
@@ -33,6 +33,7 @@ import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Records ( isRecordConstructor )
 
 import qualified Agda.Utils.List1 as List1
+import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Maybe ( isJust, isNothing, whenJust, fromMaybe, caseMaybeM )
 
 import Agda2Hs.AgdaUtils
@@ -159,7 +160,13 @@ compileQName f
       (QualifiedAs as) -> Hs.Qual () (fromMaybe mod as) n
       Unqualified      -> Hs.UnQual () n
 
+    -- Modules that contain Prelude definitions.
+    primModules = ["Agda.Builtin", "Haskell.Prim", "Haskell.Prelude"]
     primMonadModules = ["Haskell.Prim.Monad.Dont", "Haskell.Prim.Monad.Do"]
+
+    -- Prefix of modules that correspond to similarly named Haskell modules
+    -- (e.g. "Haskell.Data.Map" is "Data.Map").
+    hsModules = ["Haskell.Data"]
 
     -- Determine whether it is a type operator or an "ordinary" operator.
     -- _getSort is not for that; e. g. a data has the same sort as its constructor.
@@ -185,6 +192,12 @@ compileQName f
           let mod' = hsModuleName "Prelude"
           in (mod', Just (Import mod' qual Nothing hf maybeIsType))
         else (mod, Nothing)
+      | any (`isPrefixOf` pp mod) hsModules
+      = let mod' = hsModuleName $ fromMaybe __IMPOSSIBLE__ $ stripPrefix "Haskell." $ pp mod in
+                                                          -- ^ strip the "Haskell." prefix from e.g. "Haskell.Data.Map"
+        if isQualified qual then
+          (mod', Just (Import mod' qual Nothing hf maybeIsType))
+        else (mod, Just (Import mod' qual Nothing hf maybeIsType))
       | otherwise
       = (mod, Just (Import mod qual par hf maybeIsType))
 
