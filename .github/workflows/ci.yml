@@ -12,6 +12,7 @@ on:
       - 'agda2hs.cabal'
       - 'cabal.project'
       - 'Makefile'
+      - '.github/workflows/**.yml'
     branches: [master]
 
 jobs:
@@ -21,7 +22,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]   # macOS-latest, windows-latest
-        cabal: ["3.8"]
+        cabal: [3.8]
         ghc: [8.8.4, 8.10.7, 9.2.5, 9.4.3, 9.6.3]
     steps:
     - uses: actions/checkout@v3
@@ -56,11 +57,11 @@ jobs:
       run: make test
 
     - name: Generate Prelude HTML
-      if: ${{ matrix.ghc == '9.6.3' && github.event_name != 'pull_request' }}
+      if: ${{ (matrix.ghc == '9.6.3') && (github.event_name != 'pull_request') }}
       run: make libHtml
 
     - name: Deploy Prelude HTML
-      if: ${{ matrix.ghc == '9.6.3' && github.event_name != 'pull_request' }}
+      if: ${{ (matrix.ghc == '9.6.3') && (github.event_name != 'pull_request') }}
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
