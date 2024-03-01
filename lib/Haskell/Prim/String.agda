@@ -7,10 +7,10 @@ open import Haskell.Prim.Foldable
 
 --------------------------------------------------
 -- String
--- This is _not_ the builtin String type of Agda;
+-- This is _not_ the builtin String type of Agda
 -- which is defined by postulates.
--- fromString can be used to produce Haskell strings
--- from that.
+-- `fromString` can be used to convert back
+-- to builtin Agda strings.
 
 String = List Char
 
