@@ -43,3 +43,8 @@ snd₃ (_ , y , _) = y
 
 thd₃ : (a × b × c) → c
 thd₃ (_ , _ , z) = z
+
+-- logical equivalence for proofs
+infix 3 _↔_
+_↔_ : (A : Set) (B : Set) -> Set
+A ↔ B = (A → B) × (B → A)

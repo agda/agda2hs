@@ -99,7 +99,7 @@ data ⊥ : Set where
 magic : {A : Set} → ⊥ → A
 magic ()
 
---principle of explosion
+-- principle of explosion
 exFalso : {x : Bool} → (x ≡ True) → (x ≡ False) → ⊥
 exFalso {False} () b 
 exFalso {True} a ()
