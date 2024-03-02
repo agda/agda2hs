@@ -166,7 +166,7 @@ compileQName f
 
     -- Prefix of modules that correspond to similarly named Haskell modules
     -- (e.g. "Haskell.Data.Map" is "Data.Map").
-    hsModules = ["Haskell.Data"]
+    hsModules = ["Haskell.Data", "Haskell.Control"]
 
     -- Determine whether it is a type operator or an "ordinary" operator.
     -- _getSort is not for that; e. g. a data has the same sort as its constructor.
