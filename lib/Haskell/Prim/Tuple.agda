@@ -7,7 +7,7 @@ open import Haskell.Prim
 -- Tuples
 
 infix 3 _×_ _×_×_
-
+infix 2 _↔_
 infix -1 _,_ _,_,_
 
 record _×_ (a b : Set) : Set where
@@ -43,3 +43,7 @@ snd₃ (_ , y , _) = y
 
 thd₃ : (a × b × c) → c
 thd₃ (_ , _ , z) = z
+
+-- logical equivalence for proofs
+_↔_ : (A : Set) (B : Set) -> Set
+A ↔ B = (A → B) × (B → A)
