@@ -75,6 +75,9 @@ import Issue286
 import NonClassInstance
 import Issue218
 import Issue251
+import HaskellDataOpenImport
+import HaskellDataQualifiedImport
+import Map
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -149,4 +152,7 @@ import Issue286
 import NonClassInstance
 import Issue218
 import Issue251
+import HaskellDataOpenImport
+import HaskellDataQualifiedImport
+import Map
 #-}
