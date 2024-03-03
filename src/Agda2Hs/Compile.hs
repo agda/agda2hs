@@ -3,7 +3,7 @@ module Agda2Hs.Compile where
 import Prelude hiding (null)
 
 import Control.Monad.Trans.RWS.CPS ( evalRWST )
-import Control.Monad.State ( gets )
+import Control.Monad.State ( gets, liftIO )
 import Control.Arrow ((>>>))
 import Data.Functor
 import Data.List ( isPrefixOf, group, sort )
@@ -12,6 +12,7 @@ import qualified Data.Map as M
 
 import Agda.Compiler.Backend
 import Agda.Compiler.Common ( curIF )
+import Agda.Utils.FileName ( isNewerThan )
 import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.TypeChecking.Pretty
@@ -53,10 +54,22 @@ runC :: TopLevelModuleName -> SpecialRules -> C a -> TCM (a, CompileOutput)
 runC tlm rewrites c = evalRWST c (initCompileEnv tlm rewrites) initCompileState
 
 moduleSetup :: Options -> IsMain -> TopLevelModuleName -> Maybe FilePath -> TCM (Recompile ModuleEnv ModuleRes)
-moduleSetup _ _ m _ = do
-    reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
-    setScope . iInsideScope =<< curIF
-    return $ Recompile m
+moduleSetup opts _ m mifile = do
+  -- we never compile primitive modules
+  if any (`isPrefixOf` prettyShow m) primModules then pure $ Skip ()
+  else do
+    -- check whether the file needs to be recompiled
+    uptodate <- case mifile of
+      Nothing -> pure False
+      Just ifile -> let ofile = moduleFileName opts m in
+        liftIO =<< isNewerThan <$> ofile <*> pure ifile
+    if uptodate then do
+      reportSDoc "agda2hs.compile" 3 $ text "Module " <+> prettyTCM m <+> text " is already up-to-date"
+      return $ Skip ()
+    else do
+      reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
+      setScope . iInsideScope =<< curIF
+      return $ Recompile m
 
 -- Main compile function
 ------------------------
