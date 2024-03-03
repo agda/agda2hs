@@ -14,7 +14,12 @@ import Data.String ( IsString(..) )
 
 import GHC.Stack (HasCallStack)
 
+import qualified Language.Haskell.Exts as Hs
+
+import System.FilePath ( (</>) )
+
 import Agda.Compiler.Backend hiding ( Args )
+import Agda.Compiler.Common ( compileDir )
 
 import Agda.Syntax.Common
 import qualified Agda.Syntax.Concrete.Name as C
@@ -22,6 +27,7 @@ import Agda.Syntax.Internal
 import Agda.Syntax.Position ( noRange )
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad ( bindVariable, freshConcreteName, isDatatypeModule )
+import Agda.Syntax.TopLevelModuleName
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import qualified Agda.Syntax.Common.Pretty as P
 
@@ -228,6 +234,12 @@ dropClassModule :: ModuleName -> C ModuleName
 dropClassModule m@(MName ns) = isClassModule m >>= \case
   True  -> dropClassModule $ MName $ init ns
   False -> return m
+
+-- Gets the path of the Haskell file to be generated
+moduleFileName :: Options -> TopLevelModuleName -> TCM FilePath
+moduleFileName opts name = do
+  outDir <- compileDir
+  return $ fromMaybe outDir (optOutDir opts) </> moduleNameToFileName name "hs"
 
 isUnboxRecord :: QName -> C (Maybe Strictness)
 isUnboxRecord q = do
