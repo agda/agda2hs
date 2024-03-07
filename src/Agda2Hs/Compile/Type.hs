@@ -4,7 +4,7 @@
 module Agda2Hs.Compile.Type where
 
 import Control.Arrow ( (>>>) )
-import Control.Monad ( forM, when )
+import Control.Monad ( forM, when, unless )
 import Control.Monad.Trans ( lift )
 import Control.Monad.Reader ( asks )
 import Data.List ( find )
@@ -163,6 +163,10 @@ compileType t = do
          | otherwise -> fail
 
     Var x es | Just args <- allApplyElims es -> do
+      xi <- lookupBV x
+      unless (usableModality xi) $ genericDocError
+        =<< text "Cannot use erased variable" <+> prettyTCM (var x)
+        <+> text "in Haskell type"
       vs <- compileTypeArgs args
       x  <- hsName <$> compileDBVar x
       return $ tApp (Hs.TyVar () x) vs

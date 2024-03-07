@@ -15,15 +15,8 @@ import Agda.TypeChecking.Monad.Context ( lookupBV )
 import Agda.Utils.Monad ( whenM )
 
 
--- | Compile a variable. 
--- If the variable check is enabled, ensure that the variable is usable and visible.
+-- | Compile a variable.
 compileDBVar :: Nat -> C String
 compileDBVar x = do
   (d, n) <- (fmap snd &&& fst . unDom) <$> lookupBV x
-  let cn = prettyShow $ nameConcrete n
-  let b | notVisible d   = "hidden"
-        | hasQuantity0 d = "erased"
-        | otherwise      = ""
-  whenM (asks checkVar) $ unless (null b) $ genericDocError =<<
-    text ("Cannot use " <> b <> " variable " <> cn)
-  return cn
+  return $ prettyShow $ nameConcrete n
