@@ -155,9 +155,9 @@ compileType t = do
          | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics es
          | Just args <- allApplyElims es ->
              ifJustM (isUnboxRecord f) (\_ -> compileUnboxType f args) $
-             ifM (isTransparentFunction f) (compileTransparentType args) $
+             ifM (isTransparentFunction f) (compileTransparentType (defType def) args) $
              ifM (isInlinedFunction f) (compileInlineType f es) $ do
-               vs <- compileTypeArgs args
+               vs <- compileTypeArgs (defType def) args
                f <- compileQName f
                return $ tApp (Hs.TyCon () f) vs
          | otherwise -> fail
@@ -167,7 +167,7 @@ compileType t = do
       unless (usableModality xi) $ genericDocError
         =<< text "Cannot use erased variable" <+> prettyTCM (var x)
         <+> text "in Haskell type"
-      vs <- compileTypeArgs args
+      vs <- compileTypeArgs (snd $ unDom xi) args
       x  <- hsName <$> compileDBVar x
       return $ tApp (Hs.TyVar () x) vs
 
@@ -180,8 +180,18 @@ compileType t = do
   where fail = genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
 
 
-compileTypeArgs :: Args -> C [Hs.Type ()]
-compileTypeArgs args = mapM (compileType . unArg) $ filter keepArg args
+compileTypeArgs :: Type -> Args -> C [Hs.Type ()]
+compileTypeArgs ty [] = pure []
+compileTypeArgs ty (x:xs) = do
+  (a, b) <- mustBePi ty
+  let rest = compileTypeArgs (absApp b $ unArg x) xs  
+  let fail msg = genericDocError =<< (text msg <> text ":") <+> parens (prettyTCM (absName b) <+> text ":" <+> prettyTCM (unDom a))
+  compileDom a >>= \case
+    DODropped -> rest
+    DOInstance -> fail "Type-level instance argument not supported"
+    DOType -> do
+      (:) <$> compileType (unArg x) <*> rest
+    DOTerm -> fail "Type-level term argument not supported"
 
 
 compileUnboxType :: QName -> Args -> C (Hs.Type ())
@@ -193,8 +203,8 @@ compileUnboxType r pars = do
     Nothing -> __IMPOSSIBLE__
 
 
-compileTransparentType :: Args -> C (Hs.Type ())
-compileTransparentType args = compileTypeArgs args >>= \case
+compileTransparentType :: Type -> Args -> C (Hs.Type ())
+compileTransparentType ty args = compileTypeArgs ty args >>= \case
   (v:vs) -> return $ v `tApp` vs
   []     -> __IMPOSSIBLE__
 
