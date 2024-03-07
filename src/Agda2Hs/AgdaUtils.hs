@@ -20,7 +20,9 @@ import Agda.Syntax.TopLevelModuleName
 
 import Agda.TypeChecking.Monad ( topLevelModuleName )
 import Agda.TypeChecking.Pretty
+import Agda.TypeChecking.Sort
 import Agda.TypeChecking.Substitute
+import Agda.TypeChecking.Telescope
 import Agda.TypeChecking.Reduce ( reduceDefCopy )
 
 import Agda.Utils.Either ( isRight )
@@ -136,3 +138,8 @@ isForcedPat = \case
   ProjP{}       -> False
   IApplyP{}     -> False
   DefP{}        -> False
+
+endsInSort :: (PureTCM m, MonadBlock m) => Type -> m Bool
+endsInSort t = do
+  TelV tel b <- telView t
+  addContext tel $ ifIsSort b (\_ -> return True) (return False)

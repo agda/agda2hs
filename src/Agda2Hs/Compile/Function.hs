@@ -157,9 +157,6 @@ compileFun' withSig def@Defn{..} = do
     m = qnameModule defName
     n = qnameName defName
     x = hsName $ prettyShow n
-    endsInSort t = do
-      TelV tel b <- telView t
-      addContext tel $ ifIsSort b (\_ -> return True) (return False)
     err = "Not supported: type definition with `where` clauses"
 
 
