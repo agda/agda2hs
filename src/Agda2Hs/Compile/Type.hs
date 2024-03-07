@@ -241,17 +241,18 @@ compileDomType x a =
     DOTerm     -> uncurry DomType <$> compileTypeWithStrictness (unEl $ unDom a)
 
 compileTeleBinds :: Telescope -> C [Hs.TyVarBind ()]
-compileTeleBinds tel =
-  forM
-    (mapMaybe
-      (fmap unArgDom . checkArgDom)
-      (teleArgNames tel `zip` flattenTel @Type tel))
-    (uncurry compileKeptTeleBind)
-  where
-    checkArgDom (argName, argDom) | keepArg argName = Just (argName, argDom)
-    checkArgDom _ = Nothing
-
-    unArgDom (argName, argDom) = (hsName . unArg $ argName, unDom argDom)
+compileTeleBinds EmptyTel = return []
+compileTeleBinds (ExtendTel a tel) = do
+  reportSDoc "agda2hs.compile.type" 15 $ text "Compiling type parameter: " <+> prettyTCM a
+  let fail msg = genericDocError =<< (text msg <> text ":") <+> parens (prettyTCM (absName tel) <+> text ":" <+> prettyTCM (unDom a))
+  compileDom a >>= \case
+    DODropped  -> underAbstraction a tel compileTeleBinds
+    DOType -> do
+      unless (visible a) $ fail "Hidden type parameter not supported"
+      ha <- compileKeptTeleBind (hsName $ absName tel) (unDom a)
+      (ha:) <$> underAbstraction a tel compileTeleBinds
+    DOInstance -> fail "Constraint in type parameter not supported"
+    DOTerm -> fail "Term variable in type parameter not supported"
 
 compileKeptTeleBind :: Hs.Name () -> Type -> C (Hs.TyVarBind ())
 compileKeptTeleBind x t = do
