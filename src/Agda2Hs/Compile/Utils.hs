@@ -151,7 +151,6 @@ canErase a = do
   addContext tel $ orM
     [ isLevelType b                       -- Level
     , isJust <$> isSizeType b             -- Size
-    , isJust . isSort <$> reduce (unEl b) -- Set
     , isPropSort (getSort b)              -- _ : Prop
     ]
 

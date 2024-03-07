@@ -523,7 +523,8 @@ compileArgs ty (x:xs) = do
   compileDom a >>= \case
     DODropped  -> rest
     DOInstance -> checkInstance x *> rest
-    DOKept     -> (:) <$> compileTerm (unDom a) x
+    DOType     -> rest
+    DOTerm     -> (:) <$> compileTerm (unDom a) x
                       <*> rest
 
 clauseToAlt :: Hs.Match () -> C (Hs.Alt ())
