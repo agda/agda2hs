@@ -125,7 +125,6 @@ primWord64FromNat ty args = compileArgs ty args >>= \case
   _ -> genericError "primWord64FromNat must be applied to a literal"
 
 
--- should really be named compileVar, TODO: rename compileVar
 compileVar :: Int -> Type -> [Term] -> C (Hs.Exp ())
 compileVar i ty es = do
   reportSDoc "agda2hs.compile.term" 15 $ text "Reached variable"
@@ -145,7 +144,6 @@ compileSpined c tm ty (e@(Proj o q):es) = do
   let t = tm []
   ty' <- shouldBeProjectible t ty o q
   compileSpined (compileProj q ty t ty') (tm . (e:)) ty' es
--- TODO: use mustBePi
 compileSpined c tm ty (e@(Apply (unArg -> x)):es) = do
   (a, b) <- mustBePi ty
   compileSpined (c . (x:)) (tm . (e:)) (absApp b x) es
