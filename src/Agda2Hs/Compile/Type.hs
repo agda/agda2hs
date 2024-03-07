@@ -212,30 +212,33 @@ compileInlineType f args = do
     _                -> genericDocError =<< text "Could not reduce inline type alias " <+> prettyTCM f
 
 
-data DomOutput = DOInstance | DODropped | DOKept
+data DomOutput = DOInstance | DODropped | DOType | DOTerm
 
 compileDom :: Dom Type -> C DomOutput
 compileDom a = do
   isErasable <- pure (not $ usableModality a) `or2M` canErase (unDom a)
   isClassConstraint <- pure (isInstance a) `and2M` isClassType (unDom a)
+  isType <- endsInSort (unDom a)
   return $ if 
     | isErasable        -> DODropped
     | isClassConstraint -> DOInstance
-    | otherwise         -> DOKept
+    | isType            -> DOType
+    | otherwise         -> DOTerm
 
 -- | Compile a function type domain.
 -- A domain can either be:
 --
 -- - dropped if the argument is erased.
 -- - added as a class constraint.
--- - kept as a regular explict argument.
+-- - added as a type parameter
+-- - kept as a regular explicit argument.
 compileDomType :: ArgName -> Dom Type -> C CompiledDom
 compileDomType x a =
   compileDom a >>= \case
     DODropped  -> pure DomDropped
     DOInstance -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
-    DOKept     -> uncurry DomType <$> compileTypeWithStrictness (unEl $ unDom a)
-
+    DOType     -> pure DomDropped
+    DOTerm     -> uncurry DomType <$> compileTypeWithStrictness (unEl $ unDom a)
 
 compileTeleBinds :: Telescope -> C [Hs.TyVarBind ()]
 compileTeleBinds tel =

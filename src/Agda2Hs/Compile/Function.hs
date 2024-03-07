@@ -238,11 +238,12 @@ compilePats ty ((namedArg -> pat):ps) = do
   (a, b) <- mustBePi ty
   reportSDoc "agda2hs.compile.pattern" 10 $ text "Compiling pattern:" <+> prettyTCM pat
   let rest = compilePats (absApp b (patternToTerm pat)) ps
+  when (usableDom a) checkForced
   compileDom a >>= \case
     DOInstance -> rest
-    DODropped  -> rest <* when (usableDom a) checkForced
-    DOKept     -> do
-      checkForced
+    DODropped  -> rest
+    DOType     -> rest
+    DOTerm     -> do
       checkNoAsPatterns pat
       (:) <$> compilePat (unDom a) pat <*> rest
   where checkForced  = when (isForcedPat pat) $ genericDocError =<< "not supported by agda2hs: forced (dot) patterns in non-erased positions"
