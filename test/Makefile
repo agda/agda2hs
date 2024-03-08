@@ -1,40 +1,62 @@
-
-.PHONY : default clean golden alltests cubicaltests fail print-fail compare force-recompile
 AGDA2HS=./agda2hs +RTS -M2G -RTS
-
 ROOT=$(shell cd ..; pwd)/
+MAIN=AllTests
+FAIL_MAIN=AllFailTests
 
-default : alltests cubicaltests fail compare
+.PHONY : default allTests print-fail fail compare golden \
+	html renderTranslations clean force-recompile
 
-clean :
-	@rm -rf build/*
+default : allTests fail compare
 
-alltests :
+build/%.hs : %.agda *.agda Fail/*.agda Cubical/*.agda
 	@echo == Compiling tests ==
-	$(AGDA2HS) AllTests.agda -o build
-	@echo == Running ghc ==
-	@(cd build; ghc -fno-code AllTests.hs)
+	$(AGDA2HS) $< -o build
 
-cubicaltests :
-	@echo == Compiling tests using cubical ==
-	$(AGDA2HS) CubicalTests.agda -o build
+allTests : build/$(MAIN).hs
 	@echo == Running ghc ==
-	@(cd build; ghc -fno-code CubicalTests.hs)
+	@(cd build && ghc -fno-code $(MAIN).hs)
+
+print-fail :
+	@echo == Failing tests ==
+
+fail : print-fail $(patsubst Fail/%.agda,build/%.err,$(wildcard Fail/*.agda))
+
+build/%.err : Fail/%.agda force-recompile allTests
+	@echo Compiling $<
+	@($(AGDA2HS) $< -o build -v0 && echo "UNEXPECTED SUCCESS" || true) | sed -e 's:'$(ROOT)'::g' > $@
 
 compare : fail
 	@echo == Comparing output ==
 	@diff -r build golden
 
-fail : print-fail $(patsubst Fail/%.agda,build/%.err,$(wildcard Fail/*.agda))
+golden :
+	@cp build/*.hs build/Cubical/*.hs build/*.err golden
 
-print-fail :
-	@echo == Failing tests ==
+html : allTests fail html/index.html html/fail/index.html renderTranslations
 
-build/%.err : Fail/%.agda force-recompile alltests
-	@echo Compiling $<
-	@($(AGDA2HS) $< -o build -v0 && echo "UNEXPECTED SUCCESS" || true) | sed -e 's:'$(ROOT)'::g' > $@
+html/index.html : html/$(MAIN).html
+	echo "<meta http-equiv=\"refresh\" content=\"0; url=$(MAIN).html\" />" > $@
+
+html/fail/index.html : html/$(FAIL_MAIN).html
+	mkdir -p html/fail/
+	echo "<meta http-equiv=\"refresh\" content=\"0; url=../$(FAIL_MAIN).html\" />" > $@
+
+html/Agda.css : Agda.css
+	mkdir -p html/
+	cp -f $< $@
+
+html/%.html : %.agda html/Agda.css renderTranslations.sh
+	@echo == Generating test-suite HTML ==
+	$(AGDA2HS) -d --html --css=Agda.css $<
+
+html/$(FAIL_MAIN).html : renderTranslations.sh
+	@echo == Generating failing test-suite HTML ==
+	$(AGDA2HS) -d --html --css=../Agda.css $(FAIL_MAIN).agda
+
+renderTranslations : html/index.html html/fail/index.html renderTranslations.sh
+	./renderTranslations.sh
+
+clean :
+	@rm -rf build/ html/
 
 force-recompile :
-
-golden :
-	@cp -r build/* golden

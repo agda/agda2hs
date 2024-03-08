@@ -12,7 +12,8 @@
 - Agda library `agda2hs`
   - this Agda library is included in the `agda2hs` repository; see
     [`agda2hs.agda-lib`](https://github.com/agda/agda2hs/blob/master/agda2hs.agda-lib)
-  - you can navigate the library in [HTML format](https://agda.github.io/agda2hs/lib/)
+  - you can navigate the library in [HTML format](https://agda.github.io/agda2hs/lib/),
+    along with a comprehensive [test suite](https://agda.github.io/agda2hs/test/)
 
 ### Installation
 

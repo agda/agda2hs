@@ -68,3 +68,18 @@ jobs:
         publish_dir: html
         destination_dir: lib
 
+    - name: Generate test-suite HTML
+      if: ${{ (matrix.ghc == '9.6.3') && (github.event_name != 'pull_request') }}
+      run: |
+        sudo apt-get install -y pandoc zsh
+        make testHtml
+
+    - name: Deploy test-suite HTML
+      if: ${{ (matrix.ghc == '9.6.3') && (github.event_name != 'pull_request') }}
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: test/html
+        destination_dir: test
+
+

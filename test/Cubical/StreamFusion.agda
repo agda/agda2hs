@@ -1,3 +1,5 @@
+module Cubical.StreamFusion where
+
 open import Haskell.Prelude
 
 open import Agda.Primitive

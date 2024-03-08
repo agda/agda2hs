@@ -1,6 +1,8 @@
 {-# OPTIONS --prop #-}
 module AllTests where
 
+import AllCubicalTests
+
 import Issue14
 import Issue65
 import Issue69
