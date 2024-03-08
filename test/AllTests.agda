@@ -76,6 +76,7 @@ import NonClassInstance
 import Issue218
 import Issue251
 import TypeBasedUnboxing
+import Issue145
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -151,4 +152,5 @@ import NonClassInstance
 import Issue218
 import Issue251
 import TypeBasedUnboxing
+import Issue145
 #-}

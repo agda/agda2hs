@@ -73,4 +73,5 @@ import NonClassInstance
 import Issue218
 import Issue251
 import TypeBasedUnboxing
+import Issue145
 
