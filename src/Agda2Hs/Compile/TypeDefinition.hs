@@ -11,10 +11,12 @@ import Agda.Compiler.Backend
 import Agda.Syntax.Common ( namedArg )
 import Agda.Syntax.Internal
 
+import Agda.TypeChecking.Telescope ( mustBePi )
+
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Monad
 
-import Agda2Hs.Compile.Type ( compileType )
+import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..) )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
@@ -26,7 +28,7 @@ compileTypeDef name (Defn {..}) = do
   unlessM (isTransparentFunction defName) $ checkValidTypeName name
   Clause{..} <- singleClause funClauses
   addContext (KeepNames clauseTel) $ do
-    as <- compileTypeArgs namedClausePats
+    as <- compileTypeArgs defType namedClausePats
     let hd = foldl (Hs.DHApp ()) (Hs.DHead () name) as
     rhs <- compileType $ fromMaybe __IMPOSSIBLE__ clauseBody
     return [Hs.TypeDecl () hd rhs]
@@ -37,8 +39,16 @@ compileTypeDef name (Defn {..}) = do
       _    -> genericError "Not supported: type definition with several clauses"
 
 
-compileTypeArgs :: NAPs -> C [Hs.TyVarBind ()]
-compileTypeArgs ps = mapM (compileTypeArg . namedArg) $ filter keepArg ps
+compileTypeArgs :: Type -> NAPs -> C [Hs.TyVarBind ()]
+compileTypeArgs ty [] = return []
+compileTypeArgs ty (p:ps) = do
+  (a,b) <- mustBePi ty
+  let rest = underAbstraction a b $ \ty' -> compileTypeArgs ty' ps
+  compileDom a >>= \case
+    DODropped -> rest
+    DOType -> (:) <$> compileTypeArg (namedArg p) <*> rest
+    DOTerm -> genericError "Not supported: type definition with term arguments"
+    DOInstance -> genericError "Not supported: type definition with instance arguments"
 
 compileTypeArg :: DeBruijnPattern -> C (Hs.TyVarBind ())
 compileTypeArg p@(VarP o i) = do
