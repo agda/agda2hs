@@ -1,4 +1,0 @@
-```
-test/Fail/NonStarDatatypeIndex.agda:5,6-7
-Kind of bound argument not supported: (n : Nat)
-```
