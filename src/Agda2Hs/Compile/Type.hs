@@ -270,7 +270,6 @@ compileTeleBinds (ExtendTel a tel) = do
   compileDom a >>= \case
     DODropped  -> underAbstraction a tel compileTeleBinds
     DOType -> do
-      unless (visible a) $ fail "Hidden type parameter not supported"
       ha <- compileKeptTeleBind (hsName $ absName tel) (unDom a)
       (ha:) <$> underAbstraction a tel compileTeleBinds
     DOInstance -> fail "Constraint in type parameter not supported"

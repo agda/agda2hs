@@ -1,4 +1,4 @@
-module Fail.Issue145 where
+module Issue145 where
 
 open import Haskell.Prelude
 open import Haskell.Prim.Strict
