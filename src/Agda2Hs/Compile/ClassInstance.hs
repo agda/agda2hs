@@ -223,7 +223,21 @@ compileInstanceClause' curModule ty (p:ps) c
        -- same (minimal) dictionary as the primitive fields.
       | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
       , n .~ q -> do
-        case map unArg . filter keepArg <$> allApplyElims es of
+        let err = genericDocError =<< text "illegal instance declaration: instances using default methods should use a named definition or an anonymous `λ where`."
+            filterArgs :: Type -> [Term] -> C [Term]
+            filterArgs ty [] = return []
+            filterArgs ty (v:vs) = do
+              reportSDoc "agda2hs.compile.instance" 25 $ text "filterArgs: v =" <+> prettyTCM v
+              (a,b) <- mustBePi ty
+              reportSDoc "agda2hs.compile.instance" 25 $ text "filterArgs: a =" <+> prettyTCM a
+              let rest = underAbstraction a b $ \b' -> filterArgs b' vs
+              compileDom a >>= \case
+                DODropped -> rest
+                DOType -> rest
+                DOTerm -> (v:) <$> rest
+                DOInstance -> err
+        ty <- defType <$> getConstInfo n
+        traverse (filterArgs ty) (map unArg <$> allApplyElims es) >>= \case
           Just [ Def f _ ] -> do
             reportSDoc "agda2hs.compile.instance" 20 $ vcat
                 [ text "Dropping default instance clause" <+> prettyTCM c'
@@ -232,8 +246,7 @@ compileInstanceClause' curModule ty (p:ps) c
             reportSDoc "agda2hs.compile.instance" 40 $
                 text $ "raw dictionary:" ++ prettyShow f
             return ([], [f])
-
-          _ -> genericDocError =<< text "illegal instance declaration: instances using default methods should use a named definition or an anonymous `λ where`."
+          _ -> err
 
       -- No minimal dictionary used, proceed with compiling as a regular clause.
       | otherwise -> do
