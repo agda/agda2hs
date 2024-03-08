@@ -216,16 +216,15 @@ compileClause' curModule projName x ty c@Clause{..} = do
           _                         -> Hs.Match () x ps rhs whereBinds
     return $ Just match
 
-  where
-    keepClause :: Clause -> C Bool
-    keepClause c@Clause{..} = case (clauseBody, clauseType) of
-      (Nothing, _) -> pure False
-      (_, Nothing) -> pure False
-      (Just body, Just cty) -> compileDom (domFromArg cty) >>= \case
-        DODropped  -> pure False
-        DOInstance -> pure False -- not __IMPOSSIBLE__ because of current hacky implementation of `compileInstanceClause`
-        DOType     -> __IMPOSSIBLE__
-        DOTerm     -> pure True
+keepClause :: Clause -> C Bool
+keepClause c@Clause{..} = case (clauseBody, clauseType) of
+  (Nothing, _) -> pure False
+  (_, Nothing) -> pure False
+  (Just body, Just cty) -> compileDom (domFromArg cty) >>= \case
+    DODropped  -> pure False
+    DOInstance -> pure False -- not __IMPOSSIBLE__ because of current hacky implementation of `compileInstanceClause`
+    DOType     -> __IMPOSSIBLE__
+    DOTerm     -> pure True
 
 
 -- TODO(flupe): projection-like definitions are missing the first (variable) patterns

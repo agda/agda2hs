@@ -30,6 +30,7 @@ import Agda.TypeChecking.Records
 import Agda.TypeChecking.Telescope ( mustBePi )
 
 import Agda.Utils.Lens
+import Agda.Utils.Monad ( ifNotM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils
@@ -132,7 +133,8 @@ etaExpandClause cl@Clause{namedClausePats = ps, clauseBody = Just t} = do
 
 
 compileInstanceClause :: ModuleName -> Type -> Clause -> C ([Hs.InstDecl ()], [QName])
-compileInstanceClause curModule ty c = do
+compileInstanceClause curModule ty c = ifNotM (keepClause c) (return ([], [])) $ do
+
   let naps = namedClausePats c
 
   -- there are no projection patterns: we need to eta-expand the clause
@@ -194,14 +196,15 @@ compileInstanceClause' curModule ty (p:ps) c
           _ -> return d
 
     if
-      | isInstance arg, usableModality arg -> do
+      -- Instance field: check canonicity.
+      | isInstance arg -> do
           unless (null ps) $ genericDocError =<< text "not allowed: explicitly giving superclass"
           body <- case clauseBody c' of
             Nothing -> genericDocError =<< text "not allowed: absurd clause for superclass"
             Just b  -> return b
           checkInstance body
           return ([], [])
-      | not (keepArg arg) -> return ([], [])
+
       -- Projection of a primitive field: chase down definition and inline as instance clause.
       | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
       , [(_, f)] <- mapMaybe isProjElim es
