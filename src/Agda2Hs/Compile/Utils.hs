@@ -133,10 +133,6 @@ underAbstr_ = underAbstr __DUMMY_DOM__
 keepArg :: (LensHiding a, LensModality a) => a -> Bool
 keepArg x = usableModality x && visible x
 
-
-keepClause :: Clause -> Bool
-keepClause = any keepArg . clauseType
-
 isPropSort :: Sort -> C Bool
 isPropSort s = reduce s <&> \case
   Prop _ -> True

@@ -133,7 +133,6 @@ compileFun' withSig def@Defn{..} = do
 
       compileTopLevelType withSig defType $ \ty -> do
 
-        let filtered = filter keepClause funClauses
         weAreOnTop <- isJust <$> liftTCM  (currentModule >>= isTopLevelModule)
         pars <- getContextArgs
 
@@ -141,7 +140,7 @@ compileFun' withSig def@Defn{..} = do
         -- if the current module isn't the toplevel module
         unless weAreOnTop $
           reportSDoc "agda2hs.compile.type" 8 $ "Applying module parameters to clauses: " <+> prettyTCM pars
-        let clauses = if weAreOnTop then filtered else filtered `apply` pars
+        let clauses = if weAreOnTop then funClauses else funClauses `apply` pars
 
         typ <- if weAreOnTop then pure defType else piApplyM defType pars
 
@@ -166,16 +165,15 @@ compileClause curModule mproj x t c =
     compileClause' curModule mproj x t c
 
 compileClause' :: ModuleName -> Maybe QName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
-compileClause' curModule projName x _  c@Clause{clauseBody = Nothing} = pure Nothing
 compileClause' curModule projName x ty c@Clause{..} = do
   reportSDoc "agda2hs.compile" 7  $ "compiling clause: " <+> prettyTCM c
-  reportSDoc "agda2hs.compile" 17 $ "Old context: "      <+> (prettyTCM =<< getContext)
-  reportSDoc "agda2hs.compile" 17 $ "Clause telescope: " <+> prettyTCM clauseTel
-  reportSDoc "agda2hs.compile" 17 $ "Clause type:      " <+> prettyTCM clauseType
-  reportSDoc "agda2hs.compile" 17 $ "Function type:    " <+> prettyTCM ty
-  reportSDoc "agda2hs.compile" 17 $ "Clause patterns:  " <+> text (prettyShow namedClausePats)
 
-  addContext (KeepNames clauseTel) $ do
+  ifNotM (keepClause c) (pure Nothing) $ addContext (KeepNames clauseTel) $ do
+    reportSDoc "agda2hs.compile" 17 $ "Old context: "      <+> (inTopContext . prettyTCM =<< getContext)
+    reportSDoc "agda2hs.compile" 17 $ "Clause telescope: " <+> inTopContext (prettyTCM clauseTel)
+    reportSDoc "agda2hs.compile" 17 $ "Clause type:      " <+> prettyTCM clauseType
+    reportSDoc "agda2hs.compile" 17 $ "Function type:    " <+> prettyTCM ty
+    reportSDoc "agda2hs.compile" 17 $ "Clause patterns:  " <+> text (prettyShow namedClausePats)
 
     toDrop <- case projName of
       Nothing -> pure 0
@@ -212,11 +210,22 @@ compileClause' curModule projName x ty c@Clause{..} = do
 
     let rhs = Hs.UnGuardedRhs () hsBody
         whereBinds | null whereDecls = Nothing
-                   | otherwise       = Just $ Hs.BDecls () (concat whereDecls)
+                  | otherwise       = Just $ Hs.BDecls () (concat whereDecls)
         match = case (x, ps) of
           (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
           _                         -> Hs.Match () x ps rhs whereBinds
     return $ Just match
+
+  where
+    keepClause :: Clause -> C Bool
+    keepClause c@Clause{..} = case (clauseBody, clauseType) of
+      (Nothing, _) -> pure False
+      (_, Nothing) -> pure False
+      (Just body, Just cty) -> compileDom (domFromArg cty) >>= \case
+        DODropped  -> pure False
+        DOInstance -> pure False -- not __IMPOSSIBLE__ because of current hacky implementation of `compileInstanceClause`
+        DOType     -> __IMPOSSIBLE__
+        DOTerm     -> pure True
 
 
 -- TODO(flupe): projection-like definitions are missing the first (variable) patterns
