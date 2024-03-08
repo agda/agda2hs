@@ -196,13 +196,21 @@ compileTypeArgs ty (x:xs) = do
 
 compileUnboxType :: QName -> Args -> C (Hs.Type ())
 compileUnboxType r pars = do
-  def <- theDef <$> getConstInfo r
-  let tel = telToList $ recTel def `apply` pars
-  case find keepArg tel of
-    Just t  -> compileType $ unEl $ snd (unDom t)
-    Nothing -> __IMPOSSIBLE__
-
-
+  def <- getConstInfo r
+  let tel = recTel (theDef def) `apply` pars
+  compileTel tel >>= \case
+    [t] -> return t
+    _   -> __IMPOSSIBLE__
+  
+  where
+    compileTel :: Telescope -> C [Hs.Type ()]
+    compileTel EmptyTel = return []
+    compileTel (ExtendTel a tel) = compileDom a >>= \case
+      DODropped  -> underAbstraction a tel compileTel
+      DOInstance -> __IMPOSSIBLE__
+      DOType     -> __IMPOSSIBLE__
+      DOTerm     -> (:) <$> compileType (unEl $ unDom a) <*> underAbstraction a tel compileTel
+      
 compileTransparentType :: Type -> Args -> C (Hs.Type ())
 compileTransparentType ty args = compileTypeArgs ty args >>= \case
   (v:vs) -> return $ v `tApp` vs
