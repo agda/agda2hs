@@ -52,6 +52,7 @@ compileData newtyp ds def = do
         DomDropped      -> allIndicesErased (unAbs t)
         DomType{}       -> genericDocError =<< text "Not supported: indexed datatypes"
         DomConstraint{} -> genericDocError =<< text "Not supported: constraints in types"
+        DomForall{}     -> genericDocError =<< text "Not supported: indexed datatypes"
       _ -> return ()
 
 compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl ())
@@ -74,3 +75,4 @@ compileConstructorArgs (ExtendTel a tel) = compileDomType (absName tel) a >>= \c
     (ty :) <$> underAbstraction a tel compileConstructorArgs
   DomConstraint hsA -> genericDocError =<< text "Not supported: constructors with class constraints"
   DomDropped        -> underAbstraction a tel compileConstructorArgs
+  DomForall{}       -> __IMPOSSIBLE__

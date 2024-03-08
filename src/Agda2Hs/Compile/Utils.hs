@@ -180,19 +180,6 @@ dropClassModule m@(MName ns) = isClassModule m >>= \case
   True  -> dropClassModule $ MName $ init ns
   False -> return m
 
-moduleParametersToDrop :: ModuleName -> C Telescope
-moduleParametersToDrop mod = do
-   reportSDoc "agda2hs.moduleParameters" 25 $ text "Getting telescope for" <+> prettyTCM mod
-   isDatatypeModule mod >>= \case
-     Just _ -> return EmptyTel
-     Nothing -> do
-       reportSDoc "agda2hs.moduleParameters" 25 $ text "Current context: " <+> (prettyTCM =<< getContext)
-       ctxArgs <- getContextArgs
-       reportSDoc "agda2hs.moduleParameters" 25 $ text "Context arguments: " <+> prettyTCM ctxArgs
-       sec <- lookupSection mod
-       reportSDoc "agda2hs.moduleParameters" 25 $ text "Module section: " <+> prettyTCM sec
-       return $ sec `apply` ctxArgs
-
 isUnboxRecord :: QName -> C (Maybe Strictness)
 isUnboxRecord q = do
   getConstInfo q >>= \case
@@ -251,6 +238,9 @@ checkInstance u@(Con c _ _)
     prettyShow (conName c) == "Haskell.Prim.IsTrue.itsTrue" ||
     prettyShow (conName c) == "Haskell.Prim.IsFalse.itsFalse" = return ()
 checkInstance u = genericDocError =<< text "illegal instance: " <+> prettyTCM u
+
+compileLocal :: C a -> C a
+compileLocal = local $ \e -> e { compilingLocal = True }
 
 modifyLCase :: (Int -> Int) -> CompileState -> CompileState
 modifyLCase f (CompileState {lcaseUsed = n}) = CompileState {lcaseUsed = f n}

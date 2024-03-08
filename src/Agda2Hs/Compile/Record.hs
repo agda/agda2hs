@@ -48,7 +48,7 @@ compileMinRecord fieldNames m = do
   -- We can't simply compileFun here for two reasons:
   -- * it has an explicit dictionary argument
   -- * it's using the fields and definitions from the minimal record and not the parent record
-  compiled <- withMinRecord m $ addContext (defaultDom rtype) $
+  compiled <- withMinRecord m $ addContext (defaultDom rtype) $ compileLocal $
     fmap concat $ traverse (compileFun False) defaults
   let declMap = Map.fromList [ (definedName c, def) | def@(Hs.FunBind _ (c : _)) <- compiled ]
   return (definedFields, declMap)
@@ -154,6 +154,7 @@ compileRecord target def = do
             ToRecord{} -> genericError $
               "Not supported: record/class with constraint fields"
           DomDropped -> return (hsAssts , hsFields)
+          DomForall{} -> __IMPOSSIBLE__
       (_, _) -> __IMPOSSIBLE__
 
     compileDataRecord

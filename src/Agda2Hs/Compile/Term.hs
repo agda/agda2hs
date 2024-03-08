@@ -62,7 +62,7 @@ isSpecialDef q = case prettyShow q of
 
 -- | Compile a @\where@ to the equivalent @\case@ expression.
 lambdaCase :: QName -> DefCompileRule
-lambdaCase q ty args = setCurrentRangeQ q $ do
+lambdaCase q ty args = compileLocal $ setCurrentRangeQ q $ do
   Function
     { funClauses = cls
     , funExtLam  = Just ExtLamInfo {extLamModule = mname}

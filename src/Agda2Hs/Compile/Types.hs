@@ -80,6 +80,8 @@ data CompileEnv = CompileEnv
   -- ^ keeps track of the current minimal record we are compiling
   , locals :: LocalDecls
   -- ^ keeps track of the current clause's where declarations
+  , compilingLocal :: Bool
+  -- ^ whether we are currently compiling a where clause or pattern-matching lambda
   , copatternsEnabled :: Bool
   -- ^ whether copatterns should be allowed when compiling patterns
   , rewrites :: SpecialRules
@@ -181,6 +183,8 @@ data CompiledDom
     -- ^ To a Haskell type (with perhaps a strictness annotation)
   | DomConstraint (Hs.Asst ())
     -- ^ To a typeclass constraint
+  | DomForall (Hs.TyVarBind ())
+    -- ^ To an explicit forall
   | DomDropped
     -- ^ To nothing (e.g. erased proofs)
 

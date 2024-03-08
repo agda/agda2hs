@@ -2,15 +2,14 @@
 module Agda2Hs.Compile.Function where
 
 import Control.Monad ( (>=>), filterM, forM_ )
-import Control.Monad.Reader ( asks )
+import Control.Monad.Reader ( asks, local )
 
 import Data.Generics
 import Data.List
 import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text
 
-import qualified Language.Haskell.Exts.Syntax as Hs
-import qualified Language.Haskell.Exts.Build as Hs
+import qualified Language.Haskell.Exts as Hs
 
 import Agda.Compiler.Backend
 import Agda.Compiler.Common
@@ -41,7 +40,7 @@ import Agda.Utils.Size ( Sized(size) )
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Term ( compileTerm, usableDom )
-import Agda2Hs.Compile.Type ( compileTopLevelType, compileDom, DomOutput(..) )
+import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..) )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
@@ -116,41 +115,45 @@ compileFun withSig def@Defn{..} =
     $ compileFun' withSig def
 
 -- inherit existing (instantiated) locals
-compileFun' withSig def@Defn{..} = do
+compileFun' withSig def@Defn{..} = inTopContext $ do
   reportSDoc "agda2hs.compile" 6 $ "Compiling function: " <+> prettyTCM defName
 
   whenM ((withSig &&) <$> inRecordMod defName) $
     genericDocError =<< text "not supported by agda2hs: functions inside a record module"
 
-  withCurrentModule m $ do
+  -- We add the module parameters to the context
+  -- if we are compiling a local function (e.g. a where declaration or pattern-matching lambda)
+  isLocalFun <- asks compilingLocal
+  tel <- if isLocalFun then lookupSection m else return EmptyTel
+
+  withCurrentModule m $ addContext tel $ do
     ifM (endsInSort defType)
         -- if the function type ends in Sort, it's a type alias!
         (ensureNoLocals err >> compileTypeDef x def) 
         -- otherwise, we have to compile clauses.
         $ do
+          
+      pars <- getContextArgs
+      reportSDoc "agda2hs.compile.type" 8 $ "Function module parameters: " <+> prettyTCM pars
 
-      when withSig $ checkValidFunName x
+      reportSDoc "agda2hs.compile.type" 8 $ "Function type (before instantiation): " <+> inTopContext (prettyTCM defType)
+      typ <- piApplyM defType pars
+      reportSDoc "agda2hs.compile.type" 8 $ "Function type (after instantiation): " <+> prettyTCM typ 
 
-      compileTopLevelType withSig defType $ \ty -> do
+      sig <- if not withSig then return [] else do
+        checkValidFunName x
+        ty <- compileType $ unEl typ
+        reportSDoc "agda2hs.compile.type" 8 $ "Compiled function type: " <+> text (Hs.prettyPrint ty) 
+        return [Hs.TypeSig () [x] ty]
 
-        weAreOnTop <- isJust <$> liftTCM  (currentModule >>= isTopLevelModule)
-        pars <- getContextArgs
+      let clauses = funClauses `apply` pars
+      cs  <- mapMaybeM (compileClause m (Just defName) x typ) clauses
 
-        -- We only instantiate the clauses to the current module parameters
-        -- if the current module isn't the toplevel module
-        unless weAreOnTop $
-          reportSDoc "agda2hs.compile.type" 8 $ "Applying module parameters to clauses: " <+> prettyTCM pars
-        let clauses = if weAreOnTop then funClauses else funClauses `apply` pars
+      when (null cs) $ genericDocError
+        =<< text "Functions defined with absurd patterns exclusively are not supported."
+        <+> text "Use function `error` from the Haskell.Prelude instead."
 
-        typ <- if weAreOnTop then pure defType else piApplyM defType pars
-
-        cs  <- mapMaybeM (compileClause m (Just defName) x typ) clauses
-
-        when (null cs) $ genericDocError
-          =<< text "Functions defined with absurd patterns exclusively are not supported."
-          <+> text "Use function `error` from the Haskell.Prelude instead."
-
-        return $ [Hs.TypeSig () [x] ty | withSig ] ++ [Hs.FunBind () cs]
+      return $ sig ++ [Hs.FunBind () cs]
   where
     Function{..} = theDef
     m = qnameModule defName
@@ -193,7 +196,7 @@ compileClause' curModule projName x ty c@Clause{..} = do
           /\ (curModule `isFatherModuleOf`) . qnameModule
 
     children   <- filter isWhereDecl <$> asks locals
-    whereDecls <- mapM (getConstInfo >=> compileFun' True) children
+    whereDecls <- compileLocal $ mapM (getConstInfo >=> compileFun' True) children
 
     -- Jesper, 2023-10-30: We should compile the body in the module of the
     -- `where` declarations (if there are any) in order to drop the arguments

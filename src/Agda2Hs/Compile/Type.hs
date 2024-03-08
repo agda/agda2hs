@@ -72,53 +72,6 @@ delayType (_       : _) = __IMPOSSIBLE__
 delayType [] = genericDocError =<< text "Cannot compile unapplied Delay type"
 
 
-{- | Compile a top-level type, such that:
-  
-   * erased parameters of the current module are dropped.
-   * usable hidden type parameters of the current module are explicitely quantified.
-   * usable instance parameters are added as type constraints.
-   * usable explicit parameters are forbidden (for now).
-  
-   The continuation is called in an extended context with these type
-   arguments bound.
--}
-compileTopLevelType
-    :: Bool
-    -- ^ Whether the generated Haskell type will end up in
-    --   the final output. If so, this functions asks for
-    --   language extension ScopedTypeVariables to be enabled.
-    -> Type
-    -> (Hs.Type () -> C a) -- ^ Continuation with the compiled type.
-    -> C a
-compileTopLevelType keepType t cont = do
-    reportSDoc "agda2hs.compile.type" 8 $ text "Compiling top-level type" <+> prettyTCM t
-    -- NOTE(flupe): even though we only quantify variable for definitions inside anonymous modules,
-    --              they will still get quantified over the toplevel module parameters.
-    weAreOnTop <- isJust <$> liftTCM  (currentModule >>= isTopLevelModule)
-    modTel <- moduleParametersToDrop =<< currentModule
-    reportSDoc "agda2hs.compile.type" 19 $ text "Module parameters to process: " <+> prettyTCM modTel
-    go weAreOnTop modTel cont
-  where
-    go :: Bool -> Telescope -> (Hs.Type () -> C a) -> C a
-    go _ EmptyTel cont = do
-      ctxArgs <- getContextArgs
-      ty <- compileType . unEl =<< t `piApplyM` ctxArgs
-      cont ty
-    go onTop (ExtendTel a atel) cont
-      | not (usableModality a) =
-          underAbstraction a atel $ \tel -> go onTop tel cont
-      | isInstance a = do
-          c <- Hs.TypeA () <$> compileType (unEl $ unDom a)
-          underAbstraction a atel $ \tel ->
-            go onTop tel (cont . constrainType c)
-      | otherwise = do
-          compileType (unEl $ unDom a)
-          when (keepType && not onTop) $ tellExtension Hs.ScopedTypeVariables
-          let qualifier = if onTop then id else qualifyType (absName atel)
-          underAbstraction a atel $ \tel ->
-            go onTop tel (cont . qualifier)
-
-
 -- | Compile an Agda term into a Haskell type, along with its strictness.
 compileTypeWithStrictness :: Term -> C (Strictness, Hs.Type ())
 compileTypeWithStrictness t = do
@@ -137,14 +90,13 @@ compileType t = do
   reportSDoc "agda2hs.compile.type" 22 $ text "Compiling type" <+> pretty t
 
   case t of
-    Pi a b -> compileDomType (absName b) a >>= \case
-      DomType _ hsA -> do
-        hsB <- underAbstraction a b (compileType . unEl)
-        return $ Hs.TyFun () hsA hsB
-      DomConstraint hsA -> do
-        hsB <- underAbstraction a b (compileType . unEl)
-        return $ constrainType hsA hsB
-      DomDropped -> underAbstr a b (compileType . unEl)
+    Pi a b -> do
+      let compileB = underAbstraction a b (compileType . unEl)
+      compileDomType (absName b) a >>= \case
+        DomType _ hsA -> Hs.TyFun () hsA <$> compileB
+        DomConstraint hsA -> constrainType hsA <$> compileB
+        DomDropped -> compileB
+        DomForall hsA -> qualifyType hsA <$> compileB
 
     Def f es -> maybeUnfoldCopy f es compileType $ \f es -> do
       def <- getConstInfo f
@@ -184,6 +136,9 @@ compileTypeArgs :: Type -> Args -> C [Hs.Type ()]
 compileTypeArgs ty [] = pure []
 compileTypeArgs ty (x:xs) = do
   (a, b) <- mustBePi ty
+  reportSDoc "agda2hs.compile.type" 16 $ text "compileTypeArgs x =" <+> prettyTCM x
+  reportSDoc "agda2hs.compile.type" 16 $ text "                a =" <+> prettyTCM a
+  reportSDoc "agda2hs.compile.type" 16 $ text "         modality =" <+> prettyTCM (getModality a)
   let rest = compileTypeArgs (absApp b $ unArg x) xs  
   let fail msg = genericDocError =<< (text msg <> text ":") <+> parens (prettyTCM (absName b) <+> text ":" <+> prettyTCM (unDom a))
   compileDom a >>= \case
@@ -259,7 +214,16 @@ compileDomType x a =
   compileDom a >>= \case
     DODropped  -> pure DomDropped
     DOInstance -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
-    DOType     -> pure DomDropped
+    DOType     -> do
+      -- We compile (non-erased) type parameters to an explicit forall if they
+      -- come from a module parameter.
+      ctx <- getContextSize
+      npars <- size <$> (lookupSection =<< currentModule)
+      if ctx < npars 
+        then do
+          tellExtension Hs.ScopedTypeVariables
+          return $ DomForall $ Hs.UnkindedVar () $ Hs.Ident () x
+        else return $ DomDropped
     DOTerm     -> uncurry DomType <$> compileTypeWithStrictness (unEl $ unDom a)
 
 compileTeleBinds :: Telescope -> C [Hs.TyVarBind ()]
