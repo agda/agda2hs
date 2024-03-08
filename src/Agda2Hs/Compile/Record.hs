@@ -16,16 +16,17 @@ import Agda.Syntax.Common ( Arg(unArg), defaultArg )
 import Agda.Syntax.Internal
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
-import Agda.TypeChecking.Pretty ( ($$), (<+>), text, vcat )
+import Agda.TypeChecking.Pretty ( ($$), (<+>), text, vcat, prettyTCM )
 import Agda.TypeChecking.Substitute ( TelV(TelV), Apply(apply) )
 import Agda.TypeChecking.Telescope
 
+import Agda.Utils.Singleton
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.ClassInstance
 import Agda2Hs.Compile.Function ( compileFun )
-import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds )
+import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds, compileDom, DomOutput(..) )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
@@ -168,16 +169,30 @@ compileRecord target def = do
       let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
       return $ Hs.DataDecl () don Nothing hd [conDecl] ds
 
+checkUnboxPragma :: Definition -> C ()
+checkUnboxPragma def = do
+  let Record{..} = theDef def
 
--- | Check if record can be defined as unboxed.
-checkUnboxPragma :: Defn -> C ()
-checkUnboxPragma def
-  | Record{recFields, recMutual} <- def
-  , length (filter keepArg recFields) == 1
-  -- , not (recRecursive def)
-  --     can be used again after agda 2.6.4.2 is released
-  --     see: agda/agda#7042
-  , all null recMutual -- see agda/agda#7042
-  = return ()
-  | otherwise
-  = genericError "An unboxed type must be a non-recursive record type with exactly one non-erased field."
+  -- recRecursive can be used again after agda 2.6.4.2 is released
+  -- see agda/agda#7042
+  unless (all null recMutual) $ genericDocError
+    =<< text "Unboxed record" <+> prettyTCM (defName def) 
+    <+> text "cannot be recursive"
+
+  TelV tel _ <- telViewUpTo recPars (defType def)
+  addContext tel $ do
+    pars <- getContextArgs
+    let fieldTel = recTel `apply` pars
+    fields <- nonErasedFields fieldTel
+    unless (length fields == 1) $ genericDocError
+      =<< text "Unboxed record" <+> prettyTCM (defName def)
+      <+> text "should have exactly one non-erased field"
+
+  where
+    nonErasedFields :: Telescope -> C [String]
+    nonErasedFields EmptyTel = return []
+    nonErasedFields (ExtendTel a tel) = compileDom a >>= \case
+      DODropped  -> underAbstraction a tel nonErasedFields
+      DOType -> genericDocError =<< text "Type field in unboxed record not supported"
+      DOInstance -> genericDocError =<< text "Instance field in unboxed record not supported"
+      DOTerm -> (absName tel:) <$> underAbstraction a tel nonErasedFields

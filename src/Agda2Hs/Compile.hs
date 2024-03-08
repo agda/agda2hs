@@ -85,7 +85,7 @@ compile opts tlm _ def =
       case (p , theDef def) of
         (NoPragma            , _         ) -> return []
         (ExistingClassPragma , _         ) -> return []
-        (UnboxPragma s       , defn      ) -> [] <$ checkUnboxPragma defn
+        (UnboxPragma s       , Record{}  ) -> [] <$ checkUnboxPragma def
         (TransparentPragma   , Function{}) -> [] <$ checkTransparentPragma def
         (InlinePragma        , Function{}) -> [] <$ checkInlinePragma def
 
