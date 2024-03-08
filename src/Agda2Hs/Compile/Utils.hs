@@ -320,9 +320,6 @@ checkNewtypeCon :: Hs.Name () -> [b] -> C ()
 checkNewtypeCon name tys =
   checkSingleElement name tys "Newtype must have exactly one field in constructor"
 
-checkingVars :: C a -> C a
-checkingVars = local $ \e -> e { checkVar = True }
-
 checkFixityLevel :: QName -> FixityLevel -> C (Maybe Int)
 checkFixityLevel name Unrelated = pure Nothing
 checkFixityLevel name (Related lvl) =

@@ -55,7 +55,7 @@ compileData newtyp ds def = do
       _ -> return ()
 
 compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl ())
-compileConstructor params c = checkingVars $ do
+compileConstructor params c = do
   reportSDoc "agda2hs.data.con" 15 $ text "compileConstructor" <+> prettyTCM c
   reportSDoc "agda2hs.data.con" 20 $ text "  params = " <+> prettyTCM params
   ty <- (`piApplyM` params) . defType =<< getConstInfo c

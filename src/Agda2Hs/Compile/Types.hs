@@ -82,8 +82,6 @@ data CompileEnv = CompileEnv
   -- ^ keeps track of the current clause's where declarations
   , copatternsEnabled :: Bool
   -- ^ whether copatterns should be allowed when compiling patterns
-  , checkVar :: Bool
-  -- ^ whether to ensure compiled variables are usable and visible
   , rewrites :: SpecialRules
   -- ^ Special compilation rules.
   }
