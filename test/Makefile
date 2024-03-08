@@ -51,7 +51,7 @@ html/%.html : %.agda html/Agda.css renderTranslations.sh
 
 html/$(FAIL_MAIN).html : renderTranslations.sh
 	@echo == Generating failing test-suite HTML ==
-	$(AGDA2HS) -d --html --css=../Agda.css $(FAIL_MAIN).agda
+	$(AGDA2HS) -d --html --css=Agda.css $(FAIL_MAIN).agda
 
 renderTranslations : html/index.html html/fail/index.html renderTranslations.sh
 	./renderTranslations.sh
