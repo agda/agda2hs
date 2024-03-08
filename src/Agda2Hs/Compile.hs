@@ -34,6 +34,7 @@ initCompileEnv tlm rewrites = CompileEnv
   { currModule        = tlm
   , minRecordName     = Nothing
   , locals            = []
+  , compilingLocal    = False
   , copatternsEnabled = False
   , rewrites          = rewrites
   }

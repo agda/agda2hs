@@ -102,6 +102,7 @@ compileInstRule cs ty = case unSpine1 ty of
     DomConstraint hsA ->
       underAbstraction a b (compileInstRule (cs ++ [hsA]) . unEl)
     DomType _ t -> __IMPOSSIBLE__
+    DomForall _ -> __IMPOSSIBLE__
   _ -> __IMPOSSIBLE__
 
 
@@ -218,7 +219,7 @@ compileInstanceClause' curModule ty (p:ps) c
         reportSDoc "agda2hs.compile.instance" 20 $
           text $ "raw projection:" ++ prettyShow (Def n [])
         d <- chaseDef n
-        fc <- compileFun False d
+        fc <- compileLocal $ compileFun False d
         let hd = hsName $ prettyShow $ nameConcrete $ qnameName $ defName d
         let fc' = {- dropPatterns 1 $ -} replaceName hd uf fc
         return (map (Hs.InsDecl ()) fc', [n])

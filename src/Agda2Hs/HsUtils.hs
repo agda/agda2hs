@@ -297,12 +297,10 @@ constrainType c = \case
 
 -- | Add explicit quantification over a variable to a Haskell type.
 qualifyType
-  :: String  -- ^ Name of the variable.
+  :: TyVarBind ()  -- ^ Name of the variable.
   -> Type () -- ^ Type to quantify.
   -> Type ()
-qualifyType s = \case
+qualifyType a = \case
     TyForall _ (Just as) cs t -> TyForall () (Just (a:as)) cs      t
     TyForall _ Nothing   cs t -> TyForall () (Just [a]   ) cs      t
     t                         -> TyForall () (Just [a]   ) Nothing t
-  where
-    a = UnkindedVar () $ Ident () s

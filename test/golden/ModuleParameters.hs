@@ -4,7 +4,7 @@ module ModuleParameters where
 data Scope p = Empty
              | Bind p (Scope p)
 
-unbind :: Scope p -> Scope p
+unbind :: forall p . Scope p -> Scope p
 unbind Empty = Empty
 unbind (Bind _ s) = s
 
