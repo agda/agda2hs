@@ -279,16 +279,17 @@ compileTeleBinds (ExtendTel a tel) = do
 compileKeptTeleBind :: Hs.Name () -> Type -> C (Hs.TyVarBind ())
 compileKeptTeleBind x t = do
   checkValidTyVarName x
-  case compileKind t of
-    Just k              -> pure $ Hs.UnkindedVar () x -- In the future we may want to show kind annotations
-    _                   -> genericDocError =<<
-      text "Kind of bound argument not supported:"
-      <+> parens (text (Hs.prettyPrint x) <> text " : " <> prettyTCM t)
+  k <- compileKind t
+  pure $ Hs.UnkindedVar () x -- In the future we may want to show kind annotations
 
-compileKind :: Type -> Maybe (Hs.Kind ())
+compileKind :: Type -> C (Hs.Kind ())
 compileKind t = case unEl t of
   Sort (Type _) -> pure (Hs.TyStar ())
-  Pi a b
-    | keepArg a    -> Hs.TyFun () <$> compileKind (unDom a) <*> compileKind (unAbs b)
-    | otherwise    -> compileKind (unAbs b)
-  _ -> Nothing     -- ^ if the argument is erased, we only compile the rest
+  Pi a b -> compileDom a >>= \case
+    DODropped -> underAbstraction a b compileKind
+    DOType -> Hs.TyFun () <$> compileKind (unDom a) <*> underAbstraction a b compileKind
+    DOTerm -> err
+    DOInstance -> err
+  _ -> err
+  where
+    err = genericDocError =<< text "Not a valid Haskell kind: " <+> prettyTCM t
