@@ -1,0 +1,4 @@
+```
+test/Fail/Issue154.agda:5,1-4
+constructor `zero` not supported in patterns
+```

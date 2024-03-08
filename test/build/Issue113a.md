@@ -1,0 +1,5 @@
+```
+test/Fail/Issue113a.agda:5,8-12
+An unboxed type must be a non-recursive record type with exactly
+one non-erased field.
+```

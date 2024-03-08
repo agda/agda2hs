@@ -1,0 +1,4 @@
+```
+test/Fail/InvalidName.agda:6,1-2
+Invalid name for Haskell function:  F
+```
