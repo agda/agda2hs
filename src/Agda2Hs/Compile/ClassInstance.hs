@@ -84,7 +84,8 @@ compileInstance ToDefinition def@Defn{..} =
 compileInstRule :: [Hs.Asst ()] -> Term -> C (Hs.InstRule ())
 compileInstRule cs ty = case unSpine1 ty of
   Def f es | Just args <- allApplyElims es -> do
-    vs <- mapM (compileType . unArg) $ filter keepArg args
+    fty <- defType <$> getConstInfo f
+    vs <- compileTypeArgs fty args
     f <- compileQName f
     return $
       Hs.IRule () Nothing (ctx cs) $ foldl (Hs.IHApp ()) (Hs.IHCon () f) (map pars vs)
