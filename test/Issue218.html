@@ -1,0 +1,20 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Issue218</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda">
+<a id="2" class="Keyword">module</a> <a id="9" href="Issue218.html" class="Module">Issue218</a> <a id="18" class="Keyword">where</a>
+
+<a id="25" class="Keyword">open</a> <a id="30" class="Keyword">import</a> <a id="37" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+<a id="53" class="Keyword">open</a> <a id="58" class="Keyword">import</a> <a id="65" href="Haskell.Extra.Erase.html" class="Module">Haskell.Extra.Erase</a>
+<a id="85" class="Keyword">open</a> <a id="90" class="Keyword">import</a> <a id="97" href="Haskell.Extra.Refinement.html" class="Module">Haskell.Extra.Refinement</a>
+
+<a id="123" class="Keyword">module</a> <a id="130" href="Issue218.html#130" class="Module">_</a> <a id="132" class="Symbol">(@</a><a id="134" class="Symbol">0</a> <a id="136" href="Issue218.html#136" class="Bound">n</a> <a id="138" class="Symbol">:</a> <a id="140" href="Haskell.Prim.Int.html#367" class="Datatype">Int</a><a id="143" class="Symbol">)</a> <a id="145" class="Keyword">where</a>
+
+  <a id="154" href="Issue218.html#154" class="Function">foo</a> <a id="158" class="Symbol">:</a> <a id="160" class="Symbol">{{</a><a id="162" href="Haskell.Extra.Erase.html#687" class="Record">Rezz</a> <a id="167" class="Symbol">_</a> <a id="169" href="Issue218.html#136" class="Bound">n</a><a id="170" class="Symbol">}}</a> <a id="173" class="Symbol">→</a> <a id="175" href="Haskell.Extra.Refinement.html#136" class="Record">∃</a> <a id="177" href="Haskell.Prim.Int.html#367" class="Datatype">Int</a> <a id="181" class="Symbol">(</a><a id="182" href="Agda.Builtin.Equality.html#150" class="Datatype Operator">_≡</a> <a id="185" href="Issue218.html#136" class="Bound">n</a><a id="186" class="Symbol">)</a>
+  <a id="190" href="Issue218.html#154" class="Function">foo</a> <a id="194" class="Symbol">{{</a><a id="196" href="Haskell.Extra.Erase.html#880" class="InductiveConstructor">rezz</a> <a id="201" href="Issue218.html#201" class="Bound">n</a><a id="202" class="Symbol">}}</a> <a id="205" class="Symbol">=</a> <a id="207" href="Issue218.html#201" class="Bound">n</a> <a id="209" href="Haskell.Extra.Refinement.html#205" class="InductiveConstructor Operator">⟨</a> <a id="211" href="Agda.Builtin.Equality.html#207" class="InductiveConstructor">refl</a> <a id="216" href="Haskell.Extra.Refinement.html#205" class="InductiveConstructor Operator">⟩</a>
+
+  <a id="221" class="Symbol">{-#</a> <a id="225" class="Keyword">COMPILE</a> <a id="233" class="Keyword">AGDA2HS</a> <a id="241" href="Issue218.html#154" class="Function">foo</a> <a id="245" class="Symbol">#-}</a>
+
+<a id="bar"></a><a id="250" href="Issue218.html#250" class="Function">bar</a> <a id="254" class="Symbol">:</a> <a id="256" href="Haskell.Extra.Refinement.html#136" class="Record">∃</a> <a id="258" href="Haskell.Prim.Int.html#367" class="Datatype">Int</a> <a id="262" class="Symbol">(</a><a id="263" href="Agda.Builtin.Equality.html#150" class="Datatype Operator">_≡</a> <a id="266" class="Number">42</a><a id="268" class="Symbol">)</a>
+<a id="270" href="Issue218.html#250" class="Function">bar</a> <a id="274" class="Symbol">=</a> <a id="276" href="Issue218.html#154" class="Function">foo</a> <a id="280" class="Symbol">_</a>
+
+<a id="283" class="Symbol">{-#</a> <a id="287" class="Keyword">COMPILE</a> <a id="295" class="Keyword">AGDA2HS</a> <a id="303" href="Issue218.html#250" class="Function">bar</a> <a id="307" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Issue218.html"/></div></body></html>
