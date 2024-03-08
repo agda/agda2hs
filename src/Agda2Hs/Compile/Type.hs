@@ -173,8 +173,8 @@ compileType t = do
 
     Sort s -> return (Hs.TyStar ())
 
-    Lam argInfo restAbs
-      | not (keepArg argInfo) -> underAbstraction_ restAbs compileType
+    -- This case is only reachable for erased lambdas
+    Lam argInfo restAbs -> underAbstraction_ restAbs compileType
 
     _ -> fail
   where fail = genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
