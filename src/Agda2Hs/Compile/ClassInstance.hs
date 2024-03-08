@@ -165,7 +165,11 @@ compileInstanceClause' curModule ty (p:ps) c
 
     -- retrieve the type of the projection
     Just (unEl -> Pi a b) <- getDefType q ty
-    let ty' = absBody b
+    -- We don't really have the information available to reconstruct the instance
+    -- head. However, all dependencies on the instance head are in erased positions, 
+    -- so we can just use a dummy term instead
+    let instanceHead = __DUMMY_TERM__ 
+        ty' = b `absApp` instanceHead
 
     reportSDoc "agda2hs.compile.instance" 15 $
       text "Compiling instance clause for" <+> prettyTCM (Arg arg $ Def q [])
