@@ -125,8 +125,12 @@ compileType t = do
 
     Sort s -> return (Hs.TyStar ())
 
-    -- This case is only reachable for erased lambdas
-    Lam argInfo restAbs -> underAbstraction_ restAbs compileType
+    -- TODO: we should also drop lambdas that can be erased based on their type
+    -- (e.g. argument is of type Level/Size or in a Prop) but currently we do
+    -- not have access to the type of the lambda here.
+    Lam argInfo restAbs 
+      | hasQuantity0 argInfo -> underAbstraction_ restAbs compileType
+      | otherwise -> genericDocError =<< text "Not supported: type-level lambda" <+> prettyTCM t
 
     _ -> fail
   where fail = genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
