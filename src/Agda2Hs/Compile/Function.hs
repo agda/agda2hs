@@ -213,7 +213,7 @@ compileClause' curModule projName x ty c@Clause{..} = do
 
     let rhs = Hs.UnGuardedRhs () hsBody
         whereBinds | null whereDecls = Nothing
-                  | otherwise       = Just $ Hs.BDecls () (concat whereDecls)
+                   | otherwise       = Just $ Hs.BDecls () (concat whereDecls)
         match = case (x, ps) of
           (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
           _                         -> Hs.Match () x ps rhs whereBinds
@@ -223,11 +223,11 @@ keepClause :: Clause -> C Bool
 keepClause c@Clause{..} = case (clauseBody, clauseType) of
   (Nothing, _) -> pure False
   (_, Nothing) -> pure False
-  (Just body, Just cty) -> compileDom (domFromArg cty) >>= \case
-    DODropped  -> pure False
-    DOInstance -> pure False -- not __IMPOSSIBLE__ because of current hacky implementation of `compileInstanceClause`
+  (Just body, Just cty) -> compileDom (domFromArg cty) <&> \case
+    DODropped  -> False
+    DOInstance -> False -- not __IMPOSSIBLE__ because of current hacky implementation of `compileInstanceClause`
     DOType     -> __IMPOSSIBLE__
-    DOTerm     -> pure True
+    DOTerm     -> True
 
 
 -- TODO(flupe): projection-like definitions are missing the first (variable) patterns
