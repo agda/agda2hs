@@ -23,7 +23,7 @@ import Agda.TypeChecking.Monad
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Records ( shouldBeProjectible )
 import Agda.TypeChecking.Datatypes ( getConType )
-import Agda.TypeChecking.Reduce ( unfoldDefinitionStep )
+import Agda.TypeChecking.Reduce ( unfoldDefinitionStep, instantiate )
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope ( telView, mustBePi, piApplyM )
 import Agda.TypeChecking.ProjectionLike ( reduceProjectionLike )
@@ -382,6 +382,8 @@ compileTerm :: Type -> Term -> C (Hs.Exp ())
 compileTerm ty v = do
 
   reportSDoc "agda2hs.compile.term" 10  $ text "compiling term:" <+> prettyTCM v
+
+  v <- instantiate v
 
   let bad s t = genericDocError =<< vcat
         [ text "agda2hs: cannot compile" <+> text (s ++ ":")
