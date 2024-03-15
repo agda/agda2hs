@@ -34,3 +34,4 @@ import Fail.Issue154
 import Fail.PartialCaseNoLambda
 import Fail.NonStarDatatypeIndex
 import Fail.NonCanonicalSpecialFunction
+import Fail.TypeLambda
