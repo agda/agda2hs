@@ -76,4 +76,5 @@ import TypeBasedUnboxing
 import Issue145
 import Issue264
 import Issue301
+import Issue305
 
