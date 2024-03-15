@@ -35,3 +35,4 @@ import Fail.PartialCaseNoLambda
 import Fail.NonStarDatatypeIndex
 import Fail.NonCanonicalSpecialFunction
 import Fail.TypeLambda
+import Fail.NonCanonicalSuperclass

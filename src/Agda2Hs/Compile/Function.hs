@@ -230,7 +230,7 @@ keepClause c@Clause{..} = case (clauseBody, clauseType) of
   (_, Nothing) -> pure False
   (Just body, Just cty) -> compileDom (domFromArg cty) <&> \case
     DODropped  -> False
-    DOInstance -> False -- not __IMPOSSIBLE__ because of current hacky implementation of `compileInstanceClause`
+    DOInstance -> True
     DOType     -> __IMPOSSIBLE__
     DOTerm     -> True
 

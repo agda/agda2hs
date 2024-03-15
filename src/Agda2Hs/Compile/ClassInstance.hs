@@ -235,13 +235,13 @@ compileInstanceClause' curModule ty (p:ps) c
         reportSDoc "agda2hs.compile.instance" 20 $
           text $ "raw projection:" ++ prettyShow (Def n [])
         d <- chaseDef n
-        fc <- compileLocal $ compileFun False d
+        Hs.InstDecl _ _ _ (Just fc) <- compileLocal $ compileInstance ToDefinition d
         let hd = hsName $ prettyShow $ nameConcrete $ qnameName $ defName d
         let fc' = {- dropPatterns 1 $ -} replaceName hd uf fc
         reportSDoc "agda2hs.compile.instance" 6 $ vcat $
           text "compileInstanceClause compiled clause: " :
           map (nest 2 . text . pp) fc'
-        return (map (Hs.InsDecl ()) fc', [n])
+        return (fc', [n])
 
        -- Projection of a default implementation: drop while making sure these are drawn from the
        -- same (minimal) dictionary as the primitive fields.
