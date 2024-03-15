@@ -15,7 +15,33 @@ instance
 
 {-# COMPILE AGDA2HS ClassInt #-}
 
+instance
+  ClassBool : Class Bool
+  ClassBool .foo = not
+
+{-# COMPILE AGDA2HS ClassBool #-}
+
 test : Int
 test = foo 41
 
 {-# COMPILE AGDA2HS test #-}
+
+anotherTest : Int
+anotherTest = test
+
+{-# COMPILE AGDA2HS anotherTest #-}
+
+record Subclass (a : Set) : Set where
+  field
+    overlap {{super}} : Class a
+    bar : a
+open Subclass {{...}} public
+
+{-# COMPILE AGDA2HS Subclass class #-}
+
+instance 
+  SubclassBool : Subclass Bool
+  SubclassBool .super = ClassBool
+  SubclassBool .bar = False
+
+{-# COMPILE AGDA2HS SubclassBool #-}

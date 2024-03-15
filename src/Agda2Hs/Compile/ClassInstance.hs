@@ -217,7 +217,9 @@ compileInstanceClause' curModule ty (p:ps) c
           body <- case clauseBody c' of
             Nothing -> genericDocError =<< text "not allowed: absurd clause for superclass"
             Just b  -> return b
-          checkInstance body
+          addContext (clauseTel c) $ do
+            liftTCM $ setModuleCheckpoint curModule
+            checkInstance body
           reportSDoc "agda2hs.compile.instance" 20 $ vcat
             [ text "compileInstanceClause dropping clause"
             , nest 2 $ prettyTCM c
