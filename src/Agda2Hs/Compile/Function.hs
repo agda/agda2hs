@@ -178,6 +178,11 @@ compileClause' curModule projName x ty c@Clause{..} = do
     reportSDoc "agda2hs.compile" 17 $ "Function type:    " <+> prettyTCM ty
     reportSDoc "agda2hs.compile" 17 $ "Clause patterns:  " <+> text (prettyShow namedClausePats)
 
+    -- Jesper: we need to set the checkpoint for the current module so that
+    -- the canonicity check for typeclass instances picks up the
+    -- module parameters (see https://github.com/agda/agda2hs/issues/305).
+    liftTCM $ setModuleCheckpoint curModule
+
     toDrop <- case projName of
       Nothing -> pure 0
       Just q  -> maybe 0 (pred . projIndex) <$> isProjection q

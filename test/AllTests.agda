@@ -81,6 +81,7 @@ import TypeBasedUnboxing
 import Issue145
 import Issue264
 import Issue301
+import Issue305
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -159,4 +160,5 @@ import TypeBasedUnboxing
 import Issue145
 import Issue264
 import Issue301
+import Issue305
 #-}
