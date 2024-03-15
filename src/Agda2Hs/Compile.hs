@@ -82,6 +82,8 @@ compile opts tlm _ def =
 
       isInstance <- anyM (defInstance def) isClassName 
 
+      reportSDoc "agda2hs.compile" 15  $ text "Is instance?" <+> prettyTCM isInstance
+
       case (p , theDef def) of
         (NoPragma            , _         ) -> return []
         (ExistingClassPragma , _         ) -> return []
