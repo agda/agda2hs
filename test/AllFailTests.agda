@@ -27,7 +27,6 @@ import Fail.QualifiedRecordProjections
 import Fail.NewTypeTwoFields
 import Fail.InvalidName
 import Fail.Issue185
-import Fail.Issue145
 import Fail.ExplicitInstance
 import Fail.ClashingImport
 import Fail.Copatterns
