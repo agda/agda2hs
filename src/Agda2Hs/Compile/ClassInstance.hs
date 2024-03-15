@@ -8,7 +8,7 @@ import Data.List ( nub )
 import Data.Maybe ( isNothing, mapMaybe )
 import qualified Data.HashMap.Strict as HMap
 
-import qualified Language.Haskell.Exts.Syntax as Hs
+import qualified Language.Haskell.Exts as Hs
 import Language.Haskell.Exts.Extension as Hs
 
 import Agda.Compiler.Backend
@@ -74,8 +74,14 @@ compileInstance ToDefinition def@Defn{..} =
   enableCopatterns $ setCurrentRangeQ defName $ do
     ir <- compileInstRule [] (unEl defType)
     withFunctionLocals defName $ do
+      reportSDoc "agda2hs.compile.instance" 20 $ vcat $
+        text "compileInstance clauses: " :
+        map (nest 2 . prettyTCM) funClauses
       (ds, rs) <- concatUnzip
               <$> mapM (compileInstanceClause (qnameModule defName) defType) funClauses
+      reportSDoc "agda2hs.compile.instance" 20 $ vcat $
+        text "compileInstance compiled clauses: " :
+        map (nest 2 . text . pp) ds
       when (length (nub rs) > 1) $
         genericDocError =<< fsep (pwords "More than one minimal record used.")
       return $ Hs.InstDecl () Nothing ir (Just ds)
@@ -139,8 +145,12 @@ compileInstanceClause curModule ty c = ifNotM (keepClause c) (return ([], [])) $
   let naps = namedClausePats c
 
   -- there are no projection patterns: we need to eta-expand the clause
-  if all (isNothing . isProjP) naps then
-    concatUnzip <$> (mapM (compileInstanceClause curModule ty) =<< etaExpandClause c)
+  if all (isNothing . isProjP) naps then do
+    cs <- etaExpandClause c
+    reportSDoc "agda2hs.compile.instance" 20 $ vcat $
+      text "compileInstance expanded clauses: " :
+      map (nest 2 . prettyTCM) cs
+    concatUnzip <$> mapM (compileInstanceClause curModule ty) cs
 
   -- otherwise we seek the first projection pattern
   else addContext (KeepNames $ clauseTel c) $
@@ -208,6 +218,10 @@ compileInstanceClause' curModule ty (p:ps) c
             Nothing -> genericDocError =<< text "not allowed: absurd clause for superclass"
             Just b  -> return b
           checkInstance body
+          reportSDoc "agda2hs.compile.instance" 20 $ vcat
+            [ text "compileInstanceClause dropping clause"
+            , nest 2 $ prettyTCM c
+            ]
           return ([], [])
 
       -- Projection of a primitive field: chase down definition and inline as instance clause.
@@ -222,6 +236,9 @@ compileInstanceClause' curModule ty (p:ps) c
         fc <- compileLocal $ compileFun False d
         let hd = hsName $ prettyShow $ nameConcrete $ qnameName $ defName d
         let fc' = {- dropPatterns 1 $ -} replaceName hd uf fc
+        reportSDoc "agda2hs.compile.instance" 6 $ vcat $
+          text "compileInstanceClause compiled clause: " :
+          map (nest 2 . text . pp) fc'
         return (map (Hs.InsDecl ()) fc', [n])
 
        -- Projection of a default implementation: drop while making sure these are drawn from the
@@ -257,7 +274,12 @@ compileInstanceClause' curModule ty (p:ps) c
       | otherwise -> do
         reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
         ms <- disableCopatterns $ compileClause curModule Nothing uf ty' c'
-        return ([Hs.InsDecl () (Hs.FunBind () (toList ms))], [])
+        let cc = Hs.FunBind () (toList ms)
+        reportSDoc "agda2hs.compile.instance" 20 $ vcat
+          [ text "compileInstanceClause compiled clause"
+          , nest 2 $ text $ pp cc
+          ]
+        return ([Hs.InsDecl () cc], [])
 
 -- finding a pattern other than a projection: we skip
 -- NOTE(flupe): actually I think we may want to throw hard errors here
