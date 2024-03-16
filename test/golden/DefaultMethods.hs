@@ -13,14 +13,14 @@ class Ord a where
     x > y = y < x
 
 instance Ord Bool where
-    (<) False b = b
-    (<) True _ = False
+    False < b = b
+    True < _ = False
 
 data Bool1 = Mk1 Bool
 
 instance Ord Bool1 where
-    (<) (Mk1 False) (Mk1 b) = b
-    (<) (Mk1 True) _ = False
+    Mk1 False < Mk1 b = b
+    Mk1 True < _ = False
 
 data Bool2 = Mk2 Bool
 
@@ -39,8 +39,11 @@ instance Ord Bool2 where
 data Bool3 = Mk3 Bool
 
 instance Ord Bool3 where
-    Mk3 False < Mk3 b = b
-    Mk3 True < _ = False
+    (<) = (<:)
+      where
+        (<:) :: Bool3 -> Bool3 -> Bool
+        Mk3 False <: Mk3 b = b
+        Mk3 True <: _ = False
 
 data Bool4 = Mk4 Bool
 
@@ -53,8 +56,11 @@ instance Ord Bool4 where
 data Bool5 = Mk5 Bool
 
 instance Ord Bool5 where
-    Mk5 False > _ = False
-    Mk5 True > Mk5 b = not b
+    (>) = (>:)
+      where
+        (>:) :: Bool5 -> Bool5 -> Bool
+        Mk5 False >: _ = False
+        Mk5 True >: Mk5 b = not b
 
 data Bool6 = Mk6 Bool
 
@@ -64,8 +70,11 @@ instance Ord Bool6 where
         (>:) :: Bool6 -> Bool6 -> Bool
         Mk6 False >: _ = False
         Mk6 True >: Mk6 b = not b
-    Mk6 False > _ = False
-    Mk6 True > Mk6 b = not b
+    (>) = (>:)
+      where
+        (>:) :: Bool6 -> Bool6 -> Bool
+        Mk6 False >: _ = False
+        Mk6 True >: Mk6 b = not b
 
 defaultShowList :: (a -> ShowS) -> [a] -> ShowS
 defaultShowList _ [] = showString "[]"

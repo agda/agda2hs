@@ -84,7 +84,7 @@ compileInstance ToDefinition def@Defn{..} =
       let mod = qnameModule defName
       reportSDoc "agda2hs.compile.instance" 25 $ text "compileInstance module: " <+> prettyTCM mod
       (ds, rs) <- concatUnzip
-              <$> mapM (compileInstanceClause (qnameModule defName) defType) funClauses
+              <$> mapM (\c -> withClauseLocals mod c $ compileInstanceClause mod defType c) funClauses
       reportSDoc "agda2hs.compile.instance" 20 $ vcat $
         text "compileInstance compiled clauses: " :
         map (nest 2 . text . pp) ds
@@ -162,7 +162,7 @@ compileInstanceClause curModule ty c = ifNotM (keepClause c) (return ([], [])) $
 
   -- otherwise we seek the first projection pattern
   else addContext (KeepNames $ clauseTel c) $
-    withClauseLocals curModule c $ compileInstanceClause' curModule ty naps c { clauseTel = EmptyTel }
+    compileInstanceClause' curModule ty naps c { clauseTel = EmptyTel }
 
 -- abuse compileClause:
 -- 1. drop any patterns before record projection to suppress the instance arg
@@ -209,19 +209,6 @@ compileInstanceClause' curModule ty (p:ps) c
       (.~) :: QName -> QName -> Bool
       x .~ y = nameConcrete (qnameName x) == nameConcrete (qnameName y)
 
-      resolveExtendedLambda :: QName -> C QName
-      resolveExtendedLambda n | isExtendedLambdaName n = defName <$> getConstInfo n
-                              | otherwise              = return n
-
-      chaseDef :: QName -> C Definition
-      chaseDef n = do
-        d <- getConstInfo n
-        let Function {..} = theDef d
-        case funClauses of
-          [ Clause {clauseBody = Just (Def n' [])} ] -> do
-            chaseDef n'
-          _ -> return d
-
     if
       -- Instance field: check canonicity.
       | isInstance arg -> do
@@ -244,16 +231,18 @@ compileInstanceClause' curModule ty (p:ps) c
       , f .~ q -> do
         reportSDoc "agda2hs.compile.instance" 20 $
           text "Instance clause is projected from" <+> prettyTCM (Def n [])
-        d <- chaseDef n
-        Hs.InstDecl _ _ _ (Just fc) <- compileLocal $ compileInstance ToDefinition d
-        let hd = hsName $ prettyShow $ nameConcrete $ qnameName $ defName d
         reportSDoc "agda2hs.compile.instance" 40 $
           text $ "raw name: " ++ prettyShow (Def n [])
+        d@Defn{..} <- getConstInfo n
+        let mod = if isExtendedLambdaName defName then curModule else qnameModule defName
+        (fc, rs) <- withCurrentModule mod $ 
+          concatUnzip <$> mapM (compileInstanceClause mod defType) (funClauses theDef)
+        let hd = hsName $ prettyShow $ nameConcrete $ qnameName defName
         let fc' = {- dropPatterns 1 $ -} replaceName hd uf fc
         reportSDoc "agda2hs.compile.instance" 6 $ vcat $
           text "compileInstanceClause compiled clause: " :
           map (nest 2 . text . pp) fc'
-        return (fc', [n])
+        return (fc', n:rs)
 
        -- Projection of a default implementation: drop while making sure these are drawn from the
        -- same (minimal) dictionary as the primitive fields.
