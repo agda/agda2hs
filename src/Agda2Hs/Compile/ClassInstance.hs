@@ -1,7 +1,7 @@
 module Agda2Hs.Compile.ClassInstance where
 
 import Control.Monad ( when, filterM, unless )
-import Control.Monad.Reader ( local )
+import Control.Monad.Reader ( asks, local )
 
 import Data.Foldable ( toList )
 import Data.List ( nub )
@@ -65,6 +65,8 @@ compileInstance :: InstanceTarget -> Definition -> C (Hs.Decl ())
 
 compileInstance (ToDerivation strategy) def@Defn{..} =
   setCurrentRangeQ defName $ do
+    reportSDoc "agda2hs.compile.instance" 13 $ 
+      text "compiling instance" <+> prettyTCM defName <+> text "to standalone deriving"
     tellExtension Hs.StandaloneDeriving
     enableStrategy strategy
     ir <- compileInstRule [] (unEl defType)
@@ -72,11 +74,15 @@ compileInstance (ToDerivation strategy) def@Defn{..} =
 
 compileInstance ToDefinition def@Defn{..} =
   enableCopatterns $ setCurrentRangeQ defName $ do
+    reportSDoc "agda2hs.compile.instance" 13 $ 
+      text "compiling instance" <+> prettyTCM defName <+> text "to instance definition"
     ir <- compileInstRule [] (unEl defType)
     withFunctionLocals defName $ do
       reportSDoc "agda2hs.compile.instance" 20 $ vcat $
         text "compileInstance clauses: " :
         map (nest 2 . prettyTCM) funClauses
+      let mod = qnameModule defName
+      reportSDoc "agda2hs.compile.instance" 25 $ text "compileInstance module: " <+> prettyTCM mod
       (ds, rs) <- concatUnzip
               <$> mapM (compileInstanceClause (qnameModule defName) defType) funClauses
       reportSDoc "agda2hs.compile.instance" 20 $ vcat $
@@ -89,27 +95,29 @@ compileInstance ToDefinition def@Defn{..} =
 
 
 compileInstRule :: [Hs.Asst ()] -> Term -> C (Hs.InstRule ())
-compileInstRule cs ty = case unSpine1 ty of
-  Def f es | Just args <- allApplyElims es -> do
-    fty <- defType <$> getConstInfo f
-    vs <- compileTypeArgs fty args
-    f <- compileQName f
-    return $
-      Hs.IRule () Nothing (ctx cs) $ foldl (Hs.IHApp ()) (Hs.IHCon () f) (map pars vs)
-    where ctx [] = Nothing
-          ctx cs = Just (Hs.CxTuple () cs)
-          -- put parens around anything except a var or a constant
-          pars :: Hs.Type () -> Hs.Type ()
-          pars t@(Hs.TyVar () _) = t
-          pars t@(Hs.TyCon () _) = t
-          pars t = Hs.TyParen () t
-  Pi a b -> compileDomType (absName b) a >>= \case
-    DomDropped -> underAbstr a b (compileInstRule cs . unEl)
-    DomConstraint hsA ->
-      underAbstraction a b (compileInstRule (cs ++ [hsA]) . unEl)
-    DomType _ t -> __IMPOSSIBLE__
-    DomForall _ -> __IMPOSSIBLE__
-  _ -> __IMPOSSIBLE__
+compileInstRule cs ty = do
+  reportSDoc "agda2hs.compile.instance" 20 $ text "compileInstRule" <+> prettyTCM ty
+  case unSpine1 ty of
+    Def f es | Just args <- allApplyElims es -> do
+      fty <- defType <$> getConstInfo f
+      vs <- compileTypeArgs fty args
+      f <- compileQName f
+      return $
+        Hs.IRule () Nothing (ctx cs) $ foldl (Hs.IHApp ()) (Hs.IHCon () f) (map pars vs)
+      where ctx [] = Nothing
+            ctx cs = Just (Hs.CxTuple () cs)
+            -- put parens around anything except a var or a constant
+            pars :: Hs.Type () -> Hs.Type ()
+            pars t@(Hs.TyVar () _) = t
+            pars t@(Hs.TyCon () _) = t
+            pars t = Hs.TyParen () t
+    Pi a b -> compileDomType (absName b) a >>= \case
+      DomDropped -> underAbstr a b (compileInstRule cs . unEl)
+      DomConstraint hsA ->
+        underAbstraction a b (compileInstRule (cs ++ [hsA]) . unEl)
+      DomType _ t -> __IMPOSSIBLE__
+      DomForall _ -> __IMPOSSIBLE__
+    _ -> __IMPOSSIBLE__
 
 
 -- Plan:
@@ -191,6 +199,10 @@ compileInstanceClause' curModule ty (p:ps) c
     reportSDoc "agda2hs.compile.instance" 15 $
       text "Clause patterns:" <+> prettyTCM (namedArg <$> ps)
 
+    reportSDoc "agda2hs.compile.instance" 18 $ text "Current module:" <+> prettyTCM curModule
+    ls <- asks locals
+    reportSDoc "agda2hs.compile.instance" 18 $ text "Clause locals:" <+> prettyTCM ls
+
     let uf = hsName $ prettyShow $ nameConcrete $ qnameName q
 
     let
@@ -232,11 +244,11 @@ compileInstanceClause' curModule ty (p:ps) c
       , f .~ q -> do
         reportSDoc "agda2hs.compile.instance" 20 $
           text "Instance clause is projected from" <+> prettyTCM (Def n [])
-        reportSDoc "agda2hs.compile.instance" 20 $
-          text $ "raw projection:" ++ prettyShow (Def n [])
         d <- chaseDef n
         Hs.InstDecl _ _ _ (Just fc) <- compileLocal $ compileInstance ToDefinition d
         let hd = hsName $ prettyShow $ nameConcrete $ qnameName $ defName d
+        reportSDoc "agda2hs.compile.instance" 40 $
+          text $ "raw name: " ++ prettyShow (Def n [])
         let fc' = {- dropPatterns 1 $ -} replaceName hd uf fc
         reportSDoc "agda2hs.compile.instance" 6 $ vcat $
           text "compileInstanceClause compiled clause: " :
