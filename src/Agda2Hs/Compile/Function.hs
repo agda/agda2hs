@@ -177,6 +177,9 @@ compileClause' curModule projName x ty c@Clause{..} = do
     reportSDoc "agda2hs.compile" 17 $ "Clause type:      " <+> prettyTCM clauseType
     reportSDoc "agda2hs.compile" 17 $ "Function type:    " <+> prettyTCM ty
     reportSDoc "agda2hs.compile" 17 $ "Clause patterns:  " <+> text (prettyShow namedClausePats)
+    reportSDoc "agda2hs.compile" 18 $ "Clause module:" <+> prettyTCM curModule
+    ls <- asks locals
+    reportSDoc "agda2hs.compile" 18 $ "Clause locals:" <+> prettyTCM ls
 
     -- Jesper: we need to set the checkpoint for the current module so that
     -- the canonicity check for typeclass instances picks up the
