@@ -15,6 +15,15 @@ test = foo 41
 anotherTest :: Int
 anotherTest = test
 
+yetAnotherTest :: Int
+yetAnotherTest
+  = case Just True of
+        Nothing -> error "unreachable"
+        Just y -> foo 5
+
+andOneMoreTest :: Int -> Int
+andOneMoreTest x = foo 5
+
 class Class a => Subclass a where
     bar :: a
 

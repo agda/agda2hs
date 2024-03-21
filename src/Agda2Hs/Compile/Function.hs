@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Agda2Hs.Compile.Function where
 
+import Control.Arrow ( (***) )
 import Control.Monad ( (>=>), filterM, forM_ )
 import Control.Monad.Reader ( asks, local )
 
@@ -40,7 +41,7 @@ import Agda.Utils.Size ( Sized(size) )
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Term ( compileTerm, usableDom )
-import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..) )
+import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileDomType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
@@ -115,23 +116,29 @@ compileFun withSig def@Defn{..} =
     $ compileFun' withSig def
 
 -- inherit existing (instantiated) locals
-compileFun' withSig def@Defn{..} = inTopContext $ do
+compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
   reportSDoc "agda2hs.compile" 6 $ "Compiling function: " <+> prettyTCM defName
 
   whenM ((withSig &&) <$> inRecordMod defName) $
     genericDocError =<< text "not supported by agda2hs: functions inside a record module"
 
-  -- We add the module parameters to the context
-  -- if we are compiling a local function (e.g. a where declaration or pattern-matching lambda)
-  isLocalFun <- asks compilingLocal
-  tel <- if isLocalFun then lookupSection m else return EmptyTel
+  ifM (endsInSort defType)
+    -- if the function type ends in Sort, it's a type alias!
+    (ensureNoLocals err >> compileTypeDef x def) 
+    -- otherwise, we have to compile clauses.
+    $ do
+    tel <- lookupSection m
 
-  withCurrentModule m $ addContext tel $ do
-    ifM (endsInSort defType)
-        -- if the function type ends in Sort, it's a type alias!
-        (ensureNoLocals err >> compileTypeDef x def) 
-        -- otherwise, we have to compile clauses.
-        $ do
+    -- If this is a top-level function, we compile the module parameters so
+    -- we can add them to the type signature and patterns.
+    (paramTy , paramPats) <- ifM (asks compilingLocal) (return (id, [])) $ compileModuleParams tel
+
+    addContext tel $ do
+
+      -- Jesper: we need to set the checkpoint for the current module so that
+      -- the canonicity check for typeclass instances picks up the
+      -- module parameters (see https://github.com/agda/agda2hs/issues/305).
+      liftTCM $ setModuleCheckpoint m
           
       pars <- getContextArgs
       reportSDoc "agda2hs.compile.type" 8 $ "Function module parameters: " <+> prettyTCM pars
@@ -142,12 +149,13 @@ compileFun' withSig def@Defn{..} = inTopContext $ do
 
       sig <- if not withSig then return [] else do
         checkValidFunName x
-        ty <- compileType $ unEl typ
+        ty <- paramTy <$> compileType (unEl typ)
         reportSDoc "agda2hs.compile.type" 8 $ "Compiled function type: " <+> text (Hs.prettyPrint ty) 
         return [Hs.TypeSig () [x] ty]
 
       let clauses = funClauses `apply` pars
-      cs  <- mapMaybeM (compileClause m (Just defName) x typ) clauses
+      cs  <- map (addPats paramPats) <$>
+        mapMaybeM (compileClause m (Just defName) x typ) clauses
 
       when (null cs) $ genericDocError
         =<< text "Functions defined with absurd patterns exclusively are not supported."
@@ -161,6 +169,23 @@ compileFun' withSig def@Defn{..} = inTopContext $ do
     x = hsName $ prettyShow n
     err = "Not supported: type definition with `where` clauses"
 
+    addPats :: [Hs.Pat ()] -> Hs.Match () -> Hs.Match ()
+    addPats [] cl = cl
+    addPats ps (Hs.Match l f qs rhs bs) = Hs.Match l f (ps++qs) rhs bs
+    addPats (p:ps) (Hs.InfixMatch l q f qs rhs bs) = Hs.InfixMatch l p f (ps++q:qs) rhs bs
+
+compileModuleParams :: Telescope -> C (Hs.Type () -> Hs.Type () , [Hs.Pat ()])
+compileModuleParams EmptyTel = return (id, [])
+compileModuleParams (ExtendTel a tel) = do
+  (f , p) <- compileDomType (absName tel) a >>= \case
+    DomDropped -> return (id, [])
+    DomConstraint c -> return (constrainType c, [])
+    DomForall a -> return (qualifyType a, [])
+    DomType s a -> do
+      let n = hsName $ absName tel
+      checkValidVarName n
+      return (Hs.TyFun () a, [Hs.PVar () n])
+  ((f .) *** (p++)) <$> underAbstraction a tel compileModuleParams
 
 compileClause :: ModuleName -> Maybe QName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
 compileClause curModule mproj x t c =
@@ -180,11 +205,6 @@ compileClause' curModule projName x ty c@Clause{..} = do
     reportSDoc "agda2hs.compile" 18 $ "Clause module:" <+> prettyTCM curModule
     ls <- asks locals
     reportSDoc "agda2hs.compile" 18 $ "Clause locals:" <+> prettyTCM ls
-
-    -- Jesper: we need to set the checkpoint for the current module so that
-    -- the canonicity check for typeclass instances picks up the
-    -- module parameters (see https://github.com/agda/agda2hs/issues/305).
-    liftTCM $ setModuleCheckpoint curModule
 
     toDrop <- case projName of
       Nothing -> pure 0
