@@ -31,6 +31,16 @@ anotherTest = test
 
 {-# COMPILE AGDA2HS anotherTest #-}
 
+yetAnotherTest : Int
+yetAnotherTest = case Just True of λ where
+  Nothing → error "unreachable"
+  (Just y) → foo 5
+{-# COMPILE AGDA2HS yetAnotherTest #-}
+
+andOneMoreTest : Int → Int
+andOneMoreTest x = foo 5
+{-# COMPILE AGDA2HS andOneMoreTest #-}
+
 record Subclass (a : Set) : Set where
   field
     overlap {{super}} : Class a

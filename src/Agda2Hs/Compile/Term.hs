@@ -75,7 +75,7 @@ lambdaCase q ty args = compileLocal $ setCurrentRangeQ q $ do
 
   ty' <- piApplyM ty pars
 
-  cs <- mapMaybeM (compileClause' (qnameModule q) (Just q) (hsName "(lambdaCase)") ty') cs
+  cs <- mapMaybeM (compileClause' mname (Just q) (hsName "(lambdaCase)") ty') cs
 
   case cs of
     -- If there is a single clause and all patterns got erased, we

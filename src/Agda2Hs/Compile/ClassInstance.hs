@@ -25,9 +25,9 @@ import Agda.Syntax.Scope.Monad ( resolveName )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Substitute ( Apply(applyE), absBody, absApp )
+import Agda.TypeChecking.Substitute ( Apply(applyE), absBody, absApp, apply )
 import Agda.TypeChecking.Records
-import Agda.TypeChecking.Telescope ( mustBePi )
+import Agda.TypeChecking.Telescope ( mustBePi, piApplyM )
 
 import Agda.Utils.Lens
 import Agda.Utils.Monad ( ifNotM )
@@ -83,14 +83,20 @@ compileInstance ToDefinition def@Defn{..} =
         map (nest 2 . prettyTCM) funClauses
       let mod = qnameModule defName
       reportSDoc "agda2hs.compile.instance" 25 $ text "compileInstance module: " <+> prettyTCM mod
-      (ds, rs) <- concatUnzip
-              <$> mapM (\c -> withClauseLocals mod c $ compileInstanceClause mod defType c) funClauses
-      reportSDoc "agda2hs.compile.instance" 20 $ vcat $
-        text "compileInstance compiled clauses: " :
-        map (nest 2 . text . pp) ds
-      when (length (nub rs) > 1) $
-        genericDocError =<< fsep (pwords "More than one minimal record used.")
-      return $ Hs.InstDecl () Nothing ir (Just ds)
+      tel <- lookupSection mod
+      addContext tel $ do
+        liftTCM $ setModuleCheckpoint mod
+        pars <- getContextArgs
+        ty <- defType `piApplyM` pars
+        let clauses = funClauses `apply` pars
+        (ds, rs) <- concatUnzip
+                <$> mapM (\c -> withClauseLocals mod c $ compileInstanceClause mod ty c) clauses
+        reportSDoc "agda2hs.compile.instance" 20 $ vcat $
+          text "compileInstance compiled clauses: " :
+          map (nest 2 . text . pp) ds
+        when (length (nub rs) > 1) $
+          genericDocError =<< fsep (pwords "More than one minimal record used.")
+        return $ Hs.InstDecl () Nothing ir (Just ds)
     where Function{..} = theDef
 
 
@@ -182,6 +188,13 @@ compileInstanceClause' curModule ty (p:ps) c
     (q, _, _) <- origProjection q
     arg <- fieldArgInfo q
 
+
+    reportSDoc "agda2hs.compile.instance" 15 $
+      text "Compiling instance clause for" <+> prettyTCM (Arg arg $ Def q [])
+
+    reportSDoc "agda2hs.compile.instance" 15 $
+      text "Instance type: " <+> prettyTCM ty
+
     -- retrieve the type of the projection
     Just (unEl -> Pi a b) <- getDefType q ty
     -- We don't really have the information available to reconstruct the instance
@@ -189,9 +202,6 @@ compileInstanceClause' curModule ty (p:ps) c
     -- so we can just use a dummy term instead
     let instanceHead = __DUMMY_TERM__ 
         ty' = b `absApp` instanceHead
-
-    reportSDoc "agda2hs.compile.instance" 15 $
-      text "Compiling instance clause for" <+> prettyTCM (Arg arg $ Def q [])
 
     reportSDoc "agda2hs.compile.instance" 15 $
       text "Clause type: " <+> prettyTCM ty'
