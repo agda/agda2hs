@@ -1,0 +1,14 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Haskell.Prim.Strict</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="Agda">
+<a id="2" class="Keyword">module</a> <a id="9" href="Haskell.Prim.Strict.html" class="Module">Haskell.Prim.Strict</a> <a id="29" class="Keyword">where</a>
+
+<a id="36" class="Keyword">open</a> <a id="41" class="Keyword">import</a> <a id="48" href="Haskell.Prim.html" class="Module">Haskell.Prim</a>
+
+<a id="62" class="Keyword">record</a> <a id="Strict"></a><a id="69" href="Haskell.Prim.Strict.html#69" class="Record">Strict</a> <a id="76" class="Symbol">(</a><a id="77" href="Haskell.Prim.Strict.html#77" class="Bound">a</a> <a id="79" class="Symbol">:</a> <a id="81" href="Agda.Primitive.html#388" class="Primitive">Set</a> <a id="85" href="Haskell.Prim.html#1179" class="Generalizable">ℓ</a><a id="86" class="Symbol">)</a> <a id="88" class="Symbol">:</a> <a id="90" href="Agda.Primitive.html#388" class="Primitive">Set</a> <a id="94" href="Haskell.Prim.Strict.html#85" class="Bound">ℓ</a> <a id="96" class="Keyword">where</a>
+  <a id="104" class="Keyword">constructor</a> <a id="!_"></a><a id="116" href="Haskell.Prim.Strict.html#116" class="InductiveConstructor Operator">!_</a>
+  <a id="121" class="Keyword">field</a>
+    <a id="Strict.force"></a><a id="131" href="Haskell.Prim.Strict.html#131" class="Field">force</a> <a id="137" class="Symbol">:</a> <a id="139" href="Haskell.Prim.Strict.html#77" class="Bound">a</a>
+<a id="141" class="Keyword">open</a> <a id="146" href="Haskell.Prim.Strict.html#69" class="Module">Strict</a> <a id="153" class="Keyword">public</a>
+
+<a id="161" class="Symbol">{-#</a> <a id="165" class="Keyword">COMPILE</a> <a id="173" class="Keyword">AGDA2HS</a> <a id="181" href="Haskell.Prim.Strict.html#69" class="Record">Strict</a> <a id="188" class="Pragma">unboxed-strict</a> <a id="203" class="Symbol">#-}</a>
+</pre></body></html>
