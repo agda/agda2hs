@@ -1,7 +1,7 @@
 {
   description = "Agda2hs";
 
-  inputs.nixpkgs.url = github:NixOS/nixpkgs/eabe8d3eface69f5bb16c18f8662a702f50c20d5;
+  inputs.nixpkgs.url = github:NixOS/nixpkgs;
   inputs.flake-utils.url = github:numtide/flake-utils;
   inputs.mkAgdaDerivation.url = github:liesnikov/mkAgdaDerivation;
 
