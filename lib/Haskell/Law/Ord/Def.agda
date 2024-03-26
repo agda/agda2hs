@@ -64,21 +64,23 @@ open IsLawfulOrd ⦃ ... ⦄ public
 --------------------------------------------------
 -- Some more helper laws
 
+compareSelf : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
+  → ∀ (x : a) → (compare x x) ≡ EQ
+compareSelf x = (equality (trans (sym (compareEq x x)) (eqReflexivity x)))
+
 eq2nlt : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x == y) ≡ True → (x < y) ≡ False
 eq2nlt x y h
   rewrite compareEq x y
     | compareLt x y
-    | equality (compare x y) EQ h
-  = refl
+  = cong (λ e → e == LT) (equality h)
 
 eq2ngt : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x == y) ≡ True → (x > y) ≡ False
 eq2ngt x y h
   rewrite compareEq x y
     | compareGt x y
-    | equality (compare x y) EQ h
-  = refl
+  = cong (λ e → e == GT) (equality h)
 
 lte2LtEq : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x <= y) ≡ (x < y || x == y)
@@ -88,9 +90,9 @@ lte2LtEq x y
   with (x <= y) in h₁ | (compare x y) in h₂
 ... | False | LT = refl
 ... | False | EQ = magic $ exFalso (reflexivity x) $ begin 
-    (x <= x)  ≡⟨ (cong (x <=_) (equality x y (begin 
+    (x <= x)  ≡⟨ (cong (x <=_) (equality (begin 
       (x == y)            ≡⟨ compareEq x y ⟩ 
-      (compare x y == EQ) ≡⟨ equality' (compare x y) EQ h₂ ⟩ 
+      (compare x y == EQ) ≡⟨ equality' h₂ ⟩ 
       True                ∎ ) ) ) ⟩
     (x <= y)  ≡⟨ h₁ ⟩ 
     False ∎
@@ -155,7 +157,7 @@ eq2lte x y h
 
 lt2lte : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x < y) ≡ True → (x <= y) ≡ True
-lt2lte x y h = &&-rightTrue' (x < y) (x <= y) (x /= y) (lt2LteNeq x y) h
+lt2lte x y h = &&-rightTrue' (lt2LteNeq x y) h
 
 eq2gte : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x == y) ≡ True → (x >= y) ≡ True
@@ -201,3 +203,4 @@ postulate instance
   iLawfulOrdList : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄ → IsLawfulOrd (List a)
 
   iLawfulOrdEither : ⦃ iOrdA : Ord a ⦄ → ⦃ iOrdB : Ord b ⦄ →  ⦃ IsLawfulOrd a ⦄ → ⦃ IsLawfulOrd b ⦄ → IsLawfulOrd (Either a b)
+  

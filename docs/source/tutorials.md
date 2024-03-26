@@ -173,14 +173,9 @@ createTriangle₁ alpha beta gamma
     = if ((countBiggerThan (alpha ∷ beta ∷  gamma ∷ []) 90 <= 1) 
             && (alpha + beta + gamma == 180 )) 
         then (λ ⦃ h₁ ⦄ →  Just (MkTriangle alpha beta gamma 
-            ⦃ &&-rightTrue 
-                    (countBiggerThan (alpha ∷ beta ∷  gamma ∷ []) 90 <= 1) 
-                    (alpha + beta + gamma == 180 ) 
-                    h₁ ⦄ 
-            ⦃ &&-leftTrue 
-                    (countBiggerThan (alpha ∷ beta ∷  gamma ∷ []) 90 <= 1) 
-                    (alpha + beta + gamma == 180 ) 
-                    h₁ ⦄) )
+            ⦃ &&-rightTrue h₁ ⦄ 
+            ⦃ &&-leftTrue h₁ ⦄) 
+        )
         else Nothing
  
 {-# COMPILE AGDA2HS createTriangle₁ #-}

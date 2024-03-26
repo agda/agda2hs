@@ -86,10 +86,10 @@ instance
   iLawfulEqList .isEquality (x ∷ xs) (y ∷ ys) 
     with (x == y) in h₁
   ... | True  = mapReflects 
-    (λ h → cong₂ (_∷_) (equality x y h₁)  h) 
+    (λ h → cong₂ (_∷_) (equality h₁)  h) 
     ∷-injective-right 
     (isEquality xs ys)
-  ... | False = λ h → (nequality x y h₁) (∷-injective-left h)
+  ... | False = λ h → (nequality h₁) (∷-injective-left h)
 
   iLawfulEqMaybe : ⦃ iEqA : Eq a ⦄ → ⦃ IsLawfulEq a ⦄ → IsLawfulEq (Maybe a)
   iLawfulEqMaybe .isEquality Nothing  Nothing  = refl
@@ -115,10 +115,10 @@ instance
   iLawfulEqTuple₂ .isEquality (x₁ , x₂) (y₁ , y₂)
     with (x₁ == y₁) in h₁
   ... | True  = mapReflects
-    (λ h → cong₂ _,_ (equality x₁ y₁ h₁) h) 
+    (λ h → cong₂ _,_ (equality h₁) h) 
     (cong snd) 
     (isEquality x₂ y₂)
-  ... | False = λ h → exFalso (equality' x₁ y₁ (cong fst h)) h₁
+  ... | False = λ h → exFalso (equality' (cong fst h)) h₁
 
   iLawfulEqTuple₃ : ⦃ iEqA : Eq a ⦄ ⦃ iEqB : Eq b ⦄ ⦃ iEqC : Eq c ⦄
     → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄ → ⦃ IsLawfulEq c ⦄
@@ -126,10 +126,10 @@ instance
   iLawfulEqTuple₃ .isEquality (x₁ , x₂ , x₃) (y₁ , y₂ , y₃) 
     with (x₁ == y₁) in h₁ 
   ... | True  = mapReflects
-    (λ h → cong₂ (λ a (b , c) → a , b , c) (equality x₁ y₁ h₁) h) 
+    (λ h → cong₂ (λ a (b , c) → a , b , c) (equality h₁) h) 
     (cong λ h → snd₃ h , thd₃ h) 
     (isEquality (x₂ , x₃) (y₂ , y₃))
-  ... | False = λ h → exFalso (equality' x₁ y₁ (cong  fst₃ h)) h₁ 
+  ... | False = λ h → exFalso (equality' (cong  fst₃ h)) h₁ 
 
   iLawfulEqUnit : IsLawfulEq ⊤
   iLawfulEqUnit .isEquality tt tt = refl

@@ -13,7 +13,7 @@ nLtEq2Gt : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
 nLtEq2Gt x y ⦃ h1 ⦄ ⦃ h2 ⦄ =
   begin
     (x > y)
-  ≡⟨ sym (not-involution (x <= y) (x > y) (lte2ngt x y)) ⟩
+  ≡⟨ sym (not-involution (lte2ngt x y)) ⟩
     not (x <= y)
   ≡⟨ cong not (lte2LtEq x y) ⟩
     not ((x < y) || (x == y))
@@ -32,7 +32,7 @@ order left right =
     Lt left right
   else (
     if left == right then
-      (λ ⦃ h ⦄ → E left right ⦃ equality left right h ⦄)
+      (λ ⦃ h ⦄ → E left right ⦃ equality h ⦄)
     else
       Gt left right ⦃ nLtEq2Gt left right ⦄
   )

@@ -27,8 +27,8 @@ transMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
 transMaybe Nothing  Nothing  Nothing  _ = refl
 transMaybe Nothing  Nothing  (Just _) _ = refl
 transMaybe Nothing  (Just _) (Just _) _ = refl
-transMaybe (Just x) (Just y) Nothing  h
-  = magic ((nequality (GT /= GT) True refl) (&&-rightTrue (compare x y /= GT) (GT /= GT) h))
+transMaybe (Just x) (Just y) Nothing  h 
+  = magic (nequality refl (&&-rightTrue {b = Just y <= Nothing} h))
 transMaybe (Just x) (Just y) (Just z) h
   rewrite sym (compareGt x z)
     | sym (lte2nGT x y)
@@ -39,9 +39,7 @@ transMaybe (Just x) (Just y) (Just z) h
 reflMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x : Maybe a) → (x <= x) ≡ True
 reflMaybe Nothing = refl
-reflMaybe (Just x)
-  rewrite (equality (compare x x) EQ (trans (sym (compareEq x x)) (eqReflexivity x)))
-  = refl
+reflMaybe (Just x) = cong (λ eq → eq /= GT) (compareSelf x)
 
 antisymmetryMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : Maybe a) → ((x <= y) && (y <= x)) ≡ True → (x == y) ≡ True
@@ -114,10 +112,10 @@ min2ifMaybe Nothing  Nothing  = refl
 min2ifMaybe Nothing  (Just _) = refl
 min2ifMaybe (Just _) Nothing = refl
 min2ifMaybe (Just x) (Just y)
-  rewrite ifFlip (compare x y == GT) (Just y) (Just x)
+  rewrite ifFlip (compare x y == GT) {Just y} {Just x}
   = equality'
-      (if (compare x y /= GT) then Just x else Just y)
-      (if (compare x y /= GT) then Just x else Just y)
+      {x = if (compare x y /= GT) then Just x else Just y}
+      {y = if (compare x y /= GT) then Just x else Just y}
       refl
 
 max2ifMaybe : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
@@ -126,10 +124,10 @@ max2ifMaybe Nothing  Nothing  = refl
 max2ifMaybe Nothing  (Just y) = eqReflexivity y
 max2ifMaybe (Just x) Nothing  = eqReflexivity x
 max2ifMaybe (Just x) (Just y)
-  rewrite ifFlip (compare x y == LT) (Just y) (Just x)
+  rewrite ifFlip (compare x y == LT) {Just y} {Just x}
   = equality'
-    (if (compare x y /= LT) then Just x else Just y)
-    (if (compare x y /= LT) then Just x else Just y)
+    {x = if (compare x y /= LT) then Just x else Just y}
+    {y = if (compare x y /= LT) then Just x else Just y}
     refl
 
 instance
