@@ -9,14 +9,9 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {inherit system;};
-        haskellPackages = pkgs.haskell.packages.ghc96;
-        agda2hs-hs = haskellPackages.callCabal2nixWithOptions "agda2hs" ./. "--jailbreak" {};
-        agda2hs = pkgs.callPackage ./agda2hs.nix {
-          inherit self;
-          agda2hs = agda2hs-hs;
-          inherit (haskellPackages) ghcWithPackages;
-        };
-        agdaDerivation = pkgs.callPackage mkAgdaDerivation.lib.mkAgdaDerivation {};
+
+        agdaDerivation =
+          pkgs.callPackage mkAgdaDerivation.lib.mkAgdaDerivation {};
         agda2hs-lib = agdaDerivation
           { pname = "agda2hs";
             meta = {};
@@ -24,6 +19,23 @@
             tcDir = "lib";
             src = ./.;
           };
+
+        withCompiler = compiler:
+          let haskellPackages =
+                if compiler == "default"
+                then pkgs.haskellPackages
+                else pkgs.haskell.packages.${compiler};
+              agda2hs-hs =
+                haskellPackages.callCabal2nixWithOptions "agda2hs" ./. "--jailbreak" {};
+          in pkgs.callPackage ./agda2hs.nix {
+            inherit self;
+            agda2hs = agda2hs-hs;
+            inherit (haskellPackages) ghcWithPackages;
+          };
+        agda2hs = withCompiler "default";
+
+        agda2hs-hs =
+          pkgs.haskellPackages.callCabal2nixWithOptions "agda2hs" ./. "--jailbreak" {};
       in {
         packages = {
           inherit agda2hs-lib;
@@ -32,10 +44,11 @@
         };
         lib = {
           withPackages = agda2hs.withPackages;
+          inherit withCompiler;
         };
-        devShells.default = haskellPackages.shellFor {
+        devShells.default = pkgs.haskellPackages.shellFor {
           packages = p: [agda2hs-hs];
-          buildInputs = with haskellPackages; [
+          buildInputs = with pkgs.haskellPackages; [
             cabal-install
             cabal2nix
             haskell-language-server
