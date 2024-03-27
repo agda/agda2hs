@@ -56,6 +56,7 @@ isSpecialCon qn = case prettyShow qn of
   "Haskell.Prim.Tuple._,_"         -> Just tuplePat
   "Haskell.Prim.Tuple._×_×_._,_,_" -> Just tuplePat
   "Haskell.Extra.Erase.Erased"     -> Just tuplePat
+  "Haskell.Extra.Sigma._,_"        -> Just tuplePat
   "Agda.Builtin.Int.Int.pos"       -> Just posIntPat
   "Agda.Builtin.Int.Int.negsuc"    -> Just negSucIntPat
   _                                -> Nothing
