@@ -19,35 +19,31 @@
             tcDir = "lib";
             src = ./.;
           };
-
-        withCompiler = compiler:
-          let haskellPackages =
-                if compiler == "default"
-                then pkgs.haskellPackages
-                else pkgs.haskell.packages.${compiler};
-              agda2hs-hs =
-                haskellPackages.callCabal2nixWithOptions "agda2hs" ./. "--jailbreak" {};
-          in pkgs.callPackage ./agda2hs.nix {
+        agda2hs-pkg = options:
+          pkgs.haskellPackages.haskellSrc2nix {
+            name = "agda2hs";
+            src = ./.;
+            extraCabal2nixOptions = options;
+        };
+        agda2hs-hs = pkgs.haskellPackages.callPackage (agda2hs-pkg "--jailbreak") {};
+        agda2hs-expr = import ./agda2hs.nix;
+        agda2hs = pkgs.callPackage agda2hs-expr {
             inherit self;
             agda2hs = agda2hs-hs;
-            inherit (haskellPackages) ghcWithPackages;
+            inherit (pkgs.haskellPackages) ghcWithPackages;
           };
-        agda2hs = withCompiler "default";
-
-        agda2hs-hs =
-          pkgs.haskellPackages.callCabal2nixWithOptions "agda2hs" ./. "--jailbreak" {};
       in {
         packages = {
           inherit agda2hs-lib;
-          agda2hs = agda2hs.agda2hs;
+          inherit (agda2hs) agda2hs;
           default = agda2hs.agda2hs;
         };
         lib = {
-          withPackages = agda2hs.withPackages;
-          inherit withCompiler;
+          inherit (agda2hs) withPackages;
+          inherit agda2hs-expr agda2hs-pkg agda2hs-hs;
         };
         devShells.default = pkgs.haskellPackages.shellFor {
-          packages = p: [agda2hs-hs];
+          packages = p: [agda2hs-pkg];
           buildInputs = with pkgs.haskellPackages; [
             cabal-install
             cabal2nix
