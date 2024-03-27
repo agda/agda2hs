@@ -54,3 +54,8 @@ t4 : Σ[ n ∈ Nat ] (Dec (IsTrue (n <= 5)))
 t4 = 3 S., (True ⟨ itsTrue ⟩)
 
 {-# COMPILE AGDA2HS t4 #-}
+
+t5 : Σ[ x ∈ a ] b → a
+t5 p = case p of λ where (x S., y) → x
+
+{-# COMPILE AGDA2HS t5 #-}

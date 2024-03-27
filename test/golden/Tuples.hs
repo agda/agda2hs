@@ -30,3 +30,8 @@ test2
 t4 :: (Natural, Bool)
 t4 = (3, True)
 
+t5 :: (a, b) -> a
+t5 p
+  = case p of
+        (x, y) -> x
+
