@@ -18,21 +18,6 @@
         "type": "github"
       }
     },
-    "mkAgdaDerivation": {
-      "locked": {
-        "lastModified": 1711465038,
-        "narHash": "sha256-rJFQI7/IcwSnUAdxaQkJOvzBy0BCMWCb6N0OC27LlRk=",
-        "owner": "liesnikov",
-        "repo": "mkAgdaDerivation",
-        "rev": "393785b798a8938063fff14ad681d7ef95356215",
-        "type": "github"
-      },
-      "original": {
-        "owner": "liesnikov",
-        "repo": "mkAgdaDerivation",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1711555030,
@@ -51,7 +36,6 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "mkAgdaDerivation": "mkAgdaDerivation",
         "nixpkgs": "nixpkgs"
       }
     },
