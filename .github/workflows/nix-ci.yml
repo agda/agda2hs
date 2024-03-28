@@ -1,0 +1,35 @@
+name: Nix CI
+
+# Trigger the workflow on push or pull request, but only for the master branch
+on:
+  pull_request:
+  push:
+    paths:
+      - 'lib/**'
+      - 'src/**'
+      - 'test/**'
+      - 'agda2hs.agda-lib'
+      - 'agda2hs.cabal'
+      - 'cabal.project'
+      - 'Makefile'
+      - '.github/workflows/**.yml'
+    branches: [master]
+
+jobs:
+  nix-build:
+    name: ${{ matrix.pretty }} with nix (${{ matrix.derivation }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        derivation: [agda2hs, agda2hs-lib]
+        include:
+          - pretty: "Compile agda2hs"
+            derivation: agda2hs
+          - pretty: "Typecheck with Agda"
+            derivation: agda2hs-lib
+    steps:
+    - uses: actions/checkout@v3
+    - uses: cachix/install-nix-action@v22
+    - uses: DeterminateSystems/magic-nix-cache-action@v2
+    - run: nix build .#${{ matrix.derivation }} --print-build-logs
