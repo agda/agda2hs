@@ -40,7 +40,7 @@
         };
         lib = {
           inherit (agda2hs) withPackages;
-          inherit agda2hs-expr agda2hs-pkg agda2hs-hs;
+          inherit agda2hs-pkg agda2hs-hs agda2hs-expr;
         };
         devShells.default = pkgs.haskellPackages.shellFor {
           packages = p: [agda2hs-pkg];
