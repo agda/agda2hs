@@ -43,7 +43,7 @@
           inherit agda2hs-pkg agda2hs-hs agda2hs-expr;
         };
         devShells.default = pkgs.haskellPackages.shellFor {
-          packages = p: [agda2hs-pkg];
+          packages = p: [agda2hs-hs];
           buildInputs = with pkgs.haskellPackages; [
             cabal-install
             cabal2nix
