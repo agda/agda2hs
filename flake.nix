@@ -3,28 +3,30 @@
 
   inputs.nixpkgs.url = github:NixOS/nixpkgs;
   inputs.flake-utils.url = github:numtide/flake-utils;
-  inputs.mkAgdaDerivation.url = github:liesnikov/mkAgdaDerivation;
 
-  outputs = {self, nixpkgs, flake-utils, mkAgdaDerivation}:
+  outputs = {self, nixpkgs, flake-utils}:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {inherit system;};
 
-        agdaDerivation =
-          pkgs.callPackage mkAgdaDerivation.lib.mkAgdaDerivation {};
-        agda2hs-lib = agdaDerivation
+        agda2hs-lib = pkgs.agdaPackages.mkDerivation
           { pname = "agda2hs";
             meta = {};
             version = "1.3";
-            tcDir = "lib";
+            preBuild = ''
+              echo "{-# OPTIONS --sized-types #-}" > Everything.agda
+              echo "module Everything where" >> Everything.agda
+              find lib -name '*.agda' | sed -e 's/lib\///;s/\//./g;s/\.agda$//;s/^/import /' >> Everything.agda
+            '';
             src = ./.;
           };
         agda2hs-pkg = options:
           pkgs.haskellPackages.haskellSrc2nix {
             name = "agda2hs";
             src = ./.;
-            extraCabal2nixOptions = options;
+            extraCabal2nixOptions = options; #"--jailbreak"
         };
+        # jailbreaking here because otherwise aeson has to be overridden and that triggers recompilation of a lot of dependencies
         agda2hs-hs = pkgs.haskellPackages.callPackage (agda2hs-pkg "--jailbreak") {};
         agda2hs-expr = import ./agda2hs.nix;
         agda2hs = pkgs.callPackage agda2hs-expr {
