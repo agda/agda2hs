@@ -1,0 +1,2 @@
+test/Fail/RuntimeCheckTransparent.agda:9,1-14
+Cannot make function noTransparent transparent. Transparent functions cannot have erased arguments with runtime checking.

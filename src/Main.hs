@@ -29,6 +29,7 @@ defaultOptions = Options
   , optOutDir     = Nothing
   , optConfigFile = Nothing
   , optExtensions = []
+  , optRtc        = False
   , optPrelude    = PreludeOpts False Nothing []
     -- by default the Prelude is imported explicitly
   , optRewrites   = defaultSpecialRules
@@ -47,8 +48,10 @@ configOpt src opts = return opts { optConfigFile = Just src }
 extensionOpt :: String -> Flag Options
 extensionOpt ext opts = return opts { optExtensions = Hs.parseExtension ext : optExtensions opts }
 
+rtcOpt :: Flag Options
+rtcOpt opts = return opts { optRtc = True }
 
-backend :: Backend' Options Options ModuleEnv ModuleRes (CompiledDef, CompileOutput)
+backend :: Backend' Options Options ModuleEnv ModuleRes (RtcDefs, CompileOutput)
 backend = Backend'
   { backendName           = "agda2hs"
   , backendVersion        = Just $ Text.pack $ showVersion version
@@ -62,6 +65,9 @@ backend = Backend'
           "Write Haskell code to DIR. (default: project root)"
       , Option ['X'] [] (ReqArg extensionOpt "EXTENSION")
           "Enable Haskell language EXTENSION. Affects parsing of Haskell code in FOREIGN blocks."
+      , Option [] ["runtime-check"] (NoArg rtcOpt)
+          "Enable runtime checking of erased arguments. \
+          \Hides constructs with undecidable erased arguments away."
       , Option [] ["config"] (ReqArg configOpt "FILE")
           "Provide additional configuration to agda2hs with a YAML file."
       ]

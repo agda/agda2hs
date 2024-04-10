@@ -1,0 +1,2 @@
+test/Fail/RuntimeCheckGo.agda:5,1-9
+Illegal name go0, conflicts with name generated for runtime checks.

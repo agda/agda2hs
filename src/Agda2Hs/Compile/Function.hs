@@ -21,7 +21,7 @@ import Agda.Syntax.Scope.Monad ( isDatatypeModule )
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Substitute
-import Agda.TypeChecking.Telescope ( telView, mustBePi, piApplyM )
+import Agda.TypeChecking.Telescope
 import Agda.TypeChecking.Sort ( ifIsSort )
 import Agda.TypeChecking.Datatypes ( getConType, isDataOrRecord )
 import Agda.TypeChecking.Records ( getDefType )
@@ -37,6 +37,7 @@ import Agda.Utils.Size ( Sized(size) )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
+import Agda2Hs.Compile.RuntimeCheckUtils
 import Agda2Hs.Compile.Term ( compileTerm, usableDom )
 import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileDomType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
@@ -96,7 +97,7 @@ compileLitNatPat = \case
 
 compileFun, compileFun'
   :: Bool -- ^ Whether the type signature shuuld also be generated
-  -> Definition -> C [Hs.Decl ()]
+  -> Definition -> C RtcDecls
 
 compileFun withSig def@Defn{..} =
   setCurrentRangeQ defName
@@ -114,7 +115,7 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
 
   ifM (endsInSort defType)
     -- if the function type ends in Sort, it's a type alias!
-    (ensureNoLocals err >> compileTypeDef x def)
+    ((`WithRtc` []) <$> (ensureNoLocals err >> compileTypeDef x def))
     -- otherwise, we have to compile clauses.
     $ do
     tel <- lookupSection m
@@ -158,7 +159,15 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
             text "Functions defined with absurd patterns exclusively are not supported."
         <+> text "Use function `error` from the Haskell.Prelude instead."
 
-      return $ sig ++ [Hs.FunBind () cs]
+      let def = sig ++ [Hs.FunBind () cs]
+      chk <- ifNotM (emitsRtc defName) (return []) $ do
+        let typeTel = theTel $ telView' defType
+            success = Hs.hsVar $ prettyShow m ++ ".PostRtc." ++ prettyShow n
+        checkRtc typeTel defName success alternatingLevels >>= \case
+          NoneErased -> do tellNoErased $ prettyShow n; return []
+          Uncheckable -> return []
+          Checkable ds -> return $ sig ++ ds
+      return $ WithRtc def chk
   where
     Function{..} = theDef
     m = qnameModule defName
@@ -234,7 +243,7 @@ compileClause' curModule projName x ty c@Clause{..} = do
 
     let rhs = Hs.UnGuardedRhs () hsBody
         whereBinds | null whereDecls = Nothing
-                   | otherwise       = Just $ Hs.BDecls () (concat whereDecls)
+                   | otherwise       = Just $ Hs.BDecls () (concatMap defn whereDecls)
         match = case (x, ps) of
           (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
           _                         -> Hs.Match () x ps rhs whereBinds
@@ -372,13 +381,20 @@ withClauseLocals curModule c@Clause{..} k = do
 
 -- | Ensure a definition can be defined as transparent.
 checkTransparentPragma :: Definition -> C ()
-checkTransparentPragma def = compileFun False def >>= \case
+checkTransparentPragma def = do
+  whenM (andM [emitsRtc $ defName def, not <$> checkNoneErased tele alternatingLevels]) $ genericDocError =<<
+        "Cannot make function" <+> prettyTCM (defName def) <+> "transparent." <+>
+        "Transparent functions cannot have erased arguments with runtime checking."
+  compiledFun <- defn <$> compileFun False def
+  case compiledFun of
     [Hs.FunBind _ cls] ->
       mapM_ checkTransparentClause cls
     [Hs.TypeDecl _ hd b] ->
       checkTransparentTypeDef hd b
     _ -> __IMPOSSIBLE__
   where
+    tele = theTel $ telView' $ defType def
+
     checkTransparentClause :: Hs.Match () -> C ()
     checkTransparentClause = \case
       Hs.Match _ _ [p] (Hs.UnGuardedRhs _ e) _ | patToExp p == Just e -> return ()
@@ -395,8 +411,12 @@ checkTransparentPragma def = compileFun False def >>= \case
 
 -- | Ensure a definition can be defined as inline.
 checkInlinePragma :: Definition -> C ()
-checkInlinePragma def@Defn{defName = f} = do
+checkInlinePragma def@Defn{defName = f, defType = ty} = do
   let Function{funClauses = cs} = theDef def
+      typeTel = theTel $ telView' ty
+  whenM (andM [emitsRtc $ defName def, not <$> checkNoneErased typeTel alternatingLevels]) $ genericDocError =<<
+        "Cannot make function" <+> prettyTCM (defName def) <+> "inlinable." <+>
+        "Inline functions cannot have erased arguments with runtime checking."
   case filter (isJust . clauseBody) cs of
     [c] ->
       unlessM (allowedPats (namedClausePats c)) $ agda2hsErrorM $

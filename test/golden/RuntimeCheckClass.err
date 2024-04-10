@@ -1,0 +1,2 @@
+test/Fail/RuntimeCheckClass.agda:11,8-15
+Cannot compile NoClass to class. Classes cannot have erased arguments with runtime checking.

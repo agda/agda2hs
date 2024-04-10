@@ -78,6 +78,9 @@ extToName = Ident () . show
 hsModuleName :: String -> ModuleName ()
 hsModuleName = ModuleName ()
 
+hsPat :: String -> Pat ()
+hsPat = PVar () . hsName
+
 isOp :: QName () -> Bool
 isOp (UnQual _ Symbol{}) = True
 isOp (Special _ Cons{})  = True

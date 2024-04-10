@@ -1,0 +1,2 @@
+test/Fail/RuntimeCheckSc.agda:5,6-9
+Illegal name scConflict, conflicts with name generated for runtime checks.

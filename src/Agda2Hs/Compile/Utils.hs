@@ -40,9 +40,11 @@ import Agda.TypeChecking.Substitute ( Subst, TelV(TelV), Apply(..) )
 import Agda.TypeChecking.Telescope ( telView )
 
 import Agda.Utils.Lens ( (<&>) )
+import qualified Agda.Utils.List1 as List1
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Singleton
+import Agda.Utils.Tuple ( (-*-) )
 
 import AgdaInternals
 import Agda2Hs.AgdaUtils ( (~~) )
@@ -325,10 +327,16 @@ checkValidConName x = unless (validConName x) $ agda2hsErrorM $ do
   text "Invalid name for Haskell constructor: " <+> text (Hs.prettyPrint x)
 
 tellImport :: Import -> C ()
-tellImport imp = tell $ CompileOutput [imp] []
+tellImport imp = tell $ CompileOutput [imp] [] [] []
 
 tellExtension :: Hs.KnownExtension -> C ()
-tellExtension pr = tell $ CompileOutput [] [pr]
+tellExtension pr = tell $ CompileOutput [] [pr] [] []
+
+tellNoErased :: String -> C ()
+tellNoErased er = tell $ CompileOutput [] [] [er] []
+
+tellAllCheckable :: QName -> C ()
+tellAllCheckable chk = tell $ CompileOutput [] [] [] [chk]
 
 tellUnboxedTuples :: Hs.Boxed -> C ()
 tellUnboxedTuples Hs.Boxed = return ()
@@ -360,7 +368,7 @@ checkFixityLevel name (Related lvl) =
                      <+> text "for operator"   <+> prettyTCM name
     else pure (Just (round lvl))
 
-maybePrependFixity :: QName -> Fixity -> C [Hs.Decl ()] -> C [Hs.Decl ()]
+maybePrependFixity :: QName -> Fixity -> C RtcDecls -> C RtcDecls
 maybePrependFixity n f comp | f /= noFixity = do
   hsLvl <- checkFixityLevel n (fixityLevel f)
   let x = hsName $ prettyShow $ qnameName n
@@ -368,7 +376,8 @@ maybePrependFixity n f comp | f /= noFixity = do
         NonAssoc   -> Hs.AssocNone ()
         LeftAssoc  -> Hs.AssocLeft ()
         RightAssoc -> Hs.AssocRight ()
-  (Hs.InfixDecl () hsAssoc hsLvl [Hs.VarOp () x]:) <$> comp
+  let head = (Hs.InfixDecl () hsAssoc hsLvl [Hs.VarOp () x]:)
+  (head <$>) <$> comp
 maybePrependFixity n f comp = comp
 
 
@@ -406,3 +415,11 @@ resolveStringName s = do
   testResolveStringName s >>= \case
     Just aname -> return aname
     Nothing -> genericDocError =<< text ("Couldn't find " ++ s)
+
+-- Check if runtime checks should be emitted, i.e. the feature is
+-- enabled and the name is not in the trusted computing base.
+-- This is not included in RuntimeCheckUtils.hs for dependency reasons.
+emitsRtc :: QName -> C Bool
+emitsRtc qname = do
+  topName <- prettyTCM $ List1.head $ mnameToList1 $ qnameModule qname
+  asks $ (show topName /= "Haskell" &&) . rtc

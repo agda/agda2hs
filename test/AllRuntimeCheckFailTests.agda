@@ -1,0 +1,5 @@
+module AllRuntimeCheckFailTests where
+
+import Fail.RuntimeCheckClass
+import Fail.RuntimeCheckInline
+import Fail.PostRtc.RuntimeCheckModuleName

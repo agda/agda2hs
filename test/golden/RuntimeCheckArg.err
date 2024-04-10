@@ -1,0 +1,2 @@
+test/Fail/RuntimeCheckArg.agda:5,1-9
+Illegal name a1, conflicts with name generated for runtime checks.

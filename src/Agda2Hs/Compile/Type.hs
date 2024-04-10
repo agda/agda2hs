@@ -221,7 +221,7 @@ compileInlineType f args = do
     _                -> agda2hsErrorM $ text "Could not reduce inline type alias " <+> prettyTCM f
 
 
-data DomOutput = DOInstance | DODropped | DOType | DOTerm
+data DomOutput = DOInstance | DODropped | DOType | DOTerm deriving Eq
 
 compileDom :: Dom Type -> C DomOutput
 compileDom a = do

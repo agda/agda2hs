@@ -31,6 +31,21 @@ type Ranged a    = (Range, a)
 
 type Code = (Hs.Module Hs.SrcSpanInfo, [Hs.Comment])
 
+data WithRtc d = WithRtc {
+  defn :: d,
+  -- Runtime check
+  rtcDefn :: d
+}
+
+instance Functor WithRtc where
+  fmap f (WithRtc d r) = WithRtc (f d) (f r)
+
+getAllRtc :: Monoid d => WithRtc d -> d
+getAllRtc (WithRtc d r) = d <> r
+
+type RtcDefs = WithRtc CompiledDef
+type RtcDecls = WithRtc [Hs.Decl ()]
+
 -- | Custom substitution for a given definition.
 data Rewrite = Rewrite
   { rewFrom   :: String
@@ -59,6 +74,7 @@ data Options = Options
   , optOutDir     :: Maybe FilePath
   , optConfigFile :: Maybe FilePath
   , optExtensions :: [Hs.Extension]
+  , optRtc        :: Bool
   , optRewrites   :: SpecialRules
   , optPrelude    :: PreludeOptions
   }
@@ -85,6 +101,8 @@ data CompileEnv = CompileEnv
   -- ^ the where-blocks currently in scope. Hack until Agda adds where-prominence
   , copatternsEnabled :: Bool
   -- ^ whether copatterns should be allowed when compiling patterns
+  , rtc :: Bool
+  -- ^ whether runtime checks should be emitted (uncheckable names are wrapped away)
   , rewrites :: SpecialRules
   -- ^ Special compilation rules.
   , writeImports :: Bool
@@ -127,14 +145,18 @@ data CompileOutput = CompileOutput
   -- ^ Haskell import statements.
   , haskellExtensions :: [Hs.KnownExtension]
   -- ^ Required language extensions.
+  , noErased :: [String]
+  -- ^ Names that can be exported as is wrt runtime checks because they have no erased arguments
+  , allCheckable :: [QName]
+  -- ^ Names that can be exported wrt runtime checks because all erased arguments are checkable
   }
 
 instance Semigroup CompileOutput where
-  CompileOutput imps exts <> CompileOutput imps' exts' =
-    CompileOutput (imps <> imps') (exts <> exts')
+  CompileOutput imps exts ers checks <> CompileOutput imps' exts' ers' checks' =
+    CompileOutput (imps <> imps') (exts <> exts') (ers <> ers') (checks <> checks')
 
 instance Monoid CompileOutput where
-  mempty = CompileOutput mempty mempty
+  mempty = CompileOutput mempty mempty mempty mempty
 
 -- | State used while compiling a single module.
 newtype CompileState = CompileState

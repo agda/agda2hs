@@ -38,6 +38,7 @@ executable agda2hs
                        Agda2Hs.Compile.Name,
                        Agda2Hs.Compile.Postulate,
                        Agda2Hs.Compile.Record,
+                       Agda2Hs.Compile.RuntimeCheckUtils,
                        Agda2Hs.Compile.Term,
                        Agda2Hs.Compile.Type,
                        Agda2Hs.Compile.TypeDefinition,

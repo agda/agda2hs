@@ -1,6 +1,8 @@
 {-# OPTIONS --guardedness #-}
 module AllFailTests where
 
+import AllRuntimeCheckFailTests
+
 import Fail.ClashingImport
 import Fail.Issue142
 import Fail.MatchOnDelay

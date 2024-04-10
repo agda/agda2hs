@@ -2,6 +2,7 @@ AGDA2HS=./agda2hs +RTS -M2G -RTS
 ROOT=$(shell cd ..; pwd)/
 MAIN=AllTests
 FAIL_MAIN=AllFailTests
+MAIN_RTC=AllRuntimeCheckTests
 
 .PHONY : default allTests print-fail fail compare golden \
 	html renderTranslations clean force-recompile
@@ -10,27 +11,32 @@ default : compare
 
 build/%.hs : %.agda *.agda Fail/*.agda Cubical/*.agda agda2hs
 	@echo == Compiling tests ==
-	$(AGDA2HS) $< -o build
+	(rtc=$$(echo $< | grep RuntimeCheck); $(AGDA2HS) $${rtc:+--runtime-check} $< -o build)
 
-allTests : build/$(MAIN).hs
+allTests : build/$(MAIN).hs build/$(MAIN_RTC).hs
 	@echo == Running ghc ==
-	@(cd build && ghc -fno-code $(MAIN).hs)
+	@(cd build && ghc -fno-code $(MAIN).hs && \
+	              ghc -fno-code $(rtc) $(MAIN_RTC).hs)
 
 print-fail :
 	@echo == Failing tests ==
+	mkdir -p build
 
 fail : print-fail $(patsubst Fail/%.agda,build/%.err,$(wildcard Fail/*.agda))
 
 build/%.err : Fail/%.agda agda2hs
 	@echo Compiling $<
-	@($(AGDA2HS) $< -o build -v0 && echo "UNEXPECTED SUCCESS" || true) | sed -e 's:'$(ROOT)'::g' > $@
+	@(rtc=$$(echo $< | grep -E '(RuntimeCheck|PostRtc)'); $(AGDA2HS) $${rtc:+--runtime-check} $< -o build -v0 \
+			&& echo "UNEXPECTED SUCCESS" || true) \
+		| sed -e 's:'$(ROOT)'::g' > $@
 
 compare : allTests fail
 	@echo == Comparing output ==
+	@cp -r build/Haskell golden
 	@diff -r build golden
 
 golden :
-	@cp build/*.hs build/Cubical/*.hs build/*.err golden
+	@cp -r build/* golden
 
 html : allTests fail html/index.html html/fail/index.html renderTranslations
 

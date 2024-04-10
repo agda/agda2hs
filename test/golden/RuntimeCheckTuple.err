@@ -1,0 +1,2 @@
+test/Fail/RuntimeCheckTuple.agda:9,8-17
+Cannot compile record CantTuple as tuple. Tuple records cannot have erased arguments in their fields with runtime checking.

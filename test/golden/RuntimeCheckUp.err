@@ -1,0 +1,2 @@
+test/Fail/RuntimeCheckUp.agda:5,1-9
+Illegal name up, conflicts with name generated for runtime checks.

@@ -1,0 +1,2 @@
+test/Fail/RuntimeCheckInline.agda:9,1-13
+Cannot make function notInlinable inlinable. Inline functions cannot have erased arguments with runtime checking.
