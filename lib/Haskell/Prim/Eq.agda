@@ -16,16 +16,18 @@ open import Haskell.Prim.Either
 -- Eq
 
 record Eq (a : Set) : Set where
-  infix 4 _==_ _/=_
+  infix 4 _==_
   field
     _==_ : a → a → Bool
-
-  _/=_ : a → a → Bool
-  x /= y = not (x == y)
 
 open Eq ⦃...⦄ public
 
 {-# COMPILE AGDA2HS Eq existing-class #-}
+
+_/=_ : {{Eq a}} → a → a → Bool
+x /= y = not (x == y)
+
+infix 4 _/=_
 
 instance
   iEqNat : Eq Nat
