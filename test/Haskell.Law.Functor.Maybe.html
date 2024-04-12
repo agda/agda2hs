@@ -1,0 +1,16 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Haskell.Law.Functor.Maybe</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="Agda"><a id="1" class="Keyword">module</a> <a id="8" href="Haskell.Law.Functor.Maybe.html" class="Module">Haskell.Law.Functor.Maybe</a> <a id="34" class="Keyword">where</a>
+
+<a id="41" class="Keyword">open</a> <a id="46" class="Keyword">import</a> <a id="53" href="Haskell.Prim.html" class="Module">Haskell.Prim</a>
+<a id="66" class="Keyword">open</a> <a id="71" class="Keyword">import</a> <a id="78" href="Haskell.Prim.Maybe.html" class="Module">Haskell.Prim.Maybe</a>
+
+<a id="98" class="Keyword">open</a> <a id="103" class="Keyword">import</a> <a id="110" href="Haskell.Prim.Functor.html" class="Module">Haskell.Prim.Functor</a>
+
+<a id="132" class="Keyword">open</a> <a id="137" class="Keyword">import</a> <a id="144" href="Haskell.Law.Functor.Def.html" class="Module">Haskell.Law.Functor.Def</a>
+
+<a id="169" class="Keyword">instance</a>
+  <a id="iLawfulFunctorMaybe"></a><a id="180" href="Haskell.Law.Functor.Maybe.html#180" class="Function">iLawfulFunctorMaybe</a> <a id="200" class="Symbol">:</a> <a id="202" href="Haskell.Law.Functor.Def.html#137" class="Record">IsLawfulFunctor</a> <a id="218" href="Haskell.Prim.Maybe.html#101" class="Datatype">Maybe</a>
+  <a id="226" href="Haskell.Law.Functor.Maybe.html#180" class="Function">iLawfulFunctorMaybe</a> <a id="246" class="Symbol">.</a><a id="247" href="Haskell.Law.Functor.Def.html#248" class="Field">identity</a> <a id="256" class="Symbol">=</a> <a id="258" class="Symbol">λ</a> <a id="260" class="Symbol">{</a> <a id="262" href="Haskell.Prim.Maybe.html#142" class="InductiveConstructor">Nothing</a> <a id="270" class="Symbol">→</a> <a id="272" href="Agda.Builtin.Equality.html#207" class="InductiveConstructor">refl</a><a id="276" class="Symbol">;</a> <a id="278" class="Symbol">(</a><a id="279" href="Haskell.Prim.Maybe.html#162" class="InductiveConstructor">Just</a> <a id="284" class="Symbol">_)</a> <a id="287" class="Symbol">→</a> <a id="289" href="Agda.Builtin.Equality.html#207" class="InductiveConstructor">refl</a> <a id="294" class="Symbol">}</a>
+
+  <a id="299" href="Haskell.Law.Functor.Maybe.html#180" class="Function">iLawfulFunctorMaybe</a> <a id="319" class="Symbol">.</a><a id="320" href="Haskell.Law.Functor.Def.html#350" class="Field">composition</a> <a id="332" class="Symbol">=</a> <a id="334" class="Symbol">λ</a> <a id="336" class="Symbol">{</a> <a id="338" href="Haskell.Prim.Maybe.html#142" class="InductiveConstructor">Nothing</a> <a id="346" class="Symbol">_</a> <a id="348" class="Symbol">_</a> <a id="350" class="Symbol">→</a> <a id="352" href="Agda.Builtin.Equality.html#207" class="InductiveConstructor">refl</a><a id="356" class="Symbol">;</a> <a id="358" class="Symbol">(</a><a id="359" href="Haskell.Prim.Maybe.html#162" class="InductiveConstructor">Just</a> <a id="364" class="Symbol">_)</a> <a id="367" class="Symbol">_</a> <a id="369" class="Symbol">_</a> <a id="371" class="Symbol">→</a> <a id="373" href="Agda.Builtin.Equality.html#207" class="InductiveConstructor">refl</a> <a id="378" class="Symbol">}</a>
+</pre></body></html>

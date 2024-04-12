@@ -1,0 +1,17 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Issue92</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Keyword">open</a> <a id="6" class="Keyword">import</a> <a id="13" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="30" class="Keyword">postulate</a> <a id="Something"></a><a id="40" href="Issue92.html#40" class="Postulate">Something</a> <a id="50" class="Symbol">:</a> <a id="52" href="Agda.Primitive.html#388" class="Primitive">Set</a>
+<a id="56" class="Keyword">postulate</a> <a id="something"></a><a id="66" href="Issue92.html#66" class="Postulate">something</a> <a id="76" class="Symbol">:</a> <a id="78" href="Issue92.html#40" class="Postulate">Something</a>
+
+<a id="89" class="Keyword">module</a> <a id="96" href="Issue92.html#96" class="Module">_</a> <a id="98" class="Symbol">{</a><a id="99" href="Issue92.html#99" class="Bound">a</a> <a id="101" class="Symbol">:</a> <a id="103" href="Agda.Primitive.html#388" class="Primitive">Set</a><a id="106" class="Symbol">}</a> <a id="108" class="Keyword">where</a>
+  <a id="116" href="Issue92.html#116" class="Function">foo</a> <a id="120" class="Symbol">:</a> <a id="122" href="Issue92.html#99" class="Bound">a</a> <a id="124" class="Symbol">→</a> <a id="126" href="Issue92.html#99" class="Bound">a</a>
+  <a id="130" href="Issue92.html#116" class="Function">foo</a> <a id="134" href="Issue92.html#134" class="Bound">x</a> <a id="136" class="Symbol">=</a> <a id="138" href="Issue92.html#170" class="Function">bar</a> <a id="142" class="Symbol">{</a><a id="143" href="Issue92.html#66" class="Postulate">something</a><a id="152" class="Symbol">}</a>
+    <a id="158" class="Keyword">where</a>
+      <a id="170" href="Issue92.html#170" class="Function">bar</a> <a id="174" class="Symbol">:</a> <a id="176" class="Symbol">@</a><a id="177" class="Symbol">0</a> <a id="179" class="Symbol">{</a><a id="180" href="Issue92.html#40" class="Postulate">Something</a><a id="189" class="Symbol">}</a> <a id="191" class="Symbol">→</a> <a id="193" href="Issue92.html#99" class="Bound">a</a>
+      <a id="201" href="Issue92.html#170" class="Function">bar</a> <a id="205" class="Symbol">{</a><a id="206" href="Issue92.html#206" class="Bound">eq</a><a id="208" class="Symbol">}</a> <a id="210" class="Symbol">=</a> <a id="212" href="Issue92.html#240" class="Function">baz</a>
+        <a id="224" class="Keyword">where</a>
+          <a id="240" href="Issue92.html#240" class="Function">baz</a> <a id="244" class="Symbol">:</a> <a id="246" href="Issue92.html#99" class="Bound">a</a>
+          <a id="258" href="Issue92.html#240" class="Function">baz</a> <a id="262" class="Symbol">=</a> <a id="264" href="Issue92.html#134" class="Bound">x</a>
+<a id="266" class="Symbol">{-#</a> <a id="270" class="Keyword">COMPILE</a> <a id="278" class="Keyword">AGDA2HS</a> <a id="286" href="Issue92.html#116" class="Function">foo</a> <a id="290" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Issue92.html"/></div></body></html>
