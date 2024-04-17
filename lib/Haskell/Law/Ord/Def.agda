@@ -176,8 +176,6 @@ gt2gte x y h
 -- Postulated instances
 
 postulate instance
-  iLawfulOrdNat : IsLawfulOrd Nat
-
   iLawfulOrdInteger : IsLawfulOrd Integer
 
   iLawfulOrdInt : IsLawfulOrd Int
