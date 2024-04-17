@@ -84,20 +84,13 @@ lte2LtEq : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x <= y) ≡ (x < y || x == y)
 lte2LtEq x y 
   rewrite lt2LteNeq x y
-    | compareEq x y
-  with (x <= y) in h₁ | (compare x y) in h₂
-... | False | LT = refl
-... | False | EQ = magic $ exFalso (reflexivity x) $ begin 
-    (x <= x)  ≡⟨ (cong (x <=_) (equality x y (begin 
-      (x == y)            ≡⟨ compareEq x y ⟩ 
-      (compare x y == EQ) ≡⟨ equality' (compare x y) EQ h₂ ⟩ 
-      True                ∎ ) ) ) ⟩
-    (x <= y)  ≡⟨ h₁ ⟩ 
-    False ∎
-... | False | GT = refl
-... | True  | LT = refl
-... | True  | EQ = refl
-... | True  | GT = refl
+    with (x <= y) in h₁ | (x == y) in h₂
+...| True | True = refl
+...| True | False = refl
+...| False | True = magic $ exFalso 
+  (reflexivity x) 
+  (trans (cong₂  _<=_ refl (equality x y h₂)) h₁)
+...| False | False = refl
 
 gte2GtEq : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x >= y) ≡ (x > y || x == y)
@@ -172,12 +165,19 @@ gt2gte x y h
     | lte2gte y x
   = refl
 
+reverseLte : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
+  →  ∀ ( a b c d : a ) → 
+  ((a <= b) && (c <= d)) ≡ (( d >= c) && (b >= a))
+reverseLte a b c d 
+  rewrite &&-sym (a <= b) (c <= d)
+  | sym $ lte2gte c d 
+  | sym $ lte2gte a b  
+  = refl
+
 --------------------------------------------------
 -- Postulated instances
 
 postulate instance
-  iLawfulOrdInteger : IsLawfulOrd Integer
-
   iLawfulOrdInt : IsLawfulOrd Int
 
   iLawfulOrdWord : IsLawfulOrd Word
