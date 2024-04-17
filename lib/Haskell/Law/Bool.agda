@@ -4,11 +4,11 @@ open import Haskell.Prim
 open import Haskell.Prim.Bool
 
 open import Haskell.Law.Equality
-
+open import Haskell.Law.Def
 --------------------------------------------------
 -- &&
 
-&&-sym : ∀ (a b : Bool) → (a && b) ≡ (b && a)
+&&-sym : F-sym _&&_
 &&-sym False False = refl
 &&-sym False True = refl
 &&-sym True False = refl
@@ -52,6 +52,11 @@ open import Haskell.Law.Equality
 ||-rightTrue False .True refl = refl
 ||-rightTrue True  .True refl = refl
 
+||-sym : F-sym _||_
+||-sym False False = refl
+||-sym False True = refl
+||-sym True False = refl
+||-sym True True = refl
 --------------------------------------------------
 -- not
 
