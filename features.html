@@ -1112,8 +1112,14 @@ The format is the following:</p>
 <section id="emacs-mode">
 <h1>Emacs mode<a class="headerlink" href="#emacs-mode" title="Permalink to this heading"></a></h1>
 <p>Since there is a full Agda typechecker in the <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> binary,
-you can readily use the Emacs mode of a pre-existing Agda installation (make sure it is the same version as the one <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> depends on) by changing the binary that <code class="docutils literal notranslate"><span class="pre">agda-mode</span></code> uses (Lisp variable <code class="docutils literal notranslate"><span class="pre">agda2-program-name</span></code>) to (the path to) <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> binary.</p>
-<p>With <code class="docutils literal notranslate"><span class="pre">C-c</span> <span class="pre">C-x</span> <span class="pre">C-c</span></code>, you will now be able call the <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> backend from inside Emacs; all the other built-in backends still remain available.</p>
+you can readily use the Emacs mode of a pre-existing Agda installation by changing the binary that <code class="docutils literal notranslate"><span class="pre">agda-mode</span></code> uses to the path to <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> binary.</p>
+<ul class="simple">
+<li><p>First, check the version of the Agda typechecker in the <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> binary by calling <code class="docutils literal notranslate"><span class="pre">agda2hs</span> <span class="pre">--version</span></code>.</p></li>
+<li><p>Install this version of Agda.</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">agda-mode</span> <span class="pre">setup</span></code>.</p></li>
+<li><p>In Emacs, set the <code class="docutils literal notranslate"><span class="pre">agda2-program-name</span></code> variable to <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> (use <code class="docutils literal notranslate"><span class="pre">M-x</span> <span class="pre">customize-variable</span></code>). Alternatively, you can also set it in your <code class="docutils literal notranslate"><span class="pre">~/.emacs</span></code> file by hand.</p></li>
+<li><p>With <code class="docutils literal notranslate"><span class="pre">C-c</span> <span class="pre">C-x</span> <span class="pre">C-c</span></code>, you will now be able call the <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> backend from inside Emacs; all the other built-in backends still remain available.</p></li>
+</ul>
 <section id="id1">
 <h2>Known issues<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
 <ul class="simple">

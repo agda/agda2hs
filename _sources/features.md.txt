@@ -1074,9 +1074,13 @@ If `implicit` is `false`, Prelude gets imported explicitly, and only those ident
 # Emacs mode
 
 Since there is a full Agda typechecker in the `agda2hs` binary,
-you can readily use the Emacs mode of a pre-existing Agda installation (make sure it is the same version as the one `agda2hs` depends on) by changing the binary that `agda-mode` uses (Lisp variable `agda2-program-name`) to (the path to) `agda2hs` binary.
+you can readily use the Emacs mode of a pre-existing Agda installation by changing the binary that `agda-mode` uses to the path to `agda2hs` binary.
 
-With `C-c C-x C-c`, you will now be able call the `agda2hs` backend from inside Emacs; all the other built-in backends still remain available.
+- First, check the version of the Agda typechecker in the `agda2hs` binary by calling `agda2hs --version`.
+- Install this version of Agda.
+- Run `agda-mode setup`.
+- In Emacs, set the `agda2-program-name` variable to `agda2hs` (use `M-x customize-variable`). Alternatively, you can also set it in your `~/.emacs` file by hand.
+- With `C-c C-x C-c`, you will now be able call the `agda2hs` backend from inside Emacs; all the other built-in backends still remain available.
 
 ## Known issues
 
