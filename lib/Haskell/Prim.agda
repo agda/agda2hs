@@ -110,6 +110,11 @@ data All {a b} {A : Set a} (B : A → Set b) : List A → Set (a ⊔ b) where
     allNil  : All B []
     allCons : ∀ {x xs} ⦃ i : B x ⦄ ⦃ is : All B xs ⦄ → All B (x ∷ xs)
 
+data Any {a b} {A : Set a} (B : A → Set b) : List A → Set (a ⊔ b) where
+  instance
+    anyHere  : ∀ {x xs} ⦃ i : B x ⦄ → Any B (x ∷ xs)
+    anyThere : ∀ {x xs} ⦃ is : Any B xs ⦄ → Any B (x ∷ xs)
+
 data IsTrue : Bool → Set where
   instance itsTrue : IsTrue True
 
