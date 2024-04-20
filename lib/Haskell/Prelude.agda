@@ -5,8 +5,10 @@ open import Haskell.Prim
 open Haskell.Prim public using
   ( Bool; True; False; Char; Integer;
     List; []; _∷_; Nat; zero; suc; ⊤; tt;
-    TypeError; ⊥; iNumberNat; IsTrue; IsFalse;
-    All; allNil; allCons; NonEmpty; lengthNat;
+    TypeError; ⊥; iNumberNat; lengthNat;
+    IsTrue; IsFalse; NonEmpty;
+    All; allNil; allCons;
+    Any; anyHere; anyThere;
     id; _∘_; _$_; flip; const;
     if_then_else_; case_of_;
     Number; fromNat; Negative; fromNeg;
