@@ -1,7 +1,6 @@
 module Haskell.Law.Ord.Integer where
 
 open import Haskell.Prim
-open import Haskell.Prim.Bool
 open import Haskell.Prim.Eq
 open import Haskell.Prim.Ord
 
