@@ -3,7 +3,6 @@ module Haskell.Law.Ord.Def where
 open import Haskell.Prim
 open import Haskell.Prim.Ord
 open import Haskell.Prim.Bool
-open import Haskell.Prim.Int
 open import Haskell.Prim.Word
 open import Haskell.Prim.Integer
 open import Haskell.Prim.Double
@@ -85,11 +84,11 @@ lte2LtEq : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
 lte2LtEq x y 
   rewrite lt2LteNeq x y
     with (x <= y) in h₁ | (x == y) in h₂
-...| True | True = refl
+...| True | True  = refl
 ...| True | False = refl
-...| False | True = magic $ exFalso 
-  (reflexivity x) 
-  (trans (cong₂  _<=_ refl (equality x y h₂)) h₁)
+...| False | True 
+  rewrite equality x y h₂ | sym $ h₁ 
+  = reflexivity y
 ...| False | False = refl
 
 gte2GtEq : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
@@ -178,7 +177,6 @@ reverseLte a b c d
 -- Postulated instances
 
 postulate instance
-  iLawfulOrdInt : IsLawfulOrd Int
 
   iLawfulOrdWord : IsLawfulOrd Word
 
