@@ -15,13 +15,14 @@ import Data.String ( IsString(..) )
 import GHC.Stack (HasCallStack)
 
 import Agda.Compiler.Backend hiding ( Args )
+import Agda.Interaction.BasicOps ( parseName )
 
 import Agda.Syntax.Common
 import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Internal
 import Agda.Syntax.Position ( noRange )
 import Agda.Syntax.Scope.Base
-import Agda.Syntax.Scope.Monad ( bindVariable, freshConcreteName, isDatatypeModule )
+import Agda.Syntax.Scope.Monad ( bindVariable, freshConcreteName, isDatatypeModule, resolveName )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import qualified Agda.Syntax.Common.Pretty as P
 
@@ -391,3 +392,17 @@ checkNoAsPatterns = \case
 
 noWriteImports :: C a -> C a
 noWriteImports = local $ \e -> e { writeImports = False }
+
+testResolveStringName :: String -> C (Maybe QName)
+testResolveStringName s = do
+  cqname <- liftTCM $ parseName noRange s
+  rname <- liftTCM $ resolveName cqname
+  case rname of
+    DefinedName _ aname _ -> return $ Just $ anameName aname
+    _ -> return Nothing
+
+resolveStringName :: String -> C QName
+resolveStringName s = do
+  testResolveStringName s >>= \case
+    Just aname -> return aname
+    Nothing -> genericDocError =<< text ("Couldn't find " ++ s)
