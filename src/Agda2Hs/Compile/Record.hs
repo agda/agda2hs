@@ -88,7 +88,7 @@ compileMinRecords def sls = do
         | all (x ==) xs = return x
         | otherwise     = agda2hsErrorM $ do
           text ("Conflicting default implementations for " ++ pp f ++ ":") $$
-            vcat [ text "-" <+> multilineText (pp d) | d <- nub (x : xs) ]
+            vcat [ "-" <+> multilineText (pp d) | d <- nub (x : xs) ]
   decls <- Map.traverseWithKey getUnique
          $ Map.unionsWith (<>) $ (map . fmap) (:| []) defaults
 
@@ -183,8 +183,8 @@ checkUnboxPragma def = do
   -- recRecursive can be used again after agda 2.6.4.2 is released
   -- see agda/agda#7042
   unless (all null recMutual) $ agda2hsErrorM $
-        text "Unboxed record" <+> prettyTCM (defName def)
-    <+> text "cannot be recursive"
+        "Unboxed record" <+> prettyTCM (defName def)
+    <+> "cannot be recursive"
 
   TelV tel _ <- telViewUpTo recPars (defType def)
   addContext tel $ do
@@ -192,8 +192,8 @@ checkUnboxPragma def = do
     let fieldTel = recTel `apply` pars
     fields <- nonErasedFields fieldTel
     unless (length fields == 1) $ agda2hsErrorM $
-          text "Unboxed record" <+> prettyTCM (defName def)
-      <+> text "should have exactly one non-erased field"
+          "Unboxed record" <+> prettyTCM (defName def)
+      <+> "should have exactly one non-erased field"
 
   where
     nonErasedFields :: Telescope -> C [String]
