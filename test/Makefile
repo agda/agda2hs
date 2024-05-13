@@ -6,7 +6,7 @@ FAIL_MAIN=AllFailTests
 .PHONY : default allTests print-fail fail compare golden \
 	html renderTranslations clean force-recompile
 
-default : allTests fail compare
+default : compare
 
 build/%.hs : %.agda *.agda Fail/*.agda Cubical/*.agda
 	@echo == Compiling tests ==
@@ -21,11 +21,11 @@ print-fail :
 
 fail : print-fail $(patsubst Fail/%.agda,build/%.err,$(wildcard Fail/*.agda))
 
-build/%.err : Fail/%.agda force-recompile allTests
+build/%.err : Fail/%.agda force-recompile
 	@echo Compiling $<
 	@($(AGDA2HS) $< -o build -v0 && echo "UNEXPECTED SUCCESS" || true) | sed -e 's:'$(ROOT)'::g' > $@
 
-compare : fail
+compare : allTests fail
 	@echo == Comparing output ==
 	@diff -r build golden
 
