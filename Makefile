@@ -1,4 +1,5 @@
 .PHONY : install agda repl libHtml test testHtml golden docs
+FILES = $(shell find src -type f)
 
 install :
 	cabal install --overwrite-policy=always
@@ -13,7 +14,7 @@ libHtml :
 	cabal run agda2hs -- --html lib/Haskell/Prelude.agda
 	cp html/Haskell.Prelude.html html/index.html
 
-test/agda2hs : src/*.hs
+test/agda2hs : $(FILES)
 	cabal install agda2hs --overwrite-policy=always --installdir=test --install-method=copy
 
 test : test/agda2hs
