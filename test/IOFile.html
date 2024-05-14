@@ -1,0 +1,15 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>IOFile</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Keyword">module</a> <a id="8" href="IOFile.html" class="Module">IOFile</a> <a id="15" class="Keyword">where</a>
+
+<a id="22" class="Keyword">open</a> <a id="27" class="Keyword">import</a> <a id="34" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="main"></a><a id="51" href="IOFile.html#51" class="Function">main</a> <a id="56" class="Symbol">:</a> <a id="58" href="Haskell.Prim.IO.html#129" class="Postulate">IO</a> <a id="61" href="Agda.Builtin.Unit.html#175" class="Record">⊤</a>
+<a id="63" href="IOFile.html#51" class="Function">main</a> <a id="68" class="Symbol">=</a> <a id="70" class="Keyword">do</a> <a id="73" href="IOFile.html#73" class="Bound">file</a> <a id="78" href="Haskell.Prim.Monad.html#532" class="Field Operator">←</a> <a id="80" href="Haskell.Prim.IO.html#510" class="Postulate">readFile</a> <a id="89" class="String">&quot;IOFile.agda&quot;</a>
+          <a id="113" href="Haskell.Prim.IO.html#550" class="Postulate">writeFile</a> <a id="123" class="String">&quot;IOFile2.agda&quot;</a> <a id="138" href="IOFile.html#73" class="Bound">file</a>
+          <a id="153" href="Haskell.Prim.IO.html#594" class="Postulate">appendFile</a> <a id="164" class="String">&quot;IOFile2.agda&quot;</a> <a id="179" class="String">&quot;-- Written by appendFile&quot;</a>
+          <a id="216" href="IOFile.html#216" class="Bound">file2</a> <a id="222" href="Haskell.Prim.Monad.html#532" class="Field Operator">←</a> <a id="224" href="Haskell.Prim.IO.html#510" class="Postulate">readFile</a> <a id="233" class="String">&quot;IOFile2.agda&quot;</a>
+          <a id="258" href="Haskell.Prim.IO.html#360" class="Postulate">print</a> <a id="264" href="IOFile.html#216" class="Bound">file2</a>
+          <a id="280" href="Haskell.Prim.Monad.html#608" class="Field">return</a> <a id="287" href="Agda.Builtin.Unit.html#212" class="InductiveConstructor">tt</a>
+          
+<a id="301" class="Symbol">{-#</a> <a id="305" class="Keyword">COMPILE</a> <a id="313" class="Keyword">AGDA2HS</a> <a id="321" href="IOFile.html#51" class="Function">main</a> <a id="326" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/IOFile.html"/></div></body></html>

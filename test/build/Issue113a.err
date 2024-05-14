@@ -1,0 +1,2 @@
+test/Fail/Issue113a.agda:5,8-12
+Unboxed record Loop cannot be recursive

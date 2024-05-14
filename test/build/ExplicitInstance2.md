@@ -1,0 +1,4 @@
+```
+test/Fail/ExplicitInstance2.agda:13,1-5
+No instance of type HasDefault Bool was found in scope.
+```

@@ -1,0 +1,2 @@
+test/Fail/Fixities.agda:6,1-6
+Invalid fixity 8.5 for operator _<+>_
