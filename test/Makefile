@@ -8,7 +8,7 @@ FAIL_MAIN=AllFailTests
 
 default : compare
 
-build/%.hs : %.agda *.agda Fail/*.agda Cubical/*.agda
+build/%.hs : %.agda *.agda Fail/*.agda Cubical/*.agda agda2hs
 	@echo == Compiling tests ==
 	$(AGDA2HS) $< -o build
 
@@ -21,7 +21,7 @@ print-fail :
 
 fail : print-fail $(patsubst Fail/%.agda,build/%.err,$(wildcard Fail/*.agda))
 
-build/%.err : Fail/%.agda force-recompile
+build/%.err : Fail/%.agda agda2hs
 	@echo Compiling $<
 	@($(AGDA2HS) $< -o build -v0 && echo "UNEXPECTED SUCCESS" || true) | sed -e 's:'$(ROOT)'::g' > $@
 
