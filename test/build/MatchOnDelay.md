@@ -1,4 +1,0 @@
-```
-test/Fail/MatchOnDelay.agda:7,1-4
-constructor `now` not supported in patterns
-```
