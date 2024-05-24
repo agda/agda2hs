@@ -1,0 +1,27 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Fail.Issue169-record</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Comment">-- Using a default method implementation for an instance declaration currently</a>
+<a id="80" class="Comment">-- requires a named definition or an anonymous `λ where` on the Agda side, so a</a>
+<a id="160" class="Comment">-- record is not allowed.</a>
+
+<a id="187" class="Keyword">module</a> <a id="194" href="Fail.Issue169-record.html" class="Module">Fail.Issue169-record</a> <a id="215" class="Keyword">where</a>
+
+<a id="222" class="Keyword">open</a> <a id="227" class="Keyword">import</a> <a id="234" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="251" class="Keyword">record</a> <a id="Identity"></a><a id="258" href="Fail.Issue169-record.html#258" class="Record">Identity</a> <a id="267" class="Symbol">(</a><a id="268" href="Fail.Issue169-record.html#268" class="Bound">a</a> <a id="270" class="Symbol">:</a> <a id="272" href="Agda.Primitive.html#388" class="Primitive">Set</a><a id="275" class="Symbol">)</a> <a id="277" class="Symbol">:</a> <a id="279" href="Agda.Primitive.html#388" class="Primitive">Set</a> <a id="283" class="Keyword">where</a>
+    <a id="293" class="Keyword">field</a>
+        <a id="Identity.runIdentity"></a><a id="307" href="Fail.Issue169-record.html#307" class="Field">runIdentity</a> <a id="319" class="Symbol">:</a> <a id="321" href="Fail.Issue169-record.html#268" class="Bound">a</a>
+<a id="323" class="Keyword">open</a> <a id="328" href="Fail.Issue169-record.html#258" class="Module">Identity</a> <a id="337" class="Keyword">public</a>
+
+<a id="345" class="Symbol">{-#</a> <a id="349" class="Keyword">COMPILE</a> <a id="357" class="Keyword">AGDA2HS</a> <a id="365" href="Fail.Issue169-record.html#258" class="Record">Identity</a> <a id="374" class="Pragma">newtype</a> <a id="382" class="Symbol">#-}</a>
+
+<a id="showIdentity"></a><a id="387" href="Fail.Issue169-record.html#387" class="Function">showIdentity</a> <a id="400" class="Symbol">:</a> <a id="402" class="Symbol">⦃</a> <a id="404" href="Haskell.Prim.Show.html#1012" class="Record">Show</a> <a id="409" href="Haskell.Prim.html#1191" class="Generalizable">a</a> <a id="411" class="Symbol">⦄</a> <a id="413" class="Symbol">→</a> <a id="415" href="Fail.Issue169-record.html#258" class="Record">Identity</a> <a id="424" href="Haskell.Prim.html#1191" class="Generalizable">a</a> <a id="426" class="Symbol">→</a> <a id="428" href="Haskell.Prim.String.html#344" class="Function">String</a>
+<a id="435" href="Fail.Issue169-record.html#387" class="Function">showIdentity</a> <a id="448" class="Keyword">record</a> <a id="455" class="Symbol">{</a> <a id="457" href="Fail.Issue169-record.html#307" class="Field">runIdentity</a> <a id="469" class="Symbol">=</a> <a id="471" href="Fail.Issue169-record.html#471" class="Bound">id</a> <a id="474" class="Symbol">}</a> <a id="476" class="Symbol">=</a> <a id="478" class="String">&quot;Id &lt; &quot;</a> <a id="486" href="Haskell.Prim.List.html#310" class="Function Operator">++</a> <a id="489" href="Haskell.Prim.Show.html#1114" class="Field">show</a> <a id="494" href="Fail.Issue169-record.html#471" class="Bound">id</a> <a id="497" href="Haskell.Prim.List.html#310" class="Function Operator">++</a> <a id="500" class="String">&quot; &gt;&quot;</a>
+
+<a id="506" class="Symbol">{-#</a> <a id="510" class="Keyword">COMPILE</a> <a id="518" class="Keyword">AGDA2HS</a> <a id="526" href="Fail.Issue169-record.html#387" class="Function">showIdentity</a> <a id="539" class="Symbol">#-}</a>
+
+<a id="544" class="Keyword">instance</a>
+  <a id="iIdentityShow"></a><a id="555" href="Fail.Issue169-record.html#555" class="Function">iIdentityShow</a> <a id="569" class="Symbol">:</a> <a id="571" class="Symbol">⦃</a> <a id="573" href="Haskell.Prim.Show.html#1012" class="Record">Show</a> <a id="578" href="Haskell.Prim.html#1191" class="Generalizable">a</a> <a id="580" class="Symbol">⦄</a> <a id="582" class="Symbol">→</a> <a id="584" href="Haskell.Prim.Show.html#1012" class="Record">Show</a> <a id="589" class="Symbol">(</a><a id="590" href="Fail.Issue169-record.html#258" class="Record">Identity</a> <a id="599" href="Haskell.Prim.html#1191" class="Generalizable">a</a><a id="600" class="Symbol">)</a>
+  <a id="604" href="Fail.Issue169-record.html#555" class="Function">iIdentityShow</a> <a id="618" class="Symbol">=</a> <a id="620" class="Keyword">record</a> <a id="627" class="Symbol">{</a><a id="628" href="Fail.Issue169-record.html#628" class="Module">Show₂</a> <a id="634" class="Keyword">record</a> <a id="641" class="Symbol">{</a><a id="642" href="Haskell.Prim.Show.html#1385" class="Field">show</a> <a id="647" class="Symbol">=</a> <a id="649" href="Fail.Issue169-record.html#387" class="Function">showIdentity</a><a id="661" class="Symbol">}}</a>
+
+<a id="665" class="Symbol">{-#</a> <a id="669" class="Keyword">COMPILE</a> <a id="677" class="Keyword">AGDA2HS</a> <a id="685" href="Fail.Issue169-record.html#555" class="Function">iIdentityShow</a> <a id="699" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Issue169-record.html"/></div></body></html>
