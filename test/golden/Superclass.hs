@@ -1,32 +1,31 @@
 module Superclass where
 
 class Super a where
-    myFun :: a -> a
+  myFun :: a -> a
 
-class Super a => Sub a where
+class (Super a) => Sub a
 
-foo :: Sub a => a -> a
+foo :: (Sub a) => a -> a
 foo = myFun . myFun
 
-class Super a => Sub2 a where
+class (Super a) => Sub2 a
 
-class (Sub a, Sub2 a) => Subber a where
+class (Sub a, Sub2 a) => Subber a
 
-bar :: Subber a => a -> a
-bar = myFun . id
+bar :: (Subber a) => a -> a
+bar = myFun
 
 instance Super Int where
-    myFun = (1 +)
+  myFun = (1 +)
 
-instance Sub Int where
+instance Sub Int
 
-class Ord a => DiscreteOrd a where
+class (Ord a) => DiscreteOrd a
 
-instance DiscreteOrd Bool where
+instance DiscreteOrd Bool
 
-baz :: DiscreteOrd a => a -> Bool
+baz :: (DiscreteOrd a) => a -> Bool
 baz x = x < x
 
 usebaz :: Bool
 usebaz = baz True
-

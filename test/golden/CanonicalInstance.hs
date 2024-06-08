@@ -1,10 +1,9 @@
 module CanonicalInstance where
 
 class ClassA a where
-    myA :: a
+  myA :: a
 
-class ClassA b => ClassB b where
+class (ClassA b) => ClassB b
 
-myB :: ClassB b => b
+myB :: (ClassB b) => b
 myB = myA
-

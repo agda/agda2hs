@@ -12,4 +12,3 @@ test1 = fn True
 
 test2 :: Int
 test2 = fn False
-

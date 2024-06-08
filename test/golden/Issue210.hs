@@ -3,15 +3,15 @@ module Issue210 where
 import Numeric.Natural (Natural)
 
 class Test a where
-    f :: a -> a
+  f :: a -> a
 
 instance Test Natural where
-    f n = h
-      where
-        g :: Natural
-        g = 3 + n
-        h :: Natural
-        h = n + g
+  f n = h
+    where
+      g :: Natural
+      g = 3 + n
+      h :: Natural
+      h = n + g
 
 f1 :: Natural -> Natural
 f1 n = h1
@@ -28,4 +28,3 @@ f2 n = h2 n
     g2 = 3 + n
     h2 :: Natural -> Natural
     h2 m = n + g2 + m
-

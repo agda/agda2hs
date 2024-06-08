@@ -6,8 +6,7 @@ import Unsafe.Coerce (unsafeCoerce)
 newtype A = MkA Natural
 
 newtype B = MkB Natural
-              deriving (Show)
+  deriving (Show)
 
 coerceExample :: B
 coerceExample = unsafeCoerce (MkA 5)
-

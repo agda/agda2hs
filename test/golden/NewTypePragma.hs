@@ -10,20 +10,19 @@ index = MkIndexed
 -- data newtype with deriving
 
 newtype Pair a b = MkPair (a, b)
-                     deriving (Show, Eq)
+  deriving (Show, Eq)
 
 -- record newtype
 
-newtype Identity a = MkIdentity{runIdentity :: a}
+newtype Identity a = MkIdentity {runIdentity :: a}
 
 -- record newtype with erased proof
 
-newtype Equal a = MkEqual{pair :: (a, a)}
+newtype Equal a = MkEqual {pair :: (a, a)}
 
 -- record newtype with same name
 
-newtype Duo a = Duo{duo :: (a, a)}
+newtype Duo a = Duo {duo :: (a, a)}
 
 createDuo :: a -> a -> Duo a
 createDuo a b = Duo (a, b)
-

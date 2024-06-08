@@ -5,4 +5,3 @@ f m = g m
   where
     g :: Bool -> Bool
     g m = m
-

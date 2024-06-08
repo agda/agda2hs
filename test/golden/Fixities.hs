@@ -1,9 +1,14 @@
 module Fixities where
 
 leftAssoc :: Int -> [Int]
-leftAssoc n
-  = [2 * n + 1, 2 * (n + 1), 1 + n * 2, (1 + n) * 2, n + n + n,
-     n + (n + n)]
+leftAssoc n =
+  [ 2 * n + 1
+  , 2 * (n + 1)
+  , 1 + n * 2
+  , (1 + n) * 2
+  , n + n + n
+  , n + (n + n)
+  ]
 
 rightAssoc :: [Int] -> [Int]
 rightAssoc xs = xs ++ xs ++ ((xs ++ xs) ++ xs) ++ xs
@@ -21,4 +26,3 @@ x <+> y = x + y
 infixr 8 <->
 (<->) :: Int -> Int -> Int
 x <-> y = x - y
-

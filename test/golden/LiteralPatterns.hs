@@ -8,4 +8,3 @@ testInt _ = False
 testChar :: Char -> Bool
 testChar 'c' = True
 testChar _ = False
-

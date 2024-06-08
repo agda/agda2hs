@@ -7,4 +7,3 @@ reduce v = go v
   where
     go :: Term -> Term
     go v = v
-

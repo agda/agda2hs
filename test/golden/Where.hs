@@ -112,4 +112,3 @@ ex8 = n₂
     n₁ = 1
     n₂ :: Natural
     n₂ = n₁ + 1
-

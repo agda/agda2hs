@@ -1,6 +1,6 @@
 module Importer where
 
-import Importee (Foo(MkFoo), Fooable(defaultFoo, doTheFoo), foo, (!#))
+import Importee (Foo (MkFoo), Fooable (defaultFoo, doTheFoo), foo, (!#))
 import Numeric.Natural (Natural)
 import SecondImportee (anotherFoo)
 
@@ -34,5 +34,4 @@ testFoldMap = foldMap (:) []
 -- ** interplay with default methods of existing class
 
 testFoldr :: [Natural] -> Natural
-testFoldr = foldr (\ _ x -> x) 0
-
+testFoldr = foldr (\_ x -> x) 0

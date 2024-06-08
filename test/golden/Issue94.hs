@@ -5,4 +5,3 @@ thing xs = aux xs
   where
     aux :: [a] -> [a]
     aux xs = xs
-

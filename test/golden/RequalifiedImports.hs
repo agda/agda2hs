@@ -1,9 +1,10 @@
 module RequalifiedImports where
 
-import OtherImportee (OtherFoo(MkFoo))
-import qualified QualifiedImportee as A (Foo, Fooable(defaultFoo, doTheFoo), foo, (!#))
+import OtherImportee (OtherFoo (MkFoo))
+import qualified QualifiedImportee as A (Foo, Fooable (defaultFoo, doTheFoo), foo, (!#))
 
 -- ** conflicting imports are all replaced with the "smallest" qualifier
+
 --   * the characters are ordered based on their ASCII value (i.e. capitals first)
 --   * the order of the imports in the file does not matter
 --   * the scope-checker has already replaced previous definitions in the file
@@ -26,4 +27,3 @@ type T = Int
 
 otherFoo :: OtherFoo
 otherFoo = MkFoo
-

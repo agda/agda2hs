@@ -12,8 +12,7 @@ negInteger :: Integer
 negInteger = -1001
 
 natToPos :: Natural -> Integer
-natToPos n = fromIntegral n
+natToPos = fromIntegral
 
 natToNeg :: Natural -> Integer
-natToNeg n = (negate . fromIntegral) n
-
+natToNeg = (negate . fromIntegral)

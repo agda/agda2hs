@@ -5,4 +5,3 @@ foo n = n
 
 bar :: Int
 bar = foo 42
-

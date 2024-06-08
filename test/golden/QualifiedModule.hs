@@ -10,4 +10,3 @@ g = h
   where
     h :: D
     h = C
-

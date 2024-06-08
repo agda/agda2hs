@@ -18,4 +18,3 @@ data (****) a b = (:****) a b
 
 cross :: (****) Bool Natural
 cross = True :**** 1
-

@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+
 module BangPatterns where
 
 strictId :: a -> a
@@ -12,9 +13,10 @@ foldl' :: (b -> a -> b) -> b -> [a] -> b
 foldl' f !x0 [] = x0
 foldl' f !x0 (x : xs) = foldl' f (f x0 x) xs
 
-data LazyMaybe a = LazyNothing
-                 | LazyJust a
+data LazyMaybe a
+  = LazyNothing
+  | LazyJust a
 
-data StrictMaybe a = StrictNothing
-                   | StrictJust !a
-
+data StrictMaybe a
+  = StrictNothing
+  | StrictJust !a

@@ -16,5 +16,4 @@ testCong :: Int
 testCong = 1 + testRezz
 
 rTail :: [Int] -> [Int]
-rTail = \ ys -> tail ys
-
+rTail ys = tail ys

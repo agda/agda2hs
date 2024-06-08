@@ -1,89 +1,104 @@
-cabal-version:       2.2
-name:                agda2hs
-version:             1.3
-license:             BSD-3-Clause
-license-file:        LICENSE
-author:              Ulf Norell, Jesper Cockx, Orestis Melkonian, Sára Juhošová, James Chapman, Lucas Escot, Henry Blanchette
-maintainer:          jesper@sikanda.be
-copyright:           2023 Ulf Norell, Jesper Cockx, Orestis Melkonian, Sára Juhošová, James Chapman, Lucas Escot, Henry Blanchette
-category:            Language, Compiler
-build-type:          Simple
-synopsis:            Compiling Agda code to readable Haskell.
+cabal-version:   2.2
+name:            agda2hs
+version:         1.3
+license:         BSD-3-Clause
+license-file:    LICENSE
+author:
+  Ulf Norell, Jesper Cockx, Orestis Melkonian, Sára Juhošová, James Chapman, Lucas Escot, Henry Blanchette
+
+maintainer:      jesper@sikanda.be
+copyright:
+  2023 Ulf Norell, Jesper Cockx, Orestis Melkonian, Sára Juhošová, James Chapman, Lucas Escot, Henry Blanchette
+
+category:        Language, Compiler
+build-type:      Simple
+synopsis:        Compiling Agda code to readable Haskell.
 description:
   Produces verified and readable Haskell code by extracting it from a
   (lightly annotated) Agda program.
   The tool is implemented as an Agda backend, which means that `agda2hs` is a
   fully functional Agda compiler.
 
-extra-doc-files:    CHANGELOG.md
-                    README.md
+extra-doc-files:
+  CHANGELOG.md
+  README.md
 
 source-repository head
   type:     git
   location: https://github.com/agda/agda2hs.git
 
 flag smuggler2
-  description: Rewrite sources to cleanup imports, and create explicit exports
+  description:
+    Rewrite sources to cleanup imports, and create explicit exports
+
   default:     False
   manual:      True
 
 common smuggler-options
   if flag(smuggler2)
-    ghc-options: -fplugin=Smuggler2.Plugin
-                 -fplugin-opt=Smuggler2.Plugin:MinimiseImports
-                 -fplugin-opt=Smuggler2.Plugin:NoExportProcessing
-    build-depends: smuggler2 >= 0.3 && < 0.4
+    ghc-options:
+      -fplugin=Smuggler2.Plugin
+      -fplugin-opt=Smuggler2.Plugin:MinimiseImports
+      -fplugin-opt=Smuggler2.Plugin:NoExportProcessing
+
+    build-depends: smuggler2 >=0.3 && <0.4
 
 executable agda2hs
-  import:              smuggler-options
-  hs-source-dirs:      src
-  main-is:             Main.hs
-  other-modules:       Agda2Hs.AgdaUtils,
-                       Agda2Hs.Compile,
-                       Agda2Hs.Compile.ClassInstance,
-                       Agda2Hs.Compile.Data,
-                       Agda2Hs.Compile.Function,
-                       Agda2Hs.Compile.Imports,
-                       Agda2Hs.Compile.Name,
-                       Agda2Hs.Compile.Postulate,
-                       Agda2Hs.Compile.Record,
-                       Agda2Hs.Compile.Term,
-                       Agda2Hs.Compile.Type,
-                       Agda2Hs.Compile.TypeDefinition,
-                       Agda2Hs.Compile.Types,
-                       Agda2Hs.Compile.Utils,
-                       Agda2Hs.Compile.Var,
-                       Agda2Hs.Config,
-                       Agda2Hs.HsUtils,
-                       Agda2Hs.Pragma,
-                       Agda2Hs.Render,
-                       AgdaInternals,
-                       Paths_agda2hs
-  autogen-modules:     Paths_agda2hs
-  build-depends:       base                 >= 4.13    && < 4.20,
-                       Agda                 >= 2.6.4   && < 2.6.5,
-                       bytestring           >= 0.11.5  && < 0.13,
-                       containers           >= 0.6     && < 0.8,
-                       unordered-containers >= 0.2.19  && < 0.3,
-                       mtl                  >= 2.2     && < 2.3 || >= 2.3.1,
-                       transformers         >= 0.6     && < 0.7,
-                       monad-control        >= 1.0     && < 1.1,
-                       directory            >= 1.2.6.2 && < 1.4,
-                       filepath             >= 1.4.1.0 && < 1.5,
-                       haskell-src-exts     >= 1.23    && < 1.25,
-                       syb                  >= 0.7.2   && < 0.8,
-                       text                 >= 2.0.2   && < 2.2,
-                       deepseq              >= 1.4.4   && < 1.6,
-                       yaml                 >= 0.11    && < 0.12,
-                       aeson                >= 2.2     && < 2.3,
-  default-language:    Haskell2010
-  default-extensions:  LambdaCase
-                       RecordWildCards
-                       FlexibleContexts
-                       MultiWayIf
-                       TupleSections
-                       ScopedTypeVariables
-                       ViewPatterns
-                       NamedFieldPuns
-                       PatternSynonyms
-  ghc-options:         -Werror -rtsopts
+  import:             smuggler-options
+  hs-source-dirs:     src
+  main-is:            Main.hs
+  other-modules:
+    Agda2Hs.AgdaUtils
+    Agda2Hs.Compile
+    Agda2Hs.Compile.ClassInstance
+    Agda2Hs.Compile.Data
+    Agda2Hs.Compile.Function
+    Agda2Hs.Compile.Imports
+    Agda2Hs.Compile.Name
+    Agda2Hs.Compile.Postulate
+    Agda2Hs.Compile.Record
+    Agda2Hs.Compile.Term
+    Agda2Hs.Compile.Type
+    Agda2Hs.Compile.TypeDefinition
+    Agda2Hs.Compile.Types
+    Agda2Hs.Compile.Utils
+    Agda2Hs.Compile.Var
+    Agda2Hs.Config
+    Agda2Hs.HsUtils
+    Agda2Hs.Pragma
+    Agda2Hs.Render
+    AgdaInternals
+    Paths_agda2hs
+
+  autogen-modules:    Paths_agda2hs
+  build-depends:
+    , aeson                 >=2.2     && <2.3
+    , Agda                  >=2.6.4   && <2.6.5
+    , base                  >=4.13    && <4.20
+    , bytestring            >=0.11.5  && <0.13
+    , containers            >=0.6     && <0.8
+    , deepseq               >=1.4.4   && <1.6
+    , directory             >=1.2.6.2 && <1.4
+    , filepath              >=1.4.1.0 && <1.5
+    , haskell-src-exts      >=1.23    && <1.25
+    , monad-control         >=1.0     && <1.1
+    , mtl                   >=2.2     && <2.3   || >=2.3.1
+    , syb                   >=0.7.2   && <0.8
+    , text                  >=2.0.2   && <2.2
+    , transformers          >=0.6     && <0.7
+    , unordered-containers  >=0.2.19  && <0.3
+    , yaml                  >=0.11    && <0.12
+
+  default-language:   Haskell2010
+  default-extensions:
+    FlexibleContexts
+    LambdaCase
+    MultiWayIf
+    NamedFieldPuns
+    PatternSynonyms
+    RecordWildCards
+    ScopedTypeVariables
+    TupleSections
+    ViewPatterns
+
+  ghc-options:        -Werror -rtsopts

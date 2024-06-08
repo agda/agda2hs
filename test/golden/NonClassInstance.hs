@@ -5,8 +5,7 @@ iDecIsTrue False = False
 iDecIsTrue True = True
 
 foo :: Bool -> Bool -> Bool
-foo _ b = not b
+foo _ = not
 
 bar :: Bool -> Bool
 bar b = foo b (iDecIsTrue b)
-
