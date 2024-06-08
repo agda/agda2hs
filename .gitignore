@@ -7,3 +7,7 @@ docs/build/
 *.hi
 *.o
 
+# For nix users
+.direnv/**
+.envrc
+result

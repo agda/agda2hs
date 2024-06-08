@@ -1,7 +1,9 @@
 module Ascending where
 
 open import Haskell.Prelude
-open import Haskell.Prim 
+open import Haskell.Prim
+open import Haskell.Law.Equality using (sym; begin_; _≡⟨⟩_; step-≡; _∎)
+open import Haskell.Law.Bool using (ifTrueEqThen)
 
 -- function judging ascending order on lists
 isAscending : ⦃ iOrdA : Ord a ⦄ → List a → Bool
