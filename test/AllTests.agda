@@ -83,6 +83,7 @@ import Issue264
 import Issue301
 import Issue305
 import Issue302
+import Issue309
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -163,4 +164,5 @@ import Issue264
 import Issue301
 import Issue305
 import Issue302
+import Issue309
 #-}
