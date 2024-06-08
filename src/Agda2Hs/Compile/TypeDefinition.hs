@@ -10,17 +10,20 @@ import Agda.Compiler.Backend
 
 import Agda.Syntax.Common ( namedArg )
 import Agda.Syntax.Internal
+import Agda.Syntax.Internal.Pattern
 
 import Agda.TypeChecking.Telescope ( mustBePi )
 
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Monad
 
-import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..) )
+import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTypeArgs )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
 import Agda2Hs.HsUtils
+import Agda.Syntax.Common.Pretty (prettyShow)
+import Agda.TypeChecking.Substitute
 
 
 compileTypeDef :: Hs.Name () -> Definition -> C [Hs.Decl ()]
@@ -28,7 +31,7 @@ compileTypeDef name (Defn {..}) = do
   unlessM (isTransparentFunction defName) $ checkValidTypeName name
   Clause{..} <- singleClause funClauses
   addContext (KeepNames clauseTel) $ do
-    as <- compileTypeArgs defType namedClausePats
+    as <- compileTypePatternArgs defType namedClausePats
     let hd = foldl (Hs.DHApp ()) (Hs.DHead () name) as
     rhs <- compileType $ fromMaybe __IMPOSSIBLE__ clauseBody
     return [Hs.TypeDecl () hd rhs]
@@ -38,17 +41,15 @@ compileTypeDef name (Defn {..}) = do
       [cl] -> return cl
       _    -> genericError "Not supported: type definition with several clauses"
 
-
-compileTypeArgs :: Type -> NAPs -> C [Hs.TyVarBind ()]
-compileTypeArgs ty [] = return []
-compileTypeArgs ty (p:ps) = do
-  (a,b) <- mustBePi ty
-  let rest = underAbstraction a b $ \ty' -> compileTypeArgs ty' ps
-  compileDom a >>= \case
-    DODropped -> rest
-    DOType -> (:) <$> compileTypeArg (namedArg p) <*> rest
-    DOTerm -> genericError "Not supported: type definition with term arguments"
-    DOInstance -> genericError "Not supported: type definition with instance arguments"
+compileTypePatternArgs :: Type -> NAPs -> C [Hs.TyVarBind ()]
+compileTypePatternArgs ty naps = do
+  aux <- compileTypeArgs ty $ fromMaybe __IMPOSSIBLE__ $ allApplyElims $ patternsToElims naps
+  mapM assertIsTyVarBind aux
+  where
+    assertIsTyVarBind :: Hs.Type () -> C (Hs.TyVarBind ())
+    assertIsTyVarBind = \case
+      Hs.TyVar _ n -> pure $ Hs.UnkindedVar () n
+      _ -> genericError "Not supported: type definition by pattern matching"
 
 compileTypeArg :: DeBruijnPattern -> C (Hs.TyVarBind ())
 compileTypeArg p@(VarP o i) = do
