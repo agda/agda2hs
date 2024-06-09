@@ -2,14 +2,8 @@ module TypeOperatorImport where
 
 {-# FOREIGN AGDA2HS {-# LANGUAGE TypeOperators #-} #-}
 
-open import Agda.Builtin.Unit
-open import Agda.Builtin.Bool
-open import Haskell.Prelude using (_∘_)
+open import Haskell.Prelude hiding (_<_)
 open import TypeOperatorExport
-
-not : Bool → Bool
-not true  = false
-not false = true
 
 test1 : ⊤ < Bool
 test1 = tt

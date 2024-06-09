@@ -9,6 +9,7 @@ import Control.Monad.State ( put, modify )
 
 import Data.Maybe ( isJust )
 import qualified Data.Map as M
+import Data.List ( isPrefixOf )
 
 import qualified Language.Haskell.Exts as Hs
 
@@ -60,6 +61,8 @@ primModules =
   , "Haskell.Law"
   ]
 
+isPrimModule :: Hs.ModuleName () -> Bool
+isPrimModule mod = any (`isPrefixOf` pp mod) primModules
 
 concatUnzip :: [([a], [b])] -> ([a], [b])
 concatUnzip = (concat *** concat) . unzip
@@ -151,6 +154,18 @@ isErasedBaseType x = orM
   , isJust <$> isSizeType b             -- Size
   ]
   where b = El __DUMMY_SORT__ x
+
+hasCompilePragma :: QName -> C Bool
+hasCompilePragma q = processPragma q <&> \case
+  NoPragma{} -> False
+  InlinePragma{} -> True
+  DefaultPragma{} -> True
+  ClassPragma{} -> True
+  ExistingClassPragma{} -> True
+  UnboxPragma{} -> True
+  TransparentPragma{} -> True
+  NewTypePragma{} -> True
+  DerivePragma{} -> True
 
 -- Exploits the fact that the name of the record type and the name of the record module are the
 -- same, including the unique name ids.
