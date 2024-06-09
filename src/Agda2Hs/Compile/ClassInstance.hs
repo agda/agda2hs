@@ -333,7 +333,7 @@ resolveStringName s = do
 lookupDefaultImplementations :: QName -> [Hs.Name ()] -> C [Definition]
 lookupDefaultImplementations recName fields = do
   let modName = qnameToMName recName
-      isField f _ = (`elem` fields) . unQual <$> compileQName f
+      isField f _ = (`elem` fields) <$> compileName (qnameName f)
   findDefinitions isField modName
 
 classMemberNames :: Definition -> C [Hs.Name ()]
