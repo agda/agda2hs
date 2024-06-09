@@ -4,14 +4,29 @@ module Haskell.Prim.Integer where
 open import Haskell.Prim
 open import Haskell.Prim.Bool
 
+{-|
+This module contains functions that should not be used
+within code that is supposed to be translated to Haskell.
+Nevertheless, these functions must be accessible for
+proofs (within the standard library).
+Hence, these functions are not flagged as private but
+instead are collected in a dedicated module that is not
+opened by default.
+-}
+module Internal where
+  negNat : Nat → Integer
+  negNat 0       = pos 0
+  negNat (suc n) = negsuc n
+
+  subNat : Nat → Nat → Integer
+  subNat n       zero    = pos n
+  subNat zero    (suc m) = negsuc m
+  subNat (suc n) (suc m) = subNat n m
+open Internal
 
 --------------------------------------------------
 -- Literals
 
-private
-  negNat : Nat → Integer
-  negNat 0       = pos 0
-  negNat (suc n) = negsuc n
 
 instance
   iNumberInteger : Number Integer
@@ -25,10 +40,6 @@ instance
 
 --------------------------------------------------
 -- Arithmetic
-
-private
-  subNat : Nat → Nat → Integer
-  subNat n m = if (ltNat n m) then negsuc (monusNat m (suc n)) else pos (monusNat n m)
 
 negateInteger : Integer → Integer
 negateInteger (pos 0)       = pos 0
