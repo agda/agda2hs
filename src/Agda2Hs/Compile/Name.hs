@@ -31,8 +31,10 @@ import qualified Agda.Syntax.Common.Pretty as P
 import Agda.TypeChecking.Datatypes ( isDataOrRecordType )
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Records ( isRecordConstructor )
+import Agda.TypeChecking.Warnings ( warning )
 
 import qualified Agda.Utils.List1 as List1
+import Agda.Utils.Monad
 import Agda.Utils.Maybe ( isJust, isNothing, whenJust, fromMaybe, caseMaybeM )
 import Agda.Utils.Monad ( whenM )
 
@@ -102,11 +104,28 @@ compileQName f
       Just (r, def) | not (_recNamedCon def) -> r -- use record name for unnamed constructors
       _                                      -> f
     hf0 <- compileName (qnameName f)
-    (hf, mimpBuiltin) <- fromMaybe (hf0, Nothing) <$> isSpecialName f
+    special <- isSpecialName f
+    let (hf, mimpBuiltin) = fromMaybe (hf0, Nothing) special
+
     parent <- parentName f
     par <- traverse (compileName . qnameName) parent
     let mod0 = qnameModule $ fromMaybe f parent
     mod <- compileModuleName mod0
+
+    existsInHaskell <- orM
+      [ pure $ isJust special
+      , pure $ isPrimModule mod
+      , hasCompilePragma f
+      , isClassFunction f
+      , isWhereFunction f
+      , maybe (pure False) hasCompilePragma parent
+      ]
+
+    unless existsInHaskell $ do
+      reportSDoc "agda2hs.name" 20 $ text "DOES NOT EXIST IN HASKELL"
+      typeError $ CustomBackendError "agda2hs" $ P.text $
+        "Symbol " ++ Hs.prettyPrint hf ++ " is missing a COMPILE pragma or rewrite rule"
+
     currMod <- hsTopLevelModuleName <$> asks currModule
     let skipModule = mod == currMod
                   || isJust mimpBuiltin
@@ -185,13 +204,18 @@ compileQName f
 
     mkImport mod qual par hf maybeIsType
       -- make sure the Prelude is properly qualified
-      | any (`isPrefixOf` pp mod) primModules
+      | isPrimModule mod
       = if isQualified qual then
           let mod' = hsModuleName "Prelude"
           in (mod', Just (Import mod' qual Nothing hf maybeIsType))
         else (mod, Nothing)
       | otherwise
       = (mod, Just (Import mod qual par hf maybeIsType))
+
+isWhereFunction :: QName -> C Bool
+isWhereFunction f = do
+  whereMods <- asks whereModules
+  return $ any (qnameModule f `isLeChildModuleOf`) whereMods
 
 hsTopLevelModuleName :: TopLevelModuleName -> Hs.ModuleName ()
 hsTopLevelModuleName = hsModuleName . intercalate "." . map unpack

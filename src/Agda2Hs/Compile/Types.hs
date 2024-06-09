@@ -22,6 +22,7 @@ import qualified Language.Haskell.Exts.Comments as Hs
 import Agda.Compiler.Backend
 import Agda.Syntax.Position ( Range )
 import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
+import Agda.TypeChecking.Warnings ( MonadWarning )
 import Agda.Utils.Null
 import Agda.Utils.Impossible
 
@@ -174,6 +175,7 @@ instance MonadStConcreteNames C where
   runStConcreteNames m = rwsT $ \r s -> runStConcreteNames $ StateT $ \ns -> do
     ((x, ns'), s', w) <- runRWST (runStateT m ns) r s
     pure ((x, s', w), ns')
+instance MonadWarning C where
 instance IsString a => IsString (C a) where fromString = pure . fromString
 instance PureTCM C where
 instance Null a => Null (C a) where
