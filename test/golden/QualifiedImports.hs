@@ -1,7 +1,7 @@
 module QualifiedImports where
 
-import qualified Importee (Foo(MkFoo), foo)
-import qualified QualifiedImportee as Qually (Foo, Fooable(defaultFoo, doTheFoo), foo, (!#))
+import qualified Importee (Foo (MkFoo), foo)
+import qualified QualifiedImportee as Qually (Foo, Fooable (defaultFoo, doTheFoo), foo, (!#))
 
 -- ** simple qualification
 
@@ -26,4 +26,3 @@ qualDefaultBar :: Qually.Foo
 qualDefaultBar = Qually.defaultFoo
 
 type Foo = Importee.Foo
-

@@ -5,4 +5,3 @@ get x = x
 
 test :: Int
 test = get 42
-

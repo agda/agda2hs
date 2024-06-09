@@ -10,8 +10,7 @@ test2 :: Int -> Int -> Int
 test2 x y = x + y
 
 test3 :: Int -> Int -> Int
-test3 x = \ y -> x + y
+test3 x y = x + y
 
 test4 :: Int -> Int -> Int
-test4 = \ x y -> x + y
-
+test4 x y = x + y

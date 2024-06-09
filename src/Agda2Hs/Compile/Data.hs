@@ -2,20 +2,20 @@ module Agda2Hs.Compile.Data where
 
 import qualified Language.Haskell.Exts.Syntax as Hs
 
-import Control.Monad ( when )
 import Agda.Compiler.Backend
 import Agda.Syntax.Common
+import Agda.Syntax.Common.Pretty (prettyShow)
 import Agda.Syntax.Internal
-import Agda.Syntax.Common.Pretty ( prettyShow )
+import Control.Monad (when)
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Reduce
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
 
-import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
+import Agda.Utils.Impossible (__IMPOSSIBLE__)
 
-import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds )
+import Agda2Hs.Compile.Type (compileDomType, compileTeleBinds)
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
@@ -30,7 +30,7 @@ compileData :: AsNewType -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
 compileData newtyp ds def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
   checkValidTypeName d
-  let Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} = theDef def
+  let Datatype {dataPars = n, dataIxs = numIxs, dataCons = cs} = theDef def
   TelV tel t <- telViewUpTo n (defType def)
   reportSDoc "agda2hs.data" 10 $ text "Datatype telescope:" <+> prettyTCM tel
   allIndicesErased t
@@ -47,13 +47,15 @@ compileData newtyp ds def = do
     return [Hs.DataDecl () target Nothing hd cs ds]
   where
     allIndicesErased :: Type -> C ()
-    allIndicesErased t = reduce (unEl t) >>= \case
-      Pi dom t -> compileDomType (absName t) dom >>= \case
-        DomDropped      -> allIndicesErased (unAbs t)
-        DomType{}       -> genericDocError =<< text "Not supported: indexed datatypes"
-        DomConstraint{} -> genericDocError =<< text "Not supported: constraints in types"
-        DomForall{}     -> genericDocError =<< text "Not supported: indexed datatypes"
-      _ -> return ()
+    allIndicesErased t =
+      reduce (unEl t) >>= \case
+        Pi dom t ->
+          compileDomType (absName t) dom >>= \case
+            DomDropped -> allIndicesErased (unAbs t)
+            DomType {} -> genericDocError =<< text "Not supported: indexed datatypes"
+            DomConstraint {} -> genericDocError =<< text "Not supported: constraints in types"
+            DomForall {} -> genericDocError =<< text "Not supported: indexed datatypes"
+        _ -> return ()
 
 compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl ())
 compileConstructor params c = do
@@ -69,10 +71,11 @@ compileConstructor params c = do
 
 compileConstructorArgs :: Telescope -> C [Hs.Type ()]
 compileConstructorArgs EmptyTel = return []
-compileConstructorArgs (ExtendTel a tel) = compileDomType (absName tel) a >>= \case
-  DomType s hsA     -> do
-    ty <- addTyBang s hsA
-    (ty :) <$> underAbstraction a tel compileConstructorArgs
-  DomConstraint hsA -> genericDocError =<< text "Not supported: constructors with class constraints"
-  DomDropped        -> underAbstraction a tel compileConstructorArgs
-  DomForall{}       -> __IMPOSSIBLE__
+compileConstructorArgs (ExtendTel a tel) =
+  compileDomType (absName tel) a >>= \case
+    DomType s hsA -> do
+      ty <- addTyBang s hsA
+      (ty :) <$> underAbstraction a tel compileConstructorArgs
+    DomConstraint hsA -> genericDocError =<< text "Not supported: constructors with class constraints"
+    DomDropped -> underAbstraction a tel compileConstructorArgs
+    DomForall {} -> __IMPOSSIBLE__

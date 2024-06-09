@@ -12,8 +12,7 @@ test₃ :: Natural -> Natural
 test₃ = (5 +)
 
 test₄ :: Natural -> Natural
-test₄ = \ x -> x + 5
+test₄ x = x + 5
 
 test₅ :: Natural -> Natural
 test₅ = (5 +)
-

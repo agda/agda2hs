@@ -20,18 +20,17 @@ pair :: (Int, Int)
 pair = (1, 2)
 
 test :: Int
-test = fst pair + snd pair
+test = uncurry (+) pair
 
 test2 :: Bool
-test2
-  = case t1 of
-        (a, b, c) -> c
+test2 =
+  case t1 of
+    (a, b, c) -> c
 
 t4 :: (Natural, Bool)
 t4 = (3, True)
 
 t5 :: (a, b) -> a
-t5 p
-  = case p of
-        (x, y) -> x
-
+t5 p =
+  case p of
+    (x, y) -> x

@@ -6,4 +6,3 @@ yeet True x y = x
 
 xx :: Int
 xx = yeet True 1 2
-

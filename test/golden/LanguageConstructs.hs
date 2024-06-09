@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+
 module LanguageConstructs where
 
 oneTwoThree :: [Int]
@@ -12,21 +13,21 @@ ifThenElse :: Int -> String
 ifThenElse n = if n >= 10 then "big" else "small"
 
 maybeToList :: Maybe a -> [a]
-maybeToList
-  = \case
-        Nothing -> []
-        Just x -> [x]
+maybeToList =
+  \case
+    Nothing -> []
+    Just x -> [x]
 
 mhead :: [a] -> Maybe a
-mhead xs
-  = case xs of
-        [] -> Nothing
-        x : _ -> Just x
+mhead xs =
+  case xs of
+    [] -> Nothing
+    x : _ -> Just x
 
 plus5minus5 :: Int -> Int
-plus5minus5 n
-  = case n + 5 of
-        m -> m - 5
+plus5minus5 n =
+  case n + 5 of
+    m -> m - 5
 
 enum₁ :: [Int]
 enum₁ = [5 .. 10]
@@ -42,4 +43,3 @@ enum₄ = [LT, EQ ..]
 
 underappliedEnum :: [Int] -> [[Int]]
 underappliedEnum = map (enumFromTo 1)
-

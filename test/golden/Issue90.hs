@@ -69,4 +69,3 @@ test False = bar
         ted = nes + 1
         nes :: Natural
         nes = 1
-

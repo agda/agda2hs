@@ -1,26 +1,19 @@
 module Issue93 where
 
 fun :: Bool -> Bool
-fun x
-  = case x of
-        True -> False
-        False -> y
+fun x =
+  if x then False else y
   where
     y :: Bool
     y = True
 
 nested :: Maybe Bool -> Bool
-nested x
-  = case x of
-        Just b -> case y of
-                      True -> b
-                      False -> z
-        Nothing -> y
+nested x =
+  case x of
+    Just b -> (if y then b else z)
+    Nothing -> y
   where
     y :: Bool
     y = True
     z :: Bool
-    z = case y of
-            True -> y
-            False -> True
-
+    z = if y then y else True

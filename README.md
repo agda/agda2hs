@@ -24,6 +24,17 @@ agda2hs was introduced in the Haskell Symposium '22 paper [Reasonable Agda is
 Correct Haskell: Writing Verified Haskell using
 agda2hs](https://jesper.sikanda.be/files/reasonable-agda-is-correct-haskell.pdf).
 
+## Development Setup
+
+Use the `make` command (with no arguments) to see a `Usage` message. 
+The commands make use of the following tools (all provided in the Nix development shell):
+
+- `cabal-fmt`: a cabal file formatter
+- `nixpkgs-fmt`: a nix file formatter
+- `hlint`: a haskell source code linter
+- `apply-refact`: a utility that ties in with `hlint` to perform automatic refactorings
+- `fourmolu`: a haskell source code formatter
+
 ## Future work
 
 Currently agda2hs is under active development, please take a look at

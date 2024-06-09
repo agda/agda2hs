@@ -1,11 +1,10 @@
 module Default where
 
 class HasDefault a where
-    theDefault :: a
+  theDefault :: a
 
 instance HasDefault Bool where
-    theDefault = False
+  theDefault = False
 
 test :: Bool
 test = theDefault
-

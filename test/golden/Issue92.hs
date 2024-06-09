@@ -1,7 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+
 module Issue92 where
 
-foo :: forall a . a -> a
+foo :: forall a. a -> a
 foo x = bar
   where
     bar :: a
@@ -9,4 +10,3 @@ foo x = bar
       where
         baz :: a
         baz = x
-
