@@ -46,6 +46,8 @@ import Agda2Hs.AgdaUtils ( (~~) )
 import Agda2Hs.Compile.Types
 import Agda2Hs.HsUtils
 import Agda2Hs.Pragma
+import qualified Data.List as L
+import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 
 -- | Primitive modules provided by the agda2hs library.
@@ -82,12 +84,13 @@ freshString :: String -> C String
 freshString s = liftTCM $ do
   scope <- getScope
   ctxNames <- map (prettyShow . nameConcrete) <$> getContextNames
-  return $ head $ filter (isFresh scope ctxNames) $ s : map (\i -> s ++ show i) [0..]
+  let freshName = L.uncons $ filter (isFresh scope ctxNames) $ s : map (\i -> s ++ show i) [0..]
+  return (maybe __IMPOSSIBLE__ fst freshName)
   where
     dummyName s = C.QName $ C.Name noRange C.NotInScope $ singleton $ C.Id s
     isFresh scope ctxNames s =
       null (scopeLookup (dummyName s) scope :: [AbstractName]) &&
-      not (s `elem` ctxNames)
+      notElem s ctxNames
 
 makeList :: C Doc -> Term -> C [Term]
 makeList = makeList' "Agda.Builtin.List.List.[]" "Agda.Builtin.List.List._∷_"
@@ -130,7 +133,7 @@ isPropSort :: Sort -> C Bool
 isPropSort s = reduce s <&> \case
   Prop _ -> True
   _      -> False
-  
+
 
 -- Determine whether it is ok to erase arguments of this type,
 -- even in the absence of an erasure annotation.
