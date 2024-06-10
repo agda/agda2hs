@@ -1,0 +1,30 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Issue93</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Keyword">module</a> <a id="8" href="Issue93.html" class="Module">Issue93</a> <a id="16" class="Keyword">where</a>
+
+<a id="23" class="Keyword">open</a> <a id="28" class="Keyword">import</a> <a id="35" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="fun"></a><a id="52" href="Issue93.html#52" class="Function">fun</a> <a id="56" class="Symbol">:</a> <a id="58" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a> <a id="63" class="Symbol">→</a> <a id="65" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+<a id="70" href="Issue93.html#52" class="Function">fun</a> <a id="74" href="Issue93.html#74" class="Bound">x</a> <a id="76" class="Symbol">=</a> <a id="78" href="Haskell.Prim.html#1609" class="Function Operator">case</a> <a id="83" href="Issue93.html#74" class="Bound">x</a> <a id="85" href="Haskell.Prim.html#1609" class="Function Operator">of</a> <a id="88" class="Symbol">λ</a> <a id="90" class="Keyword">where</a>
+          <a id="106" href="Agda.Builtin.Bool.html#198" class="InductiveConstructor">True</a>  <a id="112" class="Symbol">→</a> <a id="114" href="Agda.Builtin.Bool.html#192" class="InductiveConstructor">False</a>
+          <a id="130" href="Agda.Builtin.Bool.html#192" class="InductiveConstructor">False</a> <a id="136" class="Symbol">→</a> <a id="138" href="Issue93.html#152" class="Function">y</a>
+  <a id="142" class="Keyword">where</a>
+    <a id="152" href="Issue93.html#152" class="Function">y</a> <a id="154" class="Symbol">:</a> <a id="156" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+    <a id="165" href="Issue93.html#152" class="Function">y</a> <a id="167" class="Symbol">=</a> <a id="169" href="Agda.Builtin.Bool.html#198" class="InductiveConstructor">True</a>
+<a id="174" class="Symbol">{-#</a> <a id="178" class="Keyword">COMPILE</a> <a id="186" class="Keyword">AGDA2HS</a> <a id="194" href="Issue93.html#52" class="Function">fun</a> <a id="198" class="Symbol">#-}</a>
+
+<a id="nested"></a><a id="203" href="Issue93.html#203" class="Function">nested</a> <a id="210" class="Symbol">:</a> <a id="212" href="Haskell.Prim.Maybe.html#101" class="Datatype">Maybe</a> <a id="218" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a> <a id="223" class="Symbol">→</a> <a id="225" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+<a id="230" href="Issue93.html#203" class="Function">nested</a> <a id="237" href="Issue93.html#237" class="Bound">x</a> <a id="239" class="Symbol">=</a> <a id="241" href="Haskell.Prim.html#1609" class="Function Operator">case</a> <a id="246" href="Issue93.html#237" class="Bound">x</a> <a id="248" href="Haskell.Prim.html#1609" class="Function Operator">of</a> <a id="251" class="Symbol">λ</a> <a id="253" class="Keyword">where</a>
+           <a id="270" class="Symbol">(</a><a id="271" href="Haskell.Prim.Maybe.html#162" class="InductiveConstructor">Just</a> <a id="276" href="Issue93.html#276" class="Bound">b</a><a id="277" class="Symbol">)</a> <a id="279" class="Symbol">→</a> <a id="281" class="Symbol">(</a><a id="282" href="Haskell.Prim.html#1609" class="Function Operator">case</a> <a id="287" href="Issue93.html#399" class="Function">y</a> <a id="289" href="Haskell.Prim.html#1609" class="Function Operator">of</a> <a id="292" class="Symbol">λ</a> <a id="294" class="Keyword">where</a>
+                     <a id="321" href="Agda.Builtin.Bool.html#198" class="InductiveConstructor">True</a> <a id="326" class="Symbol">→</a>  <a id="329" href="Issue93.html#276" class="Bound">b</a>
+                     <a id="352" href="Agda.Builtin.Bool.html#192" class="InductiveConstructor">False</a> <a id="358" class="Symbol">→</a> <a id="360" href="Issue93.html#426" class="Function">z</a><a id="361" class="Symbol">)</a>
+           <a id="374" href="Haskell.Prim.Maybe.html#142" class="InductiveConstructor">Nothing</a>  <a id="383" class="Symbol">→</a> <a id="385" href="Issue93.html#399" class="Function">y</a>
+  <a id="389" class="Keyword">where</a>
+    <a id="399" href="Issue93.html#399" class="Function">y</a> <a id="401" class="Symbol">:</a> <a id="403" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+    <a id="412" href="Issue93.html#399" class="Function">y</a> <a id="414" class="Symbol">=</a> <a id="416" href="Agda.Builtin.Bool.html#198" class="InductiveConstructor">True</a>
+
+    <a id="426" href="Issue93.html#426" class="Function">z</a> <a id="428" class="Symbol">:</a> <a id="430" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+    <a id="439" href="Issue93.html#426" class="Function">z</a> <a id="441" class="Symbol">=</a> <a id="443" href="Haskell.Prim.html#1609" class="Function Operator">case</a> <a id="448" href="Issue93.html#399" class="Function">y</a> <a id="450" href="Haskell.Prim.html#1609" class="Function Operator">of</a> <a id="453" class="Symbol">λ</a> <a id="455" class="Keyword">where</a>
+          <a id="471" href="Agda.Builtin.Bool.html#198" class="InductiveConstructor">True</a> <a id="476" class="Symbol">→</a> <a id="478" href="Issue93.html#399" class="Function">y</a>
+          <a id="490" href="Agda.Builtin.Bool.html#192" class="InductiveConstructor">False</a> <a id="496" class="Symbol">→</a> <a id="498" href="Agda.Builtin.Bool.html#198" class="InductiveConstructor">True</a>
+<a id="503" class="Symbol">{-#</a> <a id="507" class="Keyword">COMPILE</a> <a id="515" class="Keyword">AGDA2HS</a> <a id="523" href="Issue93.html#203" class="Function">nested</a> <a id="530" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Issue93.html"/></div></body></html>
