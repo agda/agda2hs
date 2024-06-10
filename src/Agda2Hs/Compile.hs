@@ -4,7 +4,7 @@ import Control.Monad.Trans.RWS.CPS ( evalRWST )
 import Control.Monad.State ( gets )
 import Control.Arrow ((>>>))
 import Data.Functor
-import Data.List ( isPrefixOf )
+import Data.List ( isPrefixOf, group, sort )
 
 import qualified Data.Map as M
 
@@ -15,7 +15,7 @@ import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Monad.Signature ( isInlineFun )
 import Agda.Utils.Null
-import Agda.Utils.Monad ( whenM, anyM )
+import Agda.Utils.Monad ( whenM, anyM, when )
 
 import qualified Language.Haskell.Exts.Extension as Hs
 
@@ -27,6 +27,8 @@ import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils ( setCurrentRangeQ, tellExtension, primModules, isClassName )
 import Agda2Hs.Pragma
+import qualified Language.Haskell.Exts.Syntax as Hs
+import qualified Language.Haskell.Exts.Pretty as Hs
 
 
 initCompileEnv :: TopLevelModuleName -> SpecialRules -> CompileEnv
@@ -54,12 +56,11 @@ moduleSetup _ _ m _ = do
     setScope . iInsideScope =<< curIF
     return $ Recompile m
 
-
 -- Main compile function
 ------------------------
 
 compile
-  :: Options -> ModuleEnv -> IsMain -> Definition 
+  :: Options -> ModuleEnv -> IsMain -> Definition
   -> TCM (CompiledDef, CompileOutput)
 compile opts tlm _ def =
   withCurrentModule (qnameModule qname)
@@ -80,7 +81,7 @@ compile opts tlm _ def =
       reportSDoc "agda2hs.compile" 45 $ text "Pragma:" <+> text (show p)
       reportSDoc "agda2hs.compile" 45 $ text "Compiling definition:" <+> pretty (theDef def)
 
-      isInstance <- anyM (defInstance def) isClassName 
+      isInstance <- anyM (defInstance def) isClassName
 
       reportSDoc "agda2hs.compile" 15  $ text "Is instance?" <+> prettyTCM isInstance
 
@@ -106,3 +107,25 @@ compile opts tlm _ def =
 
     postCompile :: C ()
     postCompile = whenM (gets $ lcaseUsed >>> (> 0)) $ tellExtension Hs.LambdaCase
+
+verifyOutput ::
+  Options -> ModuleEnv -> IsMain -> TopLevelModuleName
+  -> [(CompiledDef, CompileOutput)] -> TCM Bool
+verifyOutput _ _ _ m ls = do
+  reportSDoc "agda2hs.compile" 5 $ text "Checking generated output before rendering: " <+> prettyTCM m
+  ensureUniqueConstructors
+  where
+    ensureUniqueConstructors = do
+      let allCons = do
+            (r, _) <- ls
+            (_, a) <- r
+            Hs.DataDecl _ _ _ _ cons _ <- a
+            Hs.QualConDecl _ _ _ con <- cons
+            return $ case con of
+              Hs.ConDecl _ n _ -> n
+              Hs.InfixConDecl _ _ n _ -> n
+              Hs.RecDecl _ n _ -> n
+          duplicateCons = filter ((> 1) . length) . group . sort  $ allCons
+      when (length duplicateCons > 0) $
+        genericDocError =<< vcat (map (\x -> text $ "Cannot generate multiple constructors with the same identifier: " <> Hs.prettyPrint (head x)) duplicateCons)
+      return (length duplicateCons == 0)
