@@ -71,11 +71,13 @@ backend = Backend'
   , preCompile            = checkConfig
   , postCompile           = \ _ _ _ -> return ()
   , preModule             = moduleSetup
-  , postModule            = \opts env isM m out -> verifyOutput opts env isM m out >> writeModule opts env isM m out
+  , postModule            = verifyAndWriteModule
   , compileDef            = compile
   , scopeCheckingSuffices = False
   , mayEraseType          = \ _ -> return True
   }
+  where
+    verifyAndWriteModule opts env isM m out = verifyOutput opts env isM m out >> writeModule opts env isM m out
 
 -- | Parse command-line arguments to check whether we are in interactive mode.
 isInteractive :: IO Bool
