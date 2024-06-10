@@ -1,7 +1,7 @@
 module Haskell.Law.Int where
 
 open import Haskell.Prim
-open import Haskell.Prim.Int using ( int64 )
+open import Haskell.Prim.Int 
 
 open import Haskell.Law.Def
 
