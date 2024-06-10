@@ -110,7 +110,7 @@ compileFun, compileFun'
   -> Definition -> C [Hs.Decl ()]
 
 compileFun withSig def@Defn{..} =
-  setCurrentRangeQ defName 
+  setCurrentRangeQ defName
     $ maybePrependFixity defName (defName ^. lensFixity)
     -- initialize locals when first stepping into a function
     $ withFunctionLocals defName
@@ -125,7 +125,7 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
 
   ifM (endsInSort defType)
     -- if the function type ends in Sort, it's a type alias!
-    (ensureNoLocals err >> compileTypeDef x def) 
+    (ensureNoLocals err >> compileTypeDef x def)
     -- otherwise, we have to compile clauses.
     $ do
     tel <- lookupSection m
@@ -140,18 +140,18 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
       -- the canonicity check for typeclass instances picks up the
       -- module parameters (see https://github.com/agda/agda2hs/issues/305).
       liftTCM $ setModuleCheckpoint m
-          
+
       pars <- getContextArgs
       reportSDoc "agda2hs.compile.type" 8 $ "Function module parameters: " <+> prettyTCM pars
 
       reportSDoc "agda2hs.compile.type" 8 $ "Function type (before instantiation): " <+> inTopContext (prettyTCM defType)
       typ <- piApplyM defType pars
-      reportSDoc "agda2hs.compile.type" 8 $ "Function type (after instantiation): " <+> prettyTCM typ 
+      reportSDoc "agda2hs.compile.type" 8 $ "Function type (after instantiation): " <+> prettyTCM typ
 
       sig <- if not withSig then return [] else do
         checkValidFunName x
         ty <- paramTy <$> compileType (unEl typ)
-        reportSDoc "agda2hs.compile.type" 8 $ "Compiled function type: " <+> text (Hs.prettyPrint ty) 
+        reportSDoc "agda2hs.compile.type" 8 $ "Compiled function type: " <+> text (Hs.prettyPrint ty)
         return [Hs.TypeSig () [x] ty]
 
       let clauses = funClauses `apply` pars
@@ -366,7 +366,9 @@ withClauseLocals curModule c@Clause{..} k = do
     nonExtLamUses = qnameModule <$> filter (not . isExtendedLambdaName) uses
     whereModuleName
       | null uses = Nothing
-      | otherwise = Just $ head (nonExtLamUses ++ [curModule])
+      | otherwise = Just $ case nonExtLamUses ++ [curModule] of
+          (x:_) -> x
+          _ -> __IMPOSSIBLE__
     ls' = case whereModuleName of
       Nothing -> []
       Just m  -> zoomLocals m ls

@@ -18,6 +18,7 @@ import Agda2Hs.Compile.Name
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
+import qualified Data.List as L
 
 type ImportSpecMap = Map NamespacedName (Set NamespacedName)
 type ImportDeclMap = Map (Hs.ModuleName (), Qualifier) ImportSpecMap
@@ -54,10 +55,10 @@ compileImports top is0 = do
     -- Name in the Import datatype
     makeCName :: Hs.Name () -> Hs.CName ()
     makeCName n@(Hs.Ident _ s)
-      | isUpper (head s) = Hs.ConName () n
+      | Just True == (isUpper . fst <$> L.uncons s) = Hs.ConName () n
       | otherwise        = Hs.VarName () n
     makeCName n@(Hs.Symbol _ s)
-      | head s == ':' = Hs.ConName () n
+      | (fst <$> L.uncons s) == Just ':' = Hs.ConName () n
       | otherwise     = Hs.VarName () n
 
     makeImportSpec :: NamespacedName -> Set NamespacedName -> Hs.ImportSpec ()
