@@ -23,8 +23,9 @@ import Agda2Hs.HsUtils
 checkNewtype :: Hs.Name () -> [Hs.QualConDecl ()] -> C ()
 checkNewtype name cs = do
   checkSingleElement name cs "Newtype must have exactly one constructor in definition"
-  case head cs of
-    Hs.QualConDecl () _ _ (Hs.ConDecl () cName types) -> checkNewtypeCon cName types
+  case cs of
+    (Hs.QualConDecl () _ _ (Hs.ConDecl () cName types):_) -> checkNewtypeCon cName types
+    _ -> __IMPOSSIBLE__
 
 compileData :: AsNewType -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
 compileData newtyp ds def = do

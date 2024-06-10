@@ -43,6 +43,7 @@ import Agda2Hs.Compile.Var ( compileDBVar )
 import Agda2Hs.HsUtils
 
 import {-# SOURCE #-} Agda2Hs.Compile.Function ( compileClause' )
+import qualified Data.List as L
 
 
 -- * Compilation of special definitions
@@ -407,7 +408,7 @@ compileTerm ty v = do
     Lit l   -> compileLiteral l
 
     Lam v b -> compileLam ty v b
-      
+
     v@Pi{} -> bad "function type" v
     v@Sort{} -> bad "sort type" v
     v@Level{} -> bad "level term" v
@@ -486,7 +487,7 @@ compileInlineFunctionApp f ty args = do
     extractPatName :: DeBruijnPattern -> ArgName
     extractPatName (VarP _ v) = dbPatVarName v
     extractPatName (ConP _ _ args) =
-      let arg = namedThing $ unArg $ head $ filter (usableModality `and2M` visible) args
+      let arg = namedThing $ unArg $ maybe __IMPOSSIBLE__ fst $ L.uncons $ filter (usableModality `and2M` visible) args
       in extractPatName arg
     extractPatName _ = __IMPOSSIBLE__
 
@@ -497,7 +498,7 @@ compileInlineFunctionApp f ty args = do
 
     etaExpand :: NAPs -> Type -> [Term] -> C Term
     etaExpand [] ty args = do
-      r <- liftReduce 
+      r <- liftReduce
             $ locallyReduceDefs (OnlyReduceDefs $ Set.singleton f)
             $ unfoldDefinitionStep (Def f [] `applys` args) f (Apply . defaultArg <$> args)
       case r of
