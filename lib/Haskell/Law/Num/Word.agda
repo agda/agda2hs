@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module Haskell.Law.Num.Word where
 
 open import Haskell.Prim
