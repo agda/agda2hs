@@ -1,7 +1,6 @@
 module Haskell.Prim.Function where
 
 open import Haskell.Prim
-open import Haskell.Law.Equality
 
 {-|
 Pointwise equality on functions.
@@ -49,4 +48,14 @@ when it preserves this structure in its target domain b
 Homomorphism₂ : ∀ {a b : Set} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b)
   → (φ : a → b) → Set
 Homomorphism₂ _+ᵃ_ _+ᵇ_ φ = ∀ x y → φ (x +ᵃ y) ≡ φ x +ᵇ φ y
+
+record Embedding₂ {a b : Set} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b) (φ : a → b) (φ⁻¹ : b → a) : Set where
+  field
+    hom   : Homomorphism₂ _+ᵃ_ _+ᵇ_ φ
+    embed : φ⁻¹ ∘ φ ≗ id
+
+record MonoidEmbedding₂ {a b : Set} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b) (φ : a → b) (φ⁻¹ : b → a) (0ᵃ : a) (0ᵇ : b) : Set where
+  field
+    embedding : Embedding₂ _+ᵃ_ _+ᵇ_ φ φ⁻¹
+    0-hom     : φ 0ᵃ ≡ 0ᵇ
 
