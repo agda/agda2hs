@@ -5,7 +5,7 @@ open import Haskell.Prim.Num
 open import Haskell.Prim.Int
 open import Haskell.Prim.Word
 
-open import Haskell.Law.Num
+open import Haskell.Law.Num.Def
 open import Haskell.Law.Num.Word
 
 instance
