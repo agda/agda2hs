@@ -11,6 +11,11 @@ open import Haskell.Prim.Function
 open import Haskell.Law.Equality
 open import Haskell.Law.Function
 
+{-|
+A number homomorphism establishes a homomorphism from one Num type a to another one b.
+In particular, zero and one are mapped to zero and one in the other Num type,
+and addition, multiplication, and negation are homorphic.
+-}
 record NumHomomorphism (a b : Set) ⦃ iNuma : Num a ⦄ ⦃ iNumb : Num b ⦄ (φ : a → b) : Set where
   0ᵃ = Num.fromInteger iNuma (pos 0)
   0ᵇ = Num.fromInteger iNumb (pos 0)
@@ -27,6 +32,9 @@ record NumHomomorphism (a b : Set) ⦃ iNuma : Num a ⦄ ⦃ iNumb : Num b ⦄ (
     1-hom : ⦃ @0 _ : Num.FromIntegerOK iNuma (pos 1) ⦄ → φ 1ᵃ ≡ 1ᵇ
     negate-hom : ∀ (x : a) → ⦃ @0 _ : Num.NegateOK iNuma x ⦄ → φ (negate x) ≡ negate (φ x) --Homomorphism₁ inlined for type instances
 
+{-|
+A number embedding is an invertible number homomorphism.
+-}
 record NumEmbedding (a b : Set) ⦃ iNuma : Num a ⦄ ⦃ iNumb : Num b ⦄ (φ : a → b) (φ⁻¹ : b → a) : Set where
   field
     hom   : NumHomomorphism a b φ
@@ -50,9 +58,14 @@ record NumEmbedding (a b : Set) ⦃ iNuma : Num a ⦄ ⦃ iNumb : Num b ⦄ (φ 
   MonoidEmbedding₂.embedding *-MonoidEmbedding₂ = *-Embedding₂
   MonoidEmbedding₂.0-hom     *-MonoidEmbedding₂ = 1-hom
 
+{-|
+Given an embedding from one number type a onto another one b,
+we can conclude that b satisfies the laws of Num if a satisfies the
+laws of Num.
+-}
 map-IsLawfulNum : ∀ {a b : Set} ⦃ iNuma : Num a ⦄ ⦃ iNumb : Num b ⦄
   → (a2b : a → b) (b2a : b → a)
-  → (hom : NumEmbedding a b a2b b2a)
+  → NumEmbedding a b a2b b2a
   → IsLawfulNum b
     -----------------------
   → IsLawfulNum a
