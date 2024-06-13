@@ -79,8 +79,8 @@ map-IsLawfulNum {a} {b} {{numa}} {{numb}} f g proj lawb =
   ; *-assoc = map-assoc _*ᵃ_ _*ᵇ_ f g *-Embedding₂ (*-assoc lawb)
   ; *-idˡ = λ x → map-idˡ _*ᵃ_ _*ᵇ_ f g 1ᵃ 1ᵇ *-MonoidEmbedding₂ (λ y → *-idˡ lawb y) x
   ; *-idʳ = λ x → map-idʳ _*ᵃ_ _*ᵇ_ f g 1ᵃ 1ᵇ *-MonoidEmbedding₂ (λ y → *-idʳ lawb y) x
-  ; distributeˡ = map-distributeˡ
-  ; distributeʳ = map-distributeʳ
+  ; distributeˡ = map-distributeˡ _+ᵃ_ _+ᵇ_ _*ᵃ_ _*ᵇ_ f g embed +-hom *-hom (distributeˡ lawb)
+  ; distributeʳ = map-distributeʳ _+ᵃ_ _+ᵇ_ _*ᵃ_ _*ᵇ_ f g embed +-hom *-hom (distributeʳ lawb)
   }
   where
     open NumEmbedding proj
@@ -100,26 +100,3 @@ map-IsLawfulNum {a} {b} {{numa}} {{numb}} f g proj lawb =
       g (f 0ᵃ)                 ≡⟨ embed 0ᵃ ⟩
       0ᵃ ∎
 
-    map-distributeˡ : ∀ (x y z : a) → x *ᵃ (y +ᵃ z) ≡ x *ᵃ y +ᵃ x *ᵃ z
-    map-distributeˡ x y z =
-      x *ᵃ (y +ᵃ z)                ≡˘⟨ embed (x *ᵃ (y +ᵃ z)) ⟩
-      g (f (x *ᵃ (y +ᵃ z)))        ≡⟨ cong g (*-hom x (y +ᵃ z)) ⟩
-      g (f x *ᵇ f (y +ᵃ z))        ≡⟨ cong g (cong (f x *ᵇ_) (+-hom y z)) ⟩
-      g (f x *ᵇ (f y +ᵇ f z))      ≡⟨ cong g (distributeˡ lawb (f x) (f y) (f z)) ⟩
-      g (f x *ᵇ f y +ᵇ f x *ᵇ f z) ≡˘⟨ cong g (cong (_+ᵇ f x *ᵇ f z) (*-hom x y)) ⟩
-      g (f (x *ᵃ y) +ᵇ f x *ᵇ f z) ≡˘⟨ cong g (cong (f (x *ᵃ y) +ᵇ_) (*-hom x z)) ⟩
-      g (f (x *ᵃ y) +ᵇ f (x *ᵃ z)) ≡˘⟨ cong g (+-hom (x *ᵃ y) (x *ᵃ z)) ⟩
-      g (f ((x *ᵃ y) +ᵃ (x *ᵃ z))) ≡⟨ embed (x *ᵃ y +ᵃ x *ᵃ z) ⟩
-      x *ᵃ y +ᵃ x *ᵃ z             ∎
-
-    map-distributeʳ : ∀ (x y z : a) → (y +ᵃ z) *ᵃ x ≡ y *ᵃ x +ᵃ z *ᵃ x
-    map-distributeʳ x y z =
-      (y +ᵃ z) *ᵃ x                    ≡˘⟨ embed ((y +ᵃ z) *ᵃ x) ⟩
-      g (f ((y +ᵃ z) *ᵃ x))            ≡⟨ cong g (*-hom (y +ᵃ z) x) ⟩
-      g (f (y +ᵃ z) *ᵇ f x)            ≡⟨ cong g (cong (_*ᵇ f x) (+-hom y z)) ⟩
-      g ((f y +ᵇ f z) *ᵇ f x)          ≡⟨ cong g (distributeʳ lawb (f x) (f y) (f z)) ⟩
-      g ((f y *ᵇ f x) +ᵇ (f z *ᵇ f x)) ≡˘⟨ cong g (cong (_+ᵇ (f z *ᵇ f x)) (*-hom y x)) ⟩
-      g (f (y *ᵃ x) +ᵇ (f z *ᵇ f x))   ≡˘⟨ cong g (cong (f (y *ᵃ x) +ᵇ_) (*-hom z x)) ⟩
-      g (f (y *ᵃ x) +ᵇ f (z *ᵃ x))     ≡˘⟨ cong g (+-hom (y *ᵃ x) (z *ᵃ x)) ⟩
-      g (f ((y *ᵃ x) +ᵃ (z *ᵃ x)))     ≡⟨ embed (y *ᵃ x +ᵃ z *ᵃ x) ⟩
-      y *ᵃ x +ᵃ z *ᵃ x ∎
