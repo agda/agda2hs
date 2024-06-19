@@ -1,6 +1,7 @@
 module Haskell.Law.Nat where
 
 open import Haskell.Prim
+open import Haskell.Prim.Num
 
 open import Haskell.Law.Def
 open import Haskell.Law.Equality
@@ -35,3 +36,16 @@ data _≤_ : Nat → Nat → Set where
   → x ≤ z
 ≤-trans z≤n y≤z = z≤n
 ≤-trans (s≤s x≤y) (s≤s y≤z) = s≤s (≤-trans x≤y y≤z)
+
+x≤x+1 : ∀ (x : Nat) → x ≤ suc x
+x≤x+1 zero    = z≤n
+x≤x+1 (suc x) = s≤s (x≤x+1 x)
+
+x+[y-x]≡y : ∀ (x y : Nat) → x ≤ y → x + monusNat y x ≡ y
+x+[y-x]≡y   zero       y       x≤y  = refl
+x+[y-x]≡y (suc x) (suc y) (s≤s x≤y) = cong suc (x+[y-x]≡y x y x≤y)
+
+y-x≤y : ∀ (x y : Nat) → monusNat y x ≤ y
+y-x≤y zero         y  = ≤-refl y
+y-x≤y (suc x)   zero  = z≤n
+y-x≤y (suc x) (suc y) = ≤-trans (y-x≤y x y) (x≤x+1 y)
