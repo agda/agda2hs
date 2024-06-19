@@ -11,9 +11,10 @@ open Agda.Builtin.Word public using (Word)
 --------------------------------------------------
 -- Literals
 
-private
+module WordInternal where
   2⁶⁴ : Nat
   2⁶⁴ = 18446744073709551616
+open WordInternal
 
 instance
   iNumberWord : Number Word
