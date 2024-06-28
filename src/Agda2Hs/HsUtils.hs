@@ -256,13 +256,17 @@ insertPars fixs = \case
 
     parL topOp e =
       if needParenExpr e
-      then Paren () e
+      then mkParen e
       else par topOp (needParen (AssocLeft () /=)) e
     parR topOp = par topOp (needParen (AssocRight () /=))
 
     par topOp need e@(InfixApp _ _ op _)
-      | need (getFix topOp) (getFix op) = Paren () e
+      | need (getFix topOp) (getFix op) = mkParen e
     par _ _ e = e
+
+mkParen :: Exp () -> Exp ()
+mkParen e@Paren{} = e
+mkParen e = Paren () e
 
 
 -- Patterns
