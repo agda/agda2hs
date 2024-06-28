@@ -221,14 +221,13 @@ uses ty = not . null . usedTypesOf ty
 
 -- Ideally, our pretty-printing library should insert parenthesis where needed.
 -- However, hs-src-exts does not insert adequate parenthesis for infix
--- operators so we need to insert some by hand (see issues #54 and #273).
+-- operators so we need to insert some by hand (see issues #54 and #273 and #317).
 
 -- | Properly parenthesize an expression with regards to the default fixities.
 insertParens :: Data a => a -> a
 insertParens = everywhere (mkT $ insertPars $ fixityMap baseFixities)
   where
     fixityMap fxs = Map.fromList [ (q, fx) | fx@(Fixity _ _ q) <- fxs ]
-
 
 -- | Given fixities of operators, properly parenthesize an expression.
 insertPars :: Map (QName ()) Fixity -> Exp () -> Exp ()
@@ -251,9 +250,14 @@ insertPars fixs = \case
     needParen _ Nothing _ = True  -- If we don't know, add parens
     needParen _ _ Nothing = True
 
-    parL topOp = \case
-      e@Lambda{} -> Paren () e 
-      e -> par topOp (needParen (AssocLeft () /=)) e
+    needParenExpr (InfixApp _ _ _ e2) = needParenExpr e2
+    needParenExpr Lambda{} = True
+    needParenExpr _ = False
+
+    parL topOp e =
+      if needParenExpr e
+      then Paren () e
+      else par topOp (needParen (AssocLeft () /=)) e
     parR topOp = par topOp (needParen (AssocRight () /=))
 
     par topOp need e@(InfixApp _ _ op _)
