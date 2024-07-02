@@ -1,4 +1,0 @@
-```
-test/Fail/NewTypeTwoFields.agda:5,6-9
-Newtype must have exactly one field in constructor: MkDuo
-```
