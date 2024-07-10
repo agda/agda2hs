@@ -1,0 +1,25 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Fail.NonCopatternInstance</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda">
+<a id="2" class="Keyword">module</a> <a id="9" href="Fail.NonCopatternInstance.html" class="Module">Fail.NonCopatternInstance</a> <a id="35" class="Keyword">where</a>
+
+<a id="42" class="Keyword">record</a> <a id="HasId"></a><a id="49" href="Fail.NonCopatternInstance.html#49" class="Record">HasId</a> <a id="55" class="Symbol">(</a><a id="56" href="Fail.NonCopatternInstance.html#56" class="Bound">a</a> <a id="58" class="Symbol">:</a> <a id="60" href="Agda.Primitive.html#388" class="Primitive">Set</a><a id="63" class="Symbol">)</a> <a id="65" class="Symbol">:</a> <a id="67" href="Agda.Primitive.html#388" class="Primitive">Set</a> <a id="71" class="Keyword">where</a>
+  <a id="79" class="Keyword">field</a> <a id="HasId.id"></a><a id="85" href="Fail.NonCopatternInstance.html#85" class="Field">id</a> <a id="88" class="Symbol">:</a> <a id="90" href="Fail.NonCopatternInstance.html#56" class="Bound">a</a> <a id="92" class="Symbol">→</a> <a id="94" href="Fail.NonCopatternInstance.html#56" class="Bound">a</a>
+
+<a id="97" class="Keyword">open</a> <a id="102" href="Fail.NonCopatternInstance.html#49" class="Module">HasId</a> <a id="108" class="Symbol">⦃</a> <a id="110" class="Symbol">...</a> <a id="114" class="Symbol">⦄</a>
+
+<a id="117" class="Symbol">{-#</a> <a id="121" class="Keyword">COMPILE</a> <a id="129" class="Keyword">AGDA2HS</a> <a id="137" href="Fail.NonCopatternInstance.html#49" class="Record">HasId</a> <a id="143" class="Pragma">class</a> <a id="149" class="Symbol">#-}</a>
+
+<a id="154" class="Keyword">data</a> <a id="Unit"></a><a id="159" href="Fail.NonCopatternInstance.html#159" class="Datatype">Unit</a> <a id="164" class="Symbol">:</a> <a id="166" href="Agda.Primitive.html#388" class="Primitive">Set</a> <a id="170" class="Keyword">where</a>
+  <a id="Unit.MkUnit"></a><a id="178" href="Fail.NonCopatternInstance.html#178" class="InductiveConstructor">MkUnit</a> <a id="185" class="Symbol">:</a> <a id="187" href="Fail.NonCopatternInstance.html#159" class="Datatype">Unit</a>
+
+<a id="193" class="Symbol">{-#</a> <a id="197" class="Keyword">COMPILE</a> <a id="205" class="Keyword">AGDA2HS</a> <a id="213" href="Fail.NonCopatternInstance.html#159" class="Datatype">Unit</a> <a id="218" class="Symbol">#-}</a>
+
+<a id="223" class="Keyword">instance</a>
+  <a id="UnitHasId"></a><a id="234" href="Fail.NonCopatternInstance.html#234" class="Function">UnitHasId</a> <a id="244" class="Symbol">:</a> <a id="246" href="Fail.NonCopatternInstance.html#49" class="Record">HasId</a> <a id="252" href="Fail.NonCopatternInstance.html#159" class="Datatype">Unit</a>
+  <a id="259" href="Fail.NonCopatternInstance.html#234" class="Function">UnitHasId</a> <a id="269" class="Symbol">=</a> <a id="271" href="Fail.NonCopatternInstance.html#318" class="Function">r</a>                     <a id="293" class="Comment">-- NOT CORRECT</a>
+    <a id="312" class="Keyword">where</a> <a id="318" href="Fail.NonCopatternInstance.html#318" class="Function">r</a> <a id="320" class="Symbol">=</a> <a id="322" class="Keyword">record</a> <a id="329" class="Symbol">{</a><a id="330" href="Fail.NonCopatternInstance.html#85" class="Field">id</a> <a id="333" class="Symbol">=</a> <a id="335" class="Symbol">λ</a> <a id="337" href="Fail.NonCopatternInstance.html#337" class="Bound">x</a> <a id="339" class="Symbol">→</a> <a id="341" href="Fail.NonCopatternInstance.html#337" class="Bound">x</a><a id="342" class="Symbol">}</a>
+  <a id="346" class="Comment">-- UnitHasId .id x = x                -- CORRECT</a>
+  <a id="397" class="Comment">-- UnitHasId = record {id = λ x → x}  -- CORRECT</a>
+
+<a id="447" class="Symbol">{-#</a> <a id="451" class="Keyword">COMPILE</a> <a id="459" class="Keyword">AGDA2HS</a> <a id="467" href="Fail.NonCopatternInstance.html#234" class="Function">UnitHasId</a> <a id="477" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/NonCopatternInstance.html"/></div></body></html>

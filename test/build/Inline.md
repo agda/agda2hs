@@ -1,0 +1,4 @@
+```
+test/Fail/Inline.agda:5,1-6
+Cannot make function tail' inlinable. An inline function must have exactly one clause.
+```
