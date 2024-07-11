@@ -7,6 +7,7 @@ import Control.Monad.Reader
 import Control.Monad.Writer ( tell )
 import Control.Monad.State ( put, modify )
 
+import Data.List ( isPrefixOf )
 import Data.Maybe ( isJust )
 import qualified Data.Map as M
 import Data.List ( isPrefixOf )
