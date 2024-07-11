@@ -25,7 +25,7 @@ type ImportDeclMap = Map (Hs.ModuleName (), Qualifier) ImportSpecMap
 
 compileImports :: String -> Imports -> TCM [Hs.ImportDecl ()]
 compileImports top is0 = do
-  let is = filter (not . (top `isPrefixOf`) . Hs.prettyPrint . importModule) is0
+  let is = filter (not . (top ==) . Hs.prettyPrint . importModule) is0
   checkClashingImports is
   let imps = Map.toList $ groupModules is
   return $ map (uncurry $ uncurry makeImportDecl) imps
