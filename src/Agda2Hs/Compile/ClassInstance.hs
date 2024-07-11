@@ -65,7 +65,7 @@ compileInstance :: InstanceTarget -> Definition -> C (Hs.Decl ())
 
 compileInstance (ToDerivation strategy) def@Defn{..} =
   setCurrentRangeQ defName $ do
-    reportSDoc "agda2hs.compile.instance" 13 $ 
+    reportSDoc "agda2hs.compile.instance" 13 $
       text "compiling instance" <+> prettyTCM defName <+> text "to standalone deriving"
     tellExtension Hs.StandaloneDeriving
     enableStrategy strategy
@@ -74,7 +74,7 @@ compileInstance (ToDerivation strategy) def@Defn{..} =
 
 compileInstance ToDefinition def@Defn{..} =
   enableCopatterns $ setCurrentRangeQ defName $ do
-    reportSDoc "agda2hs.compile.instance" 13 $ 
+    reportSDoc "agda2hs.compile.instance" 13 $
       text "compiling instance" <+> prettyTCM defName <+> text "to instance definition"
     ir <- compileInstRule [] (unEl defType)
     withFunctionLocals defName $ do
@@ -181,7 +181,7 @@ compileInstanceClause' curModule ty (p:ps) c
   -- reached record projection
   | ProjP _ q <- namedArg p = do
 
-    -- we put back the remaining patterns in the original clause 
+    -- we put back the remaining patterns in the original clause
     let c' = c {namedClausePats = ps}
 
     -- We want the actual field name, not the instance-opened projection.
@@ -198,9 +198,9 @@ compileInstanceClause' curModule ty (p:ps) c
     -- retrieve the type of the projection
     Just (unEl -> Pi a b) <- getDefType q ty
     -- We don't really have the information available to reconstruct the instance
-    -- head. However, all dependencies on the instance head are in erased positions, 
+    -- head. However, all dependencies on the instance head are in erased positions,
     -- so we can just use a dummy term instead
-    let instanceHead = __DUMMY_TERM__ 
+    let instanceHead = __DUMMY_TERM__
         ty' = b `absApp` instanceHead
 
     reportSDoc "agda2hs.compile.instance" 15 $
@@ -245,7 +245,7 @@ compileInstanceClause' curModule ty (p:ps) c
           text $ "raw name: " ++ prettyShow (Def n [])
         d@Defn{..} <- getConstInfo n
         let mod = if isExtendedLambdaName defName then curModule else qnameModule defName
-        (fc, rs) <- withCurrentModule mod $ 
+        (fc, rs) <- withCurrentModule mod $
           concatUnzip <$> mapM (compileInstanceClause mod defType) (funClauses theDef)
         let hd = hsName $ prettyShow $ nameConcrete $ qnameName defName
         let fc' = {- dropPatterns 1 $ -} replaceName hd uf fc
