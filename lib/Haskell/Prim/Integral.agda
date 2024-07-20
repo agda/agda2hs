@@ -23,3 +23,14 @@ instance
 --------------------------------------------------
 -- Arithmetic
 
+--------------------------------------------------
+-- Constraints
+
+isNegativeIntegral : Integral → Bool
+isNegativeIntegral (pos _)    = False
+isNegativeIntegral (negsuc _) = True
+
+IsNonNegativeIntegral : Integral → Set
+IsNonNegativeIntegral (pos _)      = ⊤
+IsNonNegativeIntegral n@(negsuc _) =
+  TypeError (primStringAppend (primShowIntegral n) (" is negative"))

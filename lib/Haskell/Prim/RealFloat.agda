@@ -4,6 +4,18 @@ open import Haskell.Prim
 open import Haskell.Prim.Int
 open import Haskell.Prim.Bool
 
+--------------------------------------------------
+-- Literals
+
+instance
+  iNumberRealFloat : Number RealFloat
+  iNumberRealFloat .Number.Constraint _ = ⊤
+  iNumberRealFloat .fromNat n = pos n
+
+  iNegativeRealFloat : Negative RealFloat
+  iNegativeRealFloat .Negative.Constraint _ = ⊤
+  iNegativeRealFloat .fromNeg n = negNat n
+
 -- The RealFloat typeclass functions
 postulate
   floatRadix       : RealFloat → Int
@@ -24,3 +36,15 @@ postulate
 --------------------------------------------------
 -- Arithmetic
 
+
+--------------------------------------------------
+-- Constraints
+
+isNegativeRealFloat : RealFloat → Bool
+isNegativeRealFloat (pos _)    = False
+isNegativeRealFloat (negsuc _) = True
+
+IsNonNegativeRealFloat : RealFloat → Set
+IsNonNegativeRealFloat (pos _)      = ⊤
+IsNonNegativeRealFloat n@(negsuc _) =
+  TypeError (primStringAppend (primShowRealFloat n) (" is negative"))

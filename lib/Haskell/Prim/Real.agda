@@ -22,3 +22,16 @@ instance
   
 --------------------------------------------------
 -- Arithmetic
+
+
+--------------------------------------------------
+-- Constraints
+
+isNegativeReal : Real → Bool
+isNegativeReal (pos _)    = False
+isNegativeReal (negsuc _) = True
+
+IsNonNegativeReal : Real → Set
+IsNonNegativeReal (pos _)      = ⊤
+IsNonNegativeReal n@(negsuc _) =
+  TypeError (primStringAppend (primShowReal n) (" is negative"))
