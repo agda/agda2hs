@@ -20,8 +20,8 @@ instance
 postulate
   floatRadix       : RealFloat → Int
   floatDigits      : RealFloat → Int
-  floatRange       : RealFloat → Σ Int (λ _ → Int)
-  decodeFloat      : RealFloat → Σ Int (λ _ → Int)
+  floatRange       : RealFloat → -- todo (Int, Int)
+  decodeFloat      : RealFloat → -- todo (Int, Int)
   encodeFloat      : Int → Int → RealFloat
   exponent         : RealFloat → Int
   significand      : RealFloat → Float
