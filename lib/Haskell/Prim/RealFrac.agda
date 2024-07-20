@@ -15,7 +15,7 @@ instance
   iNegativeRealFrac .fromNeg n = negNat n
 
 postulate
-  properFraction : RealFrac → -- todo (Int, )
+  properFraction : RealFrac → -- todo (Int, Realfrac)
   truncate       : RealFrac → Int
   round          : RealFrac → Int
   ceiling        : RealFrac → Int
