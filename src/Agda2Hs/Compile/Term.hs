@@ -79,14 +79,20 @@ lambdaCase q ty args = compileLocal $ setCurrentRangeQ q $ do
   cs <- mapMaybeM (compileClause' mname (Just q) (hsName "(lambdaCase)") ty') cs
 
   case cs of
-    -- If there is a single clause and all patterns got erased, we
-    -- simply return the body. do
-    [Hs.Match _ _ [] (Hs.UnGuardedRhs _ rhs) _] -> return rhs
+    -- If there is a single clause and all proper patterns got erased,
+    -- we turn the remaining arguments into normal lambdas.
+    [Hs.Match _ _ ps (Hs.UnGuardedRhs _ rhs) _]
+      | null ps -> return rhs
+      | all isVarPat ps -> return $ Hs.Lambda () ps rhs
     _ -> do
       lcase <- hsLCase =<< mapM clauseToAlt cs -- Pattern lambdas cannot have where blocks
       eApp lcase <$> compileArgs ty' rest
       -- undefined -- compileApp lcase (undefined, undefined, rest)
 
+  where
+    isVarPat :: Hs.Pat () -> Bool
+    isVarPat Hs.PVar{} = True
+    isVarPat _ = False
 
 -- | Compile @if_then_else_@ to a Haskell @if ... then ... else ... @ expression.
 ifThenElse :: DefCompileRule

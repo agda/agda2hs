@@ -80,4 +80,5 @@ import Issue305
 import Issue302
 import Issue309
 import Issue317
+import ErasedPatternLambda
 
