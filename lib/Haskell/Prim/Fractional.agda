@@ -1,37 +1,21 @@
+{-# OPTIONS --no-auto-inline #-}
+
 module Haskell.Prim.Fractional where
 
 open import Haskell.Prim
+open import Haskell.Floating
+open import Haskell.Prim.RealFrac
 
 --------------------------------------------------
--- Definition
+-- Fractional
 
-data Fractional : Set where
+record Fractional (a : Set) : Set where
+  infixl 7 _/_
+  field
+    _/_ : a → a → a
+    recip : a → a
+    fromRational : Rational → a
+open Fractional ⦃... ⦄  public
 
---------------------------------------------------
--- Literals
+{-# COMPILE AGDA2HS Fractional existing-class #-}
 
-instance
-  iNumberFractional : Number Fractional
-  iNumberFractional .Number.Constraint _ = ⊤
-  iNumberFractional .fromNat n = pos n
-
-  iNegativeFractional : Negative Fractional
-  iNegativeFractional .Negative.Constraint _ = ⊤
-  iNegativeFractional .fromNeg n = 
-  
---------------------------------------------------
--- Arithmetic
-
-
-
---------------------------------------------------
--- Constraints
-
-isNegativeFractional : Fractional → Bool
-isNegativeFractional (pos _)    = False
-isNegativeFractional (negsuc _) = True
-
-IsNonNegativeFractional : Fractional → Set
-IsNonNegativeFractional (pos _)      = ⊤
-IsNonNegativeFractional n@(negsuc _) =
-  TypeError (primStringAppend (primShowFractional n) (" is negative"))

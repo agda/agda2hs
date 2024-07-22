@@ -5,46 +5,25 @@ open import Haskell.Prim.Int
 open import Haskell.Prim.Bool
 
 --------------------------------------------------
--- Literals
+-- RealFloat
 
-instance
-  iNumberRealFloat : Number RealFloat
-  iNumberRealFloat .Number.Constraint _ = ⊤
-  iNumberRealFloat .fromNat n = pos n
+record RealFloat (a : Set) : Set where
+  field
+	floatRadix       : a → Integer
+	floatDigits      : a → Int
+	floatRange       : a → (Int, Int)
+	decodeFloat      : a → (Integer, Int)
+	encodeFloat      : Integer → Int → a
+	exponent         : a → Int
+	significand      : a → a
+	scaleFloat       : Int → a → a
+	isNaN            : a → Bool
+	isInfinite       : a → Bool
+	isDenormalized   : a → Bool
+	isNegativeZero   : a → Bool
+	isIEEE           : a → Bool
+	atan2			 : a → a → a
+open RealFloat ⦃... ⦄  public
 
-  iNegativeRealFloat : Negative RealFloat
-  iNegativeRealFloat .Negative.Constraint _ = ⊤
-  iNegativeRealFloat .fromNeg n = negNat n
+{-# COMPILE AGDA2HS RealFloat existing-class #-}
 
--- The RealFloat typeclass functions
-postulate
-  floatRadix       : RealFloat → Int
-  floatDigits      : RealFloat → Int
-  floatRange       : RealFloat → -- todo (Int, Int)
-  decodeFloat      : RealFloat → -- todo (Int, Int)
-  encodeFloat      : Int → Int → RealFloat
-  exponent         : RealFloat → Int
-  significand      : RealFloat → Float
-  scaleFloat       : Int → RealFloat → RealFloat
-  isNaN            : RealFloat → Bool
-  isInfinite       : RealFloat → Bool
-  isDenormalized   : RealFloat → Bool
-  isNegativeZero   : RealFloat → Bool
-  isIEEE           : RealFloat → Bool
-  atan2			   : RealFloat → RealFloat → RealFloat
-  
---------------------------------------------------
--- Arithmetic
-
-
---------------------------------------------------
--- Constraints
-
-isNegativeRealFloat : RealFloat → Bool
-isNegativeRealFloat (pos _)    = False
-isNegativeRealFloat (negsuc _) = True
-
-IsNonNegativeRealFloat : RealFloat → Set
-IsNonNegativeRealFloat (pos _)      = ⊤
-IsNonNegativeRealFloat n@(negsuc _) =
-  TypeError (primStringAppend (primShowRealFloat n) (" is negative"))

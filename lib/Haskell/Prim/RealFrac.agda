@@ -1,38 +1,19 @@
 module Haskell.Prim.RealFrac where
 
 open import Haskell.Prim
+open import Haskell.Prim.Integral
 
 --------------------------------------------------
--- Literals
+-- RealFrac
 
-instance
-  iNumberRealFrac : Number RealFrac
-  iNumberRealFrac .Number.Constraint _ = ⊤
-  iNumberRealFrac .fromNat n = pos n
+record RealFrac (a : Set) : Set where
+  field
+	properFraction : a → (Int, a)
+	truncate       : a → Integral
+	round          : a → Integral
+	ceiling        : a → Integral
+	floor          : a → Integral
+open RealFrac ⦃... ⦄  public
 
-  iNegativeRealFrac : Negative RealFrac
-  iNegativeRealFrac .Negative.Constraint _ = ⊤
-  iNegativeRealFrac .fromNeg n = negNat n
+{-# COMPILE AGDA2HS RealFrac existing-class #-}
 
-postulate
-  properFraction : RealFrac → -- todo (Int, Realfrac)
-  truncate       : RealFrac → Int
-  round          : RealFrac → Int
-  ceiling        : RealFrac → Int
-  floor          : RealFrac → Int
-
---------------------------------------------------
--- Arithmetic
-
-
---------------------------------------------------
--- Constraints
-
-isNegativeRealFrac : RealFrac → Bool
-isNegativeRealFrac (pos _)    = False
-isNegativeRealFrac (negsuc _) = True
-
-IsNonNegativeRealFrac : Real → Set
-IsNonNegativeRealFrac (pos _)      = ⊤
-IsNonNegativeRealFrac n@(negsuc _) =
-  TypeError (primStringAppend (primShowRealFrac n) (" is negative"))
