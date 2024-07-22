@@ -1,6 +1,7 @@
 module Haskell.Prim.RealFrac where
 
 open import Haskell.Prim
+open import Haskell.Prim.Int
 open import Haskell.Prim.Integral
 
 --------------------------------------------------
@@ -8,7 +9,7 @@ open import Haskell.Prim.Integral
 
 record RealFrac (a : Set) : Set where
   field
-	properFraction : a → (Int, a)
+	properFraction : a → (Int × a)
 	truncate       : a → Integral
 	round          : a → Integral
 	ceiling        : a → Integral

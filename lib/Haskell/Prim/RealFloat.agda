@@ -2,6 +2,7 @@ module Haskell.Prim.RealFloat where
 
 open import Haskell.Prim
 open import Haskell.Prim.Int
+open import Haskell.Prim.Integer
 open import Haskell.Prim.Bool
 
 --------------------------------------------------
@@ -11,8 +12,8 @@ record RealFloat (a : Set) : Set where
   field
 	floatRadix       : a → Integer
 	floatDigits      : a → Int
-	floatRange       : a → (Int, Int)
-	decodeFloat      : a → (Integer, Int)
+	floatRange       : a → (Int × Int)
+	decodeFloat      : a → (Integer × Int)
 	encodeFloat      : Integer → Int → a
 	exponent         : a → Int
 	significand      : a → a

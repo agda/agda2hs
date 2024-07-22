@@ -12,8 +12,8 @@ record Floating (a : Set) : Set where
 	exp     : a → a
 	log     : a → a
 	sqrt	: a → a
-	_**_    : Floating → Floating → Floating
-	logBase : Floating → Floating → Floating
+	_**_    : a → a → a
+	logBase : a → a → a
 	sin     : a → a
 	cos     : a → a
 	tan		: a → a
