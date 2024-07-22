@@ -32,19 +32,4 @@ instance
   
   iRealWord : Real Word
   iRealWord.toRational x = toInteger x :% 1  
-  
---------------------------------------------------
--- Arithmetic
 
-
---------------------------------------------------
--- Constraints
-
-isNegativeReal : a → Bool
-isNegativeReal (pos _)    = False
-isNegativeReal (negsuc _) = True
-
-IsNonNegativeReal : a → Set
-IsNonNegativeReal (pos _)      = ⊤
-IsNonNegativeReal n@(negsuc _) =
-  TypeError (primStringAppend (primShowReal n) (" is negative"))
