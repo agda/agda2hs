@@ -81,4 +81,5 @@ import Issue302
 import Issue309
 import Issue317
 import ErasedPatternLambda
+import CustomTuples
 

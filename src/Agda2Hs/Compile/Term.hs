@@ -1,6 +1,6 @@
 module Agda2Hs.Compile.Term where
 
-import Control.Arrow ( (>>>), (&&&) )
+import Control.Arrow ( (>>>), (&&&), second )
 import Control.Monad ( unless )
 import Control.Monad.Reader
 
@@ -30,13 +30,14 @@ import Agda.TypeChecking.ProjectionLike ( reduceProjectionLike )
 
 import Agda.Utils.Lens
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
+import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Size
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
 
-import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..) )
+import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTelSize )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
@@ -365,22 +366,47 @@ compileErasedApp ty args = do
 
 
 compileCon :: ConHead -> ConInfo -> Type -> [Term] -> C (Hs.Exp ())
-compileCon h i ty args
-  | Just semantics <- isSpecialCon (conName h)
-  = semantics ty args
 compileCon h i ty args = do
-  isUnboxConstructor (conName h) >>= \case
-    Just _  -> compileErasedApp ty args
-    Nothing -> do
-      info <- getConstInfo (conName h)
-      -- the constructor may be a copy introduced by module application,
-      -- therefore we need to find the original constructor
-      if defCopy info then
-        let Constructor{conSrcCon = ch'} = theDef info in
-        compileCon ch' i ty args
-      else do
-        con <- Hs.Con () <$> compileQName (conName h)
-        compileApp con ty args
+  let c = conName h
+  ifJust  (isSpecialCon c)       (\semantics -> semantics ty args) $ do
+  ifJustM (isUnboxConstructor c) (\_ -> compileErasedApp ty args)  $ do
+  ifJustM (isTupleConstructor c) (\b -> compileTuple ty b args)    $ do
+    info <- getConstInfo c
+    -- the constructor may be a copy introduced by module application,
+    -- therefore we need to find the original constructor
+    if defCopy info then
+      let Constructor{conSrcCon = ch'} = theDef info in
+      compileCon ch' i ty args
+    else do
+      con <- Hs.Con () <$> compileQName c
+      compileApp con ty args
+
+compileTuple :: Type -> Hs.Boxed -> [Term] -> C (Hs.Exp ())
+compileTuple ty b args = do
+  tellUnboxedTuples b
+  (ty', vs) <- compileArgs' ty args
+  TelV tel _ <- telView ty'
+  missing <- compileTelSize tel
+  let given = size vs
+  if -- No arguments: return unit constructor () or (# #)
+     | given == 0 && missing == 0 -> return $
+         Hs.Con () $ Hs.Special () $ case b of
+           Hs.Boxed -> Hs.UnitCon ()
+           Hs.Unboxed -> Hs.UnboxedSingleCon ()
+     -- All arguments missing: return tuple constructor
+     -- e.g. (,) or (#,#)
+     | given == 0 -> return $
+         Hs.Con () $ Hs.Special () $ Hs.TupleCon () b missing
+     -- All arguments given: return tuple
+     -- e.g. (v1 , v2) or (# v1 , v2 #)
+     | missing == 0 -> return $ Hs.Tuple () b vs
+     -- Some arguments given, some missing: return tuple section
+     -- e.g. (v1 ,) or (# v1, #)
+     | otherwise -> do
+         tellExtension $ Hs.TupleSections
+         return $ Hs.TupleSection () b $
+           map Just vs ++ replicate missing Nothing
+
 
 
 -- * Term compilation
@@ -525,16 +551,18 @@ compileApp' acc ty args = acc <$> compileArgs ty args
 
 -- | Compile a list of arguments applied to a function of the given type.
 compileArgs :: Type -> [Term] -> C [Hs.Exp ()]
-compileArgs ty [] = pure []
-compileArgs ty (x:xs) = do
+compileArgs ty args = snd <$> compileArgs' ty args
+
+compileArgs' :: Type -> [Term] -> C (Type, [Hs.Exp ()])
+compileArgs' ty [] = pure (ty, [])
+compileArgs' ty (x:xs) = do
   (a, b) <- mustBePi ty
-  let rest = compileArgs (absApp b x) xs
+  let rest = compileArgs' (absApp b x) xs
   compileDom a >>= \case
     DODropped  -> rest
     DOInstance -> checkInstance x *> rest
     DOType     -> rest
-    DOTerm     -> (:) <$> compileTerm (unDom a) x
-                      <*> rest
+    DOTerm     -> second . (:) <$> compileTerm (unDom a) x <*> rest
 
 clauseToAlt :: Hs.Match () -> C (Hs.Alt ())
 clauseToAlt (Hs.Match _ _ [p] rhs wh) = pure $ Hs.Alt () p rhs wh

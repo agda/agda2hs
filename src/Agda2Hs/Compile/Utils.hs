@@ -200,6 +200,23 @@ isUnboxProjection :: QName -> C (Maybe Strictness)
 isUnboxProjection q =
   caseMaybeM (liftTCM $ getRecordOfField q) (return Nothing) isUnboxRecord
 
+isTupleRecord :: QName -> C (Maybe Hs.Boxed)
+isTupleRecord q = do
+  getConstInfo q >>= \case
+    Defn{defName = r, theDef = Record{}} ->
+      processPragma r <&> \case
+        TuplePragma b -> Just b
+        _             -> Nothing
+    _ -> return Nothing
+
+isTupleConstructor :: QName -> C (Maybe Hs.Boxed)
+isTupleConstructor q =
+  caseMaybeM (isRecordConstructor q) (return Nothing) $ isTupleRecord . fst
+
+isTupleProjection :: QName -> C (Maybe Hs.Boxed)
+isTupleProjection q =
+  caseMaybeM (liftTCM $ getRecordOfField q) (return Nothing) isTupleRecord
+
 isTransparentFunction :: QName -> C Bool
 isTransparentFunction q = do
   getConstInfo q >>= \case
@@ -287,6 +304,10 @@ tellImport imp = tell $ CompileOutput [imp] []
 
 tellExtension :: Hs.KnownExtension -> C ()
 tellExtension pr = tell $ CompileOutput [] [pr]
+
+tellUnboxedTuples :: Hs.Boxed -> C ()
+tellUnboxedTuples Hs.Boxed = return ()
+tellUnboxedTuples Hs.Unboxed = tellExtension $ Hs.UnboxedTuples
 
 addPatBang :: Strictness -> Hs.Pat () -> C (Hs.Pat ())
 addPatBang Strict p = tellExtension Hs.BangPatterns >>

@@ -107,6 +107,7 @@ compileType t = do
          | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics es
          | Just args <- allApplyElims es ->
              ifJustM (isUnboxRecord f) (\_ -> compileUnboxType f args) $
+             ifJustM (isTupleRecord f) (\b -> compileTupleType f b args) $
              ifM (isTransparentFunction f) (compileTransparentType (defType def) args) $
              ifM (isInlinedFunction f) (compileInlineType f es) $ do
                vs <- compileTypeArgs (defType def) args
@@ -152,6 +153,23 @@ compileTypeArgs ty (x:xs) = do
       (:) <$> compileType (unArg x) <*> rest
     DOTerm -> fail "Type-level term argument not supported"
 
+compileTel :: Telescope -> C [Hs.Type ()]
+compileTel EmptyTel = return []
+compileTel (ExtendTel a tel) = compileDom a >>= \case
+  DODropped  -> underAbstraction a tel compileTel
+  DOInstance -> __IMPOSSIBLE__
+  DOType     -> __IMPOSSIBLE__
+  DOTerm     -> (:) <$> compileType (unEl $ unDom a) <*> underAbstraction a tel compileTel
+
+-- Version of @compileTel@ that just computes the size,
+-- and avoids compiling the types themselves.
+compileTelSize :: Telescope -> C Int
+compileTelSize EmptyTel = return 0
+compileTelSize (ExtendTel a tel) = compileDom a >>= \case
+  DODropped -> underAbstraction a tel compileTelSize
+  DOInstance -> __IMPOSSIBLE__
+  DOType -> __IMPOSSIBLE__
+  DOTerm -> (1+) <$> underAbstraction a tel compileTelSize
 
 compileUnboxType :: QName -> Args -> C (Hs.Type ())
 compileUnboxType r pars = do
@@ -160,16 +178,15 @@ compileUnboxType r pars = do
   compileTel tel >>= \case
     [t] -> return t
     _   -> __IMPOSSIBLE__
-  
-  where
-    compileTel :: Telescope -> C [Hs.Type ()]
-    compileTel EmptyTel = return []
-    compileTel (ExtendTel a tel) = compileDom a >>= \case
-      DODropped  -> underAbstraction a tel compileTel
-      DOInstance -> __IMPOSSIBLE__
-      DOType     -> __IMPOSSIBLE__
-      DOTerm     -> (:) <$> compileType (unEl $ unDom a) <*> underAbstraction a tel compileTel
-      
+
+compileTupleType :: QName -> Hs.Boxed -> Args -> C (Hs.Type ())
+compileTupleType r b pars = do
+  tellUnboxedTuples b
+  def <- getConstInfo r
+  let tel = recTel (theDef def) `apply` pars
+  ts <- compileTel tel
+  return $ Hs.TyTuple () b ts
+
 compileTransparentType :: Type -> Args -> C (Hs.Type ())
 compileTransparentType ty args = compileTypeArgs ty args >>= \case
   (v:vs) -> return $ v `tApp` vs

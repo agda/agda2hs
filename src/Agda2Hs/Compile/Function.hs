@@ -302,16 +302,14 @@ compilePat ty p@(VarP o x)
 -- special constructor pattern
 compilePat ty (ConP ch i ps) = do
   Just ((_, _, _), ty) <- getConType ch =<< reduce ty
+  let c = conName ch
 
-  case isSpecialCon (conName ch) of
-    Just semantics -> setCurrentRange ch $ semantics ty ps
-    Nothing -> do
-      isUnboxConstructor (conName ch) >>= \case
-        Just s -> compileErasedConP ty ps >>= addPatBang s
-        Nothing -> do
-          ps <- compilePats ty ps
-          c <- compileQName (conName ch)
-          return $ pApp c ps
+  ifJust (isSpecialCon c) (\semantics -> setCurrentRange ch $ semantics ty ps) $ do
+  ifJustM (isUnboxConstructor c) (\s -> compileErasedConP ty s ps) $ do
+  ifJustM (isTupleConstructor c) (\b -> compileTupleConP ty b ps) $ do
+    ps <- compilePats ty ps
+    c <- compileQName (conName ch)
+    return $ pApp c ps
 
 -- literal patterns
 compilePat ty (LitP _ l) = compileLitPat l
@@ -321,9 +319,9 @@ compilePat ty (LitP _ l) = compileLitPat l
 compilePat _ p = genericDocError =<< "bad pattern:" <?> prettyTCM p
 
 
-compileErasedConP :: Type -> NAPs -> C (Hs.Pat ())
-compileErasedConP ty ps = compilePats ty ps <&> \case
-  [p] -> p
+compileErasedConP :: Type -> Strictness -> NAPs -> C (Hs.Pat ())
+compileErasedConP ty s ps = compilePats ty ps >>= \case
+  [p] -> addPatBang s p
   _   -> __IMPOSSIBLE__
 
 compileLitPat :: Literal -> C (Hs.Pat ())
@@ -331,6 +329,10 @@ compileLitPat = \case
   LitChar c -> return $ Hs.charP c
   l -> genericDocError =<< "bad literal pattern:" <?> prettyTCM l
 
+compileTupleConP :: Type -> Hs.Boxed -> NAPs -> C (Hs.Pat ())
+compileTupleConP ty b ps = do
+  ps <- compilePats ty ps
+  return $ Hs.PTuple () b ps
 
 -- Local (where) declarations ---------------------------------------------
 
