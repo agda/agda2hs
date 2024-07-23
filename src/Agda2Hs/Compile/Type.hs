@@ -128,7 +128,7 @@ compileType t = do
     -- TODO: we should also drop lambdas that can be erased based on their type
     -- (e.g. argument is of type Level/Size or in a Prop) but currently we do
     -- not have access to the type of the lambda here.
-    Lam argInfo restAbs 
+    Lam argInfo restAbs
       | hasQuantity0 argInfo -> underAbstraction_ restAbs compileType
       | otherwise -> genericDocError =<< text "Not supported: type-level lambda" <+> prettyTCM t
 
@@ -143,7 +143,7 @@ compileTypeArgs ty (x:xs) = do
   reportSDoc "agda2hs.compile.type" 16 $ text "compileTypeArgs x =" <+> prettyTCM x
   reportSDoc "agda2hs.compile.type" 16 $ text "                a =" <+> prettyTCM a
   reportSDoc "agda2hs.compile.type" 16 $ text "         modality =" <+> prettyTCM (getModality a)
-  let rest = compileTypeArgs (absApp b $ unArg x) xs  
+  let rest = compileTypeArgs (absApp b $ unArg x) xs
   let fail msg = genericDocError =<< (text msg <> text ":") <+> parens (prettyTCM (absName b) <+> text ":" <+> prettyTCM (unDom a))
   compileDom a >>= \case
     DODropped -> rest
@@ -200,7 +200,7 @@ compileDom a = do
   isErasable <- pure (not $ usableModality a) `or2M` canErase (unDom a)
   isClassConstraint <- pure (isInstance a) `and2M` isClassType (unDom a)
   isType <- endsInSort (unDom a)
-  return $ if 
+  return $ if
     | isErasable        -> DODropped
     | isClassConstraint -> DOInstance
     | isType            -> DOType
@@ -223,7 +223,7 @@ compileDomType x a =
       -- come from a module parameter.
       ctx <- getContextSize
       npars <- size <$> (lookupSection =<< currentModule)
-      if ctx < npars 
+      if ctx < npars
         then do
           tellExtension Hs.ScopedTypeVariables
           return $ DomForall $ Hs.UnkindedVar () $ Hs.Ident () x
