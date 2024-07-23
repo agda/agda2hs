@@ -7,7 +7,7 @@ open import Haskell.Extra.Refinement
 
 module _ (@0 n : Int) where
 
-  foo : {{Rezz _ n}} → ∃ Int (_≡ n)
+  foo : {{Rezz n}} → ∃ Int (_≡ n)
   foo {{rezz n}} = n ⟨ refl ⟩
 
   {-# COMPILE AGDA2HS foo #-}

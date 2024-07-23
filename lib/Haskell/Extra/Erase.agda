@@ -6,6 +6,7 @@ module Haskell.Extra.Erase where
 
   open import Haskell.Prim
   open import Haskell.Prim.List
+  open import Haskell.Extra.Refinement
   open import Haskell.Law.Equality
 
   private variable
@@ -30,53 +31,50 @@ module Haskell.Extra.Erase where
   pattern <_> x = record { proj₁ = _ ; proj₂ = x }
 
   -- Resurrection of erased values
-  record Rezz (a : Set ℓ) (@0 x : a) : Set ℓ where
-    constructor Rezzed
-    field
-      rezzed    : a
-      @0 isRezz : rezzed ≡ x
-  open Rezz public
-  {-# COMPILE AGDA2HS Rezz unboxed #-}
+  Rezz : (@0 x : a) → Set
+  Rezz x = ∃ _ (x ≡_)
 
-  pattern rezz x = Rezzed x refl
+  {-# COMPILE AGDA2HS Rezz inline #-}
+
+  pattern rezz x = x ⟨ refl ⟩
 
   instance
-    rezz-id : {x : a} → Rezz a x
+    rezz-id : {x : a} → Rezz x
     rezz-id = rezz _
   {-# COMPILE AGDA2HS rezz-id inline #-}
 
-  rezzCong : {@0 a : Set} {@0 x : a} (f : a → b) → Rezz a x → Rezz b (f x)
-  rezzCong f (Rezzed x p) = Rezzed (f x) (cong f p)
+  rezzCong : {@0 a : Set} {@0 x : a} (f : a → b) → Rezz x → Rezz (f x)
+  rezzCong f (x ⟨ p ⟩) = f x ⟨ cong f p ⟩
   {-# COMPILE AGDA2HS rezzCong inline #-}
 
-  rezzCong2 : (f : a → b → c) → Rezz a x → Rezz b y → Rezz c (f x y)
-  rezzCong2 f (Rezzed x p) (Rezzed y q) = Rezzed (f x y) (cong₂ f p q)
+  rezzCong2 : (f : a → b → c) → Rezz x → Rezz y → Rezz (f x y)
+  rezzCong2 f (x ⟨ p ⟩) (y ⟨ q ⟩) = f x y ⟨ cong₂ f p q ⟩
   {-# COMPILE AGDA2HS rezzCong2 inline #-}
 
-  rezzHead : Rezz (List a) (x ∷ xs) → Rezz a x
-  rezzHead {x = x} (Rezzed ys p) =
-    Rezzed (head ys)
-           (subst (λ ys → ⦃ @0 _ : NonEmpty ys ⦄ → head ys ≡ x)
-              (sym p) refl)
+  rezzHead : Rezz (x ∷ xs) → Rezz x
+  rezzHead {x = x} (ys ⟨ p ⟩) =
+    head ys
+    ⟨ subst (λ ys → ⦃ @0 _ : NonEmpty ys ⦄ → x ≡ head ys)
+            p refl ⟩
     where instance @0 ne : NonEmpty ys
-                   ne = subst NonEmpty (sym p) itsNonEmpty
+                   ne = subst NonEmpty p itsNonEmpty
   {-# COMPILE AGDA2HS rezzHead inline #-}
 
-  rezzTail : Rezz (List a) (x ∷ xs) → Rezz (List a) xs
-  rezzTail {xs = xs} (Rezzed ys p) =
-    Rezzed (tail ys)
-           (subst (λ ys → ⦃ @0 _ : NonEmpty ys ⦄ → tail ys ≡ xs)
-              (sym p) refl)
+  rezzTail : Rezz (x ∷ xs) → Rezz xs
+  rezzTail {xs = xs} (ys ⟨ p ⟩) =
+    tail ys
+    ⟨ subst (λ ys → ⦃ @0 _ : NonEmpty ys ⦄ → xs ≡ tail ys)
+            p refl ⟩
     where instance @0 ne : NonEmpty ys
-                   ne = subst NonEmpty (sym p) itsNonEmpty
+                   ne = subst NonEmpty p itsNonEmpty
   {-# COMPILE AGDA2HS rezzTail inline #-}
 
-  rezzErase : {@0 a : Set} {@0 x : a} → Rezz (Erase a) (Erased x)
-  rezzErase {x = x} = Rezzed (Erased x) refl
+  rezzErase : {@0 a : Set} {@0 x : a} → Rezz (Erased x)
+  rezzErase {x = x} = Erased x ⟨ refl ⟩
   {-# COMPILE AGDA2HS rezzErase inline #-}
 
   erase-injective : Erased x ≡ Erased y → x ≡ y
   erase-injective refl = refl
 
-  inspect_by_ : (x : a) → (Rezz a x → b) → b
+  inspect_by_ : (x : a) → (Rezz x → b) → b
   inspect x by f = f (rezz x)
