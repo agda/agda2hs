@@ -8,7 +8,7 @@ module Haskell.Extra.Erase where
   open import Haskell.Prim.List
   open import Haskell.Law.Equality
 
-  private variable 
+  private variable
     @0 x y : a
     @0 xs  : List a
 
@@ -16,6 +16,7 @@ module Haskell.Extra.Erase where
     constructor Erased
     field @0 get : a
   open Erase public
+  {-# COMPILE AGDA2HS Erase tuple #-}
 
   infixr 4 ⟨_⟩_
   record Σ0 (@0 a : Set) (b : @0 a → Set) : Set where

@@ -53,10 +53,6 @@ import Agda2Hs.HsUtils
 isSpecialCon :: QName -> Maybe (Type -> NAPs -> C (Hs.Pat ()))
 isSpecialCon qn = case prettyShow qn of
   s | s `elem` badConstructors     -> Just itsBad
-  "Haskell.Prim.Tuple._,_"         -> Just tuplePat
-  "Haskell.Prim.Tuple._×_×_._,_,_" -> Just tuplePat
-  "Haskell.Extra.Erase.Erased"     -> Just tuplePat
-  "Haskell.Extra.Sigma._,_"        -> Just tuplePat
   "Agda.Builtin.Int.Int.pos"       -> Just posIntPat
   "Agda.Builtin.Int.Int.negsuc"    -> Just negSucIntPat
   _                                -> Nothing
@@ -70,12 +66,6 @@ isSpecialCon qn = case prettyShow qn of
 
     itsBad :: Type -> NAPs -> C (Hs.Pat ())
     itsBad _ _ = genericDocError =<< "constructor `" <> prettyTCM qn <> "` not supported in patterns"
-
--- | Translate list of patterns into a Haskell n-uple pattern.
-tuplePat :: Type -> NAPs -> C (Hs.Pat ())
-tuplePat ty ps =
-  compilePats ty ps
-  <&> Hs.PTuple () Hs.Boxed
 
 -- | Translate Int.pos pattern.
 posIntPat :: Type -> NAPs -> C (Hs.Pat ())

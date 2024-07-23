@@ -6,6 +6,7 @@ record Σ (a : Set) (b : @0 a → Set) : Set where
     fst : a
     snd : b fst
 open Σ public
+{-# COMPILE AGDA2HS Σ tuple #-}
 
 infix 2 Σ-syntax
 
