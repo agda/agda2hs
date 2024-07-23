@@ -30,14 +30,14 @@ instance
   iLawfulEqNat .isEquality zero    zero    = refl
   iLawfulEqNat .isEquality zero    (suc _) = λ ()
   iLawfulEqNat .isEquality (suc _) zero    = λ ()
-  iLawfulEqNat .isEquality (suc x) (suc y) = mapReflects 
-    (cong suc) 
-    suc-injective 
+  iLawfulEqNat .isEquality (suc x) (suc y) = mapReflects
+    (cong suc)
+    suc-injective
     (isEquality x y)
 
   iLawfulEqWord : IsLawfulEq Word
-  iLawfulEqWord .isEquality x y 
-    with (w2n x) in h₁ | (w2n y) in h₂ 
+  iLawfulEqWord .isEquality x y
+    with (w2n x) in h₁ | (w2n y) in h₂
   ... | a | b  = mapReflects
     (λ h → w2n-injective x y $ sym $ trans (trans h₂ $ sym h) (sym h₁))
     (λ h → trans (sym $ trans (cong w2n (sym h)) h₁) h₂)
@@ -50,44 +50,44 @@ instance
   iLawfulEqBool .isEquality True  True  = refl
 
   iLawfulEqChar : IsLawfulEq Char
-  iLawfulEqChar .isEquality x y 
-    with (c2n x) in h₁ | (c2n y) in h₂ 
-  ... | a | b  = mapReflects { a ≡ b } { x ≡ y } { eqNat a b } 
+  iLawfulEqChar .isEquality x y
+    with (c2n x) in h₁ | (c2n y) in h₂
+  ... | a | b  = mapReflects { a ≡ b } { x ≡ y } { eqNat a b }
     (λ h → c2n-injective x y $ sym $ trans (trans h₂ $ sym h) (sym h₁))
     (λ h → trans (sym $ trans (cong c2n (sym h)) h₁) h₂)
     (isEquality a b)
 
-  iLawfulEqEither : ⦃ iEqA : Eq a ⦄ → ⦃ iEqB : Eq b ⦄ 
-    → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄ 
+  iLawfulEqEither : ⦃ iEqA : Eq a ⦄ → ⦃ iEqB : Eq b ⦄
+    → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄
     → IsLawfulEq (Either a b)
   iLawfulEqEither .isEquality (Left  _) (Right _) = λ ()
   iLawfulEqEither .isEquality (Right _) (Left  _) = λ ()
-  iLawfulEqEither .isEquality (Left  x) (Left  y) = mapReflects 
+  iLawfulEqEither .isEquality (Left  x) (Left  y) = mapReflects
     (cong Left) (Left-injective) (isEquality x y)
-  iLawfulEqEither .isEquality (Right x) (Right y) = mapReflects 
+  iLawfulEqEither .isEquality (Right x) (Right y) = mapReflects
     (cong Right) (Right-injective) (isEquality x y)
 
   iLawfulEqInt : IsLawfulEq Int
   iLawfulEqInt .isEquality (int64 x) (int64 y) = mapReflects
-    (cong int64) int64-injective (isEquality x y) 
+    (cong int64) int64-injective (isEquality x y)
 
   iLawfulEqInteger : IsLawfulEq Integer
-  iLawfulEqInteger .isEquality (pos n)    (pos m)    = mapReflects 
+  iLawfulEqInteger .isEquality (pos n)    (pos m)    = mapReflects
     (cong pos) pos-injective (isEquality n m)
-  iLawfulEqInteger .isEquality (pos _)    (negsuc _) = λ () 
+  iLawfulEqInteger .isEquality (pos _)    (negsuc _) = λ ()
   iLawfulEqInteger .isEquality (negsuc _) (pos _)    = λ ()
-  iLawfulEqInteger .isEquality (negsuc n) (negsuc m) = mapReflects 
+  iLawfulEqInteger .isEquality (negsuc n) (negsuc m) = mapReflects
     (cong negsuc) neg-injective (isEquality n m)
-  
+
   iLawfulEqList : ⦃ iEqA : Eq a ⦄ → ⦃ IsLawfulEq a ⦄ → IsLawfulEq (List a)
   iLawfulEqList .isEquality []       []      = refl
   iLawfulEqList .isEquality []       (_ ∷ _) = λ ()
   iLawfulEqList .isEquality (_ ∷ _)  []      = λ ()
-  iLawfulEqList .isEquality (x ∷ xs) (y ∷ ys) 
+  iLawfulEqList .isEquality (x ∷ xs) (y ∷ ys)
     with (x == y) in h₁
-  ... | True  = mapReflects 
-    (λ h → cong₂ (_∷_) (equality x y h₁)  h) 
-    ∷-injective-right 
+  ... | True  = mapReflects
+    (λ h → cong₂ (_∷_) (equality x y h₁)  h)
+    ∷-injective-right
     (isEquality xs ys)
   ... | False = λ h → (nequality x y h₁) (∷-injective-left h)
 
@@ -95,7 +95,7 @@ instance
   iLawfulEqMaybe .isEquality Nothing  Nothing  = refl
   iLawfulEqMaybe .isEquality Nothing  (Just _) = λ()
   iLawfulEqMaybe .isEquality (Just _) Nothing  = λ()
-  iLawfulEqMaybe .isEquality (Just x) (Just y) = mapReflects 
+  iLawfulEqMaybe .isEquality (Just x) (Just y) = mapReflects
     (cong Just) Just-injective (isEquality x y)
 
   iLawfulEqOrdering : IsLawfulEq Ordering
@@ -115,21 +115,22 @@ instance
   iLawfulEqTuple₂ .isEquality (x₁ , x₂) (y₁ , y₂)
     with (x₁ == y₁) in h₁
   ... | True  = mapReflects
-    (λ h → cong₂ _,_ (equality x₁ y₁ h₁) h) 
-    (cong snd) 
+    (λ h → cong₂ _,_ (equality x₁ y₁ h₁) h)
+    (cong snd)
     (isEquality x₂ y₂)
   ... | False = λ h → exFalso (equality' x₁ y₁ (cong fst h)) h₁
 
   iLawfulEqTuple₃ : ⦃ iEqA : Eq a ⦄ ⦃ iEqB : Eq b ⦄ ⦃ iEqC : Eq c ⦄
     → ⦃ IsLawfulEq a ⦄ → ⦃ IsLawfulEq b ⦄ → ⦃ IsLawfulEq c ⦄
     → IsLawfulEq (a × b × c)
-  iLawfulEqTuple₃ .isEquality (x₁ , x₂ , x₃) (y₁ , y₂ , y₃) 
-    with (x₁ == y₁) in h₁ 
+  iLawfulEqTuple₃ .isEquality (x₁ , x₂ , x₃) (y₁ , y₂ , y₃)
+    with (x₁ == y₁) in h₁
   ... | True  = mapReflects
-    (λ h → cong₂ (λ a (b , c) → a , b , c) (equality x₁ y₁ h₁) h) 
-    (cong λ h → snd₃ h , thd₃ h) 
+    (λ h → cong₂ (λ a (b , c) → a , b , c) (equality x₁ y₁ h₁) h)
+    (cong λ h → snd3 h , thd3 h)
     (isEquality (x₂ , x₃) (y₂ , y₃))
-  ... | False = λ h → exFalso (equality' x₁ y₁ (cong  fst₃ h)) h₁ 
+  ... | False = λ h → exFalso (equality' x₁ y₁ (cong fst3 h)) h₁
+
 
   iLawfulEqUnit : IsLawfulEq ⊤
   iLawfulEqUnit .isEquality tt tt = refl

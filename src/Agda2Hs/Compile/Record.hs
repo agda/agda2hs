@@ -177,7 +177,7 @@ checkUnboxPragma def = do
   -- recRecursive can be used again after agda 2.6.4.2 is released
   -- see agda/agda#7042
   unless (all null recMutual) $ genericDocError
-    =<< text "Unboxed record" <+> prettyTCM (defName def) 
+    =<< text "Unboxed record" <+> prettyTCM (defName def)
     <+> text "cannot be recursive"
 
   TelV tel _ <- telViewUpTo recPars (defType def)
