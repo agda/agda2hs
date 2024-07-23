@@ -86,4 +86,5 @@ executable agda2hs
                        ViewPatterns
                        NamedFieldPuns
                        PatternSynonyms
+                       NondecreasingIndentation
   ghc-options:         -Werror -rtsopts

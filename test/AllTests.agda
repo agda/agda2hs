@@ -86,6 +86,7 @@ import Issue302
 import Issue309
 import Issue317
 import ErasedPatternLambda
+import CustomTuples
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -169,4 +170,5 @@ import Issue302
 import Issue309
 import Issue317
 import ErasedPatternLambda
+import CustomTuples
 #-}

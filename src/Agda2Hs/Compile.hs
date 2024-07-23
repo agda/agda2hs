@@ -91,6 +91,7 @@ compile opts tlm _ def =
         (UnboxPragma s       , Record{}  ) -> [] <$ checkUnboxPragma def
         (TransparentPragma   , Function{}) -> [] <$ checkTransparentPragma def
         (InlinePragma        , Function{}) -> [] <$ checkInlinePragma def
+        (TuplePragma b       , Record{}  ) -> return []
 
         (ClassPragma ms      , Record{}  ) -> pure <$> compileRecord (ToClass ms) def
         (NewTypePragma ds    , Record{}  ) -> pure <$> compileRecord (ToRecord True ds) def
