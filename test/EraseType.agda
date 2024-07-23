@@ -13,22 +13,22 @@ testMatch (Erased x) = Erased (x + 1)
 
 {-# COMPILE AGDA2HS testMatch #-}
 
-testRezz : Rezz Int (get testErase)
+testRezz : Rezz (get testErase)
 testRezz = rezz 42
 
 {-# COMPILE AGDA2HS testRezz #-}
 
-testRezzErase : Rezz (Erase Int) testErase
+testRezzErase : Rezz testErase
 testRezzErase = rezzErase
 
 {-# COMPILE AGDA2HS testRezzErase #-}
 
-testCong : Rezz Int (1 + get testErase)
+testCong : Rezz (1 + get testErase)
 testCong = rezzCong (1 +_) testRezz
 
 {-# COMPILE AGDA2HS testCong #-}
 
-rTail : ∀ {@0 x xs} → Rezz (List Int) (x ∷ xs) → Rezz (List Int) xs
+rTail : ∀ {@0 x xs} → Rezz {a = List Int} (x ∷ xs) → Rezz xs
 rTail = rezzTail
 
 {-# COMPILE AGDA2HS rTail #-}
