@@ -17,8 +17,17 @@ record _×_ (a b : Set) : Set where
     snd : b
 open _×_ public
 
-data _×_×_ (a b c : Set) : Set where
-  _,_,_ : a → b → c → a × b × c
+{-# COMPILE AGDA2HS _×_ tuple #-}
+
+record _×_×_ (a b c : Set) : Set where
+  no-eta-equality; pattern
+  constructor _,_,_
+  field
+    fst3 : a
+    snd3 : b
+    thd3 : c
+
+{-# COMPILE AGDA2HS _×_×_ tuple #-}
 
 uncurry : (a → b → c) → a × b → c
 uncurry f (x , y) = f x y
@@ -34,12 +43,3 @@ second f (x , y) = x , f y
 
 _***_ : (a → b) → (c → d) → a × c → b × d
 (f *** g) (x , y) = f x , g y
-
-fst₃ : (a × b × c) → a
-fst₃ (x , _ , _) = x 
-
-snd₃ : (a × b × c) → b
-snd₃ (_ , y , _) = y
-
-thd₃ : (a × b × c) → c
-thd₃ (_ , _ , z) = z

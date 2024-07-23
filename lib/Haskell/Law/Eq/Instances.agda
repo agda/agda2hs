@@ -25,6 +25,8 @@ open import Haskell.Law.List    using ( ∷-injective-left; ∷-injective-right 
 open import Haskell.Law.Maybe
 open import Haskell.Law.Nat
 
+open _×_×_
+
 instance
   iLawfulEqNat : IsLawfulEq Nat
   iLawfulEqNat .isEquality zero    zero    = refl
