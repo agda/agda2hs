@@ -16,7 +16,7 @@ import Agda.Syntax.Common ( Arg(unArg), defaultArg )
 import Agda.Syntax.Internal
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
-import Agda.TypeChecking.Pretty ( ($$), (<+>), text, vcat, prettyTCM )
+import Agda.TypeChecking.Pretty ( ($$), (<+>), text, vcat, prettyTCM, pretty, prettyList_ )
 import Agda.TypeChecking.Substitute ( TelV(TelV), Apply(apply) )
 import Agda.TypeChecking.Telescope
 
@@ -38,7 +38,10 @@ withMinRecord :: QName -> C a -> C a
 withMinRecord m = local $ \ e -> e { minRecordName = Just (qnameToMName m) }
 
 compileMinRecord :: [Hs.Name ()] -> QName -> C MinRecord
-compileMinRecord fieldNames m = do
+compileMinRecord fieldNames m = withMinRecord m $ do
+  reportSDoc "agda2hs.record.min" 20 $
+    text "Compiling minimal record" <+> pretty m <+>
+    text "with field names" <+> prettyList_ (map (text . pp) fieldNames)
   rdef <- getConstInfo m
   definedFields <- classMemberNames rdef
   let Record{recPars = npars, recTel = tel} = theDef rdef
@@ -48,9 +51,12 @@ compileMinRecord fieldNames m = do
   -- We can't simply compileFun here for two reasons:
   -- * it has an explicit dictionary argument
   -- * it's using the fields and definitions from the minimal record and not the parent record
-  compiled <- withMinRecord m $ addContext (defaultDom rtype) $ compileLocal $
+  compiled <- addContext (defaultDom rtype) $ compileLocal $
     fmap concat $ traverse (compileFun False) defaults
   let declMap = Map.fromList [ (definedName c, def) | def@(Hs.FunBind _ (c : _)) <- compiled ]
+  reportSDoc "agda2hs.record.min" 20 $
+    text "Done compiling minimal record" <+> pretty m <+>
+    text "defined fields: " <+> prettyList_ (map (text . pp) definedFields)
   return (definedFields, declMap)
 
 
