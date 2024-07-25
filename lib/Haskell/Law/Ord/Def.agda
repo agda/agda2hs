@@ -3,7 +3,6 @@ module Haskell.Law.Ord.Def where
 open import Haskell.Prim
 open import Haskell.Prim.Ord
 open import Haskell.Prim.Bool
-open import Haskell.Prim.Int
 open import Haskell.Prim.Word
 open import Haskell.Prim.Integer
 open import Haskell.Prim.Double
@@ -84,20 +83,13 @@ lte2LtEq : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x <= y) ≡ (x < y || x == y)
 lte2LtEq x y 
   rewrite lt2LteNeq x y
-    | compareEq x y
-  with (x <= y) in h₁ | (compare x y) in h₂
-... | False | LT = refl
-... | False | EQ = magic $ exFalso (reflexivity x) $ begin 
-    (x <= x)  ≡⟨ (cong (x <=_) (equality x y (begin 
-      (x == y)            ≡⟨ compareEq x y ⟩ 
-      (compare x y == EQ) ≡⟨ equality' (compare x y) EQ h₂ ⟩ 
-      True                ∎ ) ) ) ⟩
-    (x <= y)  ≡⟨ h₁ ⟩ 
-    False ∎
-... | False | GT = refl
-... | True  | LT = refl
-... | True  | EQ = refl
-... | True  | GT = refl
+    with (x <= y) in h₁ | (x == y) in h₂
+...| True | True  = refl
+...| True | False = refl
+...| False | True 
+  rewrite equality x y h₂ | sym $ h₁ 
+  = reflexivity y
+...| False | False = refl
 
 gte2GtEq : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x >= y) ≡ (x > y || x == y)
@@ -172,15 +164,19 @@ gt2gte x y h
     | lte2gte y x
   = refl
 
+reverseLte : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
+  →  ∀ ( a b c d : a ) → 
+  ((a <= b) && (c <= d)) ≡ (( d >= c) && (b >= a))
+reverseLte a b c d 
+  rewrite &&-sym (a <= b) (c <= d)
+  | sym $ lte2gte c d 
+  | sym $ lte2gte a b  
+  = refl
+
 --------------------------------------------------
 -- Postulated instances
 
 postulate instance
-  iLawfulOrdNat : IsLawfulOrd Nat
-
-  iLawfulOrdInteger : IsLawfulOrd Integer
-
-  iLawfulOrdInt : IsLawfulOrd Int
 
   iLawfulOrdWord : IsLawfulOrd Word
 
