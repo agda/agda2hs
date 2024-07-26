@@ -73,6 +73,9 @@ defaultSpecialRules = Map.fromList
   , "Haskell.Prim._∘_"              `to` "_._"          `importing` Nothing
   , "Haskell.Prim.Monad.Dont._>>=_" `to` "_>>=_"        `importing` Nothing
   , "Haskell.Prim.Monad.Dont._>>_"  `to` "_>>_"         `importing` Nothing
+  , "Haskell.Prim.Tuple.first"      `to` "first"        `importing` Just "Control.Arrow"
+  , "Haskell.Prim.Tuple.second"     `to` "second"       `importing` Just "Control.Arrow"
+  , "Haskell.Prim.Tuple._***_"      `to` "_***_"        `importing` Just "Control.Arrow"
   ]
   where infixr 6 `to`, `importing`
         to = (,)
