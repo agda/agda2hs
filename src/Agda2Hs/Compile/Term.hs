@@ -262,9 +262,9 @@ compileProj q tty t ty args =
   ifM (isJust <$> isUnboxProjection q) (eApp <$> compileTerm tty t <*> compileArgs ty args) $
   -- class projection: we check the instance and drop it
   ifM (isClassFunction q) (compileClassFun q tty t ty args) $
-
-  -- NOTE(flupe): maybe we want Dom Type for the record arg
+  ifJustM (isTupleProjection q) (\b -> compileTupleProjection q b tty t ty args) $
   do
+  -- NOTE(flupe): maybe we want Dom Type for the record arg
     name <- compileQName q
     arg  <- compileTerm tty t
     compileApp (Hs.Var () name `eApp` [arg]) ty args
