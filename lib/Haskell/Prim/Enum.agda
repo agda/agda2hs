@@ -24,11 +24,11 @@ open import Haskell.Prim.Word
 --    minBound and maxBound. Unbounded enums do not support enumFrom
 --    and enumFromThen (since they return infinite lists).
 
-IfBoundedBelow : Maybe (BoundedBelow a) → (⦃ BoundedBelow a ⦄ → Set) → Set
+@0 IfBoundedBelow : Maybe (BoundedBelow a) → (⦃ BoundedBelow a ⦄ → Set) → Set
 IfBoundedBelow Nothing  k = ⊤
 IfBoundedBelow (Just i) k = k ⦃ i ⦄
 
-IfBoundedAbove : Maybe (BoundedAbove a) → (⦃ BoundedAbove a ⦄ → Set) → Set
+@0 IfBoundedAbove : Maybe (BoundedAbove a) → (⦃ BoundedAbove a ⦄ → Set) → Set
 IfBoundedAbove Nothing  k = ⊤
 IfBoundedAbove (Just i) k = k ⦃ i ⦄
 
@@ -39,22 +39,22 @@ record Enum (a : Set) : Set₁ where
     fromEnum         : a → Int
 
   private
-    IsBoundedBelow : Set
+    @0 IsBoundedBelow : Set
     IsBoundedBelow = maybe ⊥ (λ _ → ⊤) BoundedBelowEnum
 
-    IsBoundedAbove : Set
+    @0 IsBoundedAbove : Set
     IsBoundedAbove = maybe ⊥ (λ _ → ⊤) BoundedAboveEnum
 
-    TrueIfLB : (⦃ BoundedBelow a ⦄ → Bool) → Set
+    @0 TrueIfLB : (⦃ BoundedBelow a ⦄ → Bool) → Set
     TrueIfLB C = IfBoundedBelow BoundedBelowEnum (IsTrue C)
 
-    TrueIfUB : (⦃ BoundedAbove a ⦄ → Bool) → Set
+    @0 TrueIfUB : (⦃ BoundedAbove a ⦄ → Bool) → Set
     TrueIfUB C = IfBoundedAbove BoundedAboveEnum (IsTrue C)
 
-    FalseIfLB : (⦃ BoundedBelow a ⦄ → Bool) → Set
+    @0 FalseIfLB : (⦃ BoundedBelow a ⦄ → Bool) → Set
     FalseIfLB C = IfBoundedBelow BoundedBelowEnum (IsFalse C)
 
-    FalseIfUB : (⦃ BoundedAbove a ⦄ → Bool) → Set
+    @0 FalseIfUB : (⦃ BoundedAbove a ⦄ → Bool) → Set
     FalseIfUB C = IfBoundedAbove BoundedAboveEnum (IsFalse C)
 
     minInt : ⦃ BoundedBelow a ⦄ → Int
