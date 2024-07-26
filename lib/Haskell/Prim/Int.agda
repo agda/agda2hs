@@ -101,7 +101,7 @@ showInt a = showInteger (intToInteger a)
 --------------------------------------------------
 -- Constraints
 
-IsNonNegativeInt : Int → Set
+@0 IsNonNegativeInt : Int → Set
 IsNonNegativeInt a@(int64 _) =
   if isNegativeInt a then TypeError (primStringAppend (primStringFromList (showInt a)) " is negative")
                      else ⊤
