@@ -1,6 +1,9 @@
 {-# LANGUAGE UnboxedTuples, TupleSections #-}
 module CustomTuples where
 
+test :: (Int, Int) -> Int
+test xy = fst xy + snd xy
+
 foo ::
     (# Int, Int, Bool #) ->
       (# Int, Bool, Bool #) -> (# Int, Char, Bool #)

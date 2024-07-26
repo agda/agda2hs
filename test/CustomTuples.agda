@@ -1,5 +1,18 @@
 open import Haskell.Prelude
 
+record Σ (a : Set) (b : @0 a → Set) : Set where
+  constructor _,_
+  field
+    fst : a
+    snd : b fst
+open Σ public
+{-# COMPILE AGDA2HS Σ tuple #-}
+
+test : Σ Int (λ _ → Int) → Int
+test xy = fst xy + snd xy
+
+{-# COMPILE AGDA2HS test #-}
+
 record Stuff (a : Set) : Set where
   no-eta-equality; pattern
   constructor stuff

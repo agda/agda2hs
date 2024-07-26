@@ -1,7 +1,7 @@
 module Agda2Hs.Compile.Term where
 
 import Control.Arrow ( (>>>), (&&&), second )
-import Control.Monad ( unless )
+import Control.Monad ( unless, zipWithM )
 import Control.Monad.Reader
 
 import Data.Foldable ( toList )
@@ -21,11 +21,11 @@ import Agda.Syntax.Internal
 
 import Agda.TypeChecking.Monad
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Records ( shouldBeProjectible )
+import Agda.TypeChecking.Records ( shouldBeProjectible, isRecordType, recordFieldNames )
 import Agda.TypeChecking.Datatypes ( getConType )
 import Agda.TypeChecking.Reduce ( unfoldDefinitionStep, instantiate )
 import Agda.TypeChecking.Substitute
-import Agda.TypeChecking.Telescope ( telView, mustBePi, piApplyM )
+import Agda.TypeChecking.Telescope ( telView, mustBePi, piApplyM, flattenTel )
 import Agda.TypeChecking.ProjectionLike ( reduceProjectionLike )
 
 import Agda.Utils.Lens
@@ -216,6 +216,36 @@ compileClassFun q _ w ty args = do
   curMod <- currentModule
   unless (curMod `isLeChildModuleOf` qnameModule q) $ checkInstance w
   eApp (Hs.Var () hf) <$> compileArgs ty args
+
+compileTupleProjection :: QName -> Hs.Boxed -> ProjCompileRule
+compileTupleProjection f b wty w ty args = do
+  -- TODO: avoid redoing all of this work each time
+  -- by storing the fields of each tuple type somewhere
+  when (b == Hs.Unboxed) $ genericError "projecting from unboxed tuples is not allowed"
+  reportSDoc "agda2hs.term.proj" 12 $ text "compiling tuple projection"
+  (r, pars, def) <- lift $ fromMaybe __IMPOSSIBLE__ <$> isRecordType wty
+  let fields = map unDom $ recFields def
+      fieldTypes = flattenTel $ recTel def `apply` pars
+  fname <- compileTupleFields fields fieldTypes >>= \case
+    [f1,f2] | f == f1 -> return $ hsName "fst"
+            | f == f2 -> return $ hsName "snd"
+            | otherwise -> __IMPOSSIBLE__
+    fs' -> genericDocError =<<
+      text ("cannot project from tuple with " ++ show (size fs') ++ " fields")
+  cw <- compileTerm wty w
+  cargs <- compileArgs ty args
+  return $ eApp (Hs.Var () $ Hs.UnQual () fname) (cw:cargs)
+
+  where
+    compileTupleFields :: [QName] -> [Dom Type] -> C [QName]
+    compileTupleFields fs tys = catMaybes <$> zipWithM compileTupleField fs tys
+
+    compileTupleField :: QName -> Dom Type -> C (Maybe QName)
+    compileTupleField f ty = compileDom ty >>= \case
+      DODropped -> return Nothing
+      DOTerm -> return (Just f)
+      DOType -> genericDocError =<< text "illegal type field in tuple record:" <+> prettyTCM f
+      DOInstance -> genericDocError =<< text "illegal instance field in tuple record:" <+> prettyTCM f
 
 
 -- | Compile a projection(-like) definition
