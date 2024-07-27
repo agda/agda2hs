@@ -75,4 +75,4 @@ instance
   iFunctorTuple₃ : Functor (a × b ×_)
   iFunctorTuple₃ = fmap= λ where f (x , y , z) → x , y , f z
 
-instance postulate iFunctiorIO : Functor IO
+instance postulate iFunctorIO : Functor IO
