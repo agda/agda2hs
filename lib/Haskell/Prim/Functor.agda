@@ -13,39 +13,38 @@ open import Haskell.Prim.Tuple
 
 -- ** base
 record Functor (f : Set → Set) : Set₁ where
-  infixl 1 _<&>_
-  infixl 4 _<$>_ _<$_ _$>_
+  infixl 4 _<$_
   field
     fmap : (a → b) → f a → f b
-    _<$>_ : (a → b) → f a → f b
-    _<&>_ : f a → (a → b) → f b
     _<$_ : (@0 {{ b }} → a) → f b → f a
-    _$>_ : f a → (@0 {{ a }} → b) → f b
-    void : f a → f ⊤
 -- ** defaults
 record DefaultFunctor (f : Set → Set) : Set₁ where
   field fmap : (a → b) → f a → f b
 
-  infixl 1 _<&>_
-  infixl 4 _<$>_ _<$_ _$>_
-
-  _<$>_ : (a → b) → f a → f b
-  _<$>_ = fmap
-
-  _<&>_ : f a → (a → b) → f b
-  m <&> f = fmap f m
+  infixl 4 _<$_
 
   _<$_ : (@0 {{ b }} → a) → f b → f a
   x <$ m = fmap (λ b → x {{b}}) m
 
-  _$>_ : f a → (@0 {{ a }} → b) → f b
-  m $> x = x <$ m
-
-  void : f a → f ⊤
-  void = tt <$_
 -- ** export
 open Functor ⦃...⦄ public
 {-# COMPILE AGDA2HS Functor existing-class #-}
+
+_<$>_ : {{Functor f}} → (a → b) → f a → f b
+_<$>_ = fmap
+
+_<&>_ : {{Functor f}} → f a → (a → b) → f b
+m <&> f = fmap f m
+
+_$>_ : {{Functor f}} → f a → (@0 {{ a }} → b) → f b
+m $> x = x <$ m
+
+void : {{Functor f}} → f a → f ⊤
+void = tt <$_
+
+infixl 1 _<&>_
+infixl 4 _<$>_ _$>_
+
 -- ** instances
 private
   mkFunctor : DefaultFunctor t → Functor t
