@@ -25,7 +25,6 @@ module Do where
       overlap ⦃ super ⦄ : Applicative m
       return : a → m a
       _>>_ : m a → (@0 {{ a }} → m b) → m b
-      _=<<_ : (a → m b) → m a → m b
   -- ** defaults
   record DefaultMonad (m : Set → Set) : Set₁ where
     field
@@ -37,8 +36,6 @@ module Do where
     _>>_ : m a → (@0 {{ a }} → m b) → m b
     m >> m₁ = m >>= λ x → m₁ {{x}}
 
-    _=<<_ : (a → m b) → m a → m b
-    _=<<_ = flip _>>=_
   -- ** export
   open Monad ⦃...⦄ public
   {-# COMPILE AGDA2HS Monad existing-class #-}
@@ -56,6 +53,9 @@ module Dont where
   _>>_ = Do._>>_
 
 open Do public
+
+_=<<_ : {{Monad m}} → (a → m b) → m a → m b
+_=<<_ = flip _>>=_
 
 mapM₋ : ⦃ Monad m ⦄ → ⦃ Foldable t ⦄ → (a → m b) → t a → m ⊤
 mapM₋ f = foldr (λ x k → f x >> k) (pure tt)
