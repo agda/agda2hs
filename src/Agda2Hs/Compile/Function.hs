@@ -399,7 +399,7 @@ checkInlinePragma def@Defn{defName = f} = do
     [c] ->
       unlessM (allowedPats (namedClausePats c)) $ genericDocError =<<
         "Cannot make function" <+> prettyTCM (defName def) <+> "inlinable." <+>
-        "Inline functions can only use variable patterns or transparent record constructor patterns."
+        "Inline functions can only use variable patterns or unboxed constructor patterns."
     _ ->
       genericDocError =<<
         "Cannot make function" <+> prettyTCM f <+> "inlinable." <+>
@@ -408,11 +408,16 @@ checkInlinePragma def@Defn{defName = f} = do
   where allowedPat :: DeBruijnPattern -> C Bool
         allowedPat VarP{} = pure True
         -- only allow matching on (unboxed) record constructors
-        allowedPat (ConP ch ci cargs) =
+        allowedPat (ConP ch ci cargs) = do
+          reportSDoc "agda2hs.compile.inline" 18 $ "Checking unboxing of constructor: "<+> prettyTCM ch
           isUnboxConstructor (conName ch) >>= \case
             Just _  -> allowedPats cargs
             Nothing -> pure False
-        allowedPat _ = pure False
+        -- NOTE(flupe): dot patterns should really only be allowed for *erased* arguments, I think.
+        allowedPat (DotP _ _) = pure True
+        allowedPat p = do
+          reportSDoc "agda2hs.compile.inline" 18 $ "Unsupported pattern"  <+> prettyTCM p
+          pure False
 
         allowedPats :: NAPs -> C Bool
         allowedPats pats = allM pats (allowedPat . dget . dget)

@@ -89,6 +89,7 @@ compile opts tlm _ def =
         (NoPragma            , _         ) -> return []
         (ExistingClassPragma , _         ) -> return []
         (UnboxPragma s       , Record{}  ) -> [] <$ checkUnboxPragma def
+        (UnboxPragma s       , Datatype{}) -> [] <$ checkUnboxPragma def
         (TransparentPragma   , Function{}) -> [] <$ checkTransparentPragma def
         (InlinePragma        , Function{}) -> [] <$ checkInlinePragma def
         (TuplePragma b       , Record{}  ) -> return []

@@ -9,6 +9,7 @@ import Control.Monad.Trans ( lift )
 import Control.Monad.Reader ( asks )
 import Data.List ( find )
 import Data.Maybe ( mapMaybe, isJust )
+import Data.Foldable ( toList )
 import qualified Data.Set as Set ( singleton )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
@@ -21,6 +22,7 @@ import Agda.Syntax.Common
 import Agda.Syntax.Internal
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
+import Agda.TypeChecking.Datatypes
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Reduce ( reduce, unfoldDefinitionStep )
 import Agda.TypeChecking.Substitute
@@ -76,7 +78,7 @@ delayType [] = genericDocError =<< text "Cannot compile unapplied Delay type"
 compileTypeWithStrictness :: Term -> C (Strictness, Hs.Type ())
 compileTypeWithStrictness t = do
   s <- case t of
-    Def f es -> fromMaybe Lazy <$> isUnboxRecord f
+    Def f es -> fromMaybe Lazy <$> isUnboxType f
     _        -> return Lazy
   ty <- compileType t
   pure (s, ty)
@@ -106,7 +108,7 @@ compileType t = do
               <+> text "in Haskell type"
          | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics es
          | Just args <- allApplyElims es ->
-             ifJustM (isUnboxRecord f) (\_ -> compileUnboxType f args) $
+             ifJustM (isUnboxType f) (\_ -> compileUnboxType f args) $
              ifJustM (isTupleRecord f) (\b -> compileTupleType f b args) $
              ifM (isTransparentFunction f) (compileTransparentType (defType def) args) $
              ifM (isInlinedFunction f) (compileInlineType f es) $ do
@@ -174,10 +176,30 @@ compileTelSize (ExtendTel a tel) = compileDom a >>= \case
 compileUnboxType :: QName -> Args -> C (Hs.Type ())
 compileUnboxType r pars = do
   def <- getConstInfo r
-  let tel = recTel (theDef def) `apply` pars
+
+  tel <- case theDef def of
+
+    Record{recTel} -> pure (recTel `apply` pars)
+
+    Datatype{dataCons = [con]} -> do
+      -- NOTE(flupe): con is the *only* constructor of the unboxed datatype
+      Constructor { conSrcCon } <- theDef <$> getConstInfo con
+      -- we retrieve its type
+      Just (_, ty) <- getConType conSrcCon (El (DummyS "some level") (apply (Def r []) pars))
+      theTel <$> telView ty
+
   compileTel tel >>= \case
     [t] -> return t
     _   -> __IMPOSSIBLE__
+
+  where
+    compileTel :: Telescope -> C [Hs.Type ()]
+    compileTel EmptyTel = return []
+    compileTel (ExtendTel a tel) = compileDom a >>= \case
+      DODropped  -> underAbstraction a tel compileTel
+      DOInstance -> __IMPOSSIBLE__
+      DOType     -> __IMPOSSIBLE__
+      DOTerm     -> (:) <$> compileType (unEl $ unDom a) <*> underAbstraction a tel compileTel
 
 compileTupleType :: QName -> Hs.Boxed -> Args -> C (Hs.Type ())
 compileTupleType r b pars = do
@@ -191,7 +213,6 @@ compileTransparentType :: Type -> Args -> C (Hs.Type ())
 compileTransparentType ty args = compileTypeArgs ty args >>= \case
   (v:vs) -> return $ v `tApp` vs
   []     -> __IMPOSSIBLE__
-
 
 compileInlineType :: QName -> Elims -> C (Hs.Type ())
 compileInlineType f args = do

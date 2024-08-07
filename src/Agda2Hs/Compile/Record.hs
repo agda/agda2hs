@@ -171,9 +171,7 @@ compileRecord target def = do
       return $ Hs.DataDecl () don Nothing hd [conDecl] ds
 
 checkUnboxPragma :: Definition -> C ()
-checkUnboxPragma def = do
-  let Record{..} = theDef def
-
+checkUnboxPragma def | Record{..} <- theDef def = do
   -- recRecursive can be used again after agda 2.6.4.2 is released
   -- see agda/agda#7042
   unless (all null recMutual) $ genericDocError
@@ -197,3 +195,6 @@ checkUnboxPragma def = do
       DOType -> genericDocError =<< text "Type field in unboxed record not supported"
       DOInstance -> genericDocError =<< text "Instance field in unboxed record not supported"
       DOTerm -> (absName tel:) <$> underAbstraction a tel nonErasedFields
+
+checkUnboxPragma def | Datatype{..} <- theDef def = do
+  pure () -- TOOD(flupe):

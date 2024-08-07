@@ -8,9 +8,9 @@ data Singleton (a : Set) : @0 a → Set where
 {-# COMPILE AGDA2HS Singleton unboxed #-}
 
 pureSingl : {a : Set} (x : a) → Singleton a x
-pureSingl = MkSingl
+pureSingl x = MkSingl x
 
-{-# COMPILE AGDA2HS pureSingl inline #-}
+{-# COMPILE AGDA2HS pureSingl transparent #-}
 
 fmapSingl
   : {a b : Set} (f : a → b) {@0 x : a}

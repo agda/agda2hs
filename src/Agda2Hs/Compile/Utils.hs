@@ -192,9 +192,24 @@ isUnboxRecord q = do
         _             -> Nothing
     _ -> return Nothing
 
+isUnboxType :: QName -> C (Maybe Strictness)
+isUnboxType q = do
+  getConstInfo q >>= \case
+    Defn{defName = r} ->
+      processPragma r <&> \case
+        UnboxPragma s -> Just s
+        _             -> Nothing
+    -- _ -> return Nothing
+
 isUnboxConstructor :: QName -> C (Maybe Strictness)
-isUnboxConstructor q =
-  caseMaybeM (isRecordConstructor q) (return Nothing) $ isUnboxRecord . fst
+isUnboxConstructor q = do
+  def <- getConstInfo q
+  case theDef def of
+      Constructor {conData = r} -> isUnboxType r
+      _                         -> pure Nothing
+
+  -- caseMaybeM (isRecordConstructor) isUnboxType q
+  -- caseMaybeM (isRecordConstructor q) (return Nothing) $ isUnboxRecord . fst
 
 isUnboxProjection :: QName -> C (Maybe Strictness)
 isUnboxProjection q =
