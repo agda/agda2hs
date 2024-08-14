@@ -53,13 +53,13 @@ type DefCompileRule = Type -> [Term] -> C (Hs.Exp ())
 
 isSpecialDef :: QName -> Maybe DefCompileRule
 isSpecialDef q = case prettyShow q of
-  _ | isExtendedLambdaName q     -> Just (lambdaCase q)
-  "Haskell.Prim.if_then_else_"   -> Just ifThenElse
-  "Haskell.Prim.case_of_"        -> Just caseOf
-  "Haskell.Prim.the"             -> Just expTypeSig
-  "Haskell.Extra.Delay.runDelay" -> Just compileErasedApp
+  _ | isExtendedLambdaName q            -> Just (lambdaCase q)
+  "Haskell.Prim.if_then_else_"          -> Just ifThenElse
+  "Haskell.Prim.case_of_"               -> Just caseOf
+  "Haskell.Prim.the"                    -> Just expTypeSig
+  "Haskell.Extra.Delay.runDelay"        -> Just compileErasedApp
   "Agda.Builtin.Word.primWord64FromNat" -> Just primWord64FromNat
-  _                              -> Nothing
+  _                                     -> Nothing
 
 
 -- | Compile a @\where@ to the equivalent @\case@ expression.
@@ -153,6 +153,8 @@ compileSpined c tm ty (e@(Proj o q):es) = do
   ty' <- shouldBeProjectible t ty o q
   compileSpined (compileProj q ty t ty') (tm . (e:)) ty' es
 compileSpined c tm ty (e@(Apply (unArg -> x)):es) = do
+  reportSDoc "agda2hs.compile.inline" 18 $ text "spined term" <+> prettyTCM (tm (e:es))
+  reportSDoc "agda2hs.compile.inline" 18 $ text "spined type" <+> prettyTCM ty
   (a, b) <- mustBePi ty
   compileSpined (c . (x:)) (tm . (e:)) (absApp b x) es
 compileSpined _ _ _ _ = __IMPOSSIBLE__
@@ -536,11 +538,64 @@ compileInlineFunctionApp f ty args = do
 
   def <- getConstInfo f
 
-  let ty' = defType def
-  let Function{funClauses = cs} = theDef def
-  let [Clause{namedClausePats = pats}] = filter (isJust . clauseBody) cs
+  let Function{ funClauses = cs } = theDef def
+  let [ Clause { namedClausePats = pats
+               , clauseBody = Just body
+               , clauseTel
+               } ] = filter (isJust . clauseBody) cs
+
+  reportSDoc "agda2hs.compile.inline" 18 $ text "inline function pats " <+> pretty pats
+  reportSDoc "agda2hs.compile.inline" 18 $ text "inline function args " <+> prettyTCM args
+  reportSDoc "agda2hs.compile.inline" 18 $ text "inline function length of tel" <+> prettyTCM (length clauseTel)
+  reportSDoc "agda2hs.compile.inline" 18 $ text "ctxt" <+> (prettyTCM =<< getContextArgs)
 
   ty'' <- piApplyM ty args
+  let ntel = length clauseTel
+
+  -- body' <- addContext clauseTel $ do
+  -- sub <- matchPats pats (raise ntel args)
+    -- reportSDoc "agda2hs.compile.inline" 18 $ text "Generated substitution: " <+> prettyTCM body
+
+
+  addContext (KeepNames clauseTel) $ do
+    body' <- matchPats pats (raise ntel args) body
+    reportSDoc "agda2hs.compile.inline" 18 $ text "function body before substitution: " <+> prettyTCM body
+    reportSDoc "agda2hs.compile.inline" 18 $ text "function body after substitution: "  <+> prettyTCM body'
+    compileTerm (raise ntel ty'') body'
+
+  where
+    matchPats :: NAPs -> [Term] -> Term -> C Term -- Substitution
+    matchPats [] [] tm = pure tm -- pure IdS
+    matchPats (pat:naps) (t:ts) tm -- dot patterns are ignored
+      | DotP _ _ <- namedThing (unArg pat) = matchPats naps ts tm
+    matchPats (pat:naps) (t:ts) tm = do
+      -- each pattern of inlined funtions match a single variable
+      let var = dbPatVarIndex $ extractPatVar (namedThing $ unArg pat)
+      reportSDoc "agda2hs.compile.inline" 18
+        $ text "replacing db var" <+> prettyTCM (Var var []) <+> text "with" <+> prettyTCM t
+
+      -- TODO: improve this
+      matchPats naps ts (applySubst (inplaceS var t) tm)
+      -- composeS (singletonS (dbPatVarIndex var) t) <$> matchPats naps ts
+    matchPats (pat:naps) [] tm = do
+      -- exhausted explicit arguments, yet the inline function is not fully applied.
+      -- we eta-expand with as many missing arguments
+      let name = dbPatVarName (extractPatVar (namedThing $ unArg pat))
+      mkLam (defaultArg name) <$> matchPats naps [] tm
+
+    extractPatVar :: DeBruijnPattern -> DBPatVar
+    extractPatVar (VarP _ v) = v
+    extractPatVar (ConP _ _ args) =
+      let arg = namedThing $ unArg $ head $ filter (usableModality `and2M` visible) args
+      in extractPatVar arg
+    extractPatVar _ = __IMPOSSIBLE__
+
+
+-- NOTE(flupe): for now, we assume that inline functions are fully applied
+--              once this works, we need to add back eta-expansion.
+
+  -- undefined
+  {-
   -- NOTE(flupe): very flimsy, there has to be a better way
   etaExpand (drop (length args) pats) ty' args >>= compileTerm ty''
 
@@ -571,6 +626,7 @@ compileInlineFunctionApp f ty args = do
       (dom, cod) <- mustBePi ty
       let ai = domInfo dom
       Lam ai . mkAbs (extractName p) <$> etaExpand ps (absBody cod) (raise 1 args ++ [ var 0 ])
+      -}
 
 
 compileApp :: Hs.Exp () -> Type -> [Term] -> C (Hs.Exp ())
