@@ -1,7 +1,6 @@
 module Haskell.Law.Function where
 
 open import Haskell.Prim
-open import Haskell.Prim.Function
 open import Haskell.Law.Equality
 
 

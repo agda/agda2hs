@@ -2,7 +2,6 @@
 module Haskell.Law.Num.Word where
 
 open import Haskell.Prim
-open import Haskell.Prim.Function
 open import Haskell.Prim.Num
 open import Haskell.Prim.Word
 open Haskell.Prim.Word.WordInternal

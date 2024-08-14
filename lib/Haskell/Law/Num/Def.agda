@@ -32,7 +32,6 @@ record IsLawfulNum (a : Set) ⦃ iNum : Num a ⦄ : Set₁ where
     -- "if the type also implements Integral, then fromInteger is a left inverse for toInteger, i.e. fromInteger (toInteger i) == i"
 open IsLawfulNum ⦃ ... ⦄ public
 
-open import Haskell.Prim.Function
 open import Haskell.Law.Equality
 open import Haskell.Law.Function
 
