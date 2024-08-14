@@ -558,30 +558,31 @@ compileInlineFunctionApp f ty args = do
 
 
   addContext (KeepNames clauseTel) $ do
-    body' <- matchPats pats (raise ntel args) body
-    reportSDoc "agda2hs.compile.inline" 18 $ text "function body before substitution: " <+> prettyTCM body
-    reportSDoc "agda2hs.compile.inline" 18 $ text "function body after substitution: "  <+> prettyTCM body'
-    compileTerm (raise ntel ty'') body'
+    matchPats pats (raise ntel args) (compileTerm (raise ntel ty'')) body
+    -- reportSDoc "agda2hs.compile.inline" 18 $ text "function body before substitution: " <+> prettyTCM body
+    -- reportSDoc "agda2hs.compile.inline" 18 $ text "function body after substitution: "  <+> prettyTCM body'
+    -- compileTerm (raise ntel ty'') body'
 
   where
-    matchPats :: NAPs -> [Term] -> Term -> C Term -- Substitution
-    matchPats [] [] tm = pure tm -- pure IdS
-    matchPats (pat:naps) (t:ts) tm -- dot patterns are ignored
-      | DotP _ _ <- namedThing (unArg pat) = matchPats naps ts tm
-    matchPats (pat:naps) (t:ts) tm = do
+    matchPats :: NAPs -> [Term] -> (Term -> C (Hs.Exp ())) -> Term -> C (Hs.Exp ()) -- Substitution
+    matchPats [] [] c tm = c tm -- pure IdS
+    matchPats (pat:naps) (t:ts) c tm -- dot patterns are ignored
+      | DotP _ _ <- namedThing (unArg pat) = matchPats naps ts c tm
+    matchPats (pat:naps) (t:ts) c tm = do
       -- each pattern of inlined funtions match a single variable
       let var = dbPatVarIndex $ extractPatVar (namedThing $ unArg pat)
       reportSDoc "agda2hs.compile.inline" 18
         $ text "replacing db var" <+> prettyTCM (Var var []) <+> text "with" <+> prettyTCM t
 
       -- TODO: improve this
-      matchPats naps ts (applySubst (inplaceS var t) tm)
+      matchPats naps ts c (applySubst (inplaceS var t) tm)
       -- composeS (singletonS (dbPatVarIndex var) t) <$> matchPats naps ts
-    matchPats (pat:naps) [] tm = do
+    matchPats (pat:naps) [] c tm = do
       -- exhausted explicit arguments, yet the inline function is not fully applied.
       -- we eta-expand with as many missing arguments
       let name = dbPatVarName (extractPatVar (namedThing $ unArg pat))
-      mkLam (defaultArg name) <$> matchPats naps [] tm
+      hsLambda name <$> matchPats naps [] c tm
+      -- mkLam (defaultArg name) <$> matchPats naps [] tm
 
     extractPatVar :: DeBruijnPattern -> DBPatVar
     extractPatVar (VarP _ v) = v
