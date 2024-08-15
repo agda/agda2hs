@@ -29,6 +29,7 @@ import Agda2Hs.Compile.Function ( compileFun )
 import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds, compileDom, DomOutput(..) )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
+import Agda2Hs.Compile.Data ( allIndicesErased )
 import Agda2Hs.HsUtils
 
 -- | Primitive fields and default implementations
@@ -170,8 +171,9 @@ compileRecord target def = do
       let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
       return $ Hs.DataDecl () don Nothing hd [conDecl] ds
 
-checkUnboxPragma :: Definition -> C ()
-checkUnboxPragma def | Record{..} <- theDef def = do
+checkUnboxedRecordPragma :: Definition -> C ()
+checkUnboxedRecordPragma def = do
+  let Record{..} = theDef def
   -- recRecursive can be used again after agda 2.6.4.2 is released
   -- see agda/agda#7042
   unless (all null recMutual) $ genericDocError
@@ -196,5 +198,3 @@ checkUnboxPragma def | Record{..} <- theDef def = do
       DOInstance -> genericDocError =<< text "Instance field in unboxed record not supported"
       DOTerm -> (absName tel:) <$> underAbstraction a tel nonErasedFields
 
-checkUnboxPragma def | Datatype{..} <- theDef def = do
-  pure () -- TOOD(flupe):

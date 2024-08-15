@@ -2,7 +2,7 @@ module Agda2Hs.Compile.Data where
 
 import qualified Language.Haskell.Exts.Syntax as Hs
 
-import Control.Monad ( when )
+import Control.Monad ( unless, when )
 import Agda.Compiler.Backend
 import Agda.Syntax.Common
 import Agda.Syntax.Internal
@@ -14,8 +14,9 @@ import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
 
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
+import Agda.Utils.Monad ( mapMaybeM )
 
-import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds )
+import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds, compileDom, DomOutput(..) )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.HsUtils
@@ -46,15 +47,15 @@ compileData newtyp ds def = do
     when newtyp (checkNewtype d cs)
 
     return [Hs.DataDecl () target Nothing hd cs ds]
-  where
-    allIndicesErased :: Type -> C ()
-    allIndicesErased t = reduce (unEl t) >>= \case
-      Pi dom t -> compileDomType (absName t) dom >>= \case
-        DomDropped      -> allIndicesErased (unAbs t)
-        DomType{}       -> genericDocError =<< text "Not supported: indexed datatypes"
-        DomConstraint{} -> genericDocError =<< text "Not supported: constraints in types"
-        DomForall{}     -> genericDocError =<< text "Not supported: indexed datatypes"
-      _ -> return ()
+
+allIndicesErased :: Type -> C ()
+allIndicesErased t = reduce (unEl t) >>= \case
+  Pi dom t -> compileDomType (absName t) dom >>= \case
+    DomDropped      -> allIndicesErased (unAbs t)
+    DomType{}       -> genericDocError =<< text "Not supported: indexed datatypes"
+    DomConstraint{} -> genericDocError =<< text "Not supported: constraints in types"
+    DomForall{}     -> genericDocError =<< text "Not supported: indexed datatypes"
+  _ -> return ()
 
 compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl ())
 compileConstructor params c = do
@@ -77,3 +78,42 @@ compileConstructorArgs (ExtendTel a tel) = compileDomType (absName tel) a >>= \c
   DomConstraint hsA -> genericDocError =<< text "Not supported: constructors with class constraints"
   DomDropped        -> underAbstraction a tel compileConstructorArgs
   DomForall{}       -> __IMPOSSIBLE__
+
+
+checkUnboxedDataPragma :: Definition -> C ()
+checkUnboxedDataPragma def = do
+  let Datatype{..} = theDef def
+
+  -- unboxed datatypes shouldn't be recursive
+  unless (all null dataMutual) $ genericDocError
+    =<< text "Unboxed datatype" <+> prettyTCM (defName def)
+    <+> text "cannot be recursive"
+
+  TelV tel t <- telViewUpTo dataPars (defType def)
+  let params :: [Arg Term] = teleArgs tel
+
+  allIndicesErased t
+
+  case dataCons of
+    [con] -> do
+      info <- getConstInfo con
+      let Constructor {..} = theDef info
+      ty <- defType info `piApplyM` params
+      TelV conTel _ <- telView ty
+      args <- nonErasedArgs conTel
+      unless (length args == 1) $ genericDocError
+        =<< text "Unboxed datatype" <+> prettyTCM (defName def)
+        <+> text "should have a single constructor with exactly one non-erased argument."
+
+    _     -> genericDocError =<< text "Unboxed datatype" <+> prettyTCM (defName def)
+                             <+> text "must have exactly one constructor."
+
+  where
+    nonErasedArgs :: Telescope -> C [String]
+    nonErasedArgs EmptyTel = return []
+    nonErasedArgs (ExtendTel a tel) = compileDom a >>= \case
+      DODropped  -> underAbstraction a tel nonErasedArgs
+      DOType     -> genericDocError =<< text "Type argument in unboxed datatype not supported"
+      DOInstance -> genericDocError =<< text "Instance argument in unboxed datatype not supported"
+      DOTerm     -> (absName tel:) <$> underAbstraction a tel nonErasedArgs
+
