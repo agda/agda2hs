@@ -1,0 +1,17 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Haskell.Prim.Thunk</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="Agda"><a id="1" class="Symbol">{-#</a> <a id="5" class="Keyword">OPTIONS</a> <a id="13" class="Pragma">--sized-types</a> <a id="27" class="Symbol">#-}</a>
+
+<a id="32" class="Keyword">module</a> <a id="39" href="Haskell.Prim.Thunk.html" class="Module">Haskell.Prim.Thunk</a> <a id="58" class="Keyword">where</a>
+
+<a id="65" class="Keyword">open</a> <a id="70" class="Keyword">import</a> <a id="77" href="Agda.Builtin.Size.html" class="Module">Agda.Builtin.Size</a> <a id="95" class="Keyword">public</a>
+
+<a id="103" class="Keyword">open</a> <a id="108" class="Keyword">import</a> <a id="115" href="Haskell.Prim.html" class="Module">Haskell.Prim</a>
+
+<a id="129" class="Keyword">record</a> <a id="Thunk"></a><a id="136" href="Haskell.Prim.Thunk.html#136" class="Record">Thunk</a> <a id="142" class="Symbol">{</a><a id="143" href="Haskell.Prim.Thunk.html#143" class="Bound">ℓ</a><a id="144" class="Symbol">}</a> <a id="146" class="Symbol">(</a><a id="147" href="Haskell.Prim.Thunk.html#147" class="Bound">a</a> <a id="149" class="Symbol">:</a> <a id="151" class="Symbol">@</a><a id="152" class="Symbol">0</a> <a id="154" href="Agda.Builtin.Size.html#213" class="Postulate">Size</a> <a id="159" class="Symbol">→</a> <a id="161" href="Agda.Primitive.html#388" class="Primitive">Set</a> <a id="165" href="Haskell.Prim.Thunk.html#143" class="Bound">ℓ</a><a id="166" class="Symbol">)</a> <a id="168" class="Symbol">(@</a><a id="170" class="Symbol">0</a> <a id="172" href="Haskell.Prim.Thunk.html#172" class="Bound">i</a> <a id="174" class="Symbol">:</a> <a id="176" href="Agda.Builtin.Size.html#213" class="Postulate">Size</a><a id="180" class="Symbol">)</a> <a id="182" class="Symbol">:</a> <a id="184" href="Agda.Primitive.html#388" class="Primitive">Set</a> <a id="188" href="Haskell.Prim.Thunk.html#143" class="Bound">ℓ</a> <a id="190" class="Keyword">where</a>
+  <a id="198" class="Keyword">constructor</a> <a id="delay"></a><a id="210" href="Haskell.Prim.Thunk.html#210" class="CoinductiveConstructor">delay</a>
+  <a id="218" class="Keyword">coinductive</a>
+  <a id="232" class="Keyword">field</a> <a id="Thunk.force"></a><a id="238" href="Haskell.Prim.Thunk.html#238" class="Field">force</a> <a id="244" class="Symbol">:</a> <a id="246" class="Symbol">{@</a><a id="248" class="Symbol">0</a> <a id="250" href="Haskell.Prim.Thunk.html#250" class="Bound">j</a> <a id="252" class="Symbol">:</a> <a id="254" href="Agda.Builtin.Size.html#247" class="Postulate Operator">Size&lt;</a> <a id="260" href="Haskell.Prim.Thunk.html#172" class="Bound">i</a><a id="261" class="Symbol">}</a> <a id="263" class="Symbol">→</a> <a id="265" href="Haskell.Prim.Thunk.html#147" class="Bound">a</a> <a id="267" href="Haskell.Prim.Thunk.html#250" class="Bound">j</a>
+<a id="269" class="Keyword">open</a> <a id="274" href="Haskell.Prim.Thunk.html#136" class="Module">Thunk</a> <a id="280" class="Keyword">public</a>
+
+<a id="288" class="Symbol">{-#</a> <a id="292" class="Keyword">COMPILE</a> <a id="300" class="Keyword">AGDA2HS</a> <a id="308" href="Haskell.Prim.Thunk.html#136" class="Record">Thunk</a> <a id="314" class="Pragma">unboxed</a> <a id="322" class="Symbol">#-}</a>
+</pre></body></html>
