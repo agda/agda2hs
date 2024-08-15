@@ -36,3 +36,4 @@ import Fail.NonStarDatatypeIndex
 import Fail.NonCanonicalSpecialFunction
 import Fail.TypeLambda
 import Fail.NonCanonicalSuperclass
+import Fail.Issue125
