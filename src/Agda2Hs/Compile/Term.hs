@@ -224,8 +224,8 @@ compileTupleProjection f b wty w ty args = do
   when (b == Hs.Unboxed) $ genericError "projecting from unboxed tuples is not allowed"
   reportSDoc "agda2hs.term.proj" 12 $ text "compiling tuple projection"
   (r, pars, def) <- lift $ fromMaybe __IMPOSSIBLE__ <$> isRecordType wty
-  let fields = map unDom $ recFields def
-      fieldTypes = flattenTel $ recTel def `apply` pars
+  let fields = map unDom $ _recFields def
+      fieldTypes = flattenTel $ _recTel def `apply` pars
   fname <- compileTupleFields fields fieldTypes >>= \case
     [f1,f2] | f == f1 -> return $ hsName "fst"
             | f == f2 -> return $ hsName "snd"
