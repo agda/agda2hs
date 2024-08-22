@@ -81,7 +81,7 @@ compile opts tlm _ def =
       reportSDoc "agda2hs.compile" 45 $ text "Pragma:" <+> text (show p)
       reportSDoc "agda2hs.compile" 45 $ text "Compiling definition:" <+> pretty (theDef def)
 
-      isInstance <- anyM (defInstance def) isClassName
+      isInstance <- anyM (defInstance def) $ isClassName . instanceClass
 
       reportSDoc "agda2hs.compile" 15  $ text "Is instance?" <+> prettyTCM isInstance
 

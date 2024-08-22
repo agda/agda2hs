@@ -98,8 +98,8 @@ compileQName f
     return c
   | otherwise = do
     f <- isRecordConstructor f >>= return . \case
-      Just (r, Record{recNamedCon = False}) -> r -- use record name for unnamed constructors
-      _                                     -> f
+      Just (r, def) | not (_recNamedCon def) -> r -- use record name for unnamed constructors
+      _                                      -> f
     hf0 <- compileName (qnameName f)
     (hf, mimpBuiltin) <- fromMaybe (hf0, Nothing) <$> isSpecialName f
     parent <- parentName f
@@ -195,7 +195,7 @@ hsTopLevelModuleName :: TopLevelModuleName -> Hs.ModuleName ()
 hsTopLevelModuleName = hsModuleName . intercalate "." . map unpack
                      . List1.toList . moduleNameParts
 
--- | Given a module name (assumed to be a toplevel module), 
+-- | Given a module name (assumed to be a toplevel module),
 -- compute the associated Haskell module name.
 compileModuleName :: ModuleName -> C (Hs.ModuleName ())
 compileModuleName m = do
