@@ -45,34 +45,45 @@ void = tt <$_
 infixl 1 _<&>_
 infixl 4 _<$>_ _$>_
 
--- ** instances
-private
-  mkFunctor : DefaultFunctor t → Functor t
-  mkFunctor x = record {DefaultFunctor x}
-
-  fmap=_ : (∀ {a b} → (a → b) → f a → f b) → Functor f
-  fmap= x = record {DefaultFunctor (record {fmap = x})}
 instance
-  iFunctorList : Functor List
-  iFunctorList = fmap= map
+  iDefaultFunctorList : DefaultFunctor List
+  iDefaultFunctorList .DefaultFunctor.fmap = map
 
-  iFunctorMaybe : Functor Maybe
-  iFunctorMaybe = fmap= λ where
+  iFunctorList : Functor List
+  iFunctorList = record{DefaultFunctor iDefaultFunctorList}
+
+  iDefaultFunctorMaybe : DefaultFunctor Maybe
+  iDefaultFunctorMaybe .DefaultFunctor.fmap = λ where
     f Nothing  → Nothing
     f (Just x) → Just (f x)
 
-  iFunctorEither : Functor (Either a)
-  iFunctorEither = fmap= λ where
+  iFunctorMaybe : Functor Maybe
+  iFunctorMaybe = record{DefaultFunctor iDefaultFunctorMaybe}
+
+  iDefaultFunctorEither : DefaultFunctor (Either a)
+  iDefaultFunctorEither .DefaultFunctor.fmap = λ where
     f (Left  x) → Left x
     f (Right y) → Right (f y)
 
+  iFunctorEither : Functor (Either a)
+  iFunctorEither = record{DefaultFunctor iDefaultFunctorEither}
+
+  iDefaultFunctorFun : DefaultFunctor (λ b → a → b)
+  iDefaultFunctorFun .DefaultFunctor.fmap = _∘_
+
   iFunctorFun : Functor (λ b → a → b)
-  iFunctorFun = fmap= _∘_
+  iFunctorFun = record{DefaultFunctor iDefaultFunctorFun}
+
+  iDefaultFunctorTuple₂ : DefaultFunctor (a ×_)
+  iDefaultFunctorTuple₂ .DefaultFunctor.fmap = λ f (x , y) → x , f y
 
   iFunctorTuple₂ : Functor (a ×_)
-  iFunctorTuple₂ = fmap= λ f (x , y) → x , f y
+  iFunctorTuple₂ = record{DefaultFunctor iDefaultFunctorTuple₂}
+
+  iDefaultFunctorTuple₃ : DefaultFunctor (a × b ×_)
+  iDefaultFunctorTuple₃ .DefaultFunctor.fmap = λ where f (x , y , z) → x , y , f z
 
   iFunctorTuple₃ : Functor (a × b ×_)
-  iFunctorTuple₃ = fmap= λ where f (x , y , z) → x , y , f z
+  iFunctorTuple₃ = record{DefaultFunctor iDefaultFunctorTuple₃}
 
 instance postulate iFunctorIO : Functor IO

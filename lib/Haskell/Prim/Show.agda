@@ -70,59 +70,90 @@ shows : ⦃ Show a ⦄ → a → ShowS
 shows = showsPrec 0
 
 {-# COMPILE AGDA2HS Show existing-class #-}
+
 -- ** instances
-private
-  infix 0 showsPrec=_ show=_
-
-  showsPrec=_ : (Int → a → ShowS) → Show a
-  showsPrec=_ x = record {Show₁ (record {showsPrec = x})}
-
-  show=_ : (a → String) → Show a
-  show= x = record {Show₂ (record {show = x})}
 instance
+  iShow₂Nat : Show₂ Nat
+  iShow₂Nat .Show₂.show = primStringToList ∘ primShowNat
+
   iShowNat : Show Nat
-  iShowNat = show= (primStringToList ∘ primShowNat)
+  iShowNat = record {Show₂ iShow₂Nat}
+
+  iShow₂Integer : Show₂ Integer
+  iShow₂Integer .Show₂.show = showInteger
 
   iShowInteger : Show Integer
-  iShowInteger = show= showInteger
+  iShowInteger = record {Show₂ iShow₂Integer}
+
+  iShow₂Int : Show₂ Int
+  iShow₂Int .Show₂.show = showInt
 
   iShowInt : Show Int
-  iShowInt = show= showInt
+  iShowInt = record{Show₂ iShow₂Int}
+
+  iShow₂Word : Show₂ Word
+  iShow₂Word .Show₂.show = showWord
 
   iShowWord : Show Word
-  iShowWord = show= showWord
+  iShowWord = record{Show₂ iShow₂Word}
+
+  iShow₂Double : Show₂ Double
+  iShow₂Double .Show₂.show = primStringToList ∘ primShowFloat
 
   iShowDouble : Show Double
-  iShowDouble = show= (primStringToList ∘ primShowFloat)
+  iShowDouble = record{Show₂ iShow₂Double}
+
+  iShow₂Bool : Show₂ Bool
+  iShow₂Bool .Show₂.show = λ where False → "False"; True → "True"
 
   iShowBool : Show Bool
-  iShowBool = show= λ where False → "False"; True → "True"
+  iShowBool = record{Show₂ iShow₂Bool}
+
+  iShow₁Char : Show₁ Char
+  iShow₁Char .Show₁.showsPrec _ = showString ∘ primStringToList ∘ primShowChar
 
   iShowChar : Show Char
-  iShowChar = showsPrec= λ _ → showString ∘ primStringToList ∘ primShowChar
+  iShowChar = record{Show₁ iShow₁Char}
+
+  iShow₁List : ⦃ Show a ⦄ → Show₁ (List a)
+  iShow₁List .Show₁.showsPrec _ = showList
 
   iShowList : ⦃ Show a ⦄ → Show (List a)
-  iShowList = showsPrec= λ _ → showList
+  iShowList = record{Show₁ iShow₁List}
+
 private
   showApp₁ : ⦃ Show a ⦄ → Int → String → a → ShowS
   showApp₁ p tag x = showParen (p > 10) $
     showString tag ∘ showString " " ∘ showsPrec 11 x
+
 instance
-  iShowMaybe : ⦃ Show a ⦄ → Show (Maybe a)
-  iShowMaybe = showsPrec= λ where
+  iShow₁Maybe : ⦃ Show a ⦄ → Show₁ (Maybe a)
+  iShow₁Maybe .Show₁.showsPrec = λ where
     p Nothing  → showString "Nothing"
     p (Just x) → showApp₁ p "Just" x
 
-  iShowEither : ⦃ Show a ⦄ → ⦃ Show b ⦄ → Show (Either a b)
-  iShowEither = showsPrec= λ where
+  iShowMaybe : ⦃ Show a ⦄ → Show (Maybe a)
+  iShowMaybe = record{Show₁ iShow₁Maybe}
+
+  iShow₁Either : ⦃ Show a ⦄ → ⦃ Show b ⦄ → Show₁ (Either a b)
+  iShow₁Either .Show₁.showsPrec = λ where
     p (Left  x) → showApp₁ p "Left"  x
     p (Right y) → showApp₁ p "Right" y
 
+  iShowEither : ⦃ Show a ⦄ → ⦃ Show b ⦄ → Show (Either a b)
+  iShowEither = record{Show₁ iShow₁Either}
+
 instance
-  iShowTuple₂ : ⦃ Show a ⦄ → ⦃ Show b ⦄ → Show (a × b)
-  iShowTuple₂ = showsPrec= λ _ → λ where
+  iShow₁Tuple₂ : ⦃ Show a ⦄ → ⦃ Show b ⦄ → Show₁ (a × b)
+  iShow₁Tuple₂ .Show₁.showsPrec = λ _ → λ where
     (x , y) → showString "(" ∘ shows x ∘ showString ", " ∘ shows y ∘ showString ")"
 
-  iShowTuple₃ : ⦃ Show a ⦄ → ⦃ Show b ⦄ → ⦃ Show c ⦄ → Show (a × b × c)
-  iShowTuple₃ = showsPrec= λ _ → λ where
+  iShowTuple₂ : ⦃ Show a ⦄ → ⦃ Show b ⦄ → Show (a × b)
+  iShowTuple₂ = record{Show₁ iShow₁Tuple₂}
+
+  iShow₁Tuple₃ : ⦃ Show a ⦄ → ⦃ Show b ⦄ → ⦃ Show c ⦄ → Show₁ (a × b × c)
+  iShow₁Tuple₃ .Show₁.showsPrec = λ _ → λ where
     (x , y , z) → showString "(" ∘ shows x ∘ showString ", " ∘ shows y ∘ showString ", " ∘ shows z ∘ showString ")"
+
+  iShowTuple₃ : ⦃ Show a ⦄ → ⦃ Show b ⦄ → ⦃ Show c ⦄ → Show (a × b × c)
+  iShowTuple₃ = record{Show₁ iShow₁Tuple₃}

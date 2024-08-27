@@ -41,43 +41,52 @@ record DefaultApplicative (f : Set → Set) : Set₁ where
 open Applicative ⦃...⦄ public
 {-# COMPILE AGDA2HS Applicative existing-class #-}
 -- ** instances
-private
-  mkApplicative : DefaultApplicative t → Applicative t
-  mkApplicative x = record {DefaultApplicative x}
 instance
   open DefaultApplicative
 
+  iDefaultApplicativeList : DefaultApplicative List
+  iDefaultApplicativeList .pure x = x ∷ []
+  iDefaultApplicativeList ._<*>_ fs xs = concatMap (λ f → map f xs) fs
+
   iApplicativeList : Applicative List
-  iApplicativeList = mkApplicative λ where
-    .pure x      → x ∷ []
-    ._<*>_ fs xs → concatMap (λ f → map f xs) fs
+  iApplicativeList = record {DefaultApplicative iDefaultApplicativeList}
+
+  iDefaultApplicativeMaybe : DefaultApplicative Maybe
+  iDefaultApplicativeMaybe .pure = Just
+  iDefaultApplicativeMaybe ._<*>_ (Just f) (Just x) = Just (f x)
+  iDefaultApplicativeMaybe ._<*>_ _        _        = Nothing
 
   iApplicativeMaybe : Applicative Maybe
-  iApplicativeMaybe = mkApplicative λ where
-    .pure → Just
-    ._<*>_ (Just f) (Just x) → Just (f x)
-    ._<*>_ _        _        → Nothing
+  iApplicativeMaybe = record {DefaultApplicative iDefaultApplicativeMaybe}
+
+  iDefaultApplicativeEither : DefaultApplicative (Either a)
+  iDefaultApplicativeEither .pure = Right
+  iDefaultApplicativeEither ._<*>_ (Right f) (Right x) = Right (f x)
+  iDefaultApplicativeEither ._<*>_ (Left e)  _         = Left e
+  iDefaultApplicativeEither ._<*>_ _         (Left e)  = Left e
 
   iApplicativeEither : Applicative (Either a)
-  iApplicativeEither = mkApplicative λ where
-    .pure → Right
-    ._<*>_ (Right f) (Right x) → Right (f x)
-    ._<*>_ (Left e)  _         → Left e
-    ._<*>_ _         (Left e)  → Left e
+  iApplicativeEither = record{DefaultApplicative iDefaultApplicativeEither}
+
+  iDefaultApplicativeFun : DefaultApplicative (λ b → a → b)
+  iDefaultApplicativeFun .pure        = const
+  iDefaultApplicativeFun ._<*>_ f g x = f x (g x)
 
   iApplicativeFun : Applicative (λ b → a → b)
-  iApplicativeFun = mkApplicative λ where
-    .pure        → const
-    ._<*>_ f g x → f x (g x)
+  iApplicativeFun = record{DefaultApplicative iDefaultApplicativeFun}
+
+  iDefaultApplicativeTuple₂ : ⦃ Monoid a ⦄ → DefaultApplicative (a ×_)
+  iDefaultApplicativeTuple₂ .pure x                = mempty , x
+  iDefaultApplicativeTuple₂ ._<*>_ (a , f) (b , x) = a <> b , f x
 
   iApplicativeTuple₂ : ⦃ Monoid a ⦄ → Applicative (a ×_)
-  iApplicativeTuple₂ = mkApplicative λ where
-    .pure x                → mempty , x
-    ._<*>_ (a , f) (b , x) → a <> b , f x
+  iApplicativeTuple₂ = record{DefaultApplicative iDefaultApplicativeTuple₂}
+
+  iDefaultApplicativeTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → DefaultApplicative (a × b ×_)
+  iDefaultApplicativeTuple₃ .pure x = mempty , mempty , x
+  iDefaultApplicativeTuple₃ ._<*>_ (a , u , f) (b , v , x) = a <> b , u <> v , f x
 
   iApplicativeTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → Applicative (a × b ×_)
-  iApplicativeTuple₃ = mkApplicative λ where
-    .pure x                → mempty , mempty , x
-    ._<*>_ (a , u , f) (b , v , x) → a <> b , u <> v , f x
+  iApplicativeTuple₃ = record{DefaultApplicative iDefaultApplicativeTuple₃}
 
 instance postulate iApplicativeIO : Applicative IO

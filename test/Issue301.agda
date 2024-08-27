@@ -27,8 +27,9 @@ instance
   MyDataSemigroup ._<>_ = _><_
 {-# COMPILE AGDA2HS MyDataSemigroup #-}
 
-myDataDefaultMonoid : DefaultMonoid (MyData a)
-DefaultMonoid.mempty myDataDefaultMonoid = Nuttin'
+instance
+  myDataDefaultMonoid : DefaultMonoid (MyData a)
+  DefaultMonoid.mempty myDataDefaultMonoid = Nuttin'
 
 instance
   MyDataMonoid : Monoid (MyData a)

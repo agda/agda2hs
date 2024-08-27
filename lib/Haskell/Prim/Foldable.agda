@@ -88,29 +88,35 @@ open Foldable ⦃...⦄ public
 {-# COMPILE AGDA2HS Foldable existing-class #-}
 
 -- ** instances
-private
-  mkFoldable : DefaultFoldable t → Foldable t
-  mkFoldable x = record {DefaultFoldable x}
-
-  foldMap=_ : (∀ {b a} → ⦃ Monoid b ⦄ → (a → b) → t a → b) → Foldable t
-  foldMap= x = record {DefaultFoldable (record {foldMap = x})}
 instance
-  iFoldableList : Foldable List
-  iFoldableList = foldMap= foldMapList
+  iDefaultFoldableList : DefaultFoldable List
+  iDefaultFoldableList .DefaultFoldable.foldMap = foldMapList
     where
       foldMapList : ⦃ Monoid b ⦄ → (a → b) → List a → b
       foldMapList f []       = mempty
       foldMapList f (x ∷ xs) = f x <> foldMapList f xs
 
-  iFoldableMaybe : Foldable Maybe
-  iFoldableMaybe = foldMap= λ where
+  iFoldableList : Foldable List
+  iFoldableList = record {DefaultFoldable iDefaultFoldableList}
+
+  iDefaultFoldableMaybe : DefaultFoldable Maybe
+  iDefaultFoldableMaybe .DefaultFoldable.foldMap = λ where
     _ Nothing  → mempty
     f (Just x) → f x
 
-  iFoldableEither : Foldable (Either a)
-  iFoldableEither = foldMap= λ where
+  iFoldableMaybe : Foldable Maybe
+  iFoldableMaybe = record {DefaultFoldable iDefaultFoldableMaybe}
+
+  iDefaultFoldableEither : DefaultFoldable (Either a)
+  iDefaultFoldableEither .DefaultFoldable.foldMap = λ where
     _ (Left _)  → mempty
     f (Right x) → f x
 
+  iFoldableEither : Foldable (Either a)
+  iFoldableEither = record {DefaultFoldable iDefaultFoldableEither}
+
+  iDefaultFoldablePair : DefaultFoldable (a ×_)
+  iDefaultFoldablePair .DefaultFoldable.foldMap = λ f (_ , x) → f x
+
   iFoldablePair : Foldable (a ×_)
-  iFoldablePair = foldMap= λ f (_ , x) → f x
+  iFoldablePair = record {DefaultFoldable iDefaultFoldablePair}
