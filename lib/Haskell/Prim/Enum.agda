@@ -122,82 +122,142 @@ instance
   iEnumInteger .enumFromTo        = integerFromTo
   iEnumInteger .enumFromThenTo    = integerFromThenTo
 
-module _ (from : a → Integer) (to : Integer → a) where
-  private
-    fromTo : a → a → List a
-    fromTo a b = map to (enumFromTo (from a) (from b))
+private
+  fromTo : (from : a → Integer) (to : Integer → a)
+         → a → a → List a
+  fromTo from to a b = map to (enumFromTo (from a) (from b))
 
-    fromThenTo : (x x₁ : a) → @0 ⦃ IsFalse (fromEnum (from x) == fromEnum (from x₁)) ⦄ → a → List a
-    fromThenTo a a₁ b = map to (enumFromThenTo (from a) (from a₁) (from b))
+  fromThenTo : (from : a → Integer) (to : Integer → a)
+             → (x x₁ : a) → @0 ⦃ IsFalse (fromEnum (from x) == fromEnum (from x₁)) ⦄ → a → List a
+  fromThenTo from to a a₁ b = map to (enumFromThenTo (from a) (from a₁) (from b))
 
-  unboundedEnumViaInteger : Enum a
-  unboundedEnumViaInteger .BoundedBelowEnum      = Nothing
-  unboundedEnumViaInteger .BoundedAboveEnum      = Nothing
-  unboundedEnumViaInteger .fromEnum              = integerToInt ∘ from
-  unboundedEnumViaInteger .toEnum         n      = to (intToInteger n)
-  unboundedEnumViaInteger .succ           x      = to (from x + 1)
-  unboundedEnumViaInteger .pred           x      = to (from x - 1)
-  unboundedEnumViaInteger .enumFromTo     a b    = fromTo a b
-  unboundedEnumViaInteger .enumFromThenTo a a₁ b = fromThenTo a a₁ b
-
-  boundedBelowEnumViaInteger : ⦃ Ord a ⦄ → ⦃ BoundedBelow a ⦄ → Enum a
-  boundedBelowEnumViaInteger .BoundedBelowEnum      = Just it
-  boundedBelowEnumViaInteger .BoundedAboveEnum      = Nothing
-  boundedBelowEnumViaInteger .fromEnum              = integerToInt ∘ from
-  boundedBelowEnumViaInteger .toEnum         n      = to (intToInteger n)
-  boundedBelowEnumViaInteger .succ           x      = to (from x + 1)
-  boundedBelowEnumViaInteger .pred           x      = to (from x - 1)
-  boundedBelowEnumViaInteger .enumFromTo     a b    = fromTo a b
-  boundedBelowEnumViaInteger .enumFromThenTo a a₁ b = fromThenTo a a₁ b
-
-  boundedAboveEnumViaInteger : ⦃ Ord a ⦄ → ⦃ BoundedAbove a ⦄ → Enum a
-  boundedAboveEnumViaInteger .BoundedBelowEnum      = Nothing
-  boundedAboveEnumViaInteger .BoundedAboveEnum      = Just it
-  boundedAboveEnumViaInteger .fromEnum              = integerToInt ∘ from
-  boundedAboveEnumViaInteger .toEnum         n      = to (intToInteger n)
-  boundedAboveEnumViaInteger .succ           x      = to (from x + 1)
-  boundedAboveEnumViaInteger .pred           x      = to (from x - 1)
-  boundedAboveEnumViaInteger .enumFrom       a      = fromTo a maxBound
-  boundedAboveEnumViaInteger .enumFromTo     a b    = fromTo a b
-  boundedAboveEnumViaInteger .enumFromThenTo a a₁ b = fromThenTo a a₁ b
-
-  boundedEnumViaInteger : ⦃ Ord a ⦄ → ⦃ Bounded a ⦄ → Enum a
-  boundedEnumViaInteger .BoundedBelowEnum      = Just it
-  boundedEnumViaInteger .BoundedAboveEnum      = Just it
-  boundedEnumViaInteger .fromEnum              = integerToInt ∘ from
-  boundedEnumViaInteger .toEnum         n      = to (intToInteger n)
-  boundedEnumViaInteger .succ           x      = to (from x + 1)
-  boundedEnumViaInteger .pred           x      = to (from x - 1)
-  boundedEnumViaInteger .enumFromTo     a b    = fromTo a b
-  boundedEnumViaInteger .enumFromThenTo a a₁ b = fromThenTo a a₁ b
-  boundedEnumViaInteger .enumFrom       a      = fromTo a maxBound
-  boundedEnumViaInteger .enumFromThen   a a₁   =
-    if a < a₁ then fromThenTo a a₁ maxBound
-              else fromThenTo a a₁ minBound
 
 instance
   iEnumNat : Enum Nat
-  iEnumNat = boundedBelowEnumViaInteger pos unsafeIntegerToNat
+  iEnumNat .BoundedBelowEnum = Just it
+  iEnumNat .BoundedAboveEnum = Nothing
+  iEnumNat .fromEnum = integerToInt ∘ pos
+  iEnumNat .toEnum n = unsafeIntegerToNat (intToInteger n)
+  iEnumNat .succ n = suc n
+  iEnumNat .pred (suc n) = n
+  iEnumNat .enumFromTo = fromTo pos unsafeIntegerToNat
+  iEnumNat .enumFromThenTo = fromThenTo pos unsafeIntegerToNat
 
   iEnumInt : Enum Int
-  iEnumInt = boundedEnumViaInteger intToInteger integerToInt
+  iEnumInt .BoundedBelowEnum      = Just it
+  iEnumInt .BoundedAboveEnum      = Just it
+  iEnumInt .fromEnum              = integerToInt ∘ intToInteger
+  iEnumInt .toEnum         n      = integerToInt (intToInteger n)
+  iEnumInt .succ           x      = integerToInt (intToInteger x + 1)
+  iEnumInt .pred           x      = integerToInt (intToInteger x - 1)
+  iEnumInt .enumFromTo     a b    = fromTo intToInteger integerToInt a b
+  iEnumInt .enumFromThenTo a a₁ b = fromThenTo intToInteger integerToInt a a₁ b
+  iEnumInt .enumFrom       a      = fromTo intToInteger integerToInt a maxBound
+  iEnumInt .enumFromThen   a a₁   =
+    if a < a₁ then fromThenTo intToInteger integerToInt a a₁ maxBound
+              else fromThenTo intToInteger integerToInt a a₁ minBound
 
   iEnumWord : Enum Word
-  iEnumWord = boundedEnumViaInteger wordToInteger integerToWord
+  iEnumWord .BoundedBelowEnum      = Just it
+  iEnumWord .BoundedAboveEnum      = Just it
+  iEnumWord .fromEnum              = integerToInt ∘ wordToInteger
+  iEnumWord .toEnum         n      = integerToWord (intToInteger n)
+  iEnumWord .succ           x      = integerToWord (wordToInteger x + 1)
+  iEnumWord .pred           x      = integerToWord (wordToInteger x - 1)
+  iEnumWord .enumFromTo     a b    = fromTo wordToInteger integerToWord a b
+  iEnumWord .enumFromThenTo a a₁ b = fromThenTo wordToInteger integerToWord a a₁ b
+  iEnumWord .enumFrom       a      = fromTo wordToInteger integerToWord a maxBound
+  iEnumWord .enumFromThen   a a₁   =
+    if a < a₁ then fromThenTo wordToInteger integerToWord a a₁ maxBound
+              else fromThenTo wordToInteger integerToWord a a₁ minBound
 
+private
+  fromBool : Bool → Integer
+  fromBool = if_then 1 else 0
+
+  toBool : Integer → Bool
+  toBool = _/= 0
+
+instance
   iEnumBool : Enum Bool
-  iEnumBool = boundedEnumViaInteger (if_then 1 else 0) (_/= 0)
+  iEnumBool .BoundedBelowEnum      = Just it
+  iEnumBool .BoundedAboveEnum      = Just it
+  iEnumBool .fromEnum              = integerToInt ∘ fromBool
+  iEnumBool .toEnum         n      = toBool (intToInteger n)
+  iEnumBool .succ           x      = toBool (fromBool x + 1)
+  iEnumBool .pred           x      = toBool (fromBool x - 1)
+  iEnumBool .enumFromTo     a b    = fromTo fromBool toBool a b
+  iEnumBool .enumFromThenTo a a₁ b = fromThenTo fromBool toBool a a₁ b
+  iEnumBool .enumFrom       a      = fromTo fromBool toBool a maxBound
+  iEnumBool .enumFromThen   a a₁   =
+    if a < a₁ then fromThenTo fromBool toBool a a₁ maxBound
+              else fromThenTo fromBool toBool a a₁ minBound
 
+private
+  fromOrdering : Ordering → Integer
+  fromOrdering = λ where LT → 0; EQ → 1; GT → 2
+
+  toOrdering : Integer → Ordering
+  toOrdering = λ where (pos 0) → LT; (pos 1) → EQ; _ → GT
+
+instance
   iEnumOrdering : Enum Ordering
-  iEnumOrdering = boundedEnumViaInteger (λ where LT → 0; EQ → 1; GT → 2)
-                                        (λ where (pos 0) → LT; (pos 1) → EQ; _ → GT)
+  iEnumOrdering .BoundedBelowEnum      = Just it
+  iEnumOrdering .BoundedAboveEnum      = Just it
+  iEnumOrdering .fromEnum              = integerToInt ∘ fromOrdering
+  iEnumOrdering .toEnum         n      = toOrdering (intToInteger n)
+  iEnumOrdering .succ           x      = toOrdering (fromOrdering x + 1)
+  iEnumOrdering .pred           x      = toOrdering (fromOrdering x - 1)
+  iEnumOrdering .enumFromTo     a b    = fromTo fromOrdering toOrdering a b
+  iEnumOrdering .enumFromThenTo a a₁ b = fromThenTo fromOrdering toOrdering a a₁ b
+  iEnumOrdering .enumFrom       a      = fromTo fromOrdering toOrdering a maxBound
+  iEnumOrdering .enumFromThen   a a₁   =
+    if a < a₁ then fromThenTo fromOrdering toOrdering a a₁ maxBound
+              else fromThenTo fromOrdering toOrdering a a₁ minBound
 
+private
+  fromUnit : ⊤ → Integer
+  fromUnit _ = 0
+
+  toUnit : Integer → ⊤
+  toUnit _ = tt
+
+instance
   iEnumUnit : Enum ⊤
-  iEnumUnit = boundedEnumViaInteger (λ _ → 0) λ _ → tt
+  iEnumUnit .BoundedBelowEnum      = Just it
+  iEnumUnit .BoundedAboveEnum      = Just it
+  iEnumUnit .fromEnum              = integerToInt ∘ fromUnit
+  iEnumUnit .toEnum         n      = toUnit (intToInteger n)
+  iEnumUnit .succ           x      = toUnit (fromUnit x + 1)
+  iEnumUnit .pred           x      = toUnit (fromUnit x - 1)
+  iEnumUnit .enumFromTo     a b    = fromTo fromUnit toUnit a b
+  iEnumUnit .enumFromThenTo a a₁ b = fromThenTo fromUnit toUnit a a₁ b
+  iEnumUnit .enumFrom       a      = fromTo fromUnit toUnit a maxBound
+  iEnumUnit .enumFromThen   a a₁   =
+    if a < a₁ then fromThenTo fromUnit toUnit a a₁ maxBound
+              else fromThenTo fromUnit toUnit a a₁ minBound
 
+private
+  fromChar : Char → Integer
+  fromChar = pos ∘ c2n
+
+  toChar : Integer → Char
+  toChar = λ where (pos n) → primNatToChar n; _ → '_'
+
+instance
   iEnumChar : Enum Char
-  iEnumChar = boundedEnumViaInteger (pos ∘ c2n)
-                                    λ where (pos n) → primNatToChar n; _ → '_'
+  iEnumChar .BoundedBelowEnum      = Just it
+  iEnumChar .BoundedAboveEnum      = Just it
+  iEnumChar .fromEnum              = integerToInt ∘ fromChar
+  iEnumChar .toEnum         n      = toChar (intToInteger n)
+  iEnumChar .succ           x      = toChar (fromChar x + 1)
+  iEnumChar .pred           x      = toChar (fromChar x - 1)
+  iEnumChar .enumFromTo     a b    = fromTo fromChar toChar a b
+  iEnumChar .enumFromThenTo a a₁ b = fromThenTo fromChar toChar a a₁ b
+  iEnumChar .enumFrom       a      = fromTo fromChar toChar a maxBound
+  iEnumChar .enumFromThen   a a₁   =
+    if a < a₁ then fromThenTo fromChar toChar a a₁ maxBound
+              else fromThenTo fromChar toChar a a₁ minBound
 
   -- Missing:
   --  Enum Double  (can't go via Integer)

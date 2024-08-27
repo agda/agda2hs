@@ -72,25 +72,43 @@ private
   bind=_ : ⦃ Applicative m ⦄ → (∀ {a b} → m a → (a → m b) → m b) → Monad m
   bind= x = record {DefaultMonad (record {_>>=_ = x})}
 instance
+  iDefaultMonadList : DefaultMonad List
+  iDefaultMonadList .DefaultMonad._>>=_ = flip concatMap
+
   iMonadList : Monad List
-  iMonadList = bind= flip concatMap
+  iMonadList = record {DefaultMonad iDefaultMonadList}
+
+  iDefaultMonadMaybe : DefaultMonad Maybe
+  iDefaultMonadMaybe .DefaultMonad._>>=_ = flip (maybe Nothing)
 
   iMonadMaybe : Monad Maybe
-  iMonadMaybe = bind= flip (maybe Nothing)
+  iMonadMaybe = record {DefaultMonad iDefaultMonadMaybe}
+
+  iDefaultMonadEither : DefaultMonad (Either a)
+  iDefaultMonadEither .DefaultMonad._>>=_ = flip (either Left)
 
   iMonadEither : Monad (Either a)
-  iMonadEither = bind= flip (either Left)
+  iMonadEither = record {DefaultMonad iDefaultMonadEither}
+
+  iDefaultMonadFun : DefaultMonad (λ b → a → b)
+  iDefaultMonadFun .DefaultMonad._>>=_ = λ f k r → k (f r) r
 
   iMonadFun : Monad (λ b → a → b)
-  iMonadFun = bind= λ f k r → k (f r) r
+  iMonadFun = record {DefaultMonad iDefaultMonadFun}
+
+  iDefaultMonadTuple₂ : ⦃ Monoid a ⦄ → DefaultMonad (a ×_)
+  iDefaultMonadTuple₂ .DefaultMonad._>>=_ = λ (a , x) k → first (a <>_) (k x)
 
   iMonadTuple₂ : ⦃ Monoid a ⦄ → Monad (a ×_)
-  iMonadTuple₂ = bind= λ (a , x) k → first (a <>_) (k x)
+  iMonadTuple₂ = record {DefaultMonad iDefaultMonadTuple₂}
 
-  iMonadTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → Monad (a × b ×_)
-  iMonadTuple₃ = bind= λ where
+  iDefaultMonadTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → DefaultMonad (a × b ×_)
+  iDefaultMonadTuple₃ .DefaultMonad._>>=_ = λ where
     (a , b , x) k → case k x of λ where
       (a₁ , b₁ , y) → a <> a₁ , b <> b₁ , y
+
+  iMonadTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → Monad (a × b ×_)
+  iMonadTuple₃ = record {DefaultMonad iDefaultMonadTuple₃}
 
 instance postulate iMonadIO : Monad IO
 

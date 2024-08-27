@@ -232,32 +232,42 @@ isInlinedFunction q = do
     _ -> return False
 
 checkInstance :: Term -> C ()
-checkInstance u | varOrDef u = liftTCM $ noConstraints $ do
+checkInstance u = do
   reportSDoc "agda2hs.checkInstance" 12 $ text "checkInstance" <+> prettyTCM u
-  t <- infer u
-  reportSDoc "agda2hs.checkInstance" 15 $ text "  inferred type:" <+> prettyTCM t
-  (m, v) <- newInstanceMeta "" t
-  reportSDoc "agda2hs.checkInstance" 15 $ text "  instance meta:" <+> prettyTCM m
-  findInstance m Nothing
-  reportSDoc "agda2hs.checkInstance" 15 $ text "  inferred instance:" <+> (prettyTCM =<< instantiate v)
-  reportSDoc "agda2hs.checkInstance" 65 $ text "  inferred instance:" <+> (pure . P.pretty =<< instantiate v)
-  reportSDoc "agda2hs.checkInstance" 65 $ text "  checking instance:" <+> (pure . P.pretty =<< instantiate u)
-  equalTerm t u v `catchError` \_ ->
-    genericDocError =<< text "illegal instance: " <+> prettyTCM u
-  where
-    varOrDef Var{} = True
-    varOrDef Def{} = True
-    varOrDef _     = False
+  reduce u >>= \case
+    Var x es -> do
+      unlessM (isInstance <$> domOfBV x) illegalInstance
+      checkInstanceElims es
+    Def f es -> do
+      unlessM (isJust . defInstance <$> getConstInfo f) illegalInstance
+      checkInstanceElims es
+  -- We need to compile applications of `fromNat`, `fromNeg`, and
+  -- `fromString` where the constraint type is ⊤ or IsTrue .... Ideally
+  -- this constraint would be marked as erased but this would involve
+  -- changing Agda builtins.
+    Con c _ _
+      | prettyShow (conName c) == "Agda.Builtin.Unit.tt" ||
+        prettyShow (conName c) == "Haskell.Prim.IsTrue.itsTrue" ||
+        prettyShow (conName c) == "Haskell.Prim.IsFalse.itsFalse" -> return ()
+    _ -> illegalInstance
 
--- We need to compile applications of `fromNat`, `fromNeg`, and
--- `fromString` where the constraint type is ⊤ or IsTrue .... Ideally
--- this constraint would be marked as erased but this would involve
--- changing Agda builtins.
-checkInstance u@(Con c _ _)
-  | prettyShow (conName c) == "Agda.Builtin.Unit.tt" ||
-    prettyShow (conName c) == "Haskell.Prim.IsTrue.itsTrue" ||
-    prettyShow (conName c) == "Haskell.Prim.IsFalse.itsFalse" = return ()
-checkInstance u = genericDocError =<< text "illegal instance: " <+> prettyTCM u
+  where
+    illegalInstance :: C ()
+    illegalInstance = do
+      reportSDoc "agda2hs.checkInstance" 15 $ text "illegal instance: " <+> pretty u
+      genericDocError =<< text "illegal instance: " <+> prettyTCM u
+
+    checkInstanceElims :: Elims -> C ()
+    checkInstanceElims = mapM_ checkInstanceElim
+
+    checkInstanceElim :: Elim -> C ()
+    checkInstanceElim (Apply v) = case getHiding v of
+      Instance{} -> checkInstance $ unArg v
+      Hidden     -> return ()
+      NotHidden  -> return ()
+    checkInstanceElim IApply{} = illegalInstance
+    checkInstanceElim (Proj _ f) =
+      unlessM (isInstance . defArgInfo <$> getConstInfo f) illegalInstance
 
 compileLocal :: C a -> C a
 compileLocal = local $ \e -> e { compilingLocal = True }
