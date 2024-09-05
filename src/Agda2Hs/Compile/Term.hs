@@ -176,7 +176,7 @@ compileDef f ty args =
       -- if the function is called from the same module it's defined in,
       -- we drop the module parameters
       -- NOTE(flupe): in the future we're not always gonna be erasing module parameters
-      if prettyShow currentMod `isPrefixOf` prettyShow defMod then do
+      if mnameToList currentMod `isPrefixOf` mnameToList defMod then do
         npars <- size <$> (lookupSection =<< currentModule)
         let (pars, rest) = splitAt npars args
         ty' <- piApplyM ty pars
