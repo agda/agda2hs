@@ -14,10 +14,12 @@ module Haskell.Extra.Erase where
     @0 xs  : List a
 
   record Erase (@0 a : Set ℓ) : Set ℓ where
-    constructor Erased
-    field @0 get : a
+    instance constructor iErased
+    field @0 {{get}} : a
   open Erase public
   {-# COMPILE AGDA2HS Erase tuple #-}
+
+  pattern Erased x = iErased {{x}}
 
   infixr 4 ⟨_⟩_
   record Σ0 (@0 a : Set) (b : @0 a → Set) : Set where
