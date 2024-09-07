@@ -22,14 +22,14 @@ import Agda.Syntax.Internal
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Reduce ( reduce, unfoldDefinitionStep )
+import Agda.TypeChecking.Reduce ( reduce, unfoldDefinitionStep, instantiate )
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
 
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.List ( downFrom )
 import Agda.Utils.Maybe ( ifJustM, fromMaybe )
-import Agda.Utils.Monad ( ifM, unlessM, and2M, or2M )
+import Agda.Utils.Monad ( ifM, whenM, unlessM, and2M, or2M )
 import Agda.Utils.Size ( Sized(size) )
 import Agda.Utils.Functor ( ($>) )
 
@@ -89,7 +89,9 @@ compileType t = do
   reportSDoc "agda2hs.compile.type" 12 $ text "Compiling type" <+> prettyTCM t
   reportSDoc "agda2hs.compile.type" 22 $ text "Compiling type" <+> pretty t
 
-  case t of
+  whenM (isErasedBaseType t) fail
+
+  instantiate t >>= \case
     Pi a b -> do
       let compileB = underAbstraction a b (compileType . unEl)
       compileDomType (absName b) a >>= \case
