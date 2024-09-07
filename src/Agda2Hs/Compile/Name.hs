@@ -34,6 +34,7 @@ import Agda.TypeChecking.Records ( isRecordConstructor )
 
 import qualified Agda.Utils.List1 as List1
 import Agda.Utils.Maybe ( isJust, isNothing, whenJust, fromMaybe, caseMaybeM )
+import Agda.Utils.Monad ( whenM )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Types
@@ -121,7 +122,8 @@ compileQName f
       qf = qualify mod' hf qual
 
     -- add (possibly qualified) import
-    whenJust (mimpBuiltin <|> mimp) tellImport
+    whenM (asks writeImports) $
+      whenJust (mimpBuiltin <|> mimp) tellImport
 
     reportSDoc "agda2hs.name" 25 $ text
        $ "-------------------------------------------------"
