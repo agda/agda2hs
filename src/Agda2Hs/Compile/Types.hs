@@ -86,6 +86,8 @@ data CompileEnv = CompileEnv
   -- ^ whether copatterns should be allowed when compiling patterns
   , rewrites :: SpecialRules
   -- ^ Special compilation rules.
+  , writeImports :: Bool
+  -- ^ whether we should add imports of compiled names
   }
 
 type Qualifier = Maybe (Maybe (Hs.ModuleName ()))

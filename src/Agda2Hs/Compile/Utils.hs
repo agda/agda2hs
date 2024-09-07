@@ -380,3 +380,6 @@ checkNoAsPatterns = \case
     checkPatternInfo :: PatternInfo -> C ()
     checkPatternInfo i = unless (null $ patAsNames i) $
       genericDocError =<< text "not supported by agda2hs: as patterns"
+
+noWriteImports :: C a -> C a
+noWriteImports = local $ \e -> e { writeImports = False }

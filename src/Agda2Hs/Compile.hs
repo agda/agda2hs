@@ -39,6 +39,7 @@ initCompileEnv tlm rewrites = CompileEnv
   , compilingLocal    = False
   , copatternsEnabled = False
   , rewrites          = rewrites
+  , writeImports      = True
   }
 
 initCompileState :: CompileState
