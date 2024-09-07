@@ -141,10 +141,16 @@ canErase :: Type -> C Bool
 canErase a = do
   TelV tel b <- telView a
   addContext tel $ orM
-    [ isLevelType b                       -- Level
-    , isJust <$> isSizeType b             -- Size
-    , isPropSort (getSort b)              -- _ : Prop
+    [ isErasedBaseType (unEl b)
+    , isPropSort (getSort b)            -- _ : Prop
     ]
+
+isErasedBaseType :: Term -> C Bool
+isErasedBaseType x = orM
+  [ isLevelType b                       -- Level
+  , isJust <$> isSizeType b             -- Size
+  ]
+  where b = El __DUMMY_SORT__ x
 
 -- Exploits the fact that the name of the record type and the name of the record module are the
 -- same, including the unique name ids.
