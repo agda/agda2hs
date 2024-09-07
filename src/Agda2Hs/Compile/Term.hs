@@ -591,8 +591,13 @@ compileArgs' ty (x:xs) = do
   compileDom a >>= \case
     DODropped  -> rest
     DOInstance -> checkInstance x *> rest
-    DOType     -> rest
+    DOType     -> checkValidType x *> rest
     DOTerm     -> second . (:) <$> compileTerm (unDom a) x <*> rest
+
+-- We check that type arguments compile to a valid Haskell type
+-- before dropping them, see issue #357.
+checkValidType :: Term -> C ()
+checkValidType x = noWriteImports (compileType x) *> return ()
 
 clauseToAlt :: Hs.Match () -> C (Hs.Alt ())
 clauseToAlt (Hs.Match _ _ [p] rhs wh) = pure $ Hs.Alt () p rhs wh
