@@ -267,10 +267,9 @@ checkInstance u = do
     checkInstanceElims = mapM_ checkInstanceElim
 
     checkInstanceElim :: Elim -> C ()
-    checkInstanceElim (Apply v) = case getHiding v of
-      Instance{} -> checkInstance $ unArg v
-      Hidden     -> return ()
-      NotHidden  -> return ()
+    checkInstanceElim (Apply v) =
+      when (isInstance v && usableQuantity v) $
+        checkInstance $ unArg v
     checkInstanceElim IApply{} = illegalInstance
     checkInstanceElim (Proj _ f) =
       unlessM (isInstance . defArgInfo <$> getConstInfo f) illegalInstance
