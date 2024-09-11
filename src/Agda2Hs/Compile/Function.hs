@@ -131,7 +131,14 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
       -- module parameters (see https://github.com/agda/agda2hs/issues/305).
       liftTCM $ setModuleCheckpoint m
 
-      pars <- getContextArgs
+      -- We apply the function clause to the module parameters from the context.
+      -- In case of a projection-like function, the clause is already
+      -- (partially or fully) applied so we should not apply again
+      -- (see https://github.com/agda/agda2hs/issues/359)
+      let droppedPars = case funProjection of
+            Left{} -> 0
+            Right proj -> size $ getProjLams $ projLams proj
+      pars <- drop droppedPars <$> getContextArgs
       reportSDoc "agda2hs.compile.type" 8 $ "Function module parameters: " <+> prettyTCM pars
 
       reportSDoc "agda2hs.compile.type" 8 $ "Function type (before instantiation): " <+> inTopContext (prettyTCM defType)
