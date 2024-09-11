@@ -82,4 +82,5 @@ import Issue309
 import Issue317
 import ErasedPatternLambda
 import CustomTuples
+import ProjectionLike
 
