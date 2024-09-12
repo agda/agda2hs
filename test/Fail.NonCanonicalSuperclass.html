@@ -1,0 +1,34 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Fail.NonCanonicalSuperclass</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda">
+<a id="2" class="Keyword">module</a> <a id="9" href="Fail.NonCanonicalSuperclass.html" class="Module">Fail.NonCanonicalSuperclass</a> <a id="37" class="Keyword">where</a>
+
+<a id="44" class="Keyword">open</a> <a id="49" class="Keyword">import</a> <a id="56" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="73" class="Keyword">record</a> <a id="Class"></a><a id="80" href="Fail.NonCanonicalSuperclass.html#80" class="Record">Class</a> <a id="86" class="Symbol">(</a><a id="87" href="Fail.NonCanonicalSuperclass.html#87" class="Bound">a</a> <a id="89" class="Symbol">:</a> <a id="91" href="Agda.Primitive.html#388" class="Primitive">Set</a><a id="94" class="Symbol">)</a> <a id="96" class="Symbol">:</a> <a id="98" href="Agda.Primitive.html#388" class="Primitive">Set</a> <a id="102" class="Keyword">where</a>
+  <a id="110" class="Keyword">field</a>
+    <a id="Class.foo"></a><a id="120" href="Fail.NonCanonicalSuperclass.html#120" class="Field">foo</a> <a id="124" class="Symbol">:</a> <a id="126" href="Fail.NonCanonicalSuperclass.html#87" class="Bound">a</a> <a id="128" class="Symbol">→</a> <a id="130" href="Fail.NonCanonicalSuperclass.html#87" class="Bound">a</a>
+<a id="132" class="Keyword">open</a> <a id="137" href="Fail.NonCanonicalSuperclass.html#80" class="Module">Class</a> <a id="143" class="Symbol">{{...}}</a> <a id="151" class="Keyword">public</a>
+
+<a id="159" class="Symbol">{-#</a> <a id="163" class="Keyword">COMPILE</a> <a id="171" class="Keyword">AGDA2HS</a> <a id="179" href="Fail.NonCanonicalSuperclass.html#80" class="Record">Class</a> <a id="185" class="Pragma">class</a> <a id="191" class="Symbol">#-}</a>
+
+<a id="196" class="Keyword">instance</a>
+  <a id="ClassBool"></a><a id="207" href="Fail.NonCanonicalSuperclass.html#207" class="Function">ClassBool</a> <a id="217" class="Symbol">:</a> <a id="219" href="Fail.NonCanonicalSuperclass.html#80" class="Record">Class</a> <a id="225" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+  <a id="232" href="Fail.NonCanonicalSuperclass.html#207" class="Function">ClassBool</a> <a id="242" class="Symbol">.</a><a id="243" href="Fail.NonCanonicalSuperclass.html#120" class="Field">foo</a> <a id="247" class="Symbol">=</a> <a id="249" href="Haskell.Prim.Bool.html#273" class="Function">not</a>
+
+<a id="254" class="Symbol">{-#</a> <a id="258" class="Keyword">COMPILE</a> <a id="266" class="Keyword">AGDA2HS</a> <a id="274" href="Fail.NonCanonicalSuperclass.html#207" class="Function">ClassBool</a> <a id="284" class="Symbol">#-}</a>
+
+<a id="289" class="Keyword">record</a> <a id="Subclass"></a><a id="296" href="Fail.NonCanonicalSuperclass.html#296" class="Record">Subclass</a> <a id="305" class="Symbol">(</a><a id="306" href="Fail.NonCanonicalSuperclass.html#306" class="Bound">a</a> <a id="308" class="Symbol">:</a> <a id="310" href="Agda.Primitive.html#388" class="Primitive">Set</a><a id="313" class="Symbol">)</a> <a id="315" class="Symbol">:</a> <a id="317" href="Agda.Primitive.html#388" class="Primitive">Set</a> <a id="321" class="Keyword">where</a>
+  <a id="329" class="Keyword">field</a>
+    <a id="339" class="Keyword">overlap</a> <a id="347" class="Symbol">{{</a><a id="Subclass.super"></a><a id="349" href="Fail.NonCanonicalSuperclass.html#349" class="Field">super</a><a id="354" class="Symbol">}}</a> <a id="357" class="Symbol">:</a> <a id="359" href="Fail.NonCanonicalSuperclass.html#80" class="Record">Class</a> <a id="365" href="Fail.NonCanonicalSuperclass.html#306" class="Bound">a</a>
+    <a id="Subclass.bar"></a><a id="371" href="Fail.NonCanonicalSuperclass.html#371" class="Field">bar</a> <a id="375" class="Symbol">:</a> <a id="377" href="Fail.NonCanonicalSuperclass.html#306" class="Bound">a</a>
+<a id="379" class="Keyword">open</a> <a id="384" href="Fail.NonCanonicalSuperclass.html#296" class="Module">Subclass</a> <a id="393" class="Symbol">{{...}}</a> <a id="401" class="Keyword">public</a>
+
+<a id="409" class="Symbol">{-#</a> <a id="413" class="Keyword">COMPILE</a> <a id="421" class="Keyword">AGDA2HS</a> <a id="429" href="Fail.NonCanonicalSuperclass.html#296" class="Record">Subclass</a> <a id="438" class="Pragma">class</a> <a id="444" class="Symbol">#-}</a>
+
+<a id="449" class="Keyword">instance</a> 
+  <a id="SubclassBool"></a><a id="461" href="Fail.NonCanonicalSuperclass.html#461" class="Function">SubclassBool</a> <a id="474" class="Symbol">:</a> <a id="476" href="Fail.NonCanonicalSuperclass.html#296" class="Record">Subclass</a> <a id="485" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+  <a id="492" href="Fail.NonCanonicalSuperclass.html#461" class="Function">SubclassBool</a> <a id="505" class="Symbol">.</a><a id="506" href="Fail.NonCanonicalSuperclass.html#349" class="Field">super</a> <a id="512" class="Symbol">=</a> <a id="514" class="Keyword">record</a> <a id="521" class="Symbol">{</a> <a id="523" href="Fail.NonCanonicalSuperclass.html#120" class="Field">foo</a> <a id="527" class="Symbol">=</a> <a id="529" href="Haskell.Prim.html#1296" class="Function">id</a> <a id="532" class="Symbol">}</a>
+  <a id="536" href="Fail.NonCanonicalSuperclass.html#461" class="Function">SubclassBool</a> <a id="549" class="Symbol">.</a><a id="550" href="Fail.NonCanonicalSuperclass.html#371" class="Field">bar</a> <a id="554" class="Symbol">=</a> <a id="556" href="Agda.Builtin.Bool.html#192" class="InductiveConstructor">False</a>
+
+<a id="563" class="Symbol">{-#</a> <a id="567" class="Keyword">COMPILE</a> <a id="575" class="Keyword">AGDA2HS</a> <a id="583" href="Fail.NonCanonicalSuperclass.html#461" class="Function">SubclassBool</a> <a id="596" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/NonCanonicalSuperclass.html"/></div></body></html>
