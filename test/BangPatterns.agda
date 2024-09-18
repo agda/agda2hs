@@ -13,11 +13,11 @@ myFoldl f x0 (x ∷ xs) = myFoldl f (f x0 x) xs
 
 {-# COMPILE AGDA2HS myFoldl #-}
 
-foldl' : (b -> a -> b) -> Strict b -> List a -> b
-foldl' f (! x0) [] = x0
-foldl' f (! x0) (x ∷ xs) = foldl' f (! f x0 x) xs
+foldl'' : (b -> a -> b) -> Strict b -> List a -> b
+foldl'' f (! x0) [] = x0
+foldl'' f (! x0) (x ∷ xs) = foldl'' f (! f x0 x) xs
 
-{-# COMPILE AGDA2HS foldl' #-}
+{-# COMPILE AGDA2HS foldl'' #-}
 
 data LazyMaybe (a : Set ℓ) : Set ℓ where
   LazyNothing : LazyMaybe a
