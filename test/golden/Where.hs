@@ -44,6 +44,8 @@ ex4 b = mult 42
 ex4' :: Bool -> Natural
 ex4' b = mult (bool2nat b)
   where
+    extra :: Natural
+    extra = 14
     mult :: Natural -> Natural
     mult n = bump n (bool2nat b)
       where
@@ -51,7 +53,7 @@ ex4' b = mult (bool2nat b)
         bump x y = go (x * y) (n - bool2nat b)
           where
             go :: Natural -> Natural -> Natural
-            go z w = z + x + w + y + n + bool2nat b
+            go z w = z + x + w + y + n + bool2nat b + extra
 
 ex5 :: [Natural] -> Natural
 ex5 [] = zro

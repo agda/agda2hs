@@ -51,6 +51,8 @@ ex4 b = mult 42
 ex4' : Bool → Nat
 ex4' b = mult (bool2nat b)
   where
+    extra : Nat
+    extra = 14
     mult : Nat → Nat
     mult n = bump n (bool2nat b)
       where
@@ -58,7 +60,7 @@ ex4' b = mult (bool2nat b)
         bump x y = go (x * y) (n - bool2nat b)
           where
             go : Nat → Nat → Nat
-            go z w = z + x + w + y + n + bool2nat b
+            go z w = z + x + w + y + n + bool2nat b + extra
 
 -- with pattern matching and multiple clauses
 ex5 : List Nat → Nat
