@@ -228,14 +228,14 @@ compileClause' curModule projName x ty c@Clause{..} = do
     -- `where` declarations (if there are any) in order to drop the arguments
     -- that correspond to the pattern variables of this clause from the calls to
     -- the functions defined in the `where` block.
-    let inWhereModule = case children of
-          []    -> id
-          (c:_) -> withCurrentModule $ qnameModule c
+    -- let inWhereModule = case children of
+    --       []    -> id
+    --       (c:_) -> withCurrentModule $ qnameModule c
 
     let Just body            = clauseBody
         Just (unArg -> typ)  = clauseType
 
-    hsBody <- inWhereModule $ compileTerm typ body
+    hsBody <- compileTerm typ body
 
     let rhs = Hs.UnGuardedRhs () hsBody
         whereBinds | null whereDecls = Nothing
