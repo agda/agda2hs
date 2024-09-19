@@ -15,3 +15,6 @@ foo a b = not a
 bar :: Bool -> Bool
 bar b = foo True 0
 
+baz :: Bool -> Bool
+baz b = bar b
+
