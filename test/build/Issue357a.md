@@ -1,0 +1,4 @@
+```
+test/Fail/Issue357a.agda:10,1-6
+Bad Haskell type: Level
+```

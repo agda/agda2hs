@@ -1,0 +1,24 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Fail.ExplicitInstance</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda">
+<a id="2" class="Keyword">module</a> <a id="9" href="Fail.ExplicitInstance.html" class="Module">Fail.ExplicitInstance</a> <a id="31" class="Keyword">where</a>
+
+<a id="38" class="Keyword">open</a> <a id="43" class="Keyword">import</a> <a id="50" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="67" class="Keyword">record</a> <a id="HasDefault"></a><a id="74" href="Fail.ExplicitInstance.html#74" class="Record">HasDefault</a> <a id="85" class="Symbol">(</a><a id="86" href="Fail.ExplicitInstance.html#86" class="Bound">a</a> <a id="88" class="Symbol">:</a> <a id="90" href="Agda.Primitive.html#388" class="Primitive">Set</a><a id="93" class="Symbol">)</a> <a id="95" class="Symbol">:</a> <a id="97" href="Agda.Primitive.html#388" class="Primitive">Set</a> <a id="101" class="Keyword">where</a>
+  <a id="109" class="Keyword">field</a>
+    <a id="HasDefault.theDefault"></a><a id="119" href="Fail.ExplicitInstance.html#119" class="Field">theDefault</a> <a id="130" class="Symbol">:</a> <a id="132" href="Fail.ExplicitInstance.html#86" class="Bound">a</a>
+<a id="134" class="Keyword">open</a> <a id="139" href="Fail.ExplicitInstance.html#74" class="Module">HasDefault</a> <a id="150" class="Symbol">{{...}}</a>
+<a id="158" class="Symbol">{-#</a> <a id="162" class="Keyword">COMPILE</a> <a id="170" class="Keyword">AGDA2HS</a> <a id="178" href="Fail.ExplicitInstance.html#74" class="Record">HasDefault</a> <a id="189" class="Pragma">class</a> <a id="195" class="Symbol">#-}</a>
+
+<a id="200" class="Keyword">instance</a>
+  <a id="defaultBool"></a><a id="211" href="Fail.ExplicitInstance.html#211" class="Function">defaultBool</a> <a id="223" class="Symbol">:</a> <a id="225" href="Fail.ExplicitInstance.html#74" class="Record">HasDefault</a> <a id="236" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+  <a id="243" href="Fail.ExplicitInstance.html#211" class="Function">defaultBool</a> <a id="255" class="Symbol">.</a><a id="256" href="Fail.ExplicitInstance.html#119" class="Field">theDefault</a> <a id="267" class="Symbol">=</a> <a id="269" href="Agda.Builtin.Bool.html#192" class="InductiveConstructor">False</a>
+<a id="275" class="Symbol">{-#</a> <a id="279" class="Keyword">COMPILE</a> <a id="287" class="Keyword">AGDA2HS</a> <a id="295" href="Fail.ExplicitInstance.html#211" class="Function">defaultBool</a> <a id="307" class="Pragma">instance</a> <a id="316" class="Symbol">#-}</a>
+
+<a id="test"></a><a id="321" href="Fail.ExplicitInstance.html#321" class="Function">test</a> <a id="326" class="Symbol">:</a> <a id="328" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+<a id="333" href="Fail.ExplicitInstance.html#321" class="Function">test</a> <a id="338" class="Symbol">=</a> <a id="340" href="Fail.ExplicitInstance.html#119" class="Field">theDefault</a> <a id="351" class="Symbol">{{λ</a> <a id="355" class="Keyword">where</a> <a id="361" class="Symbol">.</a><a id="362" href="Fail.ExplicitInstance.html#119" class="Field">theDefault</a> <a id="373" class="Symbol">→</a> <a id="375" href="Agda.Builtin.Bool.html#198" class="InductiveConstructor">True</a><a id="379" class="Symbol">}}</a>
+<a id="382" class="Symbol">{-#</a> <a id="386" class="Keyword">COMPILE</a> <a id="394" class="Keyword">AGDA2HS</a> <a id="402" href="Fail.ExplicitInstance.html#321" class="Function">test</a> <a id="407" class="Symbol">#-}</a>
+
+<a id="important-theorem"></a><a id="412" href="Fail.ExplicitInstance.html#412" class="Function">important-theorem</a> <a id="430" class="Symbol">:</a> <a id="432" href="Fail.ExplicitInstance.html#321" class="Function">test</a> <a id="437" href="Agda.Builtin.Equality.html#150" class="Datatype Operator">≡</a> <a id="439" href="Agda.Builtin.Bool.html#198" class="InductiveConstructor">True</a>
+<a id="444" href="Fail.ExplicitInstance.html#412" class="Function">important-theorem</a> <a id="462" class="Symbol">=</a> <a id="464" href="Agda.Builtin.Equality.html#207" class="InductiveConstructor">refl</a>
+</pre><div class="split right"><embed src="build/ExplicitInstance.html"/></div></body></html>
