@@ -128,12 +128,21 @@ compileType t = do
 
     Sort s -> return (Hs.TyStar ())
 
-    -- TODO: we should also drop lambdas that can be erased based on their type
-    -- (e.g. argument is of type Level/Size or in a Prop) but currently we do
-    -- not have access to the type of the lambda here.
-    Lam argInfo restAbs
-      | hasQuantity0 argInfo -> underAbstraction_ restAbs compileType
-      | otherwise -> genericDocError =<< text "Not supported: type-level lambda" <+> prettyTCM t
+    Lam argInfo restAbs -> do
+      (body , x0) <- underAbstraction_ restAbs $ \b ->
+        (,) <$> compileType b <*> (hsName <$> compileDBVar 0)
+
+      -- TODO: we should also drop lambdas that can be erased based on their type
+      -- (e.g. argument is of type Level/Size or in a Prop) but currently we do
+      -- not have access to the type of the lambda here.
+      if | hasQuantity0 argInfo -> return body
+         -- Rewrite `\x -> (a -> x)` to `(->) a`
+         | Hs.TyFun _ a (Hs.TyVar _ y) <- body
+         , y == x0 -> return $ Hs.TyApp () (Hs.TyCon () $ Hs.Special () $ Hs.FunCon ()) a
+         -- Rewrite `\x -> ((->) x)` to `(->)`
+         | Hs.TyApp _ (Hs.TyCon _ (Hs.Special _ (Hs.FunCon _))) (Hs.TyVar _ y) <- body
+         , y == x0 -> return $ Hs.TyCon () $ Hs.Special () $ Hs.FunCon ()
+         | otherwise -> genericDocError =<< text "Not supported: type-level lambda" <+> prettyTCM t
 
     _ -> fail
   where fail = genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
