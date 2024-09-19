@@ -180,7 +180,7 @@ compileDef f ty args =
       -- if the function is called from the same module it's defined in,
       -- we drop the module parameters
       -- NOTE(flupe): in the future we're not always gonna be erasing module parameters
-      if (f `elem` localDefs || isLocal || defIsClass) && (mnameToList defMod `isPrefixOf` mnameToList currentMod) then do
+      if f `elem` localDefs || (isLocal || defIsClass) && (mnameToList defMod `isPrefixOf` mnameToList currentMod) then do
         npars <- size <$> lookupSection defMod
         let (pars, rest) = splitAt npars args
         ty' <- piApplyM ty pars
