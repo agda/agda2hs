@@ -170,13 +170,17 @@ compileDef f ty args =
 
     currentMod <- currentModule
     let defMod = qnameModule f
+    defIsClass <- isClassModule defMod
+    -- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
+    isLocal <- asks compilingLocal
+    localDefs <- asks locals -- If we're calling into a where-clause
 
     (ty', args') <-
 
       -- if the function is called from the same module it's defined in,
       -- we drop the module parameters
       -- NOTE(flupe): in the future we're not always gonna be erasing module parameters
-      if mnameToList defMod `isPrefixOf` mnameToList currentMod then do
+      if (f `elem` localDefs || isLocal || defIsClass) && (mnameToList defMod `isPrefixOf` mnameToList currentMod) then do
         npars <- size <$> lookupSection defMod
         let (pars, rest) = splitAt npars args
         ty' <- piApplyM ty pars
