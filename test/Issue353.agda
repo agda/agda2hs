@@ -31,15 +31,13 @@ module _ (b : Bool) where
     bar = foo True 0
     {-# COMPILE AGDA2HS bar #-}
 
-    -- Still broken, since they are actually the same module here
-    -- would generate baz = bar in haskell
     baz : Bool
     baz = bar
     {-# COMPILE AGDA2HS baz #-}
 
-    -- Still broken, because we cant differentiate this from where-blocks
     callFromNested : Bool
     callFromNested = nested
       where nested = bar
-    -- {-# COMPILE AGDA2HS callFromNested #-}
+    {-# COMPILE AGDA2HS callFromNested #-}
+
 -- The check is needed both for instance declarations and where-clauses

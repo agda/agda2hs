@@ -222,20 +222,16 @@ compileClause' curModule projName x ty c@Clause{..} = do
           /\ (curModule `isFatherModuleOf`) . qnameModule
 
     children   <- filter isWhereDecl <$> asks locals
-    whereDecls <- compileLocal $ mapM (getConstInfo >=> compileFun' True) children
-
-    -- Jesper, 2023-10-30: We should compile the body in the module of the
-    -- `where` declarations (if there are any) in order to drop the arguments
-    -- that correspond to the pattern variables of this clause from the calls to
-    -- the functions defined in the `where` block.
-    -- let inWhereModule = case children of
-    --       []    -> id
-    --       (c:_) -> withCurrentModule $ qnameModule c
+    -- TODO: remove this when Agda exposes where-provenance in 'Internal' syntax
+    let withWhereModule = case children of
+          []    -> id
+          (c:_) -> addWhereModule $ qnameModule c
+    whereDecls <- withWhereModule $ compileLocal $ mapM (getConstInfo >=> compileFun' True) children
 
     let Just body            = clauseBody
         Just (unArg -> typ)  = clauseType
 
-    hsBody <- compileTerm typ body
+    hsBody <- withWhereModule $ compileTerm typ body
 
     let rhs = Hs.UnGuardedRhs () hsBody
         whereBinds | null whereDecls = Nothing

@@ -278,6 +278,9 @@ checkInstance u = do
 compileLocal :: C a -> C a
 compileLocal = local $ \e -> e { compilingLocal = True }
 
+addWhereModule :: ModuleName  -> C a -> C a
+addWhereModule mName = local $ \e -> e { whereModules = mName : whereModules e }
+
 modifyLCase :: (Int -> Int) -> CompileState -> CompileState
 modifyLCase f (CompileState {lcaseUsed = n}) = CompileState {lcaseUsed = f n}
 
