@@ -18,3 +18,9 @@ bar b = foo True 0
 baz :: Bool -> Bool
 baz b = bar b
 
+callFromNested :: Bool -> Bool
+callFromNested b = nested
+  where
+    nested :: Bool
+    nested = bar b
+
