@@ -83,4 +83,5 @@ import Issue317
 import ErasedPatternLambda
 import CustomTuples
 import ProjectionLike
+import FunCon
 
