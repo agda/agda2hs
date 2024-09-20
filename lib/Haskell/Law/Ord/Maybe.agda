@@ -114,7 +114,7 @@ min2ifMaybe Nothing  Nothing  = refl
 min2ifMaybe Nothing  (Just _) = refl
 min2ifMaybe (Just _) Nothing = refl
 min2ifMaybe (Just x) (Just y)
-  rewrite ifFlip (compare x y == GT) (Just y) (Just x)
+  rewrite sym (ifFlip (compare x y == GT) (Just x) (Just y))
   = equality'
       (if (compare x y /= GT) then Just x else Just y)
       (if (compare x y /= GT) then Just x else Just y)
@@ -126,7 +126,7 @@ max2ifMaybe Nothing  Nothing  = refl
 max2ifMaybe Nothing  (Just y) = eqReflexivity y
 max2ifMaybe (Just x) Nothing  = eqReflexivity x
 max2ifMaybe (Just x) (Just y)
-  rewrite ifFlip (compare x y == LT) (Just y) (Just x)
+  rewrite sym (ifFlip (compare x y == LT) (Just x) (Just y))
   = equality'
     (if (compare x y /= LT) then Just x else Just y)
     (if (compare x y /= LT) then Just x else Just y)

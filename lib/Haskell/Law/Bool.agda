@@ -65,12 +65,22 @@ not-involution .(not b) b refl = not-not b
 --------------------------------------------------
 -- if_then_else_
 
-ifFlip : ∀ (b) (t e : a) → (if b then t else e) ≡ (if not b then e else t)
+ifFlip : ∀ (b)
+       → (t : {{not b ≡ True}} → a)
+       → (e : {{not b ≡ False}} → a)
+       → (if not b then t                             else e) ≡
+         (if b     then (e {{not-involution _ _ it}}) else t {{not-involution _ _ it}})
 ifFlip False _ _ = refl
 ifFlip True  _ _ = refl
 
-ifTrueEqThen : ∀ (b : Bool) {thn els : a} → b ≡ True → (if b then thn else els) ≡ thn
+ifTrueEqThen : ∀ (b : Bool)
+             → {thn : {{b ≡ True}} → a}
+             → {els : {{b ≡ False}} → a}
+             → (pf : b ≡ True) → (if b then thn else els) ≡ thn {{pf}}
 ifTrueEqThen .True refl = refl
 
-ifFalseEqElse : ∀ (b : Bool) {thn els : a} → b ≡ False → (if b then thn else els) ≡ els
+ifFalseEqElse : ∀ (b : Bool)
+             → {thn : {{b ≡ True}} → a}
+             → {els : {{b ≡ False}} → a}
+             → (pf : b ≡ False) → (if b then thn else els) ≡ els {{pf}}
 ifFalseEqElse .False refl = refl
