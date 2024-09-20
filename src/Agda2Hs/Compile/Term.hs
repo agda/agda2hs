@@ -168,10 +168,9 @@ compileDef f ty args =
   ifM (isInlinedFunction f) (compileInlineFunctionApp f ty args) $ do
     reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of regular function:" <+> prettyTCM f
 
-    currentMod <- currentModule
     let defMod = qnameModule f
 
-    defIsClass <- isClassModule defMod
+    minRecord <- asks minRecordName
     -- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
     outerWhereModules <- asks whereModules
 
@@ -180,7 +179,7 @@ compileDef f ty args =
       -- if the function comes from a where-clause
       -- or is a class-method for the class we are currently defining,
       -- we drop the module parameters
-      if defMod `elem` outerWhereModules || defIsClass && (mnameToList defMod `isPrefixOf` mnameToList currentMod) then do
+      if defMod `elem` outerWhereModules || Just defMod == minRecord then do
         npars <- size <$> lookupSection defMod
         let (pars, rest) = splitAt npars args
         ty' <- piApplyM ty pars
