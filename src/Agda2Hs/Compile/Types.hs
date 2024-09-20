@@ -78,6 +78,8 @@ data CompileEnv = CompileEnv
   -- ^ the current module we are compiling
   , minRecordName :: Maybe ModuleName
   -- ^ keeps track of the current minimal record we are compiling
+  , isNestedInType :: Bool
+  -- ^ if we're inside an argument of a type and need an explicit forall
   , locals :: LocalDecls
   -- ^ keeps track of the current clause's where declarations
   , compilingLocal :: Bool

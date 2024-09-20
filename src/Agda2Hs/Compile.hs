@@ -35,6 +35,7 @@ initCompileEnv :: TopLevelModuleName -> SpecialRules -> CompileEnv
 initCompileEnv tlm rewrites = CompileEnv
   { currModule        = tlm
   , minRecordName     = Nothing
+  , isNestedInType    = False
   , locals            = []
   , compilingLocal    = False
   , whereModules      = []

@@ -275,6 +275,9 @@ checkInstance u = do
     checkInstanceElim (Proj _ f) =
       unlessM (isInstance . defArgInfo <$> getConstInfo f) illegalInstance
 
+withNestedType :: C a -> C a
+withNestedType = local $ \e -> e { isNestedInType = True }
+
 compileLocal :: C a -> C a
 compileLocal = local $ \e -> e { compilingLocal = True }
 
