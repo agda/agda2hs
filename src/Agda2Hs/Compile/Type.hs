@@ -257,6 +257,8 @@ compileDomType x a =
       npars <- size <$> (lookupSection =<< currentModule)
       if
         | isNested -> do
+          tellExtension Hs.RankNTypes
+          -- tellExtension Hs.ExistentialQuantification
           return $ DomForall $ Hs.UnkindedVar () $ Hs.Ident () x
         | ctx < npars -> do
           tellExtension Hs.ScopedTypeVariables
