@@ -93,6 +93,8 @@ compileType t = do
 
   instantiate t >>= \case
     Pi a b -> do
+      reportSDoc "agda2hs.compile.type" 13 $ text "Compiling pi type (" <+> prettyTCM (absName b)
+        <+> text ":" <+> prettyTCM a <+> text ") -> " <+> prettyTCM (unAbs b)
       let compileB = underAbstraction a b (compileType . unEl)
       compileDomType (absName b) a >>= \case
         DomType _ hsA -> Hs.TyFun () hsA <$> compileB
@@ -248,15 +250,19 @@ compileDomType x a =
     DOInstance -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
     DOType     -> do
       -- We compile (non-erased) type parameters to an explicit forall if they
-      -- come from a module parameter.
+      -- come from a module parameter or if we are in a nested position inside the type.
+      reportSDoc "agda2hs.compile.type" 15 $ text "Compiling forall type:" <+> prettyTCM a
+      isNested <- asks isNestedInType
       ctx <- getContextSize
       npars <- size <$> (lookupSection =<< currentModule)
-      if ctx < npars
-        then do
+      if
+        | isNested -> do
+          return $ DomForall $ Hs.UnkindedVar () $ Hs.Ident () x
+        | ctx < npars -> do
           tellExtension Hs.ScopedTypeVariables
           return $ DomForall $ Hs.UnkindedVar () $ Hs.Ident () x
-        else return $ DomDropped
-    DOTerm     -> uncurry DomType <$> compileTypeWithStrictness (unEl $ unDom a)
+        | otherwise -> return DomDropped
+    DOTerm     -> fmap (uncurry DomType) . withNestedType . compileTypeWithStrictness . unEl $ unDom a
 
 compileTeleBinds :: Telescope -> C [Hs.TyVarBind ()]
 compileTeleBinds EmptyTel = return []
