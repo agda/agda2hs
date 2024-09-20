@@ -1,0 +1,19 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Fail.Copatterns</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Comment">-- Copatterns are not supported, except in specific cases</a>
+
+<a id="60" class="Keyword">module</a> <a id="67" href="Fail.Copatterns.html" class="Module">Fail.Copatterns</a> <a id="83" class="Keyword">where</a>
+
+<a id="90" class="Keyword">open</a> <a id="95" class="Keyword">import</a> <a id="102" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="119" class="Keyword">record</a> <a id="R"></a><a id="126" href="Fail.Copatterns.html#126" class="Record">R</a> <a id="128" class="Symbol">:</a> <a id="130" href="Agda.Primitive.html#388" class="Primitive">Set</a> <a id="134" class="Keyword">where</a>
+  <a id="142" class="Keyword">field</a>
+    <a id="R.foo"></a><a id="152" href="Fail.Copatterns.html#152" class="Field">foo</a> <a id="156" class="Symbol">:</a> <a id="158" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+<a id="163" class="Keyword">open</a> <a id="168" href="Fail.Copatterns.html#126" class="Module">R</a> <a id="170" class="Keyword">public</a>
+
+<a id="178" class="Symbol">{-#</a> <a id="182" class="Keyword">COMPILE</a> <a id="190" class="Keyword">AGDA2HS</a> <a id="198" href="Fail.Copatterns.html#126" class="Record">R</a> <a id="200" class="Symbol">#-}</a>
+
+<a id="test"></a><a id="205" href="Fail.Copatterns.html#205" class="Function">test</a> <a id="210" class="Symbol">:</a> <a id="212" href="Fail.Copatterns.html#126" class="Record">R</a>
+<a id="214" href="Fail.Copatterns.html#205" class="Function">test</a> <a id="219" class="Symbol">.</a><a id="220" href="Fail.Copatterns.html#152" class="Field">foo</a> <a id="224" class="Symbol">=</a> <a id="226" href="Agda.Builtin.Bool.html#198" class="InductiveConstructor">True</a>
+
+<a id="232" class="Symbol">{-#</a> <a id="236" class="Keyword">COMPILE</a> <a id="244" class="Keyword">AGDA2HS</a> <a id="252" href="Fail.Copatterns.html#205" class="Function">test</a> <a id="257" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Copatterns.html"/></div></body></html>
