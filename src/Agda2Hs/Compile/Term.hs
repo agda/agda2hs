@@ -173,13 +173,13 @@ compileDef f ty args =
 
     defIsClass <- isClassModule defMod
     -- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
-    outerWhereModules <- asks whereModules -- W
+    outerWhereModules <- asks whereModules
 
     (ty', args') <-
 
-      -- if the function is called from the same module it's defined in,
+      -- if the function comes from a where-clause
+      -- or is a class-method for the class we are currently defining,
       -- we drop the module parameters
-      -- NOTE(flupe): in the future we're not always gonna be erasing module parameters
       if defMod `elem` outerWhereModules || defIsClass && (mnameToList defMod `isPrefixOf` mnameToList currentMod) then do
         npars <- size <$> lookupSection defMod
         let (pars, rest) = splitAt npars args
