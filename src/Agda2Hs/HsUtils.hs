@@ -17,6 +17,8 @@ import Agda.Syntax.Position
 import Agda.Utils.FileName ( mkAbsolute )
 import Agda.Utils.List ( initLast )
 import Agda.Utils.Maybe.Strict ( toStrict )
+import System.FilePath (isAbsolute)
+import Agda.Utils.Maybe (boolToMaybe)
 
 -- Names ------------------------------------------------------------------
 
@@ -199,7 +201,7 @@ cloc (ConName l _) = l
 
 srcSpanToRange :: SrcSpan -> Range
 srcSpanToRange (SrcSpan file l1 c1 l2 c2) =
-  intervalToRange (toStrict $ Just $ mkRangeFile (mkAbsolute file) Nothing) $ Interval (pos l1 c1) (pos l2 c2)
+  intervalToRange (toStrict $ boolToMaybe (isAbsolute file) $ mkRangeFile (mkAbsolute file) Nothing) $ Interval (pos l1 c1) (pos l2 c2)
   where pos l c = Pn () 0 (fromIntegral l) (fromIntegral c)
 
 srcLocToRange :: SrcLoc -> Range
