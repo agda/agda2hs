@@ -39,3 +39,4 @@ import Fail.NonCanonicalSuperclass
 import Fail.Issue125
 import Fail.Issue357a
 import Fail.Issue357b
+import Fail.DerivingParseFailure
