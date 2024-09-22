@@ -71,13 +71,13 @@ parseStrategy _          = Nothing
 newtypePragma :: String
 newtypePragma = "newtype"
 
-processDeriving :: String -> ([Hs.Deriving ()] -> ParsedPragma) -> C ParsedPragma
-processDeriving d pragma =
+processDeriving :: Range -> String -> ([Hs.Deriving ()] -> ParsedPragma) -> C ParsedPragma
+processDeriving r d pragma = do
   -- parse a deriving clause for a datatype by tacking it onto a
   -- dummy datatype and then only keeping the deriving part
   case Hs.parseDecl ("data X = X " ++ d) of
-    Hs.ParseFailed loc msg ->
-      setCurrentRange (srcLocToRange loc) $ genericError msg
+    Hs.ParseFailed loc msg -> do
+      setCurrentRange r $ genericError msg
     Hs.ParseOk (Hs.DataDecl _ _ _ _ _ ds) ->
       return $ pragma (map (() <$) ds)
     Hs.ParseOk _ -> return $ pragma []
@@ -85,7 +85,7 @@ processDeriving d pragma =
 processPragma :: QName -> C ParsedPragma
 processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
   Nothing -> return NoPragma
-  Just (CompilerPragma _ s)
+  Just (CompilerPragma r s)
     | "class" `isPrefixOf` s      -> return $ ClassPragma (words $ drop 5 s)
     | s == "inline"               -> return InlinePragma
     | s == "existing-class"       -> return ExistingClassPragma
@@ -97,6 +97,6 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
     | s == newtypePragma          -> return $ NewTypePragma []
     | s == derivePragma           -> return $ DerivePragma Nothing
     | derivePragma `isPrefixOf` s -> return $ DerivePragma (parseStrategy (drop (length derivePragma + 1) s))
-    | "deriving"   `isPrefixOf` s -> processDeriving s DefaultPragma
-    | (newtypePragma ++ " deriving") `isPrefixOf` s -> processDeriving (drop (length newtypePragma + 1) s) NewTypePragma
+    | "deriving"   `isPrefixOf` s -> processDeriving r s DefaultPragma
+    | (newtypePragma ++ " deriving") `isPrefixOf` s -> processDeriving r (drop (length newtypePragma + 1) s) NewTypePragma
   _ -> return $ DefaultPragma []
