@@ -1,0 +1,20 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Fail.Issue185</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Keyword">module</a> <a id="8" href="Fail.Issue185.html" class="Module">Fail.Issue185</a> <a id="22" class="Keyword">where</a>
+
+<a id="29" class="Keyword">open</a> <a id="34" class="Keyword">import</a> <a id="41" href="Agda.Builtin.Bool.html" class="Module">Agda.Builtin.Bool</a>
+
+<a id="60" class="Keyword">record</a> <a id="RecordTest"></a><a id="67" href="Fail.Issue185.html#67" class="Record">RecordTest</a> <a id="78" class="Symbol">:</a> <a id="80" href="Agda.Primitive.html#388" class="Primitive">Set</a> <a id="84" class="Keyword">where</a>
+  <a id="92" class="Keyword">constructor</a> <a id="MkRecord"></a><a id="104" href="Fail.Issue185.html#104" class="InductiveConstructor">MkRecord</a>
+  <a id="115" class="Keyword">field</a>
+    <a id="RecordTest.aBool"></a><a id="125" href="Fail.Issue185.html#125" class="Field">aBool</a> <a id="131" class="Symbol">:</a> <a id="133" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+
+  <a id="RecordTest.aBoolAsAFunction"></a><a id="141" href="Fail.Issue185.html#141" class="Function">aBoolAsAFunction</a> <a id="158" class="Symbol">:</a> <a id="160" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+  <a id="167" href="Fail.Issue185.html#141" class="Function">aBoolAsAFunction</a> <a id="184" class="Symbol">=</a> <a id="186" href="Fail.Issue185.html#125" class="Field">aBool</a>
+<a id="192" class="Keyword">open</a> <a id="197" href="Fail.Issue185.html#67" class="Module">RecordTest</a> <a id="208" class="Keyword">public</a>
+<a id="215" class="Symbol">{-#</a> <a id="219" class="Keyword">COMPILE</a> <a id="227" class="Keyword">AGDA2HS</a> <a id="235" href="Fail.Issue185.html#67" class="Record">RecordTest</a> <a id="246" class="Pragma">newtype</a> <a id="254" class="Symbol">#-}</a>
+<a id="258" class="Symbol">{-#</a> <a id="262" class="Keyword">COMPILE</a> <a id="270" class="Keyword">AGDA2HS</a> <a id="278" href="Fail.Issue185.html#141" class="Function">aBoolAsAFunction</a> <a id="295" class="Symbol">#-}</a>
+
+<a id="test"></a><a id="300" href="Fail.Issue185.html#300" class="Function">test</a> <a id="305" class="Symbol">:</a> <a id="307" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+<a id="312" href="Fail.Issue185.html#300" class="Function">test</a> <a id="317" class="Symbol">=</a> <a id="319" href="Fail.Issue185.html#141" class="Function">aBoolAsAFunction</a> <a id="336" class="Symbol">(</a><a id="337" href="Fail.Issue185.html#104" class="InductiveConstructor">MkRecord</a> <a id="346" href="Agda.Builtin.Bool.html#198" class="InductiveConstructor">true</a><a id="350" class="Symbol">)</a>
+<a id="352" class="Symbol">{-#</a> <a id="356" class="Keyword">COMPILE</a> <a id="364" class="Keyword">AGDA2HS</a> <a id="372" href="Fail.Issue185.html#300" class="Function">test</a> <a id="377" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Issue185.html"/></div></body></html>
