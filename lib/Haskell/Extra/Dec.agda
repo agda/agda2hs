@@ -35,7 +35,8 @@ Dec : ∀ {ℓ} → @0 Set ℓ → Set ℓ
 Dec P = ∃ Bool (Reflects P)
 {-# COMPILE AGDA2HS Dec inline #-}
 
-mapDec : @0 (a → b)
+mapDec : {@0 a b : Set}
+       → @0 (a → b)
        → @0 (b → a)
        → Dec a → Dec b
 mapDec f g (True  ⟨ x ⟩) = True  ⟨ f x   ⟩
