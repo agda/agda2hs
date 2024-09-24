@@ -3,9 +3,9 @@ name:                agda2hs
 version:             1.3
 license:             BSD-3-Clause
 license-file:        LICENSE
-author:              Ulf Norell, Jesper Cockx, Orestis Melkonian, Sára Juhošová, James Chapman, Lucas Escot, Henry Blanchette
+author:              Ulf Norell, Jesper Cockx, Orestis Melkonian, Sára Juhošová, James Chapman, Lucas Escot, Henry Blanchette, Viktor Csimma, Aleksander Wolska, Paul Bittner, Andreas Källberg, Bohdan Liesnikov, and Jakob Naucke
 maintainer:          jesper@sikanda.be
-copyright:           2023 Ulf Norell, Jesper Cockx, Orestis Melkonian, Sára Juhošová, James Chapman, Lucas Escot, Henry Blanchette
+copyright:           2024 Ulf Norell, Jesper Cockx, Orestis Melkonian, Sára Juhošová, James Chapman, Lucas Escot, Henry Blanchette, Viktor Csimma, Aleksander Wolska, Paul Bittner, Andreas Källberg, Bohdan Liesnikov, and Jakob Naucke
 category:            Language, Compiler
 build-type:          Simple
 synopsis:            Compiling Agda code to readable Haskell.
