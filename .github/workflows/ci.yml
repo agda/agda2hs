@@ -22,8 +22,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]   # macOS-latest, windows-latest
-        cabal: [3.8]
-        ghc: [8.8.4, 8.10.7, 9.2.5, 9.4.3, 9.6.3]
+        cabal: [3.10.3]
+        ghc: [9.4.8, 9.6.6, 9.8.2, 9.10.1]
     steps:
     - uses: actions/checkout@v3
       if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
