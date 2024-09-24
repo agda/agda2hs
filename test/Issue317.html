@@ -1,0 +1,13 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Issue317</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Keyword">open</a> <a id="6" class="Keyword">import</a> <a id="13" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="30" class="Keyword">record</a> <a id="D"></a><a id="37" href="Issue317.html#37" class="Record">D</a> <a id="39" class="Symbol">:</a> <a id="41" href="Agda.Primitive.html#388" class="Primitive">Set</a> <a id="45" class="Keyword">where</a>
+  <a id="53" class="Keyword">constructor</a> <a id="C"></a><a id="65" href="Issue317.html#65" class="InductiveConstructor">C</a>
+  <a id="69" class="Keyword">field</a> <a id="D.unC"></a><a id="75" href="Issue317.html#75" class="Field">unC</a> <a id="79" class="Symbol">:</a> <a id="81" href="Haskell.Prim.Int.html#367" class="Datatype">Int</a>
+<a id="85" class="Keyword">open</a> <a id="90" href="Issue317.html#37" class="Module">D</a> <a id="92" class="Keyword">public</a>
+<a id="99" class="Symbol">{-#</a> <a id="103" class="Keyword">COMPILE</a> <a id="111" class="Keyword">AGDA2HS</a> <a id="119" href="Issue317.html#37" class="Record">D</a> <a id="121" class="Symbol">#-}</a>
+
+<a id="test"></a><a id="126" href="Issue317.html#126" class="Function">test</a> <a id="131" class="Symbol">:</a> <a id="133" href="Issue317.html#37" class="Record">D</a> <a id="135" class="Symbol">→</a> <a id="137" href="Issue317.html#37" class="Record">D</a>
+<a id="139" href="Issue317.html#126" class="Function">test</a> <a id="144" href="Issue317.html#144" class="Bound">d</a> <a id="146" class="Symbol">=</a> <a id="148" href="Issue317.html#65" class="InductiveConstructor">C</a> <a id="150" href="Haskell.Prim.html#1330" class="Function Operator">∘</a> <a id="152" href="Issue317.html#75" class="Field">unC</a> <a id="156" href="Haskell.Prim.html#1480" class="Function Operator">$</a> <a id="158" href="Issue317.html#144" class="Bound">d</a>
+<a id="160" class="Symbol">{-#</a> <a id="164" class="Keyword">COMPILE</a> <a id="172" class="Keyword">AGDA2HS</a> <a id="180" href="Issue317.html#126" class="Function">test</a> <a id="185" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Issue317.html"/></div></body></html>
