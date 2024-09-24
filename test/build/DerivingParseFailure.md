@@ -1,4 +1,0 @@
-```
-test/Fail/DerivingParseFailure.agda:4,1-44
-Parse error: !&
-```
