@@ -141,9 +141,9 @@ compileType t = do
          -- Rewrite `\x -> (a -> x)` to `(->) a`
          | Hs.TyFun _ a (Hs.TyVar _ y) <- body
          , y == x0 -> return $ Hs.TyApp () (Hs.TyCon () $ Hs.Special () $ Hs.FunCon ()) a
-         -- Rewrite `\x -> ((->) x)` to `(->)`
-         | Hs.TyApp _ (Hs.TyCon _ (Hs.Special _ (Hs.FunCon _))) (Hs.TyVar _ y) <- body
-         , y == x0 -> return $ Hs.TyCon () $ Hs.Special () $ Hs.FunCon ()
+         -- Rewrite `\x -> f x` to `f`
+         | Hs.TyApp _ f (Hs.TyVar _ y) <- body
+         , y == x0 -> return f
          | otherwise -> genericDocError =<< text "Not supported: type-level lambda" <+> prettyTCM t
 
     _ -> fail
