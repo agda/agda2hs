@@ -91,6 +91,7 @@ import ErasedPatternLambda
 import CustomTuples
 import ProjectionLike
 import FunCon
+import Issue308
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -179,4 +180,5 @@ import ErasedPatternLambda
 import CustomTuples
 import ProjectionLike
 import FunCon
+import Issue308
 #-}
