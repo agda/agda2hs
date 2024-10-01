@@ -15,7 +15,29 @@
   - you can navigate the library in [HTML format](https://agda.github.io/agda2hs/lib/),
     along with a comprehensive [test suite](https://agda.github.io/agda2hs/test/)
 
-### Installation
+### Installation with Cabal
+
+agda2hs is released [on Hackage](https://hackage.haskell.org/package/agda2hs),
+and can be installed with Cabal:
+
+```sh
+cabal install agda2hs
+```
+
+Once installed, the agda2hs prelude bundled with agda2hs
+can be registered in the Agda config using the `agda2hs locate` command:
+
+```sh
+agda2hs locate >> ~/.agda/libaries
+```
+
+Optionally, the agda2hs prelude can also be added as a default global import:
+
+```sh
+echo agda2hs >> ~/.agda/defaults
+```
+
+### Manual installation
 
 Let `DIR` be the directory in which you start running these shell commands.
 ```sh
