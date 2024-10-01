@@ -1,4 +1,4 @@
-cabal-version:       2.2
+cabal-version:       2.4
 name:                agda2hs
 version:             1.3
 license:             BSD-3-Clause
@@ -17,6 +17,9 @@ description:
 
 extra-doc-files:    CHANGELOG.md
                     README.md
+
+data-files: agda2hs.agda-lib
+            lib/**/*.agda
 
 source-repository head
   type:     git
