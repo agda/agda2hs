@@ -87,4 +87,5 @@ import CustomTuples
 import ProjectionLike
 import FunCon
 import Issue308
+import Issue373
 

@@ -173,6 +173,7 @@ isClassName q = getConstInfo' q >>= \case
       ClassPragma _       -> True
       ExistingClassPragma -> True
       _                   -> False
+  Right Defn{defName = r, theDef = Axiom{}} -> processPragma r <&> (ExistingClassPragma ==)
   _                       -> return False
 
 -- | Check if the given type corresponds to a class constraint in Haskell.
