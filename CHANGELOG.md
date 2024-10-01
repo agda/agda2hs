@@ -13,6 +13,7 @@ Changes to agda2hs:
 - Non-erased implicit arguments and instance arguments are now compiled to regular arguments in Haskell
 - Non-erased module parameters are now compiled to regular arguments in Haskell
 - Rank-N Haskell types are now supported
+- Added `agda2hs locate` command printing the path to the agda2hs prelude `.agda-lib` file
 
 Additions to the agda2hs Prelude:
 - New module `Haskell.Extra.Dec` for working with decidability proofs (compiled to `Bool`)
