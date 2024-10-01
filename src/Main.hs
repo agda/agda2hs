@@ -21,7 +21,7 @@ import Agda2Hs.Config ( checkConfig )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Render
 
-import Paths_agda2hs ( version )
+import Paths_agda2hs ( version, getDataFileName )
 
 
 -- | Agda2Hs default config
@@ -87,8 +87,15 @@ isInteractive = do
   return $ not $ null i
 
 main = do
-  -- Issue #201: disable backend when run in interactive mode
-  isInt <- isInteractive
-  if isInt
-    then runAgda [Backend backend{isEnabled = const False}]
-    else runAgda [Backend backend]
+  args <- getArgs
+
+  -- Issue #370: `agda2hs locate` will print out the path to the prelude agda-lib file
+  if args == ["locate"] then
+    putStrLn =<< getDataFileName "agda2hs.agda-lib"
+  else do
+    -- Issue #201: disable backend when run in interactive mode
+    isInt <- isInteractive
+
+    if isInt
+      then runAgda [Backend backend{isEnabled = const False}]
+      else runAgda [Backend backend]
