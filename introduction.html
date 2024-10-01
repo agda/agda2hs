@@ -44,7 +44,8 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting Started</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#requirements">Requirements</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installation-with-cabal">Installation with Cabal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#manual-installation">Manual installation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#running-agda2hs">Running <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#using-agda2hs-with-stack">Using agda2hs with Stack</a></li>
 </ul>
@@ -107,8 +108,25 @@ along with a comprehensive <a class="reference external" href="https://agda.gith
 </li>
 </ul>
 </section>
-<section id="installation">
-<h3>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h3>
+<section id="installation-with-cabal">
+<h3>Installation with Cabal<a class="headerlink" href="#installation-with-cabal" title="Permalink to this heading"></a></h3>
+<p>agda2hs is released <a class="reference external" href="https://hackage.haskell.org/package/agda2hs">on Hackage</a>,
+and can be installed with Cabal:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>cabal<span class="w"> </span>install<span class="w"> </span>agda2hs
+</pre></div>
+</div>
+<p>Once installed, the agda2hs prelude bundled with agda2hs
+can be registered in the Agda config using the <code class="docutils literal notranslate"><span class="pre">agda2hs</span> <span class="pre">locate</span></code> command:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>agda2hs<span class="w"> </span>locate<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.agda/libaries
+</pre></div>
+</div>
+<p>Optionally, the agda2hs prelude can also be added as a default global import:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span><span class="w"> </span>agda2hs<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.agda/defaults
+</pre></div>
+</div>
+</section>
+<section id="manual-installation">
+<h3>Manual installation<a class="headerlink" href="#manual-installation" title="Permalink to this heading"></a></h3>
 <p>Let <code class="docutils literal notranslate"><span class="pre">DIR</span></code> be the directory in which you start running these shell commands.</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="c1"># clone the repository locally</span>
 git<span class="w"> </span>clone<span class="w"> </span>git@github.com:agda/agda2hs.git
