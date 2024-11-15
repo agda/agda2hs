@@ -115,6 +115,7 @@ compileQName f
     existsInHaskell <- orM
       [ pure $ isJust special
       , pure $ isPrimModule mod
+      , pure $ isHsModule mod
       , hasCompilePragma f
       , isClassFunction f
       , isWhereFunction f
