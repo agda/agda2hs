@@ -8,7 +8,7 @@ import Control.Monad.Reader
 
 import Data.Functor ( (<&>) )
 import Data.Bifunctor ( bimap )
-import Data.List ( intercalate, isPrefixOf )
+import Data.List ( intercalate, isPrefixOf, stripPrefix )
 import Data.Text ( unpack )
 import qualified Data.Map.Strict as Map
 
@@ -210,7 +210,12 @@ compileQName f
           in (mod', Just (Import mod' qual Nothing hf maybeIsType))
         else (mod, Nothing)
       | otherwise
-      = (mod, Just (Import mod qual par hf maybeIsType))
+      = let mod' = dropHaskellPrefix mod
+        in (mod', Just (Import mod' qual par hf maybeIsType))
+
+    dropHaskellPrefix :: Hs.ModuleName () -> Hs.ModuleName ()
+    dropHaskellPrefix (Hs.ModuleName l s) =
+      Hs.ModuleName l $ fromMaybe s $ stripPrefix "Haskell." s
 
 isWhereFunction :: QName -> C Bool
 isWhereFunction f = do
