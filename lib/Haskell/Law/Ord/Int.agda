@@ -11,6 +11,7 @@ open import Haskell.Law.Bool
 open import Haskell.Law.Equality
 open import Haskell.Law.Eq
 open import Haskell.Law.Ord.Def
+open import Haskell.Law.Ord.Word
 open import Haskell.Law.Int
 
 

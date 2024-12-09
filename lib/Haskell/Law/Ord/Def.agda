@@ -178,7 +178,7 @@ reverseLte a b c d
 
 postulate instance
 
-  iLawfulOrdWord : IsLawfulOrd Word
+  -- iLawfulOrdWord : IsLawfulOrd Word
 
   iLawfulOrdDouble : IsLawfulOrd Double
 
