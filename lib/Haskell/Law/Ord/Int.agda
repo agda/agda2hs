@@ -13,13 +13,6 @@ open import Haskell.Law.Eq
 open import Haskell.Law.Ord.Def
 open import Haskell.Law.Int
 
-private
-
-  2⁶³ : Nat
-  2⁶³ = 9223372036854775808 
-
-  maxW : Word
-  maxW = (n2w (monusNat 2⁶³ 1))
 
 sign2neq : ∀ (a b : Int) → isNegativeInt a ≡ True → isNegativeInt b ≡ False → ((a == b) ≡ False) 
 sign2neq a@(int64 x) b@(int64 y) h₁ h₂ with a == b in h₃
