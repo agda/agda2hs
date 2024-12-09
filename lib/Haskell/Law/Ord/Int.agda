@@ -108,20 +108,28 @@ instance
 
   iLawfulOrdInt .min2if a@(int64 x) b@(int64 y)
     with isNegativeInt a in h₁ | isNegativeInt b in h₂ 
-  ...| True  | True rewrite lte2ngt x y 
-    | sym $ ifFlip (y < x) b a  = eqReflexivity (if (y < x) then b else a)
+  ...| True  | True 
+    rewrite lte2ngt x y 
+    | ifFlip (y < x) a b 
+    = eqReflexivity (if (y < x) then b else a)
   ...| True  | False = eqReflexivity x
   ...| False | True rewrite eqSymmetry x y 
-    | sign2neq b a h₂ h₁ = eqReflexivity y
-  ...| False | False rewrite lte2ngt x y 
-    | sym $ ifFlip (y < x) b a = eqReflexivity (if (y < x) then b else a) 
+     | sign2neq b a h₂ h₁ = eqReflexivity y
+  ...| False | False 
+    rewrite lte2ngt x y 
+    | ifFlip (y < x) a b 
+    = eqReflexivity (if (y < x) then b else a) 
   
   iLawfulOrdInt .max2if a@(int64 x) b@(int64 y)
       with isNegativeInt a in h₁ | isNegativeInt b in h₂ 
-  ...| False | False rewrite gte2nlt x y | sym $ ifFlip (x < y) b a 
+  ...| False | False 
+    rewrite gte2nlt x y 
+    | ifFlip (x < y) a b
     = eqReflexivity (if (x < y) then b else a)
   ...| False | True  = eqReflexivity x
   ...| True  | False rewrite sign2neq a b h₁ h₂ 
     = eqReflexivity y
-  ...| True  | True  rewrite gte2nlt x y | sym $ ifFlip (x < y) b a 
+  ...| True  | True  
+    rewrite gte2nlt x y 
+    | ifFlip (x < y) a b
     = eqReflexivity (if (x < y) then b else a)
