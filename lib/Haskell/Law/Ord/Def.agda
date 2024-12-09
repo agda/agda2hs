@@ -3,8 +3,6 @@ module Haskell.Law.Ord.Def where
 open import Haskell.Prim
 open import Haskell.Prim.Ord
 open import Haskell.Prim.Bool
-open import Haskell.Prim.Word
-open import Haskell.Prim.Integer
 open import Haskell.Prim.Double
 open import Haskell.Prim.Tuple
 open import Haskell.Prim.Monoid
@@ -177,8 +175,6 @@ reverseLte a b c d
 -- Postulated instances
 
 postulate instance
-
-  iLawfulOrdWord : IsLawfulOrd Word
 
   iLawfulOrdDouble : IsLawfulOrd Double
 
