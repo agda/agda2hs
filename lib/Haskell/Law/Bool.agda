@@ -4,11 +4,11 @@ open import Haskell.Prim
 open import Haskell.Prim.Bool
 
 open import Haskell.Law.Equality
-
+open import Haskell.Law.Def
 --------------------------------------------------
 -- &&
 
-&&-sym : ∀ (a b : Bool) → (a && b) ≡ (b && a)
+&&-sym : F-sym _&&_
 &&-sym False False = refl
 &&-sym False True = refl
 &&-sym True False = refl
@@ -39,11 +39,9 @@ open import Haskell.Law.Equality
 --------------------------------------------------
 -- ||
 
--- if a then True else b
-
-||-excludedMiddle : ∀ (a b : Bool) → (a || not a) ≡ True
-||-excludedMiddle False _ = refl
-||-excludedMiddle True  _ = refl
+||-excludedMiddle : ∀ (a : Bool) → (a || not a) ≡ True
+||-excludedMiddle False = refl
+||-excludedMiddle True  = refl
 
 ||-leftTrue : ∀ (a b : Bool) → a ≡ True → (a || b) ≡ True
 ||-leftTrue .True b refl = refl
@@ -52,6 +50,11 @@ open import Haskell.Law.Equality
 ||-rightTrue False .True refl = refl
 ||-rightTrue True  .True refl = refl
 
+||-sym : F-sym _||_
+||-sym False False = refl
+||-sym False True = refl
+||-sym True False = refl
+||-sym True True = refl
 --------------------------------------------------
 -- not
 
@@ -59,17 +62,18 @@ not-not : ∀ (a : Bool) → not (not a) ≡ a
 not-not False = refl
 not-not True = refl
 
-not-involution : ∀ (a b : Bool) → a ≡ not b → not a ≡ b
-not-involution .(not b) b refl = not-not b
+not-involution : ∀ {a b : Bool} → a ≡ not b → not a ≡ b
+not-involution {.(not b)} {b} refl = not-not b
 
 --------------------------------------------------
+
 -- if_then_else_
 
 ifFlip : ∀ (b)
        → (t : {{not b ≡ True}} → a)
        → (e : {{not b ≡ False}} → a)
        → (if not b then t                             else e) ≡
-         (if b     then (e {{not-involution _ _ it}}) else t {{not-involution _ _ it}})
+         (if b     then (e {{not-involution it}}) else t {{not-involution it}})
 ifFlip False _ _ = refl
 ifFlip True  _ _ = refl
 
