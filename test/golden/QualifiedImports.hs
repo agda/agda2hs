@@ -1,6 +1,7 @@
 module QualifiedImports where
 
 import qualified Importee (Foo(MkFoo), foo)
+import QualifiedImportee ()
 import qualified QualifiedImportee as Qually (Foo, Fooable(defaultFoo, doTheFoo), foo, (!#))
 
 -- ** simple qualification

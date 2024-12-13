@@ -36,6 +36,7 @@ import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Function
 import Agda2Hs.Compile.Name
+import Agda2Hs.Compile.Term
 import Agda2Hs.Compile.Type
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils

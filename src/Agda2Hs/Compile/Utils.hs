@@ -253,43 +253,6 @@ isInlinedFunction q = do
       (InlinePragma ==) <$> processPragma r
     _ -> return False
 
-checkInstance :: Term -> C ()
-checkInstance u = do
-  reportSDoc "agda2hs.checkInstance" 12 $ text "checkInstance" <+> prettyTCM u
-  reduce u >>= \case
-    Var x es -> do
-      unlessM (isInstance <$> domOfBV x) illegalInstance
-      checkInstanceElims es
-    Def f es -> do
-      unlessM (isJust . defInstance <$> getConstInfo f) illegalInstance
-      checkInstanceElims es
-  -- We need to compile applications of `fromNat`, `fromNeg`, and
-  -- `fromString` where the constraint type is ⊤ or IsTrue .... Ideally
-  -- this constraint would be marked as erased but this would involve
-  -- changing Agda builtins.
-    Con c _ _
-      | prettyShow (conName c) == "Agda.Builtin.Unit.tt" ||
-        prettyShow (conName c) == "Haskell.Prim.IsTrue.itsTrue" ||
-        prettyShow (conName c) == "Haskell.Prim.IsFalse.itsFalse" -> return ()
-    _ -> illegalInstance
-
-  where
-    illegalInstance :: C ()
-    illegalInstance = do
-      reportSDoc "agda2hs.checkInstance" 15 $ text "illegal instance: " <+> pretty u
-      genericDocError =<< text "illegal instance: " <+> prettyTCM u
-
-    checkInstanceElims :: Elims -> C ()
-    checkInstanceElims = mapM_ checkInstanceElim
-
-    checkInstanceElim :: Elim -> C ()
-    checkInstanceElim (Apply v) =
-      when (isInstance v && usableQuantity v) $
-        checkInstance $ unArg v
-    checkInstanceElim IApply{} = illegalInstance
-    checkInstanceElim (Proj _ f) =
-      unlessM (isInstance . defArgInfo <$> getConstInfo f) illegalInstance
-
 withNestedType :: C a -> C a
 withNestedType = local $ \e -> e { isNestedInType = True }
 

@@ -25,10 +25,12 @@ type ImportDeclMap = Map (Hs.ModuleName (), Qualifier) ImportSpecMap
 
 compileImports :: String -> Imports -> TCM [Hs.ImportDecl ()]
 compileImports top is0 = do
-  let is = filter (not . (top ==) . Hs.prettyPrint . importModule) is0
+  let is = filter ((top /=) . Hs.prettyPrint . importModule) is0
   checkClashingImports is
   let imps = Map.toList $ groupModules is
-  return $ map (uncurry $ uncurry makeImportDecl) imps
+  reportSLn "agda2hs.import" 10 $ "All imported modules: " ++ show (map (pp . fst . fst) imps)
+  let decls = map (uncurry $ uncurry makeImportDecl) imps
+  return decls
   where
     mergeChildren :: ImportSpecMap -> ImportSpecMap -> ImportSpecMap
     mergeChildren = Map.unionWith Set.union
@@ -38,18 +40,20 @@ compileImports top is0 = do
     makeSingle (Just p) q = Map.singleton p $ Set.singleton q
 
     groupModules :: [Import] -> ImportDeclMap
-    groupModules = foldr
-      (\(Import mod as p q ns) -> Map.insertWith mergeChildren (mod,as)
-                                                                (makeSingle (parentNN p) (NamespacedName ns q)))
-      Map.empty
-        where
-          parentNN :: Maybe (Hs.Name ()) -> Maybe NamespacedName
-          parentNN (Just name@(Hs.Symbol _ _)) = Just $ NamespacedName (Hs.TypeNamespace ()) name
-                                                                        -- ^ for parents, if they are operators, we assume they are type operators
-                                                                        -- but actually, this will get lost anyway because of the structure of ImportSpec
-                                                                        -- the point is that there should not be two tuples with the same name and diffenrent namespaces
-          parentNN (Just name)                 = Just $ NamespacedName (Hs.NoNamespace ())   name
-          parentNN Nothing                     = Nothing
+    groupModules = flip foldr Map.empty $ \case
+        (Import mod as p q ns) ->
+          Map.insertWith mergeChildren (mod,as)
+                         (makeSingle (parentNN p) (NamespacedName ns q))
+        (ImportInstances mod) ->
+          Map.insertWith mergeChildren (mod,Unqualified) Map.empty
+      where
+        parentNN :: Maybe (Hs.Name ()) -> Maybe NamespacedName
+        parentNN (Just name@(Hs.Symbol _ _)) = Just $ NamespacedName (Hs.TypeNamespace ()) name
+                                                                      -- ^ for parents, if they are operators, we assume they are type operators
+                                                                      -- but actually, this will get lost anyway because of the structure of ImportSpec
+                                                                      -- the point is that there should not be two tuples with the same name and diffenrent namespaces
+        parentNN (Just name)                 = Just $ NamespacedName (Hs.NoNamespace ())   name
+        parentNN Nothing                     = Nothing
 
     -- TODO: avoid having to do this by having a CName instead of a
     -- Name in the Import datatype
@@ -81,11 +85,13 @@ compileImports top is0 = do
         []      -> checkClashingImports is
      where
         isClashing (Import _ as' p' q' _) = (as' == as) && (p' /= p) && (q' == q)
+        isClashing ImportInstances{} = False
         mkErrorMsg (Import _ _ p' q' _) =
              "Clashing import: " ++ pp q ++ " (both from "
           ++ prettyShow (pp <$> p) ++ " and "
           ++ prettyShow (pp <$> p') ++ ")"
         -- TODO: no range information as we only have Haskell names at this point
+    checkClashingImports (ImportInstances mod : is) = checkClashingImports is
 
 
 -- | Generate a prelude import considering prelude config options (hiding, implicit, etc).

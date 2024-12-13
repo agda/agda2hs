@@ -108,15 +108,20 @@ qualifiedAs = join
 
 -- | Encoding of a Haskell module import statement.
 data Import = Import
-  { importModule    :: Hs.ModuleName ()
-  , importQualified :: Qualifier
-  , importParent    :: Maybe (Hs.Name ())
-  , importName      :: Hs.Name ()
-  , importNamespace :: Hs.Namespace ()
+  { _importModule    :: Hs.ModuleName ()
+  , _importQualified :: Qualifier
+  , _importParent    :: Maybe (Hs.Name ())
+  , _importName      :: Hs.Name ()
+  , _importNamespace :: Hs.Namespace ()
                     -- ^^ if this is a type or something like that, we can add a namespace qualifier to the import spec
                     -- now it's only useful for differentiating type operators; so for others we always put Hs.NoNamespace () here
                     -- (we don't calculate it if it's not necessary)
   }
+  | ImportInstances (Hs.ModuleName ())
+
+importModule :: Import -> Hs.ModuleName ()
+importModule (Import{ _importModule = mod }) = mod
+importModule (ImportInstances mod) = mod
 
 type Imports = [Import]
 

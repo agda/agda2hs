@@ -1,6 +1,7 @@
 module RequalifiedImports where
 
 import OtherImportee (OtherFoo(MkFoo))
+import QualifiedImportee ()
 import qualified QualifiedImportee as A (Foo, Fooable(defaultFoo, doTheFoo), foo, (!#))
 
 -- ** conflicting imports are all replaced with the "smallest" qualifier
