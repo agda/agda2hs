@@ -230,3 +230,10 @@ compileModuleName m = do
     text "Top-level module name for" <+> prettyTCM m <+>
     text "is" <+> text (pp tlm)
   return tlm
+
+importInstance :: QName -> C ()
+importInstance f = do
+  mod <- compileModuleName $ qnameModule f
+  unless (isPrimModule mod) $ do
+    reportSLn "agda2hs.import" 20 $ "Importing instances from " ++ pp mod
+    tellImport $ ImportInstances mod

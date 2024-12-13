@@ -104,7 +104,7 @@ prettyShowImportDecl (Hs.ImportDecl _ m qual src safe mbPkg mbName mbSpecs) =
                 ++ parenList (map prettyShowSpec ispecs)
 
       parenList :: [String] -> String
-      parenList [] = ""
+      parenList [] = "()"
       parenList (x:xs) = '(' : (x ++ go xs)
         where
           go :: [String] -> String

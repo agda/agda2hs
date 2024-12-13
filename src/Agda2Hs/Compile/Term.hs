@@ -2,6 +2,7 @@ module Agda2Hs.Compile.Term where
 
 import Control.Arrow ( (>>>), (&&&), second )
 import Control.Monad ( unless, zipWithM )
+import Control.Monad.Except
 import Control.Monad.Reader
 
 import Data.Foldable ( toList )
@@ -19,11 +20,16 @@ import Agda.Syntax.Common
 import Agda.Syntax.Literal
 import Agda.Syntax.Internal
 
+import Agda.TypeChecking.CheckInternal ( infer )
+import Agda.TypeChecking.Constraints ( noConstraints )
+import Agda.TypeChecking.Conversion ( equalTerm )
+import Agda.TypeChecking.InstanceArguments ( findInstance )
+import Agda.TypeChecking.MetaVars ( newInstanceMeta )
 import Agda.TypeChecking.Monad
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Records ( shouldBeProjectible, isRecordType, recordFieldNames )
 import Agda.TypeChecking.Datatypes ( getConType )
-import Agda.TypeChecking.Reduce ( unfoldDefinitionStep, instantiate )
+import Agda.TypeChecking.Reduce ( unfoldDefinitionStep, instantiate, reduce )
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope ( telView, mustBePi, piApplyM, flattenTel )
 import Agda.TypeChecking.ProjectionLike ( reduceProjectionLike )
@@ -35,7 +41,7 @@ import Agda.Utils.Monad
 import Agda.Utils.Size
 
 import Agda2Hs.AgdaUtils
-import Agda2Hs.Compile.Name ( compileQName )
+import Agda2Hs.Compile.Name ( compileQName, importInstance )
 
 import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTelSize )
 import Agda2Hs.Compile.Types
@@ -615,3 +621,42 @@ compileLiteral (LitChar c)   = return $ Hs.charE c
 compileLiteral (LitString t) = return $ Hs.Lit () $ Hs.String () s s
   where s = Text.unpack t
 compileLiteral l             = genericDocError =<< text "bad term:" <?> prettyTCM (Lit l)
+
+
+checkInstance :: Term -> C ()
+checkInstance u = do
+  reportSDoc "agda2hs.checkInstance" 12 $ text "checkInstance" <+> prettyTCM u
+  reduce u >>= \case
+    Var x es -> do
+      unlessM (isInstance <$> domOfBV x) illegalInstance
+      checkInstanceElims es
+    Def f es -> do
+      unlessM (isJust . defInstance <$> getConstInfo f) illegalInstance
+      importInstance f
+      checkInstanceElims es
+  -- We need to compile applications of `fromNat`, `fromNeg`, and
+  -- `fromString` where the constraint type is ⊤ or IsTrue .... Ideally
+  -- this constraint would be marked as erased but this would involve
+  -- changing Agda builtins.
+    Con c _ _
+      | prettyShow (conName c) == "Agda.Builtin.Unit.tt" ||
+        prettyShow (conName c) == "Haskell.Prim.IsTrue.itsTrue" ||
+        prettyShow (conName c) == "Haskell.Prim.IsFalse.itsFalse" -> return ()
+    _ -> illegalInstance
+
+  where
+    illegalInstance :: C ()
+    illegalInstance = do
+      reportSDoc "agda2hs.checkInstance" 15 $ text "illegal instance: " <+> pretty u
+      genericDocError =<< text "illegal instance: " <+> prettyTCM u
+
+    checkInstanceElims :: Elims -> C ()
+    checkInstanceElims = mapM_ checkInstanceElim
+
+    checkInstanceElim :: Elim -> C ()
+    checkInstanceElim (Apply v) =
+      when (isInstance v && usableQuantity v) $
+        checkInstance $ unArg v
+    checkInstanceElim IApply{} = illegalInstance
+    checkInstanceElim (Proj _ f) =
+      unlessM (isInstance . defArgInfo <$> getConstInfo f) illegalInstance

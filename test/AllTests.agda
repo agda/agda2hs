@@ -92,6 +92,7 @@ import CustomTuples
 import ProjectionLike
 import FunCon
 import Issue308
+import Issue324
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -181,4 +182,5 @@ import CustomTuples
 import ProjectionLike
 import FunCon
 import Issue308
+import Issue324
 #-}
