@@ -65,6 +65,9 @@ primModules =
 isPrimModule :: Hs.ModuleName () -> Bool
 isPrimModule mod = any (`isPrefixOf` pp mod) primModules
 
+isHsModule :: Hs.ModuleName () -> Bool
+isHsModule mod = "Haskell." `isPrefixOf` pp mod
+
 concatUnzip :: [([a], [b])] -> ([a], [b])
 concatUnzip = (concat *** concat) . unzip
 
