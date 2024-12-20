@@ -12,6 +12,8 @@ on:
       - 'agda2hs.cabal'
       - 'cabal.project'
       - 'Makefile'
+      - 'flake.*'
+      - 'nix/*'
       - '.github/workflows/**.yml'
     branches: [master]
 
@@ -33,3 +35,12 @@ jobs:
     - uses: cachix/install-nix-action@v22
     - uses: DeterminateSystems/magic-nix-cache-action@v2
     - run: nix build .#${{ matrix.derivation }} --print-build-logs
+
+  nix-shell:
+    name: "Test building inside a nix shell"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: cachix/install-nix-action@v22
+    - uses: DeterminateSystems/magic-nix-cache-action@v2
+    - run: nix develop -Lv -c bash -c "cabal build"
