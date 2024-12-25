@@ -178,10 +178,6 @@ postulate instance
 
   iLawfulOrdDouble : IsLawfulOrd Double
 
-  iLawfulOrdChar : IsLawfulOrd Char
-
-  iLawfulOrdUnit : IsLawfulOrd ⊤
-
   iLawfulOrdTuple₂ : ⦃ iOrdA : Ord a ⦄ ⦃ iOrdB : Ord b ⦄
                    → ⦃ IsLawfulOrd a ⦄ → ⦃ IsLawfulOrd b ⦄
                    → IsLawfulOrd (a × b)

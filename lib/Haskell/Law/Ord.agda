@@ -7,4 +7,5 @@ open import Haskell.Law.Ord.Integer  public
 open import Haskell.Law.Ord.Maybe    public
 open import Haskell.Law.Ord.Nat      public
 open import Haskell.Law.Ord.Ordering public
+open import Haskell.Law.Ord.Unit     public
 open import Haskell.Law.Ord.Word     public
