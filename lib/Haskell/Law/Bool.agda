@@ -73,7 +73,7 @@ ifFlip : ∀ (b)
        → (t : {{not b ≡ True}} → a)
        → (e : {{not b ≡ False}} → a)
        → (if not b then t                             else e) ≡
-         (if b     then (e {{not-involution _ _ it}}) else t {{not-involution _ _ it}})
+         (if b     then (e {{not-involution it}}) else t {{not-involution it}})
 ifFlip False _ _ = refl
 ifFlip True  _ _ = refl
 

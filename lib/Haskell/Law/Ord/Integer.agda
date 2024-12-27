@@ -1,7 +1,6 @@
 module Haskell.Law.Ord.Integer where
 
 open import Haskell.Prim
-open import Haskell.Prim.Bool
 open import Haskell.Prim.Eq
 open import Haskell.Prim.Ord
 
@@ -81,22 +80,22 @@ instance
   
   iLawfulOrdInteger .min2if (pos n)    (pos m) 
     rewrite lte2ngt n m
-    | sym $ ifFlip (m < n) (pos m) (pos n)  
+    | ifFlip (m < n) (pos n) (pos m)  
     = eqReflexivity (min (pos n) (pos m))
   iLawfulOrdInteger .min2if (pos n)    (negsuc m) = eqReflexivity m
   iLawfulOrdInteger .min2if (negsuc n) (pos m)    = eqReflexivity n
   iLawfulOrdInteger .min2if (negsuc n) (negsuc m) 
     rewrite gte2nlt n m  
-    | sym $ ifFlip (n < m) (negsuc m) (negsuc n) 
+    | ifFlip (n < m) (negsuc n) (negsuc m) 
     = eqReflexivity (min (negsuc n) (negsuc m)) 
    
   iLawfulOrdInteger .max2if (pos n)    (pos m) 
     rewrite gte2nlt n m 
-    | sym (ifFlip (n < m) (pos m) (pos n))  
+    | ifFlip (n < m) (pos n) (pos m)
     = eqReflexivity (max (pos n) (pos m)) 
   iLawfulOrdInteger .max2if (pos n)    (negsuc m) = eqReflexivity n  
   iLawfulOrdInteger .max2if (negsuc n) (pos m)    = eqReflexivity m 
   iLawfulOrdInteger .max2if (negsuc n) (negsuc m) 
     rewrite lte2ngt n m
-    | sym $ ifFlip (m < n) (negsuc m) (negsuc n) 
+    | ifFlip (m < n) (negsuc n) (negsuc m) 
     = eqReflexivity (max (negsuc n) (negsuc m))

@@ -67,7 +67,8 @@ integerToInt : Integer → Int
 integerToInt (pos    n) = int64 (n2w n)
 integerToInt (negsuc n) = negateInt (int64 (n2w (suc n)))
 
-private
+private 
+  -- this function assumes both values to be positive
   ltPosInt : Int → Int → Bool
   ltPosInt (int64 a) (int64 b) = ltWord a b
 
@@ -75,7 +76,7 @@ ltInt : Int → Int → Bool
 ltInt a b with isNegativeInt a | isNegativeInt b
 ... | True  | False = True
 ... | False | True  = False
-... | True  | True  = ltPosInt (negateInt b) (negateInt a)
+... | True  | True  = ltPosInt a b
 ... | False | False = ltPosInt a b
 
 addInt : Int → Int → Int
