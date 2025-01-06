@@ -116,7 +116,7 @@ compile opts tlm _ def =
 
 verifyOutput ::
   Options -> ModuleEnv -> IsMain -> TopLevelModuleName
-  -> [(CompiledDef, CompileOutput)] -> TCM Bool
+  -> [(CompiledDef, CompileOutput)] -> TCM ()
 verifyOutput _ _ _ m ls = do
   reportSDoc "agda2hs.compile" 5 $ text "Checking generated output before rendering: " <+> prettyTCM m
   ensureUniqueConstructors
@@ -134,4 +134,3 @@ verifyOutput _ _ _ m ls = do
           duplicateCons = filter ((> 1) . length) . group . sort  $ allCons
       when (length duplicateCons > 0) $
         genericDocError =<< vcat (map (\x -> text $ "Cannot generate multiple constructors with the same identifier: " <> Hs.prettyPrint (headWithDefault __IMPOSSIBLE__ x)) duplicateCons)
-      return (length duplicateCons == 0)
