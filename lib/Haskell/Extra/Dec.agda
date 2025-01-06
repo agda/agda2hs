@@ -46,3 +46,20 @@ mapDec f g (False ⟨ h ⟩) = False ⟨ h ∘ g ⟩
 ifDec : Dec a → (@0 {{a}} → b) → (@0 {{a → ⊥}} → b) → b
 ifDec (b ⟨ p ⟩) x y = if b then (λ where {{refl}} → x {{p}}) else (λ where {{refl}} → y {{p}})
 {-# COMPILE AGDA2HS ifDec inline #-}
+
+instance
+  iDecIsTrue : {b : Bool} → Dec (IsTrue b)
+  iDecIsTrue {False} = False ⟨ (λ ()) ⟩
+  iDecIsTrue {True}  = True  ⟨ IsTrue.itsTrue ⟩
+  {-# COMPILE AGDA2HS iDecIsTrue transparent #-}
+
+  iDecIsFalse : {b : Bool} → Dec (IsFalse b)
+  iDecIsFalse {b} = mapDec isTrueNotIsFalse isFalseIsTrueNot (iDecIsTrue {not b})
+    where
+      @0 isTrueNotIsFalse : {b : Bool} → IsTrue (not b) → IsFalse b
+      isTrueNotIsFalse {False} IsTrue.itsTrue = IsFalse.itsFalse
+
+      @0 isFalseIsTrueNot : {b : Bool} → IsFalse b → IsTrue (not b)
+      isFalseIsTrueNot {False} IsFalse.itsFalse = IsTrue.itsTrue
+  {-# COMPILE AGDA2HS iDecIsFalse inline #-}
+
