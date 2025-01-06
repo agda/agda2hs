@@ -88,4 +88,5 @@ import ProjectionLike
 import FunCon
 import Issue308
 import Issue324
+import Assert
 

@@ -67,6 +67,7 @@ defaultSpecialRules :: SpecialRules
 defaultSpecialRules = Map.fromList
   [ "Agda.Builtin.Nat.Nat"          `to` "Natural"      `importing` Just "Numeric.Natural"
   , "Haskell.Control.Monad.guard"   `to` "guard"        `importing` Just "Control.Monad"
+  , "Haskell.Control.Exception.assert" `to` "assert"    `importing` Just "Control.Exception"
   , "Haskell.Prelude.coerce"        `to` "unsafeCoerce" `importing` Just "Unsafe.Coerce"
   , "Agda.Builtin.Int.Int"          `to` "Integer"      `importing` Nothing
   , "Agda.Builtin.Word.Word64"      `to` "Word"         `importing` Nothing

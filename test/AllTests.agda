@@ -93,6 +93,7 @@ import ProjectionLike
 import FunCon
 import Issue308
 import Issue324
+import Assert
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -183,4 +184,5 @@ import ProjectionLike
 import FunCon
 import Issue308
 import Issue324
+import Assert
 #-}
