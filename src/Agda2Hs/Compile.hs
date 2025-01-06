@@ -1,5 +1,7 @@
 module Agda2Hs.Compile where
 
+import Prelude hiding (null)
+
 import Control.Monad.Trans.RWS.CPS ( evalRWST )
 import Control.Monad.State ( gets )
 import Control.Arrow ((>>>))
@@ -17,17 +19,18 @@ import Agda.TypeChecking.Monad.Signature ( isInlineFun )
 import Agda.Utils.Impossible
 import Agda.Utils.List
 import Agda.Utils.Null
-import Agda.Utils.Monad ( whenM, anyM, when )
+import Agda.Utils.Monad ( whenM, anyM, when, unless )
 
 import qualified Language.Haskell.Exts.Extension as Hs
 
 import Agda2Hs.Compile.ClassInstance ( compileInstance )
 import Agda2Hs.Compile.Data ( compileData )
 import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkInlinePragma )
+import Agda2Hs.Compile.Name ( hsTopLevelModuleName )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
 import Agda2Hs.Compile.Types
-import Agda2Hs.Compile.Utils ( setCurrentRangeQ, tellExtension, primModules, isClassName )
+import Agda2Hs.Compile.Utils ( setCurrentRangeQ, tellExtension, primModules, isPrimModule, isHsModule, isClassName )
 import Agda2Hs.Pragma
 import qualified Language.Haskell.Exts.Syntax as Hs
 import qualified Language.Haskell.Exts.Pretty as Hs
@@ -54,9 +57,6 @@ runC tlm rewrites c = evalRWST c (initCompileEnv tlm rewrites) initCompileState
 
 moduleSetup :: Options -> IsMain -> TopLevelModuleName -> Maybe FilePath -> TCM (Recompile ModuleEnv ModuleRes)
 moduleSetup _ _ m _ = do
-  -- we never compile primitive modules
-  if any (`isPrefixOf` prettyShow m) primModules then pure $ Skip ()
-  else do
     reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
     setScope . iInsideScope =<< curIF
     return $ Recompile m
@@ -120,6 +120,7 @@ verifyOutput ::
 verifyOutput _ _ _ m ls = do
   reportSDoc "agda2hs.compile" 5 $ text "Checking generated output before rendering: " <+> prettyTCM m
   ensureUniqueConstructors
+  ensureNoOutputFromPrimModules
   where
     ensureUniqueConstructors = do
       let allCons = do
@@ -134,3 +135,18 @@ verifyOutput _ _ _ m ls = do
           duplicateCons = filter ((> 1) . length) . group . sort  $ allCons
       when (length duplicateCons > 0) $
         genericDocError =<< vcat (map (\x -> text $ "Cannot generate multiple constructors with the same identifier: " <> Hs.prettyPrint (headWithDefault __IMPOSSIBLE__ x)) duplicateCons)
+
+    ensureNoOutputFromPrimModules = unless (null $ concat $ map fst ls) $ do
+      let hsModName = hsTopLevelModuleName m
+      when (isPrimModule hsModName) $ do
+        reportSDoc "agda2hs.compile" 10 $ text "Primitive module" <+> prettyTCM m <+> text "has non-null output."
+        if isHsModule hsModName
+        then genericDocError =<< hsep
+          (  pwords "The `Haskell.` namespace are reserved for binding existing Haskell modules, so the module"
+          ++ [text "`" <> prettyTCM m <> text "`"]
+          ++ pwords "should not contain any"
+          ++ [text "`{-# COMPILE AGDA2HS ... #-}`"]
+          ++ pwords "pragmas that produce Haskell code."
+          )
+        else do
+          __IMPOSSIBLE_VERBOSE__ "Primitive Agda module should not have any COMPILE AGDA2HS pragmas!"
