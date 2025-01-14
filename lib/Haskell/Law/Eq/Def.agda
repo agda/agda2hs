@@ -7,6 +7,7 @@ open import Haskell.Prim.Double
 open import Haskell.Prim.Eq
 
 open import Haskell.Extra.Dec
+open import Haskell.Extra.Refinement
 
 open import Haskell.Law.Bool
 open import Haskell.Law.Equality
@@ -34,6 +35,12 @@ record IsLawfulEq (e : Set) ⦃ iEq : Eq e ⦄ : Set₁ where
   ... | False = refl
 
 open IsLawfulEq ⦃ ... ⦄ public
+
+-- Types with a lawful Eq instance have decidable equality
+_≟_ : {{_ : Eq a}} {{_ : IsLawfulEq a}} → (x y : a) → Dec (x ≡ y)
+x ≟ y = (x == y) ⟨ isEquality x y ⟩
+
+{-# COMPILE AGDA2HS _≟_ inline #-}
 
 -- Reflexivity: x == x = True
 eqReflexivity : ⦃ iEq : Eq e ⦄ → ⦃ IsLawfulEq e ⦄
