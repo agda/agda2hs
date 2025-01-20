@@ -5,6 +5,47 @@ open import Haskell.Prim.Bool
 
 open import Haskell.Law.Equality
 
+{-----------------------------------------------------------------------------
+    Properties
+    Logical operations and constants
+------------------------------------------------------------------------------}
+--
+prop-x-&&-True
+  : ∀ (x : Bool)
+  → (x && True) ≡ x
+--
+prop-x-&&-True True = refl
+prop-x-&&-True False = refl
+
+--
+prop-x-&&-False
+  : ∀ (x : Bool)
+  → (x && False) ≡ False
+--
+prop-x-&&-False True = refl
+prop-x-&&-False False = refl
+
+--
+prop-x-||-True
+  : ∀ (x : Bool)
+  → (x || True) ≡ True
+--
+prop-x-||-True True = refl
+prop-x-||-True False = refl
+
+--
+prop-x-||-False
+  : ∀ (x : Bool)
+  → (x || False) ≡ x
+--
+prop-x-||-False True = refl
+prop-x-||-False False = refl
+
+{-----------------------------------------------------------------------------
+    Properties
+    Other
+------------------------------------------------------------------------------}
+
 --------------------------------------------------
 -- &&
 
