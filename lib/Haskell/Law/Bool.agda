@@ -43,6 +43,143 @@ prop-x-||-False False = refl
 
 {-----------------------------------------------------------------------------
     Properties
+    Boolean algebra
+    https://en.wikipedia.org/wiki/Boolean_algebra_(structure)
+------------------------------------------------------------------------------}
+--
+prop-||-idem
+  : ∀ (a : Bool)
+  → (a || a) ≡ a
+--
+prop-||-idem False = refl
+prop-||-idem True = refl
+
+--
+prop-||-assoc
+  : ∀ (a b c : Bool)
+  → ((a || b) || c) ≡ (a || (b || c))
+--
+prop-||-assoc False b c = refl
+prop-||-assoc True b c = refl
+
+--
+prop-||-sym
+  : ∀ (a b : Bool)
+  → (a || b) ≡ (b || a)
+--
+prop-||-sym False False = refl
+prop-||-sym False True = refl
+prop-||-sym True False = refl
+prop-||-sym True True = refl
+
+--
+prop-||-absorb
+  : ∀ (a b : Bool)
+  → (a || (a && b)) ≡ a
+--
+prop-||-absorb False b = refl
+prop-||-absorb True b = refl
+
+--
+prop-||-identity
+  : ∀ (a : Bool)
+  → (a || False) ≡ a
+--
+prop-||-identity False = refl
+prop-||-identity True = refl
+
+--
+prop-||-&&-distribute
+  : ∀ (a b c : Bool)
+  → (a || (b && c)) ≡ ((a || b) && (a || c))
+--
+prop-||-&&-distribute False b c = refl
+prop-||-&&-distribute True b c = refl
+
+--
+prop-||-complement
+  : ∀ (a : Bool)
+  → (a || not a) ≡ True
+--
+prop-||-complement False = refl
+prop-||-complement True = refl
+
+--
+prop-&&-idem
+  : ∀ (a : Bool)
+  → (a && a) ≡ a
+--
+prop-&&-idem False = refl
+prop-&&-idem True = refl
+
+--
+prop-&&-assoc
+  : ∀ (a b c : Bool)
+  → ((a && b) && c) ≡ (a && (b && c))
+--
+prop-&&-assoc False b c = refl
+prop-&&-assoc True b c = refl
+
+--
+prop-&&-sym
+  : ∀ (a b : Bool)
+  → (a && b) ≡ (b && a)
+--
+prop-&&-sym False False = refl
+prop-&&-sym False True = refl
+prop-&&-sym True False = refl
+prop-&&-sym True True = refl
+
+--
+prop-&&-absorb
+  : ∀ (a b : Bool)
+  → (a && (a || b)) ≡ a
+--
+prop-&&-absorb False b = refl
+prop-&&-absorb True b = refl
+
+--
+prop-&&-identity
+  : ∀ (a : Bool)
+  → (a && True) ≡ a
+--
+prop-&&-identity False = refl
+prop-&&-identity True = refl
+
+--
+prop-&&-||-distribute
+  : ∀ (a b c : Bool)
+  → (a && (b || c)) ≡ ((a && b) || (a && c))
+--
+prop-&&-||-distribute False b c = refl
+prop-&&-||-distribute True b c = refl
+
+--
+prop-&&-complement
+  : ∀ (a : Bool)
+  → (a && not a) ≡ False
+--
+prop-&&-complement False = refl
+prop-&&-complement True = refl
+
+--
+prop-deMorgan-not-&&
+  : ∀ (a b : Bool)
+  → not (a && b) ≡ (not a || not b)
+--
+prop-deMorgan-not-&& False b = refl
+prop-deMorgan-not-&& True b = refl
+
+--
+prop-deMorgan-not-||
+  : ∀ (a b : Bool)
+  → not (a || b) ≡ (not a && not b)
+--
+prop-deMorgan-not-|| False b = refl
+prop-deMorgan-not-|| True b = refl
+
+{-----------------------------------------------------------------------------
+    Properties
     Other
 ------------------------------------------------------------------------------}
 
