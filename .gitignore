@@ -1,3 +1,4 @@
+# Haskell
 _build
 dist
 dist-newstyle
@@ -6,6 +7,9 @@ html/
 docs/build/
 *.hi
 *.o
+
+# Agda
+*.agdai
 
 # For nix users
 .direnv/**
