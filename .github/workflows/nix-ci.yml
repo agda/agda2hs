@@ -43,4 +43,5 @@ jobs:
     - uses: actions/checkout@v3
     - uses: cachix/install-nix-action@v22
     - uses: DeterminateSystems/magic-nix-cache-action@v2
-    - run: nix develop -Lv -c bash -c "cabal build"
+    # for some reason this doesn't work without update, even though it doesn't download anything
+    - run: nix develop -Lv -c bash -c "cabal update; cabal v1-build"
