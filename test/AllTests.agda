@@ -94,6 +94,7 @@ import FunCon
 import Issue308
 import Issue324
 import Assert
+import Issue377
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -185,4 +186,5 @@ import FunCon
 import Issue308
 import Issue324
 import Assert
+import Issue377
 #-}

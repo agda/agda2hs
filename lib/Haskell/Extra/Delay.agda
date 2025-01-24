@@ -5,8 +5,10 @@ module Haskell.Extra.Delay where
 open import Agda.Builtin.Size public
 
 open import Haskell.Prelude
-open import Haskell.Prim.Thunk
+
+open import Haskell.Data.Maybe
 open import Haskell.Extra.Refinement
+open import Haskell.Prim.Thunk
 
 private variable
   x y z : a
