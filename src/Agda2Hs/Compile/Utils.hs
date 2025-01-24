@@ -7,10 +7,9 @@ import Control.Monad.Reader
 import Control.Monad.Writer ( tell )
 import Control.Monad.State ( put, modify )
 
-import Data.List ( isPrefixOf )
+import Data.List ( isPrefixOf, stripPrefix )
 import Data.Maybe ( isJust )
 import qualified Data.Map as M
-import Data.List ( isPrefixOf )
 
 import qualified Language.Haskell.Exts as Hs
 
@@ -51,6 +50,11 @@ import Agda2Hs.Pragma
 import qualified Data.List as L
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
+data HsModuleKind
+  = PrimModule
+  | HsModule
+  | AgdaModule
+  deriving (Eq)
 
 -- | Primitive modules provided by the agda2hs library.
 -- None of those (and none of their children) will get processed.
@@ -61,11 +65,15 @@ primModules =
   , "Haskell.Prelude"
   ]
 
-isPrimModule :: Hs.ModuleName () -> Bool
-isPrimModule mod = any (`isPrefixOf` pp mod) primModules
+hsModuleKind :: Hs.ModuleName () -> HsModuleKind
+hsModuleKind mod
+  | any (`isPrefixOf` pp mod) primModules = PrimModule
+  | "Haskell." `isPrefixOf` pp mod        = HsModule
+  | otherwise                             = AgdaModule
 
-isHsModule :: Hs.ModuleName () -> Bool
-isHsModule mod = "Haskell." `isPrefixOf` pp mod
+dropHaskellPrefix :: Hs.ModuleName () -> Hs.ModuleName ()
+dropHaskellPrefix (Hs.ModuleName l s) =
+  Hs.ModuleName l $ fromMaybe s $ stripPrefix "Haskell." s
 
 concatUnzip :: [([a], [b])] -> ([a], [b])
 concatUnzip = (concat *** concat) . unzip

@@ -90,4 +90,5 @@ import Issue308
 import Issue324
 import Assert
 import Issue377
+import Issue394
 

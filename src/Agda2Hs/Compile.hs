@@ -30,7 +30,7 @@ import Agda2Hs.Compile.Name ( hsTopLevelModuleName )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
 import Agda2Hs.Compile.Types
-import Agda2Hs.Compile.Utils ( setCurrentRangeQ, tellExtension, primModules, isPrimModule, isHsModule, isClassName )
+import Agda2Hs.Compile.Utils
 import Agda2Hs.Pragma
 import qualified Language.Haskell.Exts.Syntax as Hs
 import qualified Language.Haskell.Exts.Pretty as Hs
@@ -138,13 +138,15 @@ verifyOutput _ _ _ m ls = do
 
     ensureNoOutputFromHsModules = unless (null $ concat $ map fst ls) $ do
       let hsModName = hsTopLevelModuleName m
-      when (isHsModule hsModName) $ do
-        reportSDoc "agda2hs.compile" 10 $ text "Haskell module" <+> prettyTCM m <+> text "has non-null output."
-        genericDocError =<< hsep
-          (  pwords "The `Haskell.` namespace are reserved for binding existing Haskell modules, so the module"
-          ++ [text "`" <> prettyTCM m <> text "`"]
-          ++ pwords "should not contain any"
-          ++ [text "`{-# COMPILE AGDA2HS ... #-}`"]
-          ++ pwords "pragmas that produce Haskell code."
-          )
-      when (isPrimModule hsModName) __IMPOSSIBLE__
+      case hsModuleKind hsModName of
+        HsModule -> do
+          reportSDoc "agda2hs.compile" 10 $ text "Haskell module" <+> prettyTCM m <+> text "has non-null output."
+          genericDocError =<< hsep
+            (  pwords "The `Haskell.` namespace are reserved for binding existing Haskell modules, so the module"
+            ++ [text "`" <> prettyTCM m <> text "`"]
+            ++ pwords "should not contain any"
+            ++ [text "`{-# COMPILE AGDA2HS ... #-}`"]
+            ++ pwords "pragmas that produce Haskell code."
+            )
+        PrimModule -> __IMPOSSIBLE__
+        AgdaModule -> return ()
