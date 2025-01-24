@@ -120,7 +120,7 @@ verifyOutput ::
 verifyOutput _ _ _ m ls = do
   reportSDoc "agda2hs.compile" 5 $ text "Checking generated output before rendering: " <+> prettyTCM m
   ensureUniqueConstructors
-  ensureNoOutputFromPrimModules
+  ensureNoOutputFromHsModules
   where
     ensureUniqueConstructors = do
       let allCons = do
@@ -136,17 +136,15 @@ verifyOutput _ _ _ m ls = do
       when (length duplicateCons > 0) $
         genericDocError =<< vcat (map (\x -> text $ "Cannot generate multiple constructors with the same identifier: " <> Hs.prettyPrint (headWithDefault __IMPOSSIBLE__ x)) duplicateCons)
 
-    ensureNoOutputFromPrimModules = unless (null $ concat $ map fst ls) $ do
+    ensureNoOutputFromHsModules = unless (null $ concat $ map fst ls) $ do
       let hsModName = hsTopLevelModuleName m
-      when (isPrimModule hsModName) $ do
-        reportSDoc "agda2hs.compile" 10 $ text "Primitive module" <+> prettyTCM m <+> text "has non-null output."
-        if isHsModule hsModName
-        then genericDocError =<< hsep
+      when (isHsModule hsModName) $ do
+        reportSDoc "agda2hs.compile" 10 $ text "Haskell module" <+> prettyTCM m <+> text "has non-null output."
+        genericDocError =<< hsep
           (  pwords "The `Haskell.` namespace are reserved for binding existing Haskell modules, so the module"
           ++ [text "`" <> prettyTCM m <> text "`"]
           ++ pwords "should not contain any"
           ++ [text "`{-# COMPILE AGDA2HS ... #-}`"]
           ++ pwords "pragmas that produce Haskell code."
           )
-        else do
-          __IMPOSSIBLE_VERBOSE__ "Primitive Agda module should not have any COMPILE AGDA2HS pragmas!"
+      when (isPrimModule hsModName) __IMPOSSIBLE__
