@@ -1,7 +1,7 @@
 module QualifiedPrelude where
 
 import Numeric.Natural (Natural)
-import qualified Prelude as Pre (foldr, (+), (.))
+import qualified Prelude as Pre (Foldable(foldr), Num((+)), (.))
 
 -- ** qualifying the Prelude
 

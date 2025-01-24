@@ -109,12 +109,12 @@ compileQName f
     parent <- parentName f
     par <- traverse (compileName . qnameName) parent
     let mod0 = qnameModule $ fromMaybe f parent
-    mod <- compileModuleName mod0
+    (mkind, mod) <- compileModuleName mod0
 
     existsInHaskell <- orM
       [ pure $ isJust special
-      , pure $ isPrimModule mod
-      , pure $ isHsModule mod
+      , pure $ mkind == PrimModule
+      , pure $ mkind == HsModule
       , hasCompilePragma f
       , isClassFunction f
       , isWhereFunction f
@@ -137,8 +137,12 @@ compileQName f
           Hs.Symbol _ _ -> getNamespace f
           Hs.Ident  _ _ -> return (Hs.NoNamespace ()))
     let
-      (mod', mimp) = mkImport mod qual par hf namespace
-      qf = qualify mod' hf qual
+      -- We don't generate "import Prelude" for primitive modules,
+      -- unless a name is qualified.
+      mimp = if mkind /= PrimModule || isQualified qual
+             then Just (Import mod qual par hf namespace)
+             else Nothing
+      qf = qualify mod hf qual
 
     -- add (possibly qualified) import
     whenM (asks writeImports) $
@@ -202,21 +206,6 @@ compileQName f
       (Pi _ absType) -> getResultType $ unAbs absType
       _              -> typ
 
-    mkImport mod qual par hf maybeIsType
-      -- make sure the Prelude is properly qualified
-      | isPrimModule mod
-      = if isQualified qual then
-          let mod' = hsModuleName "Prelude"
-          in (mod', Just (Import mod' qual Nothing hf maybeIsType))
-        else (mod, Nothing)
-      | otherwise
-      = let mod' = dropHaskellPrefix mod
-        in (mod', Just (Import mod' qual par hf maybeIsType))
-
-    dropHaskellPrefix :: Hs.ModuleName () -> Hs.ModuleName ()
-    dropHaskellPrefix (Hs.ModuleName l s) =
-      Hs.ModuleName l $ fromMaybe s $ stripPrefix "Haskell." s
-
 isWhereFunction :: QName -> C Bool
 isWhereFunction f = do
   whereMods <- asks whereModules
@@ -228,17 +217,20 @@ hsTopLevelModuleName = hsModuleName . intercalate "." . map unpack
 
 -- | Given a module name (assumed to be a toplevel module),
 -- compute the associated Haskell module name.
-compileModuleName :: ModuleName -> C (Hs.ModuleName ())
+compileModuleName :: ModuleName -> C (HsModuleKind, Hs.ModuleName ())
 compileModuleName m = do
   tlm <- liftTCM $ hsTopLevelModuleName <$> getTopLevelModuleForModuleName m
   reportSDoc "agda2hs.name" 25 $
     text "Top-level module name for" <+> prettyTCM m <+>
     text "is" <+> text (pp tlm)
-  return tlm
+  case hsModuleKind tlm of
+    PrimModule -> return (PrimModule, Hs.ModuleName () "Prelude")
+    HsModule   -> return (HsModule, dropHaskellPrefix tlm)
+    AgdaModule -> return (AgdaModule, tlm)
 
 importInstance :: QName -> C ()
 importInstance f = do
-  mod <- compileModuleName $ qnameModule f
-  unless (isPrimModule mod) $ do
+  (kind, mod) <- compileModuleName $ qnameModule f
+  unless (kind == PrimModule) $ do
     reportSLn "agda2hs.import" 20 $ "Importing instances from " ++ pp mod
     tellImport $ ImportInstances mod
