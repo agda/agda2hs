@@ -137,6 +137,3 @@ IsJust : Maybe a → Set
 IsJust Nothing  = ⊥
 IsJust (Just _) = ⊤
 
-fromJust : (x : Maybe a) → @0 {IsJust x} → a
-fromJust Nothing  = error "fromJust Nothing"
-fromJust (Just x) = x
