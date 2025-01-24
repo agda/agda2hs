@@ -57,7 +57,8 @@ import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 primModules =
   [ "Agda.Builtin"
   , "Agda.Primitive"
-  , "Haskell"
+  , "Haskell.Prim"
+  , "Haskell.Prelude"
   ]
 
 isPrimModule :: Hs.ModuleName () -> Bool
