@@ -37,3 +37,54 @@ sortOn f =
     map snd
     ∘ sortBy (comparing fst)
     ∘ map (λ x → let y = f x in seq y (y , x))
+
+{-----------------------------------------------------------------------------
+    Properties
+------------------------------------------------------------------------------}
+
+-- | A deleted item is no longer an element.
+--
+prop-elem-deleteAll
+  : ∀ ⦃ _ : Eq a ⦄ ⦃ _ : IsLawfulEq a ⦄
+      (x y : a) (zs : List a)
+  → elem x (deleteAll y zs)
+    ≡ (if x == y then False else elem x zs)
+--
+prop-elem-deleteAll x y []
+  with x == y
+... | False = refl
+... | True  = refl
+prop-elem-deleteAll x y (z ∷ zs)
+  with recurse ← prop-elem-deleteAll x y zs
+  with y == z in eqyz
+... | True
+    with x == z in eqxz
+...   | True
+      rewrite equality' _ _ (trans (equality x z eqxz) (sym (equality y z eqyz)))
+      = recurse
+...   | False
+      = recurse
+prop-elem-deleteAll x y (z ∷ zs)
+    | False
+    with x == z in eqxz
+...   | True
+      rewrite equality x z eqxz | eqSymmetry y z | eqyz
+      = refl
+...   | False
+      = recurse
+
+-- | An item is an element of the 'nub' iff it is
+-- an element of the original list.
+--
+prop-elem-nub
+  : ∀ ⦃ _ : Eq a ⦄ ⦃ _ : IsLawfulEq a ⦄
+      (x : a) (ys : List a)
+  → elem x (nub ys)
+    ≡ elem x ys
+--
+prop-elem-nub x [] = refl
+prop-elem-nub x (y ∷ ys)
+  rewrite prop-elem-deleteAll x y (nub ys)
+  with x == y
+... | True = refl
+... | False = prop-elem-nub x ys
