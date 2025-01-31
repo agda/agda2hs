@@ -14,7 +14,7 @@ isAscending (x ∷ y ∷ xs) = if x <= y then isAscending (y ∷ xs) else False
 {-# COMPILE AGDA2HS isAscending #-}
 
 -- data type defining a postulate of ascending order on lists
-data IsAscending₂ {a : Set} ⦃ iOrdA : Ord a ⦄ : List a → Set where
+data IsAscending₂ {a : Type} ⦃ iOrdA : Ord a ⦄ : List a → Type where
     Empty : IsAscending₂ []
     OneElem : (x : a) →  IsAscending₂ (x ∷ [])
     ManyElem : (x y : a) (xs : List a) 
