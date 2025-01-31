@@ -2,7 +2,7 @@ module Definition where
 
 open import Haskell.Prelude
 
-data CountDown : Set where
+data CountDown : Type where
     MkCountdown : (start  : Int)
             → {{ @0 h : ((start > 0) ≡ True) }}
             → CountDown

@@ -7,7 +7,7 @@ Entry = Int × List String
 
 
 --defining a datatype
-data Tree (a : Set) : Set where
+data Tree (a : Type) : Type where
     Leaf   : a → Tree a
     Branch : a → Tree a → Tree a → Tree a
 
