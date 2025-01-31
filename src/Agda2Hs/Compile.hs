@@ -24,11 +24,11 @@ import Agda.Utils.Monad ( whenM, anyM, when, unless )
 import qualified Language.Haskell.Exts.Extension as Hs
 
 import Agda2Hs.Compile.ClassInstance ( compileInstance )
-import Agda2Hs.Compile.Data ( compileData )
+import Agda2Hs.Compile.Data ( compileData, checkUnboxedDataPragma )
 import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkInlinePragma )
 import Agda2Hs.Compile.Name ( hsTopLevelModuleName )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
-import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
+import Agda2Hs.Compile.Record ( compileRecord, checkUnboxedRecordPragma )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Pragma
@@ -93,7 +93,8 @@ compile opts tlm _ def =
       case (p , theDef def) of
         (NoPragma            , _         ) -> return []
         (ExistingClassPragma , _         ) -> return []
-        (UnboxPragma s       , Record{}  ) -> [] <$ checkUnboxPragma def
+        (UnboxPragma s       , Record{}  ) -> [] <$ checkUnboxedRecordPragma def
+        (UnboxPragma s       , Datatype{}) -> [] <$ checkUnboxedDataPragma def
         (TransparentPragma   , Function{}) -> [] <$ checkTransparentPragma def
         (InlinePragma        , Function{}) -> [] <$ checkInlinePragma def
         (TuplePragma b       , Record{}  ) -> return []
