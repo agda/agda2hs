@@ -2,7 +2,7 @@ module Inlining where
 
 open import Haskell.Prelude
 
-Alias : Set
+Alias : Type
 Alias = Bool
 {-# COMPILE AGDA2HS Alias inline #-}
 
@@ -10,7 +10,7 @@ aliased : Alias
 aliased = True
 {-# COMPILE AGDA2HS aliased #-}
 
-record Wrap (a : Set) : Set where
+record Wrap (a : Type) : Type where
   constructor Wrapped
   field
     unwrap : a

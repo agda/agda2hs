@@ -1,8 +1,8 @@
 open import Haskell.Prelude
 
-module Issue305 (@0 X : Set) where
+module Issue305 (@0 X : Type) where
 
-record Class (a : Set) : Set where
+record Class (a : Type) : Type where
   field
     foo : a → a
 open Class {{...}} public
@@ -41,7 +41,7 @@ andOneMoreTest : Int → Int
 andOneMoreTest x = foo 5
 {-# COMPILE AGDA2HS andOneMoreTest #-}
 
-record Subclass (a : Set) : Set where
+record Subclass (a : Type) : Type where
   field
     overlap {{super}} : Class a
     bar : a

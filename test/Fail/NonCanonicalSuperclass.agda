@@ -3,7 +3,7 @@ module Fail.NonCanonicalSuperclass where
 
 open import Haskell.Prelude
 
-record Class (a : Set) : Set where
+record Class (a : Type) : Type where
   field
     foo : a → a
 open Class {{...}} public
@@ -16,7 +16,7 @@ instance
 
 {-# COMPILE AGDA2HS ClassBool #-}
 
-record Subclass (a : Set) : Set where
+record Subclass (a : Type) : Type where
   field
     overlap {{super}} : Class a
     bar : a

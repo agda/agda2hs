@@ -1,8 +1,8 @@
 module Fail.Issue185 where
 
-open import Agda.Builtin.Bool
+open import Haskell.Prim using (Bool; True; Type)
 
-record RecordTest : Set where
+record RecordTest : Type where
   constructor MkRecord
   field
     aBool : Bool
@@ -14,5 +14,5 @@ open RecordTest public
 {-# COMPILE AGDA2HS aBoolAsAFunction #-}
 
 test : Bool
-test = aBoolAsAFunction (MkRecord true)
+test = aBoolAsAFunction (MkRecord True)
 {-# COMPILE AGDA2HS test #-}

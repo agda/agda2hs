@@ -4,14 +4,14 @@ module _ where
 
 open import Haskell.Prelude
 
-record ClassA (a : Set) : Set where
+record ClassA (a : Type) : Type where
   field
     myA : a
 
 open ClassA ⦃ ... ⦄ public
 {-# COMPILE AGDA2HS ClassA class #-}
 
-record ClassB (b : Set) : Set where
+record ClassB (b : Type) : Type where
   field
     overlap ⦃ super ⦄ : ClassA b
 {-# COMPILE AGDA2HS ClassB class #-}

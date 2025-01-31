@@ -1,5 +1,6 @@
+open import Haskell.Prim using (Type)
 
-data Nat : Set where
+data Nat : Type where
   Zero : Nat
   Suc  : Nat → Nat
 {-# COMPILE AGDA2HS Nat #-}
@@ -11,12 +12,12 @@ myNat : Nat'
 myNat = Suc (Suc Zero)
 {-# COMPILE AGDA2HS myNat #-}
 
-data List (a : Set) : Set where
+data List (a : Type) : Type where
   Nil : List a
   Cons : a → List a → List a
 {-# COMPILE AGDA2HS List #-}
 
-List' : Set → Set
+List' : Type → Type
 List' a = List a
 {-# COMPILE AGDA2HS List' #-}
 
@@ -28,7 +29,7 @@ myListFun Nil = Nil
 myListFun (Cons x xs) = Cons x (myListFun xs)
 {-# COMPILE AGDA2HS myListFun #-}
 
-ListList : Set → Set
+ListList : Type → Type
 ListList a = List (List a)
 {-# COMPILE AGDA2HS ListList #-}
 

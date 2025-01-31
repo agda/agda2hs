@@ -1,6 +1,8 @@
 module Issue73 where
 
-record ImplicitField (a : Set) : Set where
+open import Haskell.Prim using (Type)
+
+record ImplicitField (a : Type) : Type where
     field
         aField : a
         @0 {anImplicitField} : a

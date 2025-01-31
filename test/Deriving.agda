@@ -1,6 +1,6 @@
 open import Haskell.Prelude
 
-data Planet : Set where
+data Planet : Type where
   Mercury : Planet
   Venus   : Planet
   Earth   : Planet
@@ -36,7 +36,7 @@ postulate instance iPlanetShow : Show Planet
 
 {-# COMPILE AGDA2HS iPlanetShow derive stock #-}
 
-record Clazz (a : Set) : Set where
+record Clazz (a : Type) : Type where
   field
     foo : a → Int
     bar : a → Bool
@@ -49,7 +49,7 @@ postulate instance iPlanetClazz : Clazz Planet
 
 {-# COMPILE AGDA2HS iPlanetClazz derive anyclass #-}
 
-data Optional (a : Set) : Set where
+data Optional (a : Type) : Type where
   Of    : a → Optional a
   Empty : Optional a
 
@@ -59,7 +59,7 @@ postulate instance iOptionalEq : ⦃ Eq a ⦄ → Eq (Optional a)
 
 {-# COMPILE AGDA2HS iOptionalEq #-}
 
-data Duo (a b : Set) : Set where
+data Duo (a b : Type) : Type where
   MkDuo : (a × b) → Duo a b
 
 {-# COMPILE AGDA2HS Duo newtype #-}

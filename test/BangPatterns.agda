@@ -19,13 +19,13 @@ foldl'' f (! x0) (x ∷ xs) = foldl'' f (! f x0 x) xs
 
 {-# COMPILE AGDA2HS foldl'' #-}
 
-data LazyMaybe (a : Set ℓ) : Set ℓ where
+data LazyMaybe (a : Type ℓ) : Type ℓ where
   LazyNothing : LazyMaybe a
   LazyJust    : a → LazyMaybe a
 
 {-# COMPILE AGDA2HS LazyMaybe #-}
 
-data StrictMaybe (a : Set ℓ) : Set ℓ where
+data StrictMaybe (a : Type ℓ) : Type ℓ where
   StrictNothing : StrictMaybe a
   StrictJust    : Strict a → StrictMaybe a
 

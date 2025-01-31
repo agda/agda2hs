@@ -3,7 +3,7 @@ module Fail.ExplicitInstance2 where
 
 open import Haskell.Prelude
 
-record HasDefault (a : Set) : Set where
+record HasDefault (a : Type) : Type where
   field
     theDefault : a
 open HasDefault {{...}}
