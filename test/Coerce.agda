@@ -1,9 +1,9 @@
 open import Haskell.Prelude
 
-data A : Set where
+data A : Type where
   MkA : Nat → A
 
-data B : Set where
+data B : Type where
   MkB : Nat → B
 
 postulate A≡B : A ≡ B

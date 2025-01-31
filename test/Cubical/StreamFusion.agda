@@ -2,7 +2,6 @@ module Cubical.StreamFusion where
 
 open import Haskell.Prelude
 
-open import Agda.Primitive
 open import Agda.Primitive.Cubical
 open import Agda.Builtin.Equality
 open import Agda.Builtin.Size
@@ -10,7 +9,7 @@ open import Agda.Builtin.Size
 variable
   @0 i : Size
 
-record Stream (a : Set) (@0 i : Size) : Set where
+record Stream (a : Type) (@0 i : Size) : Type where
   pattern; inductive; constructor _:>_
   field
     shead : a

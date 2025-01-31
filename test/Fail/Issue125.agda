@@ -1,16 +1,18 @@
 module Fail.Issue125 where
 
-data A (a : Set) : Set where
+open import Haskell.Prim using (Type)
+
+data A (a : Type) : Type where
   ACtr : a -> A a
 
 {-# COMPILE AGDA2HS A #-}
 
-data B : Set where
+data B : Type where
   ACtr : B
 
 {-# COMPILE AGDA2HS B #-}
 
-data C : Set where
+data C : Type where
   Ca : C
 
 {-# COMPILE AGDA2HS C #-}

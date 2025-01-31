@@ -3,7 +3,7 @@ open import Haskell.Prelude
 
 module _ (@0 n : Bool) where
 
-record R : Set where
+record R : Type where
   field
     fld : Int
 open R public

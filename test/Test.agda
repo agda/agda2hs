@@ -20,7 +20,7 @@ import Data.Monoid
 
 -- ** Datatypes & functions
 
-data Exp (v : Set) : Set where
+data Exp (v : Type) : Type where
   Plus : Exp v → Exp v → Exp v
   Lit : Nat → Exp v
   Var : v → Exp v
@@ -136,7 +136,7 @@ thm (x ∷ xs) ys rewrite thm xs ys | assoc x (sum xs) (sum ys) = refl
 
 -- (custom) Monoid class
 
-record MonoidX (a : Set) : Set where
+record MonoidX (a : Type) : Type where
   field memptyX  : a
         mappendX : a → a → a
 
@@ -177,7 +177,7 @@ sumMon (x ∷ xs) = x <> sumMon xs
 
 -- Using the Monoid class from the Prelude
 
-data NatSum : Set where
+data NatSum : Type where
   MkSum : Nat → NatSum
 
 {-# COMPILE AGDA2HS NatSum #-}

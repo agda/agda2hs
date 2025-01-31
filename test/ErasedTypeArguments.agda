@@ -2,14 +2,14 @@
 -- and in lambdas do get erased.
 module ErasedTypeArguments where
 
-open import Agda.Primitive
+open import Agda.Primitive renaming (Set to Type)
 open import Agda.Builtin.Unit
 open import Agda.Builtin.Nat
 
 -- A record type which has both members compiled,
 -- but the argument of the lambda is erased;
 -- so that it won't be dependent-typed after compilation.
-record Σ' {i j} (a : Set i) (b : @0 a -> Set j) : Set (i ⊔ j) where
+record Σ' {i j} (a : Type i) (b : @0 a -> Type j) : Type (i ⊔ j) where
   constructor _:^:_
   field
     proj₁ : a
@@ -26,6 +26,6 @@ test n = n :^: tt
 
 -- Tests a type function that would be accepted anyway,
 -- but the argument is erased.
-data Id {i j} (@0 a : Set i) (f : @0 Set i -> Set j) : Set j where
+data Id {i j} (@0 a : Type i) (f : @0 Type i -> Type j) : Type j where
   MkId : f a -> Id a f
 {-# COMPILE AGDA2HS Id newtype #-}

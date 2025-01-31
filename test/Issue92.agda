@@ -1,9 +1,9 @@
 open import Haskell.Prelude
 
-postulate Something : Set
+postulate Something : Type
 postulate something : Something
 
-module _ {a : Set} where
+module _ {a : Type} where
   foo : a → a
   foo x = bar {something}
     where

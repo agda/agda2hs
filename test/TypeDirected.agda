@@ -1,14 +1,14 @@
 {-# OPTIONS --prop #-}
 module TypeDirected where
 
-open import Agda.Builtin.Reflection
+open import Agda.Builtin.Reflection hiding (Type)
 open import Agda.Builtin.Unit
 open import Haskell.Prelude
 
 data MyProp : Prop where
   true : MyProp
 
-myconst : {a : Set} → MyProp → a → {y : a} → a
+myconst : {a : Type} → MyProp → a → {y : a} → a
 myconst p x = x
 
 {-# COMPILE AGDA2HS myconst #-}

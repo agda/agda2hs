@@ -8,7 +8,7 @@ swap (a , b) = b , a
 
 {-# COMPILE AGDA2HS swap #-}
 
-data TuplePos : Set where
+data TuplePos : Type where
   Test : TuplePos × Bool → TuplePos
 
 {-# COMPILE AGDA2HS TuplePos #-}

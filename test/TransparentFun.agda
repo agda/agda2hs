@@ -1,7 +1,7 @@
 
 open import Haskell.Prelude
 
-data Unit : Set where
+data Unit : Type where
   unit : Unit
 
 myId : @0 Unit → a → a
@@ -14,7 +14,7 @@ testMyId u = myId u 42
 
 {-# COMPILE AGDA2HS testMyId #-}
 
-tyId : @0 Unit → Set → Set
+tyId : @0 Unit → Type → Type
 tyId unit a = a
 
 {-# COMPILE AGDA2HS tyId transparent #-}
@@ -24,7 +24,7 @@ testTyId {unit} n = n
 
 {-# COMPILE AGDA2HS testTyId #-}
 
-data Tree : Set where
+data Tree : Type where
   Tip : Tree
   Bin : Tree → Tree → Tree
 

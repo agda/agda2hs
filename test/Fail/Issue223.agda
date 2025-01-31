@@ -1,8 +1,10 @@
 module Fail.Issue223 where
 
-data Void : Set where
+open import Haskell.Prim using (Type)
+
+data Void : Type where
 {-# COMPILE AGDA2HS Void #-}
 
-test : {a : Set} → Void → a
+test : {a : Type} → Void → a
 test ()
 {-# COMPILE AGDA2HS test #-}

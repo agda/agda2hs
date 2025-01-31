@@ -3,7 +3,7 @@ open import Haskell.Prelude
 open import Haskell.Prim.Monoid
 open import Haskell.Prim.Foldable
 
-data MyData (a : Set) : Set where
+data MyData (a : Type) : Type where
   Nuttin' : MyData a
 {-# COMPILE AGDA2HS MyData #-}
 
@@ -18,7 +18,7 @@ instance
 
 -- need to create instance for semigroup first
 -- (requires explicitly typed function AFAICT)
-_><_ : {a : Set} -> MyData a -> MyData a -> MyData a
+_><_ : {a : Type} -> MyData a -> MyData a -> MyData a
 _ >< _ = Nuttin'
 {-# COMPILE AGDA2HS _><_ #-}
 

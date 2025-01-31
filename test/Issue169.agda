@@ -1,6 +1,6 @@
 open import Haskell.Prelude
 
-record Identity (a : Set) : Set where
+record Identity (a : Type) : Type where
     field
         runIdentity : a
 open Identity public

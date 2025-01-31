@@ -2,14 +2,14 @@ module Fail.Issue146 where
 
 open import Haskell.Prelude
 
-record Wrap (a : Set) : Set where
+record Wrap (a : Type) : Type where
   constructor MkWrap
   field wrapped : a
 open Wrap public
 
 {-# COMPILE AGDA2HS Wrap #-}
 
-record Class (a : Set) : Set where
+record Class (a : Type) : Type where
   field
     method : Wrap a → Wrap a
 open Class ⦃...⦄ public
