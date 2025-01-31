@@ -1,6 +1,8 @@
 module Fail.QualifiedRecordProjections where
 
-record Test (a : Set) : Set where
+open import Haskell.Prim using (Type)
+
+record Test (a : Type) : Type where
   field
     one : a
 

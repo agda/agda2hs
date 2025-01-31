@@ -1,6 +1,6 @@
 open import Haskell.Prelude
 
-record D : Set where
+record D : Type where
   constructor C
   field unC : Int
 open D public

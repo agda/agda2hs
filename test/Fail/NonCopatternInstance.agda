@@ -1,14 +1,16 @@
 
 module Fail.NonCopatternInstance where
 
-record HasId (a : Set) : Set where
+open import Haskell.Prim using (Type)
+
+record HasId (a : Type) : Type where
   field id : a → a
 
 open HasId ⦃ ... ⦄
 
 {-# COMPILE AGDA2HS HasId class #-}
 
-data Unit : Set where
+data Unit : Type where
   MkUnit : Unit
 
 {-# COMPILE AGDA2HS Unit #-}

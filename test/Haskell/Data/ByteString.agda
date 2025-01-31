@@ -3,7 +3,7 @@ module Haskell.Data.ByteString where
 open import Haskell.Prelude
 
 postulate
-  ByteString : Set
+  ByteString : Type
 
   instance
     iEqByteString : Eq ByteString

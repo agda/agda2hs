@@ -2,7 +2,7 @@ open import Haskell.Prelude
 
 Scope = List Bool
 
-data Telescope (@0 α : Scope) : @0 Scope → Set where
+data Telescope (@0 α : Scope) : @0 Scope → Type where
   ExtendTel : ∀ {@0 x β} → Bool → Telescope (x ∷ α) β  → Telescope α (x ∷ β)
 {-# COMPILE AGDA2HS Telescope #-}
 

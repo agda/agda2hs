@@ -1,13 +1,13 @@
 {-# OPTIONS --erase-record-parameters #-}
 open import Haskell.Prelude
 
-record Super (a : Set) : Set where
+record Super (a : Type) : Type where
   field
     myFun : a → a
 open Super {{...}}
 {-# COMPILE AGDA2HS Super class #-}
 
-record Sub (a : Set) : Set where
+record Sub (a : Type) : Type where
   field
     overlap {{super}} : Super a
 open Sub {{...}}
@@ -18,13 +18,13 @@ foo = myFun ∘ myFun
 {-# COMPILE AGDA2HS foo #-}
 
 -- Trying if diamonds are fine
-record Sub2 (a : Set) : Set where
+record Sub2 (a : Type) : Type where
   field
     overlap {{super}} : Super a
 open Sub2 {{...}}
 {-# COMPILE AGDA2HS Sub2 class #-}
 
-record Subber (a : Set) : Set where
+record Subber (a : Type) : Type where
   field
     overlap {{super}} : Sub a
     overlap {{super2}} : Sub2 a
@@ -47,7 +47,7 @@ instance
 
 -- Defining a subclass of an existing class from Prelude
 
-record DiscreteOrd (a : Set) : Set where
+record DiscreteOrd (a : Type) : Type where
   field
     overlap {{super}} : Ord a
 open DiscreteOrd {{...}}

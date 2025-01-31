@@ -2,7 +2,7 @@ module Fail.NewTypeTwoConstructors where
 
 open import Haskell.Prelude
 
-data Choice (a b  : Set) : Set where
+data Choice (a b  : Type) : Type where
   A : a → Choice a b
   B : b → Choice a b
 

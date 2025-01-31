@@ -1,7 +1,7 @@
 open import Haskell.Prelude
 open import Haskell.Control.Monad
 
-data Range : Set where
+data Range : Type where
     MkRange : (low high : Int)
             → {{ @0 h : ((low <= high) ≡ True) }}
             → Range

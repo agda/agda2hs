@@ -1,6 +1,6 @@
 open import Haskell.Prelude
 
-record Σ (a : Set) (b : @0 a → Set) : Set where
+record Σ (a : Type) (b : @0 a → Type) : Type where
   constructor _,_
   field
     fst : a
@@ -13,7 +13,7 @@ test xy = fst xy + snd xy
 
 {-# COMPILE AGDA2HS test #-}
 
-record Stuff (a : Set) : Set where
+record Stuff (a : Type) : Type where
   no-eta-equality; pattern
   constructor stuff
   field
@@ -38,7 +38,7 @@ section = stuff 42
 
 {-# COMPILE AGDA2HS section #-}
 
-record NoStuff : Set where
+record NoStuff : Type where
   no-eta-equality; pattern
   constructor dontlook
 
@@ -50,7 +50,7 @@ bar dontlook = dontlook
 {-# COMPILE AGDA2HS bar #-}
 
 -- This is legal, basically the same as an unboxed record.
-record Legal (a : Set) : Set where
+record Legal (a : Type) : Type where
   constructor mkLegal
   field
     theA : a

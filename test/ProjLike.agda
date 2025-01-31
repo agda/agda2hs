@@ -2,9 +2,9 @@ module ProjLike where
 
 open import Haskell.Prelude
 
-module M (a : Set) where
+module M (a : Type) where
 
-  data Scope : Set where
+  data Scope : Type where
     Empty : Scope
     Bind  : a → Scope → Scope
   

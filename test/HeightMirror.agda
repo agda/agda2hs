@@ -2,7 +2,7 @@
 open import Haskell.Prelude hiding (max)
 open import Haskell.Law.Equality hiding (subst)
 
-subst : {p : @0 a → Set} {@0 m n : a} → @0 m ≡ n → p m → p n
+subst : {p : @0 a → Type} {@0 m n : a} → @0 m ≡ n → p m → p n
 subst refl t = t
 
 {-# COMPILE AGDA2HS subst transparent #-}
@@ -12,7 +12,7 @@ max zero    n       = n
 max (suc m) zero    = suc m
 max (suc m) (suc n) = suc (max m n)
 
-data Tree (a : Set) : (@0 height : Nat) → Set where
+data Tree (a : Type) : (@0 height : Nat) → Type where
   Tip : Tree a 0
   Bin : ∀ {@0 l r} (x : a) → Tree a l → Tree a r → Tree a (suc (max l r))
 

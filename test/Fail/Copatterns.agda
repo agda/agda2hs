@@ -4,7 +4,7 @@ module Fail.Copatterns where
 
 open import Haskell.Prelude
 
-record R : Set where
+record R : Type where
   field
     foo : Bool
 open R public

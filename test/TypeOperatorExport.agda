@@ -2,20 +2,18 @@ module TypeOperatorExport where
 
 {-# FOREIGN AGDA2HS {-# LANGUAGE TypeOperators #-} #-}
 
-open import Agda.Primitive
+open import Haskell.Prim
 
-_<_ : Set -> Set -> Set
+_<_ : Type -> Type -> Type
 a < b = a
 {-# COMPILE AGDA2HS _<_ #-}
 
-data _***_ {i j : Level} (a : Set i) (b : Set j) : Set (i ⊔ j) where
+data _***_ {i j : Level} (a : Type i) (b : Type j) : Type (i ⊔ j) where
   _:*:_ : a -> b -> a *** b
 open _***_ public
 {-# COMPILE AGDA2HS _***_ #-}
 
-open import Agda.Builtin.Bool
-
 _&&&_ : Bool -> Bool -> Bool
-false &&& _  = false
+False &&& _  = False
 _     &&& b2 = b2
 {-# COMPILE AGDA2HS _&&&_ #-}

@@ -1,6 +1,6 @@
 open import Haskell.Prelude
 
-data Void : Set where
+data Void : Type where
 
 test : Maybe Void → Maybe Void
 test = λ
