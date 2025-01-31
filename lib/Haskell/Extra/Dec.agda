@@ -6,9 +6,9 @@ open import Agda.Primitive
 
 private variable
   ℓ : Level
-  P : Set
+  P : Type
 
-@0 Reflects : Set ℓ → Bool → Set ℓ
+@0 Reflects : Type ℓ → Bool → Type ℓ
 Reflects P True  = P
 Reflects P False = P → ⊥
 
@@ -31,11 +31,11 @@ mapReflects : ∀ {cond} → (a → b) → (b → a)
 mapReflects {cond = False} f g x = x ∘ g
 mapReflects {cond = True}  f g x = f x
 
-Dec : ∀ {ℓ} → @0 Set ℓ → Set ℓ
+Dec : ∀ {ℓ} → @0 Type ℓ → Type ℓ
 Dec P = ∃ Bool (Reflects P)
 {-# COMPILE AGDA2HS Dec inline #-}
 
-mapDec : {@0 a b : Set}
+mapDec : {@0 a b : Type}
        → @0 (a → b)
        → @0 (b → a)
        → Dec a → Dec b

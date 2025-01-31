@@ -17,7 +17,7 @@ open import Haskell.Prim.Either
 --------------------------------------------------
 -- Ordering
 
-data Ordering : Set where
+data Ordering : Type where
   LT EQ GT : Ordering
 
 instance
@@ -38,7 +38,7 @@ instance
 --------------------------------------------------
 -- Ord
 
-record Ord (a : Set) : Set where
+record Ord (a : Type) : Type where
   field
     compare : a → a → Ordering
     _<_  : a → a → Bool
@@ -51,7 +51,7 @@ record Ord (a : Set) : Set where
 
   infix 4 _<_ _>_ _<=_ _>=_
 
-record OrdFromCompare (a : Set) : Set where
+record OrdFromCompare (a : Type) : Type where
   field
     compare : a → a → Ordering
     overlap ⦃ super ⦄ : Eq a
@@ -74,7 +74,7 @@ record OrdFromCompare (a : Set) : Set where
   min  : a → a → a
   min x y = if compare x y == GT then y else x
 
-record OrdFromLessThan (a : Set) : Set where
+record OrdFromLessThan (a : Type) : Type where
   field
     _<_ : a → a → Bool
     overlap ⦃ super ⦄ : Eq a

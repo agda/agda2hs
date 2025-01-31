@@ -13,7 +13,7 @@ module Haskell.Extra.Erase where
     @0 x y : a
     @0 xs  : List a
 
-  record Erase (@0 a : Set ℓ) : Set ℓ where
+  record Erase (@0 a : Type ℓ) : Type ℓ where
     instance constructor iErased
     field @0 {{get}} : a
   open Erase public
@@ -22,7 +22,7 @@ module Haskell.Extra.Erase where
   pattern Erased x = iErased {{x}}
 
   infixr 4 ⟨_⟩_
-  record Σ0 (@0 a : Set) (b : @0 a → Set) : Set where
+  record Σ0 (@0 a : Type) (b : @0 a → Type) : Type where
     constructor ⟨_⟩_
     field
       @0 proj₁ : a
@@ -33,7 +33,7 @@ module Haskell.Extra.Erase where
   pattern <_> x = record { proj₁ = _ ; proj₂ = x }
 
   -- Resurrection of erased values
-  Rezz : (@0 x : a) → Set
+  Rezz : (@0 x : a) → Type
   Rezz x = ∃ _ (x ≡_)
 
   {-# COMPILE AGDA2HS Rezz inline #-}
@@ -45,7 +45,7 @@ module Haskell.Extra.Erase where
     rezz-id = rezz _
   {-# COMPILE AGDA2HS rezz-id inline #-}
 
-  rezzCong : {@0 a : Set} {@0 x : a} (f : a → b) → Rezz x → Rezz (f x)
+  rezzCong : {@0 a : Type} {@0 x : a} (f : a → b) → Rezz x → Rezz (f x)
   rezzCong f (x ⟨ p ⟩) = f x ⟨ cong f p ⟩
   {-# COMPILE AGDA2HS rezzCong inline #-}
 
@@ -71,7 +71,7 @@ module Haskell.Extra.Erase where
                    ne = subst NonEmpty p itsNonEmpty
   {-# COMPILE AGDA2HS rezzTail inline #-}
 
-  rezzErase : {@0 a : Set} {@0 x : a} → Rezz (Erased x)
+  rezzErase : {@0 a : Type} {@0 x : a} → Rezz (Erased x)
   rezzErase {x = x} = Erased x ⟨ refl ⟩
   {-# COMPILE AGDA2HS rezzErase inline #-}
 

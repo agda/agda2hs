@@ -13,7 +13,7 @@ suc-injective refl = refl
 The canonical formalization of the
 less-than-or-equal-to relation for natural numbers.
 -}
-data _≤_ : Nat → Nat → Set where
+data _≤_ : Nat → Nat → Type where
   z≤n : ∀ {n}                 → zero  ≤ n
   s≤s : ∀ {m n} (m≤n : m ≤ n) → suc m ≤ suc n
 

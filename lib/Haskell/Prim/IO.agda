@@ -4,7 +4,7 @@ open import Haskell.Prim
 open import Haskell.Prim.Show
 open import Haskell.Prim.String
 
-postulate IO : ∀{a} → Set a → Set a
+postulate IO : ∀{a} → Type a → Type a
 
 FilePath = String
 

@@ -4,7 +4,7 @@ open import Haskell.Prim
 
 open import Agda.Builtin.TrustMe
 
-_≠_ : {A : Set} → A → A → Set
+_≠_ : {A : Type} → A → A → Type
 _≠_ a b = a ≡ b → ⊥
 
 infix 4 _≠_
@@ -12,25 +12,25 @@ infix 4 _≠_
 --------------------------------------------------
 -- Basic Laws
 
-cong : {A B : Set} → ∀ (f : A → B) {x y} → x ≡ y → f x ≡ f y
+cong : {A B : Type} → ∀ (f : A → B) {x y} → x ≡ y → f x ≡ f y
 cong f refl = refl
 
 cong₂ : ∀ (f : a → b → c) {x y u v} → x ≡ y → u ≡ v → f x u ≡ f y v
 cong₂ f refl refl = refl
 
-sym : ∀ {A : Set} {x y : A} → x ≡ y → y ≡ x
+sym : ∀ {A : Type} {x y : A} → x ≡ y → y ≡ x
 sym refl = refl
 
-trans : ∀ {A : Set} {x y z : A} → x ≡ y → y ≡ z → x ≡ z
+trans : ∀ {A : Type} {x y z : A} → x ≡ y → y ≡ z → x ≡ z
 trans refl refl = refl
 
-subst : ∀ {A : Set} (P : A → Set) {x y : A} → x ≡ y → P x → P y
+subst : ∀ {A : Type} (P : A → Type) {x y : A} → x ≡ y → P x → P y
 subst P refl z = z
 
 --------------------------------------------------
 -- Scary Things
 
-trustMe : ∀ {a} {A : Set a} {x y : A} → x ≡ y
+trustMe : ∀ {a} {A : Type a} {x y : A} → x ≡ y
 trustMe = primTrustMe
 
 --------------------------------------------------
@@ -62,6 +62,6 @@ syntax step-≡˘ x y≡z y≡x = x ≡˘⟨ y≡x ⟩ y≡z
 -------------------------------------------------
 -- Utility Functions
 
-subst0 : {@0 a : Set} (@0 p : @0 a → Set) {@0 x y : a} → @0 x ≡ y → p x → p y
+subst0 : {@0 a : Type} (@0 p : @0 a → Type) {@0 x y : a} → @0 x ≡ y → p x → p y
 subst0 p refl z = z
 {-# COMPILE AGDA2HS subst0 transparent #-}

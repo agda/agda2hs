@@ -16,7 +16,7 @@ open import Haskell.Prim.Monoid
 -- Foldable
 
 -- ** base
-record Foldable (t : Set → Set) : Set₁ where
+record Foldable (t : Type → Type) : Type₁ where
   field
     foldMap : ⦃ Monoid b ⦄ → (a → b) → t a → b
     foldr : (a → b → b) → b → t a → b
@@ -35,7 +35,7 @@ record Foldable (t : Set → Set) : Set₁ where
     product : ⦃ iNum : Num a ⦄ → t a → a
     length : t a → Int
 -- ** defaults
-record DefaultFoldable (t : Set → Set) : Set₁ where
+record DefaultFoldable (t : Type → Type) : Type₁ where
   module M = Foldable {t = t}
   field foldMap : ⦃ Monoid b ⦄ → (a → b) → t a → b
 

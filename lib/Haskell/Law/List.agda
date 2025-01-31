@@ -44,7 +44,7 @@ map-concatMap f (x ∷ xs)
   rewrite map-concatMap f xs
   = refl
 
-map-<*>-recomp : {a b c : Set} → (xs : List (a → b)) → (ys : List a) → (u : (b → c))  
+map-<*>-recomp : {a b c : Type} → (xs : List (a → b)) → (ys : List a) → (u : (b → c))  
   → ((map (u ∘_) xs) <*> ys) ≡ map u (xs <*> ys)
 map-<*>-recomp [] _ _  = refl
 map-<*>-recomp (x ∷ xs) ys u 

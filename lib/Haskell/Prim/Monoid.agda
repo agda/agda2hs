@@ -11,7 +11,7 @@ open import Haskell.Prim.Tuple
 --------------------------------------------------
 -- Semigroup
 
-record Semigroup (a : Set) : Set where
+record Semigroup (a : Type) : Type where
   infixr 6 _<>_
   field _<>_ : a → a → a
 open Semigroup ⦃...⦄ public
@@ -48,14 +48,14 @@ instance
 -- Monoid
 
 -- ** base
-record Monoid (a : Set) : Set where
+record Monoid (a : Type) : Type where
   field
     mempty : a
     overlap ⦃ super ⦄ : Semigroup a
     mappend : a → a → a
     mconcat : List a → a
 -- ** defaults
-record DefaultMonoid (a : Set) : Set where
+record DefaultMonoid (a : Type) : Type where
   field
     mempty : a
     overlap ⦃ super ⦄ : Semigroup a

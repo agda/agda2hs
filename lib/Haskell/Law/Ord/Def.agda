@@ -19,7 +19,7 @@ open import Haskell.Law.Eq
 open import Haskell.Law.Bool
 open import Haskell.Law.Equality
 
-record IsLawfulOrd (a : Set) ⦃ iOrd : Ord a ⦄ : Set₁ where
+record IsLawfulOrd (a : Type) ⦃ iOrd : Ord a ⦄ : Type₁ where
   field
     overlap ⦃ super ⦄ : IsLawfulEq a
 
