@@ -12,13 +12,13 @@ open import Haskell.Prim.Tuple
 -- Functor
 
 -- ** base
-record Functor (f : Set → Set) : Set₁ where
+record Functor (f : Type → Type) : Type₁ where
   infixl 4 _<$_
   field
     fmap : (a → b) → f a → f b
     _<$_ : (@0 {{ b }} → a) → f b → f a
 -- ** defaults
-record DefaultFunctor (f : Set → Set) : Set₁ where
+record DefaultFunctor (f : Type → Type) : Type₁ where
   field fmap : (a → b) → f a → f b
 
   infixl 4 _<$_

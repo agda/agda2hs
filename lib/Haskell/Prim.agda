@@ -7,7 +7,7 @@
 
 module Haskell.Prim where
 
-open import Agda.Primitive          public
+open import Agda.Primitive          public renaming (Set to Type)
 open import Agda.Builtin.Bool       public renaming (true to True; false to False)
 open import Agda.Builtin.Int        public renaming (Int to Integer)
 open import Agda.Builtin.Nat        public renaming (_==_ to eqNat; _<_ to ltNat; _+_ to addNat; _-_ to monusNat; _*_ to mulNat)
@@ -24,8 +24,8 @@ open import Agda.Builtin.List       public
 
 variable
   @0 ℓ : Level
-  a b c d e : Set
-  f m s t : Set → Set
+  a b c d e : Type
+  f m s t : Type → Type
 
 
 --------------------------------------------------
@@ -57,12 +57,12 @@ case_of_ : (a' : a) → ((a'' : a) → @0 {{ a' ≡ a'' }} → b) → b
 case x of f = f x
 
 infix -2 if_then_else_
-if_then_else_ : {@0 a : Set ℓ} → (flg : Bool) → (@0 {{ flg ≡ True }} → a) → (@0 {{ flg ≡ False }} → a) → a
+if_then_else_ : {@0 a : Type ℓ} → (flg : Bool) → (@0 {{ flg ≡ True }} → a) → (@0 {{ flg ≡ False }} → a) → a
 if False then x else y = y
 if True  then x else y = x
 
 -- for explicit type signatures (e. g. `4 :: Integer` is `the Int 4`)
-the : (@0 a : Set ℓ) -> a -> a
+the : (@0 a : Type ℓ) -> a -> a
 the _ x = x
 
 --------------------------------------------------
@@ -94,9 +94,9 @@ lengthNat (_ ∷ xs) = addNat 1 (lengthNat xs)
 --------------------------------------------------
 -- Proof things
 
-data ⊥ : Set where
+data ⊥ : Type where
 
-magic : {A : Set} → ⊥ → A
+magic : {A : Type} → ⊥ → A
 magic ()
 
 --principle of explosion
@@ -105,26 +105,26 @@ exFalso {False} () b
 exFalso {True} a ()
 
 -- Use to bundle up constraints
-data All {a b} {A : Set a} (B : A → Set b) : List A → Set (a ⊔ b) where
+data All {a b} {A : Type a} (B : A → Type b) : List A → Type (a ⊔ b) where
   instance
     allNil  : All B []
     allCons : ∀ {x xs} ⦃ i : B x ⦄ ⦃ is : All B xs ⦄ → All B (x ∷ xs)
 
-data Any {a b} {A : Set a} (B : A → Set b) : List A → Set (a ⊔ b) where
+data Any {a b} {A : Type a} (B : A → Type b) : List A → Type (a ⊔ b) where
   instance
     anyHere  : ∀ {x xs} ⦃ i : B x ⦄ → Any B (x ∷ xs)
     anyThere : ∀ {x xs} ⦃ is : Any B xs ⦄ → Any B (x ∷ xs)
 
-data IsTrue : Bool → Set where
+data IsTrue : Bool → Type where
   instance itsTrue : IsTrue True
 
-data IsFalse : Bool → Set where
+data IsFalse : Bool → Type where
   instance itsFalse : IsFalse False
 
-data NonEmpty {a : Set} : List a → Set where
+data NonEmpty {a : Type} : List a → Type where
   instance itsNonEmpty : ∀ {x xs} → NonEmpty (x ∷ xs)
 
-data TypeError (err : AgdaString) : Set where
+data TypeError (err : AgdaString) : Type where
 
-it : ∀ {@0 ℓ} {@0 a : Set ℓ} → ⦃ a ⦄ → a
+it : ∀ {@0 ℓ} {@0 a : Type ℓ} → ⦃ a ⦄ → a
 it ⦃ x ⦄ = x

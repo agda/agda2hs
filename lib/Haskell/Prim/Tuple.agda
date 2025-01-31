@@ -10,7 +10,7 @@ infix 3 _×_ _×_×_
 
 infix -1 _,_ _,_,_
 
-record _×_ (a b : Set) : Set where
+record _×_ (a b : Type) : Type where
   constructor _,_
   field
     fst : a
@@ -19,7 +19,7 @@ open _×_ public
 
 {-# COMPILE AGDA2HS _×_ tuple #-}
 
-record _×_×_ (a b c : Set) : Set where
+record _×_×_ (a b c : Type) : Type where
   no-eta-equality; pattern
   constructor _,_,_
   field

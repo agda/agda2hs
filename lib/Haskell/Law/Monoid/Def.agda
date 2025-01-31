@@ -8,7 +8,7 @@ open import Haskell.Prim.Monoid
 
 open import Haskell.Law.Semigroup.Def
 
-record IsLawfulMonoid (a : Set) ⦃ iMonoidA : Monoid a ⦄ : Set₁ where
+record IsLawfulMonoid (a : Type) ⦃ iMonoidA : Monoid a ⦄ : Type₁ where
   field
     overlap ⦃ super ⦄ : IsLawfulSemigroup a
 

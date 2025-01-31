@@ -6,7 +6,7 @@ open import Agda.Primitive
 private variable
   ℓ ℓ′ : Level
 
-record ∃ (a : Set ℓ) (@0 P : a → Set ℓ′) : Set (ℓ ⊔ ℓ′) where
+record ∃ (a : Type ℓ) (@0 P : a → Type ℓ′) : Type (ℓ ⊔ ℓ′) where
   constructor _⟨_⟩
   field
     value    : a
@@ -14,12 +14,12 @@ record ∃ (a : Set ℓ) (@0 P : a → Set ℓ′) : Set (ℓ ⊔ ℓ′) where
 open ∃ public
 {-# COMPILE AGDA2HS ∃ unboxed #-}
 
-mapRefine : {@0 P Q : a → Set ℓ} (@0 f : ∀ {x} → P x → Q x) → ∃ a P → ∃ a Q
+mapRefine : {@0 P Q : a → Type ℓ} (@0 f : ∀ {x} → P x → Q x) → ∃ a P → ∃ a Q
 mapRefine f (x ⟨ p ⟩) = x ⟨ f p ⟩
 
 {-# COMPILE AGDA2HS mapRefine transparent #-}
 
-refineMaybe : {@0 P : a → Set ℓ} 
+refineMaybe : {@0 P : a → Type ℓ} 
             → (mx : Maybe a) → @0 (∀ {x} → mx ≡ Just x → P x)
             → Maybe (∃ a P)
 refineMaybe Nothing f = Nothing

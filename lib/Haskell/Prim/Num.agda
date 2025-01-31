@@ -14,13 +14,13 @@ open import Haskell.Prim.Monoid
 --------------------------------------------------
 -- Num
 
-record Num (a : Set) : Set₁ where
+record Num (a : Type) : Type₁ where
   infixl 6 _+_ _-_
   infixl 7 _*_
   field
-    @0 MinusOK       : a → a → Set
-    @0 NegateOK      : a → Set
-    @0 FromIntegerOK : Integer → Set
+    @0 MinusOK       : a → a → Type
+    @0 NegateOK      : a → Type
+    @0 FromIntegerOK : Integer → Type
     _+_           : a → a → a
     _-_           : (x y : a) → @0 ⦃ MinusOK x y ⦄ → a
     _*_           : a → a → a

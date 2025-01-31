@@ -14,7 +14,7 @@ open import Haskell.Prim.Bool
 --------------------------------------------------
 -- Definition
 
-data Int : Set where
+data Int : Type where
   int64 : Word64 → Int
 
 intToWord : Int → Word64
@@ -101,7 +101,7 @@ showInt a = showInteger (intToInteger a)
 --------------------------------------------------
 -- Constraints
 
-@0 IsNonNegativeInt : Int → Set
+@0 IsNonNegativeInt : Int → Type
 IsNonNegativeInt a@(int64 _) =
   if isNegativeInt a then TypeError (primStringAppend (primStringFromList (showInt a)) " is negative")
                      else ⊤
