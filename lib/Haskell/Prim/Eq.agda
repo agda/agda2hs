@@ -15,7 +15,7 @@ open import Haskell.Prim.Either
 --------------------------------------------------
 -- Eq
 
-record Eq (a : Set) : Set where
+record Eq (a : Type) : Type where
   infix 4 _==_
   field
     _==_ : a → a → Bool

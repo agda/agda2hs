@@ -4,7 +4,7 @@ open import Haskell.Prim
 open import Haskell.Prim.Num
 open import Haskell.Prim.Integer
 
-record IsLawfulNum (a : Set) ⦃ iNum : Num a ⦄ : Set₁ where
+record IsLawfulNum (a : Type) ⦃ iNum : Num a ⦄ : Type₁ where
   field
     +-assoc : ∀ (x y z : a) → (x + y) + z ≡ x + (y + z)
 
@@ -40,7 +40,7 @@ A number homomorphism establishes a homomorphism from one Num type a to another 
 In particular, zero and one are mapped to zero and one in the other Num type,
 and addition, multiplication, and negation are homorphic.
 -}
-record NumHomomorphism (a b : Set) ⦃ iNuma : Num a ⦄ ⦃ iNumb : Num b ⦄ (φ : a → b) : Set where
+record NumHomomorphism (a b : Type) ⦃ iNuma : Num a ⦄ ⦃ iNumb : Num b ⦄ (φ : a → b) : Type where
   0ᵃ = Num.fromInteger iNuma (pos 0)
   0ᵇ = Num.fromInteger iNumb (pos 0)
   1ᵃ = Num.fromInteger iNuma (pos 1)
@@ -59,7 +59,7 @@ record NumHomomorphism (a b : Set) ⦃ iNuma : Num a ⦄ ⦃ iNumb : Num b ⦄ (
 {-|
 A number embedding is an invertible number homomorphism.
 -}
-record NumEmbedding (a b : Set) ⦃ iNuma : Num a ⦄ ⦃ iNumb : Num b ⦄ (φ : a → b) (φ⁻¹ : b → a) : Set where
+record NumEmbedding (a b : Type) ⦃ iNuma : Num a ⦄ ⦃ iNumb : Num b ⦄ (φ : a → b) (φ⁻¹ : b → a) : Type where
   field
     hom   : NumHomomorphism a b φ
     embed : φ⁻¹ ∘ φ ≗ id
@@ -87,7 +87,7 @@ Given an embedding from one number type a onto another one b,
 we can conclude that b satisfies the laws of Num if a satisfies the
 laws of Num.
 -}
-map-IsLawfulNum : ∀ {a b : Set} ⦃ iNuma : Num a ⦄ ⦃ iNumb : Num b ⦄
+map-IsLawfulNum : ∀ {a b : Type} ⦃ iNuma : Num a ⦄ ⦃ iNumb : Num b ⦄
   → (a2b : a → b) (b2a : b → a)
   → NumEmbedding a b a2b b2a
   → IsLawfulNum b

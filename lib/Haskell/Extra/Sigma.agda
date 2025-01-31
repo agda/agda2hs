@@ -1,6 +1,8 @@
 module Haskell.Extra.Sigma where
 
-record Σ (a : Set) (b : @0 a → Set) : Set where
+open import Haskell.Prelude
+
+record Σ (a : Type) (b : @0 a → Type) : Type where
   constructor _,_
   field
     fst : a
@@ -10,7 +12,7 @@ open Σ public
 
 infix 2 Σ-syntax
 
-Σ-syntax : (a : Set) → (@0 a → Set) → Set
+Σ-syntax : (a : Type) → (@0 a → Type) → Type
 Σ-syntax = Σ
 {-# COMPILE AGDA2HS Σ-syntax inline #-}
 

@@ -10,25 +10,25 @@ This says that two functions produce the same
 result for all input values.
 -}
 infix 4 _≗_
-_≗_ : ∀ {A B : Set} (f g : A → B) → Set
+_≗_ : ∀ {A B : Type} (f g : A → B) → Type
 f ≗ g = ∀ a → f a ≡ g a
 
-Commutative : {a : Set} → (a → a → a) → Set
+Commutative : {a : Type} → (a → a → a) → Type
 Commutative _+_ = ∀ x y → x + y ≡ y + x
 
-Associative : {a : Set} → (a → a → a) → Set
+Associative : {a : Type} → (a → a → a) → Type
 Associative _+_ = ∀ x y z → (x + y) + z ≡ x + (y + z)
 
-Identityˡ : {a : Set} → (a → a → a) → a → Set
+Identityˡ : {a : Type} → (a → a → a) → a → Type
 Identityˡ _+_ 𝟘 = ∀ x → 𝟘 + x ≡ x
 
-Identityʳ : {a : Set} → (a → a → a) → a → Set
+Identityʳ : {a : Type} → (a → a → a) → a → Type
 Identityʳ _+_ 𝟘 = ∀ x → x + 𝟘 ≡ x
 
-Distributiveˡ : {a : Set} → (_+_ : a → a → a) → (_*_ : a → a → a) → Set
+Distributiveˡ : {a : Type} → (_+_ : a → a → a) → (_*_ : a → a → a) → Type
 Distributiveˡ _+_ _*_ = ∀ x y z → x * (y + z) ≡ (x * y) + (x * z)
 
-Distributiveʳ : {a : Set} → (_+_ : a → a → a) → (_*_ : a → a → a) → Set
+Distributiveʳ : {a : Type} → (_+_ : a → a → a) → (_*_ : a → a → a) → Type
 Distributiveʳ _+_ _*_ =  ∀ x y z → (y + z) * x ≡ (y * x) + (z * x)
 
 {-|
@@ -37,8 +37,8 @@ A function φ is homomorphic w.r.t. some function or structure f
 when it preserves this structure in its target domain b
 (where this structure is called g).
 -}
-Homomorphism₁ : ∀ {a b : Set} (f : a → a) (g : b → b)
-  → (φ : a → b) → Set
+Homomorphism₁ : ∀ {a b : Type} (f : a → a) (g : b → b)
+  → (φ : a → b) → Type
 Homomorphism₁ f g φ = φ ∘ f ≗ g ∘ φ
 
 {-|
@@ -47,21 +47,21 @@ A function φ is homomorphic w.r.t. some structure _+ᵃ_
 when it preserves this structure in its target domain b
 (where this structure is called _+ᵇ_).
 -}
-Homomorphism₂ : ∀ {a b : Set} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b)
-  → (φ : a → b) → Set
+Homomorphism₂ : ∀ {a b : Type} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b)
+  → (φ : a → b) → Type
 Homomorphism₂ _+ᵃ_ _+ᵇ_ φ = ∀ x y → φ (x +ᵃ y) ≡ φ x +ᵇ φ y
 
-record Embedding₂ {a b : Set} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b) (φ : a → b) (φ⁻¹ : b → a) : Set where
+record Embedding₂ {a b : Type} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b) (φ : a → b) (φ⁻¹ : b → a) : Type where
   field
     hom   : Homomorphism₂ _+ᵃ_ _+ᵇ_ φ
     embed : φ⁻¹ ∘ φ ≗ id
 
-record MonoidEmbedding₂ {a b : Set} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b) (φ : a → b) (φ⁻¹ : b → a) (0ᵃ : a) (0ᵇ : b) : Set where
+record MonoidEmbedding₂ {a b : Type} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b) (φ : a → b) (φ⁻¹ : b → a) (0ᵃ : a) (0ᵇ : b) : Type where
   field
     embedding : Embedding₂ _+ᵃ_ _+ᵇ_ φ φ⁻¹
     0-hom     : φ 0ᵃ ≡ 0ᵇ
 
-map-comm : ∀ {a b : Set} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b) (φ : a → b) (φ⁻¹ : b → a)
+map-comm : ∀ {a b : Type} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b) (φ : a → b) (φ⁻¹ : b → a)
   → Embedding₂ _+ᵃ_ _+ᵇ_ φ φ⁻¹
   → Commutative _+ᵇ_
   → Commutative _+ᵃ_
@@ -82,7 +82,7 @@ map-comm _+ᵃ_ _+ᵇ_ φ φ⁻¹ proj comm x y =
   where
     open Embedding₂ proj
 
-map-assoc : ∀ {a b : Set} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b) (φ : a → b) (φ⁻¹ : b → a)
+map-assoc : ∀ {a b : Type} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b) (φ : a → b) (φ⁻¹ : b → a)
   → Embedding₂ _+ᵃ_ _+ᵇ_ φ φ⁻¹
   → Associative _+ᵇ_
   → Associative _+ᵃ_
@@ -107,7 +107,7 @@ map-assoc _+ᵃ_ _+ᵇ_ φ φ⁻¹ proj assoc x y z =
   where
     open Embedding₂ proj
 
-map-idˡ : ∀ {a b : Set} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b) (φ : a → b) (φ⁻¹ : b → a) (0ᵃ : a) (0ᵇ : b)
+map-idˡ : ∀ {a b : Type} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b) (φ : a → b) (φ⁻¹ : b → a) (0ᵃ : a) (0ᵇ : b)
   → MonoidEmbedding₂ _+ᵃ_ _+ᵇ_ φ φ⁻¹ 0ᵃ 0ᵇ
   → Identityˡ _+ᵇ_ 0ᵇ
   → Identityˡ _+ᵃ_ 0ᵃ
@@ -122,7 +122,7 @@ map-idˡ _+ᵃ_ _+ᵇ_ f g 0ᵃ 0ᵇ membed idˡ x =
     open MonoidEmbedding₂ membed
     open Embedding₂ embedding
 
-map-idʳ : ∀ {a b : Set} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b) (φ : a → b) (φ⁻¹ : b → a) (0ᵃ : a) (0ᵇ : b)
+map-idʳ : ∀ {a b : Type} (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b) (φ : a → b) (φ⁻¹ : b → a) (0ᵃ : a) (0ᵇ : b)
   → MonoidEmbedding₂ _+ᵃ_ _+ᵇ_ φ φ⁻¹ 0ᵃ 0ᵇ
   → Identityʳ _+ᵇ_ 0ᵇ
   → Identityʳ _+ᵃ_ 0ᵃ
@@ -137,7 +137,7 @@ map-idʳ _+ᵃ_ _+ᵇ_ f g 0ᵃ 0ᵇ membed idʳ x =
     open MonoidEmbedding₂ membed
     open Embedding₂ embedding
 
-module _ {a b : Set}
+module _ {a b : Type}
   (_+ᵃ_ : a → a → a) (_+ᵇ_ : b → b → b)
   (_*ᵃ_ : a → a → a) (_*ᵇ_ : b → b → b)
   (f : a → b) (g : b → a)

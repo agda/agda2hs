@@ -16,7 +16,7 @@ open import Haskell.Prim.Tuple
 -- Traversable
 
 -- ** base
-record Traversable (t : Set → Set) : Set₁ where
+record Traversable (t : Type → Type) : Type₁ where
   field
     traverse : ⦃ Applicative f ⦄ → (a → f b) → t a → f (t b)
     overlap ⦃ functor ⦄ : Functor t
@@ -26,7 +26,7 @@ record Traversable (t : Set → Set) : Set₁ where
     mapM : ⦃ Monad m ⦄ → (a → m b) → t a → m (t b)
     sequence : ⦃ Monad m ⦄ → t (m a) → m (t a)
 -- ** defaults
-record DefaultTraversable (t : Set → Set) : Set₁ where
+record DefaultTraversable (t : Type → Type) : Type₁ where
   field
     traverse : ⦃ Applicative f ⦄ → (a → f b) → t a → f (t b)
     overlap ⦃ functor ⦄ : Functor t
