@@ -9,7 +9,7 @@ open import Haskell.Prim.Tuple
 
 open import Haskell.Law.Functor
 
-record IsLawfulApplicative (F : Set → Set) ⦃ iAppF : Applicative F ⦄ : Set₁ where
+record IsLawfulApplicative (F : Type → Type) ⦃ iAppF : Applicative F ⦄ : Type₁ where
   field
     overlap ⦃ super ⦄ : IsLawfulFunctor F
 
@@ -17,15 +17,15 @@ record IsLawfulApplicative (F : Set → Set) ⦃ iAppF : Applicative F ⦄ : Set
     identity : (v : F a) → (pure id <*> v) ≡ v
 
     -- Composition: pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
-    composition : {a b c : Set} → (u : F (b → c)) (v : F (a → b)) (w : F a)
+    composition : {a b c : Type} → (u : F (b → c)) (v : F (a → b)) (w : F a)
       → (pure _∘_ <*> u <*> v <*> w) ≡ (u <*> (v <*> w))
 
     -- Homomorphism: pure f <*> pure x = pure (f x)
-    homomorphism : {a b : Set} → (f : a → b) (x : a)
+    homomorphism : {a b : Type} → (f : a → b) (x : a)
       → (Applicative._<*>_ iAppF (pure f) (pure x)) ≡ (pure (f x))
 
     -- Interchange: u <*> pure y = pure ($ y) <*> u
-    interchange : {a b : Set} → (u : F (a → b)) (y : a)
+    interchange : {a b : Type} → (u : F (a → b)) (y : a)
       → (u <*> (pure y)) ≡ (pure (_$ y) <*> u)
 
     -- fmap f x = pure f <*> x

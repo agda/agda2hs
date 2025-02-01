@@ -1,3 +1,4 @@
+open import Haskell.Prim using (Type)
 open import Haskell.Prelude using ( Int ; fst ; snd
                                   ; a ; b
                                   ; _×_ ; _,_
@@ -9,7 +10,7 @@ open import Haskell.Prelude using ( Int ; fst ; snd
 -- data newtype
 #-}
 
-data Indexed (a : Set) : Set where
+data Indexed (a : Type) : Type where
     MkIndexed : Int × a → Indexed a
 
 {-# COMPILE AGDA2HS Indexed newtype #-}
@@ -23,7 +24,7 @@ index = MkIndexed
 -- data newtype with deriving
 #-}
 
-data Pair (a b : Set) : Set where
+data Pair (a b : Type) : Type where
     MkPair : a × b → Pair a b
 
 {-# COMPILE AGDA2HS Pair newtype deriving ( Show, Eq ) #-}
@@ -32,7 +33,7 @@ data Pair (a b : Set) : Set where
 -- record newtype
 #-}
 
-record Identity (a : Set) : Set where
+record Identity (a : Type) : Type where
     constructor MkIdentity
     field
         runIdentity : a
@@ -44,7 +45,7 @@ open Identity public
 -- record newtype with erased proof
 #-}
 
-record Equal (a : Set) : Set where
+record Equal (a : Type) : Type where
     constructor MkEqual
     field
         pair : a × a
@@ -57,7 +58,7 @@ open Equal public
 -- record newtype with same name
 #-}
 
-record Duo (a : Set) : Set where
+record Duo (a : Type) : Type where
     field
         duo : a × a
 open Duo public

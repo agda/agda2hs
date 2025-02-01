@@ -1,7 +1,7 @@
 
 open import Haskell.Prelude
 
-record ∃ (A : Set) (@0 P : A → Set) : Set where
+record ∃ (A : Type) (@0 P : A → Type) : Type where
   constructor _[_]
   field
     el : A
@@ -11,7 +11,7 @@ open ∃ public
 {-# COMPILE AGDA2HS ∃ unboxed #-}
 
 postulate
-  IsSorted : List Int → Set
+  IsSorted : List Int → Type
   looksfine : {xs : List Int} → IsSorted xs
 
 sort1 : List Int → ∃ (List Int) IsSorted
@@ -35,7 +35,7 @@ sortAll = map el (map (λ xs → xs [ looksfine {xs} ]) ((1 ∷ 2 ∷ []) ∷ (3
 
 {-# COMPILE AGDA2HS sortAll #-}
 
-record Σ0 (A : Set) (P : @0 A → Set) : Set where
+record Σ0 (A : Type) (P : @0 A → Type) : Type where
   constructor _[_]
   field
     @0 el : A
@@ -44,12 +44,12 @@ open Σ0 public
 
 {-# COMPILE AGDA2HS Σ0 unboxed #-}
 
-Scope : (name : Set) → Set
+Scope : (name : Type) → Type
 Scope name = Σ0 (List name) λ xs → ∃ Int λ n → length xs ≡ n
 
 {-# COMPILE AGDA2HS Scope #-}
 
-emptyScope : {name : Set} → Scope name
+emptyScope : {name : Type} → Scope name
 emptyScope = [] [ 0 [ refl ] ]
 
 {-# COMPILE AGDA2HS emptyScope #-}

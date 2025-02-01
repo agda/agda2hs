@@ -18,7 +18,7 @@ open Num iNumWord renaming (_+_ to _+ʷ_; _*_ to _*ʷ_)
 
 postulate
   -- This is a reasonable axiom because there are more natural numbers than
-  -- integer. More precisely, Words denote a finite subset of Integers.
+  -- integer. More precisely, Words denote a finite subType of Integers.
   -- This means, there is am embedding of Words into Integers as stated by
   -- this axiom.
   n2w∘w2n≡id : ∀ (x : Word)           → n2w (w2n x) ≡ x

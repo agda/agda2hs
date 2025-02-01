@@ -1,5 +1,6 @@
+open import Haskell.Prim using (Type)
 
-data Nat : Set where
+data Nat : Type where
   Zero : Nat
   Suc  : Nat → Nat
 {-# COMPILE AGDA2HS Nat #-}

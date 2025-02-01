@@ -5,7 +5,7 @@ open import Haskell.Prim.Tuple
 
 open import Haskell.Prim.Functor
 
-record IsLawfulFunctor (F : Set → Set) ⦃ iFuncF : Functor F ⦄ : Set₁ where
+record IsLawfulFunctor (F : Type → Type) ⦃ iFuncF : Functor F ⦄ : Type₁ where
   field
     -- Identity: fmap id == id
     identity : (fa : F a) → (fmap id) fa ≡ id fa

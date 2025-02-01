@@ -10,7 +10,7 @@ countBiggerThan xs b = length (filter (λ x → (x >= b)) xs)
 {-# COMPILE AGDA2HS countBiggerThan #-}
 
 -- Triangle data type deinfition
-data Triangle : Set where
+data Triangle : Type where
     MkTriangle : (alpha beta gamma : Nat)
         → ⦃ @0 h₁ : (((alpha + beta + gamma) == 180) ≡ True ) ⦄
         → @0 ⦃ ((countBiggerThan

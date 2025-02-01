@@ -1,11 +1,12 @@
 module Records where
 
+open import Haskell.Prim using (Type)
 open import Haskell.Prelude using (String; Nat)
 
-variable a b : Set
+variable a b : Type
 
 -- parametrized record type exported as an Haskell record
-record Pair (a b : Set) : Set where
+record Pair (a b : Type) : Type where
   constructor MkPair
   field
     proj₁ : a
@@ -17,13 +18,13 @@ open Pair public
 
 -- no named constructor means we reuse the record name
 
-record Wrap (a : Set) : Set where
+record Wrap (a : Type) : Type where
   field unwrap : a
 open Wrap public
 {-# COMPILE AGDA2HS Wrap #-}
 
 -- record type exported as an Haskell class definition
-record MyMonoid (a : Set) : Set where
+record MyMonoid (a : Type) : Type where
   field
     mempty  : a
     mappend : a → a → a
@@ -40,9 +41,10 @@ swap₂ (record {unwrap = p}) = record {unwrap = record { proj₁ = proj₂ p; p
 {-# COMPILE AGDA2HS swap₂ #-}
 
 -- record with deriving clause
-record User : Set where
+record User : Type where
   field
     name : String
     code : Nat
 open User public
 {-# COMPILE AGDA2HS User deriving (Eq, Show) #-}
+ 

@@ -6,7 +6,7 @@ open import Haskell.Prelude
 
 data P : Prop where
 
-record R : Set where
+record R : Type where
   field
     @0 anErasedThing : Bool
     aRealThing : Int

@@ -5,7 +5,7 @@ module Coinduction where
 open import Haskell.Prelude
 open import Haskell.Prim.Thunk
 
-data Colist (a : Set) (@0 i : Size) : Set where
+data Colist (a : Type) (@0 i : Size) : Type where
   Nil  : Colist a i
   Cons : a -> Thunk (Colist a) i -> Colist a i
 

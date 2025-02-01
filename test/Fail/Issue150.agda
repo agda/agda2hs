@@ -2,7 +2,7 @@ module Fail.Issue150 where
 
 open import Haskell.Prelude
 
-record Tup (a b : Set) : Set where
+record Tup (a b : Type) : Type where
   constructor MkTup
   field exl : a ; exr : b
 open Tup public

@@ -20,7 +20,7 @@ open import Haskell.Prim.Foldable
 --------------------------------------------------
 -- Show
 
-ShowS : Set
+ShowS : Type
 ShowS = String → String
 
 showChar : Char → ShowS
@@ -41,13 +41,13 @@ defaultShowList shows = λ where
            ∘ showString "]"
 
 -- ** base
-record Show (a : Set) : Set where
+record Show (a : Type) : Type where
   field
     showsPrec : Int → a → ShowS
     showList  : List a → ShowS
     show      : a → String
 -- ** export
-record Show₁ (a : Set) : Set where
+record Show₁ (a : Type) : Type where
   field showsPrec : Int → a → ShowS
 
   show : a → String
@@ -55,7 +55,7 @@ record Show₁ (a : Set) : Set where
 
   showList : List a → ShowS
   showList = defaultShowList (showsPrec 0)
-record Show₂ (a : Set) : Set where
+record Show₂ (a : Type) : Type where
   field show : a → String
 
   showsPrec : Int → a → ShowS
