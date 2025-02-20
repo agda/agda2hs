@@ -28,7 +28,7 @@ Once installed, the agda2hs prelude bundled with agda2hs
 can be registered in the Agda config using the `agda2hs locate` command:
 
 ```sh
-agda2hs locate >> ~/.agda/libaries
+agda2hs locate >> ~/.agda/libraries
 ```
 
 Optionally, the agda2hs prelude can also be added as a default global import:
