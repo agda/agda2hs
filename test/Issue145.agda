@@ -5,7 +5,7 @@ open import Haskell.Prim.Strict
 
 -- ** PASS
 
-module _ {a : Set} where
+module _ {a : Type} where
   it : a → a
   it x = x
   {-# COMPILE AGDA2HS it #-}
@@ -14,13 +14,13 @@ it' : ⦃ Monoid a ⦄ → a → a
 it' x = x
 {-# COMPILE AGDA2HS it' #-}
 
-data Ok' {ℓ} (a : Set ℓ) : Set ℓ where
+data Ok' {ℓ} (a : Type ℓ) : Type ℓ where
   Thing' : Strict a → Ok' a
 {-# COMPILE AGDA2HS Ok' #-}
 
 -- ** FAIL
 
-data Ok {a : Set} : Set where
+data Ok {a : Type} : Type where
   Thing : a → Ok
 {-# COMPILE AGDA2HS Ok #-}
 

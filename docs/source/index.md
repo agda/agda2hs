@@ -7,10 +7,10 @@ the following Agda program encodes well-formed binary search trees:
 ```agda
 open import Haskell.Prelude
 
-_≤_ : {{Ord a}} → a → a → Set
+_≤_ : {{Ord a}} → a → a → Type
 x ≤ y = (x <= y) ≡ True
 
-data BST (a : Set) {{@0 _ : Ord a}} (@0 lower upper : a) : Set where
+data BST (a : Type) {{@0 _ : Ord a}} (@0 lower upper : a) : Type where
   Leaf : (@0 pf : lower ≤ upper) → BST a lower upper
   Node : (x : a) (l : BST a lower x) (r : BST a x upper) → BST a lower upper
 

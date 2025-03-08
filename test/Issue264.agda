@@ -1,7 +1,8 @@
+open import Haskell.Prim using (Type)
 
-module Issue264 (@0 name : Set) where
+module Issue264 (@0 name : Type) where
 
-data Term : @0 Set → Set where
+data Term : @0 Type → Type where
   Dummy : Term name
 
 {-# COMPILE AGDA2HS Term #-}

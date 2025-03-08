@@ -1,6 +1,6 @@
 open import Haskell.Prelude hiding (f)
 
-record Test (a : Set) : Set₁ where
+record Test (a : Type) : Type₁ where
   field
     f : a -> a
 open Test {{...}} public

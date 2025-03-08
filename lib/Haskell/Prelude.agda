@@ -3,7 +3,8 @@ module Haskell.Prelude where
 
 open import Haskell.Prim
 open Haskell.Prim public using
-  ( Bool; True; False; Char; Integer;
+  ( Type;
+    Bool; True; False; Char; Integer;
     List; []; _∷_; Nat; zero; suc; ⊤; tt;
     TypeError; ⊥; iNumberNat; lengthNat;
     IsTrue; IsFalse; NonEmpty;
@@ -133,7 +134,7 @@ lookup x ((x₁ , y) ∷ xs) = if x == x₁ then Just y else lookup x xs
 coerce : @0 a ≡ b → a → b
 coerce refl x = x
 
-IsJust : Maybe a → Set
+IsJust : Maybe a → Type
 IsJust Nothing  = ⊥
 IsJust (Just _) = ⊤
 

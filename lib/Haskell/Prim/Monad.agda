@@ -19,14 +19,14 @@ open import Haskell.Prim.Tuple
 module Do where
 
   -- ** base
-  record Monad (m : Set → Set) : Set₁ where
+  record Monad (m : Type → Type) : Type₁ where
     field
       _>>=_ : m a → (a → m b) → m b
       overlap ⦃ super ⦄ : Applicative m
       return : a → m a
       _>>_ : m a → (@0 {{ a }} → m b) → m b
   -- ** defaults
-  record DefaultMonad (m : Set → Set) : Set₁ where
+  record DefaultMonad (m : Type → Type) : Type₁ where
     field
       _>>=_ : m a → (a → m b) → m b
       overlap ⦃ super ⦄ : Applicative m
@@ -112,7 +112,7 @@ instance
 
 instance postulate iMonadIO : Monad IO
 
-record MonadFail (m : Set → Set) : Set₁ where
+record MonadFail (m : Type → Type) : Type₁ where
   field
     fail : String → m a
     overlap ⦃ super ⦄ : Monad m

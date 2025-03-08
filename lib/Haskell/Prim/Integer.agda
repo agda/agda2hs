@@ -100,7 +100,7 @@ isNegativeInteger : Integer → Bool
 isNegativeInteger (pos _)    = False
 isNegativeInteger (negsuc _) = True
 
-@0 IsNonNegativeInteger : Integer → Set
+@0 IsNonNegativeInteger : Integer → Type
 IsNonNegativeInteger (pos _)      = ⊤
 IsNonNegativeInteger n@(negsuc _) =
   TypeError (primStringAppend (primShowInteger n) (" is negative"))

@@ -1,7 +1,7 @@
 
-open import Agda.Builtin.Bool
+open import Haskell.Prim using (Bool; Type)
 
-data Test : Set where
+data Test : Type where
   CTest : Bool -> @0 {Bool} -> Test
 {-# COMPILE AGDA2HS Test #-}
 

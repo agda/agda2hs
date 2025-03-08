@@ -14,7 +14,7 @@ fromJust : (x : Maybe a) → @0 {IsJust x} → a
 fromJust Nothing  = error "fromJust Nothing"
 fromJust (Just x) = x
 
-fromMaybe : {a : Set} → a → Maybe a → a
+fromMaybe : {a : Type} → a → Maybe a → a
 fromMaybe d Nothing = d
 fromMaybe _ (Just x) = x
 

@@ -31,7 +31,7 @@ Standard data type declarations have a simple equivalent in Agda.
 
 Agda:
 ```agda
-data Nat : Set where
+data Nat : Type where
     Zero : Nat 
     Suc : Nat → Nat
 
@@ -43,11 +43,13 @@ Haskell:
 data Nat = Zero | Suc Nat
 ```
 
+In the definition above, we have to explicitly indicate that `Nat` is a data `Type` by writing the signature `Nat : Type`.
+
 You can also use polymorphic types in the data declarations.
 
 Agda:
 ```agda
-data Tree (a : Set) : Set where
+data Tree (a : Type) : Type where
     Leaf   : a → Tree a
     Branch : a → Tree a → Tree a → Tree a
     
@@ -62,13 +64,15 @@ data Tree a = Leaf a
 
 **UNSUPPORTED: term-indexed datatypes**
 
+(For Agda users: We have renamed `Set` to `Type` in order to follow nomenclature in Haskell.)
+
 ### Records
 
 Data definitions with fields are represented by records on the Agda side.
 
 Agda:
 ```agda
-record Citation : Set where
+record Citation : Type where
     field
         id     : Int
         author : String
@@ -93,19 +97,19 @@ Data declaration using the `newtype` keyword can be created by adding a `newtype
 Agda:
 ```agda
 -- data newtype
-data Indexed (a : Set) : Set where
+data Indexed (a : Type) : Type where
     MkIndexed : Int × a → Indexed a
 
 {-# COMPILE AGDA2HS Indexed newtype #-}
 
 -- data newtype with deriving
-data Pair (a b : Set) : Set where
+data Pair (a b : Type) : Type where
     MkPair : a × b → Pair a b
 
 {-# COMPILE AGDA2HS Pair newtype deriving ( Show, Eq ) #-}
 
 -- record newtype
-record Identity (a : Set) : Set where
+record Identity (a : Type) : Type where
     constructor MkIdentity
     field
         runIdentity : a
@@ -114,7 +118,7 @@ open Identity public
 {-# COMPILE AGDA2HS Identity newtype #-}
 
 -- record newtype with erased proof
-record Equal (a : Set) : Set where
+record Equal (a : Type) : Type where
     constructor MkEqual
     field
         pair : a × a
@@ -144,7 +148,7 @@ Unfortunately, Agda does not allow the constructor name to be the same as the da
 However, it _is_ possible to achieve this with Agda2HS if you do not explicitly add a constructor name to a record definition (this requires the use of `record { ... }` syntax on the Agda side):
 
 ```agda
-record Duo (a : Set) : Set where
+record Duo (a : Type) : Type where
     field
         duo : a × a
 open Duo public
@@ -243,7 +247,7 @@ The type signatures of both `if_then_else_` and `case_of_` on the Agda side cont
 
 This allows for the following Agda code to type check:
 ```agda
-data Range : Set where
+data Range : Type where
     MkRange : (low high : Int)
             → {{ @0 h : ((low <= high) ≡ True) }}
             → Range
@@ -303,7 +307,7 @@ Parameters can be annotated with a _quantity_ of either `0` or `ω` (the default
 
 Agda:
 ```agda
-data GhostInt : Set where
+data GhostInt : Type where
     MakeGhostInt : @0 Int → GhostInt
 
 -- fails
@@ -327,7 +331,7 @@ addGhostInts MakeGhostInt MakeGhostInt = MakeGhostInt
 
 Agda:
 ```agda
-data Stream (a : Set) (@0 i : Size) : Set where
+data Stream (a : Type) (@0 i : Size) : Type where
     Nil : Stream a i
     Cons : a → Thunk (Stream a) i → Stream a i
 {-# COMPILE AGDA2HS Stream #-}
@@ -351,7 +355,7 @@ To construct an instance of a type class, you can simply do the following:
 
 Agda:
 ```agda
-record Circle : Set where
+record Circle : Type where
     constructor MkCircle
     field
         radius : Int
@@ -379,7 +383,7 @@ In this case, you can also implement the `IsLawful` instance for the data type a
 
 Agda:
 ```agda
-record Equal (a : Set) : Set where
+record Equal (a : Type) : Type where
     constructor MkEqual
     field
         pair : a × a
@@ -425,17 +429,17 @@ constructEqualCircle c d = constructEqual c d
 
 Agda:
 ```agda
-record Class1 (a : Set) : Set where
+record Class1 (a : Type) : Type where
     field
         field1 : a
 {-# COMPILE AGDA2HS Class1 class #-}
 
-record Class2 (a : Set) : Set where
+record Class2 (a : Type) : Type where
     field
         field2 : a
 {-# COMPILE AGDA2HS Class2 class #-}
 
-class1-implies-class2 (a : Set) : Class1 a → Class2 a
+class1-implies-class2 (a : Type) : Class1 a → Class2 a
 class1-implies-class2 _ class1 = record { field2 = class1.field1 }
 {-# COMPILE AGDA2HS class1-implies-class2 #-}
 ```
@@ -456,12 +460,12 @@ instance Class1 a => Class2 a where
 
 Agda:
 ```agda
-record Class1 (a : Set) : Set where
+record Class1 (a : Type) : Type where
     field
         field1 : a
 {-# COMPILE AGDA2HS Class1 class #-}
 
-record Class2 (a : Set) : Set where
+record Class2 (a : Type) : Type where
     field
         overlap ⦃ super ⦄ : ClassA b
         field2 : a
@@ -481,18 +485,18 @@ class Class1 a => Class2 a where
 
 Agda:
 ```agda
-record Ord (a : Set) : Set where
+record Ord (a : Type) : Type where
   field
     _<_ _>_ : a → a → Bool
 
-record Ord₁ (a : Set) : Set where
+record Ord₁ (a : Type) : Type where
   field
     _<_ : a → a → Bool
 
   _>_ : a → a → Bool
   x > y = y < x
 
-record Ord₂ (a : Set) : Set where
+record Ord₂ (a : Type) : Type where
   field
     _>_ : a → a → Bool
 
@@ -530,7 +534,7 @@ used to define fields of typeclass instances, for example:
 
 Agda:
 ```agda
-record HasId (a : Set)  : Set where
+record HasId (a : Type) : Type where
     field id : a → a
 {-# COMPILE AGDA2HS HasId class #-}
 
@@ -553,7 +557,7 @@ instance HasId () where
 If the derived instance is not needed on the Agda side and needs to only be generated in Haskell, the deriving clause can simply be added to the compilation pragma (this also works with the `newtype` pragma):
 
 ```agda
-data Planet : Set where
+data Planet : Type where
   Mercury : Planet
   Venus   : Planet
   Earth   : Planet
@@ -618,7 +622,7 @@ This is also possible with more complicated instance definitions, such as in the
 
 Agda:
 ```agda
-data Optional (a : Set) : Set where
+data Optional (a : Type) : Type where
   Of    : a → Optional a
   Empty : Optional a
 
@@ -645,7 +649,7 @@ postulate instance iPlanetShow : Show Planet
 
 {-# COMPILE AGDA2HS iPlanetShow derive stock #-}
 
-record Clazz (a : Set) : Set where
+record Clazz (a : Type) : Type where
   field
     foo : a → Int
     bar : a → Bool
@@ -658,7 +662,7 @@ postulate instance iPlanetClazz : Clazz Planet
 
 {-# COMPILE AGDA2HS iPlanetClazz derive anyclass #-}
 
-data Duo (a b : Set) : Set where
+data Duo (a b : Type) : Type where
   MkDuo : (a × b) → Duo a b
 
 {-# COMPILE AGDA2HS Duo newtype #-}
@@ -734,7 +738,7 @@ Agda
 ```agda
 mutual
 
-  data Map (k : Set) (a : Set) : Set where
+  data Map (k : Type) (a : Type) : Type where
     Bin : (sz : Nat) → (kx : k) → (x : a)
           → (l : Map k a) → (r : Map k a)
           → {{@0 szVal : sz ≡ (size l) + (size r) + 1}}
@@ -742,7 +746,7 @@ mutual
     Tip : Map k a
   {-# COMPILE AGDA2HS Map #-}
 
-  size : {k a : Set} → Map k a → Nat
+  size : {k a : Type} → Map k a → Nat
   size Tip = 0
   size (Bin sz _ _ _ _) = sz
   {-# COMPILE AGDA2HS size #-}
@@ -762,7 +766,7 @@ size (Bin sz _ _ _ _) = sz
 
 Agda
 ```agda
-record ImplicitField (a : Set) : Set where
+record ImplicitField (a : Type) : Type where
     field
         aField : a
         @0 {anImplicitField} : a

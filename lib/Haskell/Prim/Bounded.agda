@@ -12,15 +12,15 @@ open import Haskell.Prim.Word
 --------------------------------------------------
 -- Bounded
 
-record BoundedBelow (a : Set) : Set where
+record BoundedBelow (a : Type) : Type where
   field
     minBound : a
 
-record BoundedAbove (a : Set) : Set where
+record BoundedAbove (a : Type) : Type where
   field
     maxBound : a
 
-record Bounded (a : Set) : Set where
+record Bounded (a : Type) : Type where
   field
     overlap ⦃ below ⦄ : BoundedBelow a
     overlap ⦃ above ⦄ : BoundedAbove a

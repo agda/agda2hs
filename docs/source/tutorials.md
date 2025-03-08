@@ -43,7 +43,7 @@ open import Haskell.Prelude
 Entry = Int × List String
 
 --defining a datatype
-data Tree (a : Set) : Set where
+data Tree (a : Type) : Type where
     Leaf   : a → Tree a
     Branch : a → Tree a → Tree a → Tree a
 
@@ -120,7 +120,7 @@ Let's say we want to have a data type describing a triangle. A first attempt mig
 ```agda
 open import Haskell.Prelude
 
-data Triangle : Set where
+data Triangle : Type where
     MkTriangle : (alpha beta gamma : Nat)
            → Triangle
 
@@ -136,7 +136,7 @@ countBiggerThan xs b = length (filter (λ x → (x >= b)) xs)
 
 {-# COMPILE AGDA2HS countBiggerThan #-}
 
-data Triangle : Set where
+data Triangle : Type where
     MkTriangle : (alpha beta gamma : Nat)
         → ⦃ @0 h₁ : (((alpha + beta + gamma) == 180) ≡ True )⦄
         → @0 ⦃ ((countBiggerThan
@@ -210,7 +210,7 @@ isAscending (x ∷ y ∷ xs) = if x <= y then isAscending
 This function can be compiled to Haskell without any issue, however, when you try using it in proofs you can notice that it is not the most handy definition: since the different cases are anonymous, invoking them is not straightforward and might require defining more proof cases with additional assertions about the values input data (an example of which can be found [further in the tutorial](function-example)) A better definition might be a predicate, instead:
 
 ```agda
-data IsAscending₂ {a : Set} ⦃ iOrdA : Ord a ⦄ : List a → Set where
+data IsAscending₂ {a : Type} ⦃ iOrdA : Ord a ⦄ : List a → Type where
     Empty : IsAscending₂ []
     OneElem : (x : a) →  IsAscending₂ (x ∷ [])
     ManyElem : (x y : a) (xs : List a) 

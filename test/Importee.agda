@@ -8,15 +8,15 @@ _!#_ : Int → Int → Int
 x !# y = x + y
 {-# COMPILE AGDA2HS _!#_ #-}
 
-data Foo : Set where
+data Foo : Type where
   MkFoo : Foo
 {-# COMPILE AGDA2HS Foo #-}
 
 -- ** base
-record Fooable (a : Set) : Set where
+record Fooable (a : Type) : Type where
   field doTheFoo defaultFoo : a
 -- ** defaults
-record DefaultFooable (a : Set) : Set where
+record DefaultFooable (a : Type) : Type where
   field doTheFoo : a
 
   defaultFoo : a

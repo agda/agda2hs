@@ -2,9 +2,11 @@
 
 module Fail.Issue113b where
 
-postulate A : Set
+open import Haskell.Prim using (Type)
 
-record Loop : Set where
+postulate A : Type
+
+record Loop : Type where
   coinductive
   field force : Loop
 open Loop public

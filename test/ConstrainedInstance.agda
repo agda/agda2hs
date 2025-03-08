@@ -1,7 +1,7 @@
 
 open import Haskell.Prelude
 
-data D (a : Set) : Set where
+data D (a : Type) : Type where
   C : a → D a
 {-# COMPILE AGDA2HS D #-}
 

@@ -14,11 +14,11 @@ private variable
   x y z : a
   @0 i : Size
 
-data Delay (a : Set) (@0 i : Size) : Set where
+data Delay (a : Type) (@0 i : Size) : Type where
   now : a → Delay a i
   later : Thunk (Delay a) i → Delay a i
 
-data HasResult (x : a) : Delay a i → Set where
+data HasResult (x : a) : Delay a i → Type where
   now   : HasResult x (now x)
   later : HasResult x (y .force) → HasResult x (later y)
 

@@ -12,7 +12,7 @@ open import Haskell.Extra.Refinement
 open import Haskell.Law.Bool
 open import Haskell.Law.Equality
 
-record IsLawfulEq (e : Set) ⦃ iEq : Eq e ⦄ : Set₁ where
+record IsLawfulEq (e : Type) ⦃ iEq : Eq e ⦄ : Type₁ where
   field
     isEquality : ∀ (x y : e) → Reflects (x ≡ y) (x == y)
 

@@ -14,18 +14,18 @@ import Prelude hiding (Show, show, showsPrec, showList, Ord, (<), (>))
 
 -- ** Ord
 
-record Ord (a : Set) : Set where
+record Ord (a : Type) : Type where
   field
     _<_ _>_ : a → a → Bool
 
-record Ord₁ (a : Set) : Set where
+record Ord₁ (a : Type) : Type where
   field
     _<_ : a → a → Bool
 
   _>_ : a → a → Bool
   x > y = y < x
 
-record Ord₂ (a : Set) : Set where
+record Ord₂ (a : Type) : Type where
   field
     _>_ : a → a → Bool
 
@@ -46,7 +46,7 @@ instance
   OrdBool₀ ._>_ = Ord₁._>_ OB
 {-# COMPILE AGDA2HS OrdBool₀ #-}
 
-data Bool1 : Set where
+data Bool1 : Type where
   Mk1 : Bool -> Bool1
 {-# COMPILE AGDA2HS Bool1 #-}
 instance
@@ -58,7 +58,7 @@ instance
       ord₁ .Ord₁._<_ (Mk1 True)  _       = False
 {-# COMPILE AGDA2HS OrdBool₁ #-}
 
-data Bool2 : Set where
+data Bool2 : Type where
   Mk2 : Bool -> Bool2
 {-# COMPILE AGDA2HS Bool2 #-}
 instance
@@ -70,7 +70,7 @@ instance
       (Mk2 True)  <: _       = False
 {-# COMPILE AGDA2HS OrdBool₂ #-}
 
-data Bool3 : Set where
+data Bool3 : Type where
   Mk3 : Bool -> Bool3
 {-# COMPILE AGDA2HS Bool3 #-}
 instance
@@ -82,7 +82,7 @@ instance
       (Mk3 True)  <: _       = False
 {-# COMPILE AGDA2HS OrdBool₃ #-}
 
-data Bool4 : Set where
+data Bool4 : Type where
   Mk4 : Bool -> Bool4
 {-# COMPILE AGDA2HS Bool4 #-}
 lift4 : (Bool → Bool → a) → (Bool4 → Bool4 → a)
@@ -93,7 +93,7 @@ instance
   OrdBool₄ = record {Ord₁ (λ where .Ord₁._<_ → lift4 (λ x y → not x && y))}
 {-# COMPILE AGDA2HS OrdBool₄ #-}
 
-data Bool5 : Set where
+data Bool5 : Type where
   Mk5 : Bool -> Bool5
 {-# COMPILE AGDA2HS Bool5 #-}
 instance
@@ -105,7 +105,7 @@ instance
       (Mk5 True)  >: (Mk5 b) = not b
 {-# COMPILE AGDA2HS OrdBool₅ #-}
 
-data Bool6 : Set where
+data Bool6 : Type where
   Mk6 : Bool -> Bool6
 {-# COMPILE AGDA2HS Bool6 #-}
 instance
@@ -131,13 +131,13 @@ defaultShowList shows (x ∷ xs)
   ∘ showString "]"
 {-# COMPILE AGDA2HS defaultShowList #-}
 
-record Show (a : Set) : Set where
+record Show (a : Type) : Type where
   field
     show : a → String
     showsPrec : Int → a → ShowS
     showList : List a → ShowS
 
-record Show₁ (a : Set) : Set where
+record Show₁ (a : Type) : Type where
   field showsPrec : Int → a → ShowS
 
   show : a → String
@@ -146,7 +146,7 @@ record Show₁ (a : Set) : Set where
   showList : List a → ShowS
   showList = defaultShowList (showsPrec 0)
 
-record Show₂ (a : Set) : Set where
+record Show₂ (a : Type) : Type where
   field show : a → String
 
   showsPrec : Int → a → ShowS
