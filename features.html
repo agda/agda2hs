@@ -141,7 +141,7 @@ necessary) with the following snippet.</p>
 <h3>Datatypes<a class="headerlink" href="#datatypes" title="Permalink to this heading"></a></h3>
 <p>Standard data type declarations have a simple equivalent in Agda.</p>
 <p>Agda:</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Nat<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Nat<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="nf">Zero</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat<span class="w"> </span>
 <span class="w">    </span><span class="nf">Suc</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Nat
 
@@ -152,9 +152,10 @@ necessary) with the following snippet.</p>
 <div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Nat</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Zero</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="kt">Suc</span><span class="w"> </span><span class="kt">Nat</span>
 </pre></div>
 </div>
+<p>In the definition above, we have to explicitly indicate that <code class="docutils literal notranslate"><span class="pre">Nat</span></code> is a data <code class="docutils literal notranslate"><span class="pre">Type</span></code> by writing the signature <code class="docutils literal notranslate"><span class="pre">Nat</span> <span class="pre">:</span> <span class="pre">Type</span></code>.</p>
 <p>You can also use polymorphic types in the data declarations.</p>
 <p>Agda:</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Tree<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Tree<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="nf">Leaf</span><span class="w">   </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Tree<span class="w"> </span>a
 <span class="w">    </span><span class="nf">Branch</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Tree<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Tree<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Tree<span class="w"> </span>a
 <span class="w">    </span>
@@ -167,12 +168,13 @@ necessary) with the following snippet.</p>
 </pre></div>
 </div>
 <p><strong>UNSUPPORTED: term-indexed datatypes</strong></p>
+<p>(For Agda users: We have renamed <code class="docutils literal notranslate"><span class="pre">Set</span></code> to <code class="docutils literal notranslate"><span class="pre">Type</span></code> in order to follow nomenclature in Haskell.)</p>
 </section>
 <section id="records">
 <h3>Records<a class="headerlink" href="#records" title="Permalink to this heading"></a></h3>
 <p>Data definitions with fields are represented by records on the Agda side.</p>
 <p>Agda:</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Citation<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Citation<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="kr">field</span>
 <span class="w">        </span><span class="nf">id</span><span class="w">     </span><span class="ow">:</span><span class="w"> </span>Int
 <span class="w">        </span><span class="nf">author</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>String
@@ -195,19 +197,19 @@ necessary) with the following snippet.</p>
 <p>Data declaration using the <code class="docutils literal notranslate"><span class="pre">newtype</span></code> keyword can be created by adding a <code class="docutils literal notranslate"><span class="pre">newtype</span></code> annotation to the compile pragma.</p>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="c1">-- data newtype</span>
-<span class="kr">data</span><span class="w"> </span>Indexed<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="kr">data</span><span class="w"> </span>Indexed<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="nf">MkIndexed</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Int<span class="w"> </span>×<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Indexed<span class="w"> </span>a
 
 <span class="cm">{-# COMPILE AGDA2HS Indexed newtype #-}</span>
 
 <span class="c1">-- data newtype with deriving</span>
-<span class="kr">data</span><span class="w"> </span>Pair<span class="w"> </span><span class="o">(</span>a<span class="w"> </span>b<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="kr">data</span><span class="w"> </span>Pair<span class="w"> </span><span class="o">(</span>a<span class="w"> </span>b<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="nf">MkPair</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span>×<span class="w"> </span>b<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Pair<span class="w"> </span>a<span class="w"> </span>b
 
 <span class="cm">{-# COMPILE AGDA2HS Pair newtype deriving ( Show, Eq ) #-}</span>
 
 <span class="c1">-- record newtype</span>
-<span class="kr">record</span><span class="w"> </span>Identity<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="kr">record</span><span class="w"> </span>Identity<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="kr">constructor</span><span class="w"> </span>MkIdentity
 <span class="w">    </span><span class="kr">field</span>
 <span class="w">        </span><span class="nf">runIdentity</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a
@@ -216,7 +218,7 @@ necessary) with the following snippet.</p>
 <span class="cm">{-# COMPILE AGDA2HS Identity newtype #-}</span>
 
 <span class="c1">-- record newtype with erased proof</span>
-<span class="kr">record</span><span class="w"> </span>Equal<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="kr">record</span><span class="w"> </span>Equal<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="kr">constructor</span><span class="w"> </span>MkEqual
 <span class="w">    </span><span class="kr">field</span>
 <span class="w">        </span><span class="nf">pair</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span>×<span class="w"> </span>a
@@ -243,7 +245,7 @@ necessary) with the following snippet.</p>
 </div>
 <p>Unfortunately, Agda does not allow the constructor name to be the same as the data/record name.
 However, it <em>is</em> possible to achieve this with Agda2HS if you do not explicitly add a constructor name to a record definition (this requires the use of <code class="docutils literal notranslate"><span class="pre">record</span> <span class="pre">{</span> <span class="pre">...</span> <span class="pre">}</span></code> syntax on the Agda side):</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Duo<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Duo<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="kr">field</span>
 <span class="w">        </span><span class="nf">duo</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span>×<span class="w"> </span>a
 <span class="kr">open</span><span class="w"> </span>Duo<span class="w"> </span>public
@@ -337,7 +339,7 @@ This means that you must explicitly write <code class="docutils literal notransl
 <p>While in Haskell such a thing is never necessary, in Agda there are cases when it is useful for a branch to contain a “witness” (proof) of the condition on which it split (i.e. the true branch of <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">x</span> <span class="pre">&lt;</span> <span class="pre">2</span> <span class="pre">then</span> <span class="pre">...</span> <span class="pre">else</span> <span class="pre">...</span></code> knows that <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">&lt;</span> <span class="pre">2</span> <span class="pre">=</span> <span class="pre">True</span></code>).</p>
 <p>The type signatures of both <code class="docutils literal notranslate"><span class="pre">if_then_else_</span></code> and <code class="docutils literal notranslate"><span class="pre">case_of_</span></code> on the Agda side contain instances of these proofs which can be used to work with e.g. intrinsic verification.</p>
 <p>This allows for the following Agda code to type check:</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Range<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Range<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="nf">MkRange</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">(</span>low<span class="w"> </span>high<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Int<span class="o">)</span>
 <span class="w">            </span><span class="ow">→</span><span class="w"> </span><span class="o">{{</span><span class="w"> </span>@0<span class="w"> </span>h<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">((</span>low<span class="w"> </span>&lt;=<span class="w"> </span>high<span class="o">)</span><span class="w"> </span>≡<span class="w"> </span>True<span class="o">)</span><span class="w"> </span><span class="o">}}</span>
 <span class="w">            </span><span class="ow">→</span><span class="w"> </span>Range
@@ -393,7 +395,7 @@ five<span class="w"> </span><span class="ow">=</span><span class="w"> </span>the
 <span id="quantity"></span><h2>0-Quantity Parameters<a class="headerlink" href="#quantity-parameters" title="Permalink to this heading"></a></h2>
 <p>Parameters can be annotated with a <em>quantity</em> of either <code class="docutils literal notranslate"><span class="pre">0</span></code> or <code class="docutils literal notranslate"><span class="pre">ω</span></code> (the default quantity is <code class="docutils literal notranslate"><span class="pre">ω</span></code> if no quantity is explicitly annotated). Parameters annotated with <code class="docutils literal notranslate"><span class="pre">0</span></code> are irrelevant to evaluation, so they are irrelevant to the compiled Haskell program, and so agda2hs erases them.</p>
 <p>Agda:</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>GhostInt<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>GhostInt<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="nf">MakeGhostInt</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>@0<span class="w"> </span>Int<span class="w"> </span><span class="ow">→</span><span class="w"> </span>GhostInt
 
 <span class="c1">-- fails</span>
@@ -416,7 +418,7 @@ addGhostInts<span class="w"> </span><span class="o">(</span>MakeGhostInt<span cl
 <section id="coinduction">
 <h2>Coinduction<a class="headerlink" href="#coinduction" title="Permalink to this heading"></a></h2>
 <p>Agda:</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Stream<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="o">(</span>@0<span class="w"> </span>i<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Size<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Stream<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="o">(</span>@0<span class="w"> </span>i<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Size<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="nf">Nil</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Stream<span class="w"> </span>a<span class="w"> </span>i
 <span class="w">    </span><span class="nf">Cons</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Thunk<span class="w"> </span><span class="o">(</span>Stream<span class="w"> </span>a<span class="o">)</span><span class="w"> </span>i<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Stream<span class="w"> </span>a<span class="w"> </span>i
 <span class="cm">{-# COMPILE AGDA2HS Stream #-}</span>
@@ -438,7 +440,7 @@ repeat<span class="w"> </span>x<span class="w"> </span><span class="ow">=</span>
 <h2>Type Classes<a class="headerlink" href="#type-classes" title="Permalink to this heading"></a></h2>
 <p>To construct an instance of a type class, you can simply do the following:</p>
 <p>Agda:</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Circle<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Circle<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="kr">constructor</span><span class="w"> </span>MkCircle
 <span class="w">    </span><span class="kr">field</span>
 <span class="w">        </span><span class="nf">radius</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Int
@@ -463,7 +465,7 @@ repeat<span class="w"> </span>x<span class="w"> </span><span class="ow">=</span>
 <p>In some cases (especially when writing proofs), it might be necessary to use the properties (laws) that a type class instance should uphold.
 In this case, you can also implement the <code class="docutils literal notranslate"><span class="pre">IsLawful</span></code> instance for the data type and use it’s (erased) properties.</p>
 <p>Agda:</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Equal<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Equal<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="kr">constructor</span><span class="w"> </span>MkEqual
 <span class="w">    </span><span class="kr">field</span>
 <span class="w">        </span><span class="nf">pair</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span>×<span class="w"> </span>a
@@ -507,17 +509,17 @@ constructEqualCircle<span class="w"> </span>c<span class="w"> </span>d<span clas
 <section id="constrained-typeclass-instance">
 <h3>Constrained Typeclass Instance<a class="headerlink" href="#constrained-typeclass-instance" title="Permalink to this heading"></a></h3>
 <p>Agda:</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Class1<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Class1<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="kr">field</span>
 <span class="w">        </span><span class="nf">field1</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a
 <span class="cm">{-# COMPILE AGDA2HS Class1 class #-}</span>
 
-<span class="kr">record</span><span class="w"> </span>Class2<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="kr">record</span><span class="w"> </span>Class2<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="kr">field</span>
 <span class="w">        </span><span class="nf">field2</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a
 <span class="cm">{-# COMPILE AGDA2HS Class2 class #-}</span>
 
-class1-implies-class2<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Class1<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Class2<span class="w"> </span>a
+class1-implies-class2<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Class1<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Class2<span class="w"> </span>a
 class1-implies-class2<span class="w"> </span>_<span class="w"> </span>class1<span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">record</span><span class="w"> </span><span class="o">{</span><span class="w"> </span>field2<span class="w"> </span><span class="ow">=</span><span class="w"> </span>class1.field1<span class="w"> </span><span class="o">}</span>
 <span class="cm">{-# COMPILE AGDA2HS class1-implies-class2 #-}</span>
 </pre></div>
@@ -537,12 +539,12 @@ class1-implies-class2<span class="w"> </span>_<span class="w"> </span>class1<spa
 <section id="constrained-typeclass">
 <h3>Constrained Typeclass<a class="headerlink" href="#constrained-typeclass" title="Permalink to this heading"></a></h3>
 <p>Agda:</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Class1<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Class1<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="kr">field</span>
 <span class="w">        </span><span class="nf">field1</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a
 <span class="cm">{-# COMPILE AGDA2HS Class1 class #-}</span>
 
-<span class="kr">record</span><span class="w"> </span>Class2<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="kr">record</span><span class="w"> </span>Class2<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="kr">field</span>
 <span class="w">        </span><span class="kr">overlap</span><span class="w"> </span>⦃<span class="w"> </span>super<span class="w"> </span>⦄<span class="w"> </span><span class="ow">:</span><span class="w"> </span>ClassA<span class="w"> </span>b
 <span class="w">        </span><span class="nf">field2</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a
@@ -561,18 +563,18 @@ class1-implies-class2<span class="w"> </span>_<span class="w"> </span>class1<spa
 <section id="default-typeclass-field-implementations">
 <h3>Default Typeclass Field Implementations<a class="headerlink" href="#default-typeclass-field-implementations" title="Permalink to this heading"></a></h3>
 <p>Agda:</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Ord<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Ord<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">  </span><span class="kr">field</span>
 <span class="w">    </span>_&lt;_<span class="w"> </span>_&gt;_<span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
 
-<span class="kr">record</span><span class="w"> </span>Ord₁<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="kr">record</span><span class="w"> </span>Ord₁<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">  </span><span class="kr">field</span>
 <span class="w">    </span><span class="nf">_&lt;_</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
 
 <span class="w">  </span><span class="nf">_&gt;_</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
 <span class="w">  </span>x<span class="w"> </span>&gt;<span class="w"> </span>y<span class="w"> </span><span class="ow">=</span><span class="w"> </span>y<span class="w"> </span>&lt;<span class="w"> </span>x
 
-<span class="kr">record</span><span class="w"> </span>Ord₂<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="kr">record</span><span class="w"> </span>Ord₂<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">  </span><span class="kr">field</span>
 <span class="w">    </span><span class="nf">_&gt;_</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
 
@@ -608,7 +610,7 @@ class1-implies-class2<span class="w"> </span>_<span class="w"> </span>class1<spa
 <p>Agda copatterns are <em>not</em> supported by agda2hs in full generality. They <em>can</em> be
 used to define fields of typeclass instances, for example:</p>
 <p>Agda:</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>HasId<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w">  </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>HasId<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="kr">field</span><span class="w"> </span>id<span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>a
 <span class="cm">{-# COMPILE AGDA2HS HasId class #-}</span>
 
@@ -629,7 +631,7 @@ used to define fields of typeclass instances, for example:</p>
 <section id="deriving-type-class-instances">
 <h3>Deriving Type Class Instances<a class="headerlink" href="#deriving-type-class-instances" title="Permalink to this heading"></a></h3>
 <p>If the derived instance is not needed on the Agda side and needs to only be generated in Haskell, the deriving clause can simply be added to the compilation pragma (this also works with the <code class="docutils literal notranslate"><span class="pre">newtype</span></code> pragma):</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Planet<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Planet<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">  </span><span class="nf">Mercury</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Planet
 <span class="w">  </span><span class="nf">Venus</span><span class="w">   </span><span class="ow">:</span><span class="w"> </span>Planet
 <span class="w">  </span><span class="nf">Earth</span><span class="w">   </span><span class="ow">:</span><span class="w"> </span>Planet
@@ -690,7 +692,7 @@ used to define fields of typeclass instances, for example:</p>
 </div>
 <p>This is also possible with more complicated instance definitions, such as in the example below.</p>
 <p>Agda:</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Optional<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Optional<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">  </span><span class="nf">Of</span><span class="w">    </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Optional<span class="w"> </span>a
 <span class="w">  </span><span class="nf">Empty</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Optional<span class="w"> </span>a
 
@@ -714,7 +716,7 @@ used to define fields of typeclass instances, for example:</p>
 
 <span class="cm">{-# COMPILE AGDA2HS iPlanetShow derive stock #-}</span>
 
-<span class="kr">record</span><span class="w"> </span>Clazz<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="kr">record</span><span class="w"> </span>Clazz<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">  </span><span class="kr">field</span>
 <span class="w">    </span><span class="nf">foo</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Int
 <span class="w">    </span><span class="nf">bar</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
@@ -727,7 +729,7 @@ used to define fields of typeclass instances, for example:</p>
 
 <span class="cm">{-# COMPILE AGDA2HS iPlanetClazz derive anyclass #-}</span>
 
-<span class="kr">data</span><span class="w"> </span>Duo<span class="w"> </span><span class="o">(</span>a<span class="w"> </span>b<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="kr">data</span><span class="w"> </span>Duo<span class="w"> </span><span class="o">(</span>a<span class="w"> </span>b<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">  </span><span class="nf">MkDuo</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">(</span>a<span class="w"> </span>×<span class="w"> </span>b<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span>Duo<span class="w"> </span>a<span class="w"> </span>b
 
 <span class="cm">{-# COMPILE AGDA2HS Duo newtype #-}</span>
@@ -801,7 +803,7 @@ add1<span class="w"> </span><span class="ow">=</span><span class="w"> </span><sp
 <p>Agda</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">mutual</span>
 
-<span class="w">  </span><span class="kr">data</span><span class="w"> </span>Map<span class="w"> </span><span class="o">(</span>k<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="kr">data</span><span class="w"> </span>Map<span class="w"> </span><span class="o">(</span>k<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="nf">Bin</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">(</span>sz<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span><span class="o">(</span>kx<span class="w"> </span><span class="ow">:</span><span class="w"> </span>k<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span><span class="o">(</span>x<span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="o">)</span>
 <span class="w">          </span><span class="ow">→</span><span class="w"> </span><span class="o">(</span>l<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Map<span class="w"> </span>k<span class="w"> </span>a<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span><span class="o">(</span>r<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Map<span class="w"> </span>k<span class="w"> </span>a<span class="o">)</span>
 <span class="w">          </span><span class="ow">→</span><span class="w"> </span><span class="o">{{</span>@0<span class="w"> </span>szVal<span class="w"> </span><span class="ow">:</span><span class="w"> </span>sz<span class="w"> </span>≡<span class="w"> </span><span class="o">(</span>size<span class="w"> </span>l<span class="o">)</span><span class="w"> </span>+<span class="w"> </span><span class="o">(</span>size<span class="w"> </span>r<span class="o">)</span><span class="w"> </span>+<span class="w"> </span><span class="mi">1</span><span class="o">}}</span>
@@ -809,7 +811,7 @@ add1<span class="w"> </span><span class="ow">=</span><span class="w"> </span><sp
 <span class="w">    </span><span class="nf">Tip</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Map<span class="w"> </span>k<span class="w"> </span>a
 <span class="w">  </span><span class="cm">{-# COMPILE AGDA2HS Map #-}</span>
 
-<span class="w">  </span><span class="nf">size</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">{</span>k<span class="w"> </span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">}</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span>Map<span class="w"> </span>k<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Nat
+<span class="w">  </span><span class="nf">size</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="o">{</span>k<span class="w"> </span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">}</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span>Map<span class="w"> </span>k<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Nat
 <span class="w">  </span>size<span class="w"> </span>Tip<span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">  </span>size<span class="w"> </span><span class="o">(</span>Bin<span class="w"> </span>sz<span class="w"> </span>_<span class="w"> </span>_<span class="w"> </span>_<span class="w"> </span>_<span class="o">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span>sz
 <span class="w">  </span><span class="cm">{-# COMPILE AGDA2HS size #-}</span>
@@ -829,7 +831,7 @@ add1<span class="w"> </span><span class="ow">=</span><span class="w"> </span><sp
 <section id="implicit-record-field">
 <h2>Implicit Record Field<a class="headerlink" href="#implicit-record-field" title="Permalink to this heading"></a></h2>
 <p>Agda</p>
-<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>ImplicitField<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="kt">Set</span><span class="w"> </span><span class="kr">where</span>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>ImplicitField<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="kr">field</span>
 <span class="w">        </span><span class="nf">aField</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a
 <span class="w">        </span>@0<span class="w"> </span><span class="o">{</span>anImplicitField<span class="o">}</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a
