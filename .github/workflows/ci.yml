@@ -58,11 +58,11 @@ jobs:
       run: make test
 
     - name: Generate Prelude HTML
-      if: ${{ (matrix.ghc == martix.deploy-ghc) && (github.event_name != 'pull_request') }}
+      if: ${{ (matrix.ghc == matrix.deploy-ghc) && (github.event_name != 'pull_request') }}
       run: make libHtml
 
     - name: Deploy Prelude HTML
-      if: ${{ (matrix.ghc == martix.deploy-ghc) && (github.event_name != 'pull_request') }}
+      if: ${{ (matrix.ghc == matrix.deploy-ghc) && (github.event_name != 'pull_request') }}
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
