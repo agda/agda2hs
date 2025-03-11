@@ -8,6 +8,7 @@ import Fail.NewTypeRecordTwoFields
 import Fail.Issue150
 import Fail.NonCopatternInstance
 import Fail.Issue113a
+import Fail.Issue119
 import Fail.NonStarRecordIndex
 import Fail.ErasedRecordParameter
 import Fail.Issue146
