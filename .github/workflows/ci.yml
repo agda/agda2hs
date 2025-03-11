@@ -23,6 +23,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]   # macOS-latest, windows-latest
         cabal: [3.10.3]
+        deploy-ghc: [9.6.6]
         ghc: [9.4.8, 9.6.6, 9.8.2, 9.10.1]
     steps:
     - uses: actions/checkout@v3
@@ -57,11 +58,11 @@ jobs:
       run: make test
 
     - name: Generate Prelude HTML
-      if: ${{ (matrix.ghc == '9.6.3') && (github.event_name != 'pull_request') }}
+      if: ${{ (matrix.ghc == martix.deploy-ghc) && (github.event_name != 'pull_request') }}
       run: make libHtml
 
     - name: Deploy Prelude HTML
-      if: ${{ (matrix.ghc == '9.6.3') && (github.event_name != 'pull_request') }}
+      if: ${{ (matrix.ghc == martix.deploy-ghc) && (github.event_name != 'pull_request') }}
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -69,17 +70,16 @@ jobs:
         destination_dir: lib
 
     - name: Generate test-suite HTML
-      if: ${{ (matrix.ghc == '9.6.3') && (github.event_name != 'pull_request') }}
+      if: ${{ (matrix.ghc == martix.deploy-ghc) && (github.event_name != 'pull_request') }}
       run: |
         sudo apt-get install -y pandoc zsh
         make testHtml
 
     - name: Deploy test-suite HTML
-      if: ${{ (matrix.ghc == '9.6.3') && (github.event_name != 'pull_request') }}
+      if: ${{ (matrix.ghc == martix.deploy-ghc) && (github.event_name != 'pull_request') }}
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: test/html
         destination_dir: test
-
 
