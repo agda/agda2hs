@@ -58,11 +58,11 @@ jobs:
       run: make test
 
     - name: Generate Prelude HTML
-      if: ${{ (matrix.ghc == matrix.deploy-ghc) && (github.event_name != 'pull_request') }}
+      if: ${{ (matrix.ghc == matrix.deploy-ghc) && (github.ref == 'refs/heads/master') }}
       run: make libHtml
 
     - name: Deploy Prelude HTML
-      if: ${{ (matrix.ghc == matrix.deploy-ghc) && (github.event_name != 'pull_request') }}
+      if: ${{ (matrix.ghc == matrix.deploy-ghc) && (github.ref == 'refs/heads/master') }}
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -70,13 +70,13 @@ jobs:
         destination_dir: lib
 
     - name: Generate test-suite HTML
-      if: ${{ (matrix.ghc == matrix.deploy-ghc) && (github.event_name != 'pull_request') }}
+      if: ${{ (matrix.ghc == matrix.deploy-ghc) && (github.ref == 'refs/heads/master') }}
       run: |
         sudo apt-get install -y pandoc zsh
         make testHtml
 
     - name: Deploy test-suite HTML
-      if: ${{ (matrix.ghc == matrix.deploy-ghc) && (github.event_name != 'pull_request') }}
+      if: ${{ (matrix.ghc == matrix.deploy-ghc) && (github.ref == 'refs/heads/master') }}
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
