@@ -1,0 +1,26 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Fail.Issue146</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Keyword">module</a> <a id="8" href="Fail.Issue146.html" class="Module">Fail.Issue146</a> <a id="22" class="Keyword">where</a>
+
+<a id="29" class="Keyword">open</a> <a id="34" class="Keyword">import</a> <a id="41" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="58" class="Keyword">record</a> <a id="Wrap"></a><a id="65" href="Fail.Issue146.html#65" class="Record">Wrap</a> <a id="70" class="Symbol">(</a><a id="71" href="Fail.Issue146.html#71" class="Bound">a</a> <a id="73" class="Symbol">:</a> <a id="75" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="79" class="Symbol">)</a> <a id="81" class="Symbol">:</a> <a id="83" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="88" class="Keyword">where</a>
+  <a id="96" class="Keyword">constructor</a> <a id="MkWrap"></a><a id="108" href="Fail.Issue146.html#108" class="InductiveConstructor">MkWrap</a>
+  <a id="117" class="Keyword">field</a> <a id="Wrap.wrapped"></a><a id="123" href="Fail.Issue146.html#123" class="Field">wrapped</a> <a id="131" class="Symbol">:</a> <a id="133" href="Fail.Issue146.html#71" class="Bound">a</a>
+<a id="135" class="Keyword">open</a> <a id="140" href="Fail.Issue146.html#65" class="Module">Wrap</a> <a id="145" class="Keyword">public</a>
+
+<a id="153" class="Symbol">{-#</a> <a id="157" class="Keyword">COMPILE</a> <a id="165" class="Keyword">AGDA2HS</a> <a id="173" href="Fail.Issue146.html#65" class="Record">Wrap</a> <a id="178" class="Symbol">#-}</a>
+
+<a id="183" class="Keyword">record</a> <a id="Class"></a><a id="190" href="Fail.Issue146.html#190" class="Record">Class</a> <a id="196" class="Symbol">(</a><a id="197" href="Fail.Issue146.html#197" class="Bound">a</a> <a id="199" class="Symbol">:</a> <a id="201" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="205" class="Symbol">)</a> <a id="207" class="Symbol">:</a> <a id="209" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="214" class="Keyword">where</a>
+  <a id="222" class="Keyword">field</a>
+    <a id="Class.method"></a><a id="232" href="Fail.Issue146.html#232" class="Field">method</a> <a id="239" class="Symbol">:</a> <a id="241" href="Fail.Issue146.html#65" class="Record">Wrap</a> <a id="246" href="Fail.Issue146.html#197" class="Bound">a</a> <a id="248" class="Symbol">→</a> <a id="250" href="Fail.Issue146.html#65" class="Record">Wrap</a> <a id="255" href="Fail.Issue146.html#197" class="Bound">a</a>
+<a id="257" class="Keyword">open</a> <a id="262" href="Fail.Issue146.html#190" class="Module">Class</a> <a id="268" class="Symbol">⦃...⦄</a> <a id="274" class="Keyword">public</a>
+
+<a id="282" class="Symbol">{-#</a> <a id="286" class="Keyword">COMPILE</a> <a id="294" class="Keyword">AGDA2HS</a> <a id="302" href="Fail.Issue146.html#190" class="Record">Class</a> <a id="308" class="Pragma">class</a> <a id="314" class="Symbol">#-}</a>
+
+<a id="319" class="Keyword">instance</a>
+  <a id="BoolClass"></a><a id="330" href="Fail.Issue146.html#330" class="Function">BoolClass</a> <a id="340" class="Symbol">:</a> <a id="342" href="Fail.Issue146.html#190" class="Record">Class</a> <a id="348" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+  <a id="355" href="Fail.Issue146.html#330" class="Function">BoolClass</a> <a id="365" class="Symbol">.</a><a id="366" href="Fail.Issue146.html#232" class="Field">method</a> <a id="373" class="Symbol">(</a><a id="374" href="Fail.Issue146.html#108" class="InductiveConstructor">MkWrap</a> <a id="381" href="Fail.Issue146.html#381" class="Bound">x</a><a id="382" class="Symbol">)</a> <a id="384" class="Symbol">.</a><a id="385" href="Fail.Issue146.html#123" class="Field">wrapped</a> <a id="393" class="Symbol">=</a> <a id="395" href="Fail.Issue146.html#381" class="Bound">x</a>
+
+  <a id="400" class="Symbol">{-#</a> <a id="404" class="Keyword">COMPILE</a> <a id="412" class="Keyword">AGDA2HS</a> <a id="420" href="Fail.Issue146.html#330" class="Function">BoolClass</a> <a id="430" class="Symbol">#-}</a>
+
+</pre><div class="split right"><embed src="build/Issue146.html"/></div></body></html>
