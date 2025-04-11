@@ -12,9 +12,9 @@ let
     preBuild = ''
       echo "{-# OPTIONS --sized-types #-}" > Everything.agda
       echo "module Everything where" >> Everything.agda
-      find lib -name '*.agda' | sed -e 's/lib\///;s/\//./g;s/\.agda$//;s/^/import /' >> Everything.agda
+      find . -name '*.agda' ! -name 'Everything.agda' | sed -e 's/.\///;s/\//./g;s/\.agda$//;s/^/import /' >> Everything.agda
     '';
-    src = ../.;
+    src = ../lib/agda2hs;
   };
 in
 {

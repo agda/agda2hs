@@ -11,7 +11,7 @@
 - [Agda standard library](https://github.com/agda/agda-stdlib)
 - Agda library `agda2hs`
   - this Agda library is included in the `agda2hs` repository; see
-    [`agda2hs.agda-lib`](https://github.com/agda/agda2hs/blob/master/agda2hs.agda-lib)
+    [`agda2hs.agda-lib`](https://github.com/agda/agda2hs/blob/master/lib/agda2hs/agda2hs.agda-lib)
   - you can navigate the library in [HTML format](https://agda.github.io/agda2hs/lib/),
     along with a comprehensive [test suite](https://agda.github.io/agda2hs/test/)
 
@@ -49,7 +49,7 @@ cd agda2hs
 cabal install
 
 # register the agda2hs Agda library
-echo $(pwd)/agda2hs.agda-lib >> ~/.agda/libraries
+echo $(pwd)/lib/agda2hs/agda2hs.agda-lib >> ~/.agda/libraries
 # register the agda2hs Agda library as a default
 echo agda2hs >> ~/.agda/defaults
 ```

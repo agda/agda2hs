@@ -1,4 +1,4 @@
 name: agda2hs-test
 depend:
-include: . ../lib
+include: . ../lib/agda2hs/
 flags: --sized-types --erasure
