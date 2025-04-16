@@ -1,0 +1,18 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Issue264</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Keyword">open</a> <a id="6" class="Keyword">import</a> <a id="13" href="Haskell.Prim.html" class="Module">Haskell.Prim</a> <a id="26" class="Keyword">using</a> <a id="32" class="Symbol">(</a><a id="33" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="37" class="Symbol">)</a>
+
+<a id="40" class="Keyword">module</a> <a id="47" href="Issue264.html" class="Module">Issue264</a> <a id="56" class="Symbol">(@</a><a id="58" class="Symbol">0</a> <a id="60" href="Issue264.html#60" class="Bound">name</a> <a id="65" class="Symbol">:</a> <a id="67" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="71" class="Symbol">)</a> <a id="73" class="Keyword">where</a>
+
+<a id="80" class="Keyword">data</a> <a id="Term"></a><a id="85" href="Issue264.html#85" class="Datatype">Term</a> <a id="90" class="Symbol">:</a> <a id="92" class="Symbol">@</a><a id="93" class="Symbol">0</a> <a id="95" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="100" class="Symbol">→</a> <a id="102" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="107" class="Keyword">where</a>
+  <a id="Term.Dummy"></a><a id="115" href="Issue264.html#115" class="InductiveConstructor">Dummy</a> <a id="121" class="Symbol">:</a> <a id="123" href="Issue264.html#85" class="Datatype">Term</a> <a id="128" href="Issue264.html#60" class="Bound">name</a>
+
+<a id="134" class="Symbol">{-#</a> <a id="138" class="Keyword">COMPILE</a> <a id="146" class="Keyword">AGDA2HS</a> <a id="154" href="Issue264.html#85" class="Datatype">Term</a> <a id="159" class="Symbol">#-}</a>
+
+<a id="reduce"></a><a id="164" href="Issue264.html#164" class="Function">reduce</a> <a id="171" class="Symbol">:</a> <a id="173" href="Issue264.html#85" class="Datatype">Term</a> <a id="178" href="Issue264.html#60" class="Bound">name</a> <a id="183" class="Symbol">→</a> <a id="185" href="Issue264.html#85" class="Datatype">Term</a> <a id="190" href="Issue264.html#60" class="Bound">name</a>
+<a id="195" href="Issue264.html#164" class="Function">reduce</a> <a id="202" href="Issue264.html#202" class="Bound">v</a> <a id="204" class="Symbol">=</a> <a id="206" href="Issue264.html#223" class="Function">go</a> <a id="209" href="Issue264.html#202" class="Bound">v</a>
+  <a id="213" class="Keyword">where</a>
+    <a id="223" href="Issue264.html#223" class="Function">go</a> <a id="226" class="Symbol">:</a> <a id="228" href="Issue264.html#85" class="Datatype">Term</a> <a id="233" href="Issue264.html#60" class="Bound">name</a> <a id="238" class="Symbol">→</a> <a id="240" href="Issue264.html#85" class="Datatype">Term</a> <a id="245" href="Issue264.html#60" class="Bound">name</a>
+    <a id="254" href="Issue264.html#223" class="Function">go</a> <a id="257" href="Issue264.html#257" class="Bound">v</a> <a id="259" class="Symbol">=</a> <a id="261" href="Issue264.html#257" class="Bound">v</a>
+
+<a id="264" class="Symbol">{-#</a> <a id="268" class="Keyword">COMPILE</a> <a id="276" class="Keyword">AGDA2HS</a> <a id="284" href="Issue264.html#164" class="Function">reduce</a> <a id="291" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Issue264.html"/></div></body></html>
