@@ -1,4 +1,0 @@
-```
-test/Fail/ExplicitInstance.agda:17,1-5
-illegal instance:  λ { .Fail.ExplicitInstance.theDefault → True }
-```

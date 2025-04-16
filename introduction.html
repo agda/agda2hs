@@ -98,10 +98,10 @@
 </ul>
 </li>
 <li><p><a class="reference external" href="https://github.com/agda/agda-stdlib">Agda standard library</a></p></li>
-<li><p>Agda library <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code></p>
+<li><p>Agda library <code class="docutils literal notranslate"><span class="pre">base</span></code></p>
 <ul>
 <li><p>this Agda library is included in the <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> repository; see
-<a class="reference external" href="https://github.com/agda/agda2hs/blob/master/agda2hs.agda-lib"><code class="docutils literal notranslate"><span class="pre">agda2hs.agda-lib</span></code></a></p></li>
+<a class="reference external" href="https://github.com/agda/agda2hs/blob/master/lib/base/base.agda-lib"><code class="docutils literal notranslate"><span class="pre">base.agda-lib</span></code></a></p></li>
 <li><p>you can navigate the library in <a class="reference external" href="https://agda.github.io/agda2hs/lib/">HTML format</a>,
 along with a comprehensive <a class="reference external" href="https://agda.github.io/agda2hs/test/">test suite</a></p></li>
 </ul>
@@ -120,8 +120,8 @@ can be registered in the Agda config using the <code class="docutils literal not
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>agda2hs<span class="w"> </span>locate<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.agda/libraries
 </pre></div>
 </div>
-<p>Optionally, the agda2hs prelude can also be added as a default global import:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span><span class="w"> </span>agda2hs<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.agda/defaults
+<p>Optionally, the <code class="docutils literal notranslate"><span class="pre">base.agda-lib</span></code> library can also be added as a default global import:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span><span class="w"> </span>base<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.agda/defaults
 </pre></div>
 </div>
 </section>
@@ -135,10 +135,10 @@ git<span class="w"> </span>clone<span class="w"> </span>git@github.com:agda/agda
 <span class="nb">cd</span><span class="w"> </span>agda2hs
 cabal<span class="w"> </span>install
 
-<span class="c1"># register the agda2hs Agda library</span>
-<span class="nb">echo</span><span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/agda2hs.agda-lib<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.agda/libraries
-<span class="c1"># register the agda2hs Agda library as a default</span>
-<span class="nb">echo</span><span class="w"> </span>agda2hs<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.agda/defaults
+<span class="c1"># register the base Agda library</span>
+<span class="nb">echo</span><span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/lib/base/base.agda-lib<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.agda/libraries
+<span class="c1"># register the base Agda library as a default</span>
+<span class="nb">echo</span><span class="w"> </span>base<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.agda/defaults
 </pre></div>
 </div>
 </section>
