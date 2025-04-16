@@ -11,7 +11,7 @@ repl :
 	cabal repl # e.g. `:set args -itest -otest/build test/AllTests.agda ... main ... :r ... main`
 
 libHtml :
-	cabal run agda2hs -- --html --include-path lib/agda2hs lib/agda2hs/Haskell/Prelude.agda
+	cabal run agda2hs -- --html --include-path lib/base lib/base/Haskell/Prelude.agda
 	cp html/Haskell.Prelude.html html/index.html
 
 test/agda2hs : $(FILES)

@@ -1,4 +1,0 @@
-name: agda2hs
-depend:
-include: .
-flags: -W noUnsupportedIndexedMatch --erasure
