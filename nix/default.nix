@@ -5,8 +5,8 @@
 let
   lib = import ./lib.nix { inherit pkgs; };
   version = "1.3";
-  agdalib = pkgs.agdaPackages.mkDerivation {
-    pname = "agda2hs";
+  base-lib = pkgs.agdaPackages.mkDerivation {
+    pname = "base";
     meta = { };
     version = version;
     preBuild = ''
@@ -14,10 +14,10 @@ let
       echo "module Everything where" >> Everything.agda
       find . -name '*.agda' ! -name 'Everything.agda' | sed -e 's/.\///;s/\//./g;s/\.agda$//;s/^/import /' >> Everything.agda
     '';
-    src = ../lib/agda2hs;
+    src = ../lib/base;
   };
 in
 {
   inherit (lib) agda2hs;
-  agda2hs-lib = agdalib;
+  base-lib = base-lib;
 }

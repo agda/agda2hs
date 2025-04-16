@@ -19,8 +19,8 @@ extra-doc-files:    CHANGELOG.md
                     README.md
 
 data-files:
-    lib/agda2hs/agda2hs.agda-lib
-    lib/agda2hs/**/*.agda
+    lib/base/base.agda-lib
+    lib/base/**/*.agda
 
 source-repository head
   type:     git

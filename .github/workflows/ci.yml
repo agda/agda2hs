@@ -8,7 +8,7 @@ on:
       - 'lib/**'
       - 'src/**'
       - 'test/**'
-      - 'lib/agda2hs/agda2hs.agda-lib'
+      - 'lib/base/base.agda-lib'
       - 'agda2hs.cabal'
       - 'cabal.project'
       - 'Makefile'

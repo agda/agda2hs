@@ -1,0 +1,8 @@
+-- This library
+-- * mirrors the Haskell `base` package
+-- * is intertwined with `agda2hs`
+
+name: base
+depend:
+include: .
+flags: -W noUnsupportedIndexedMatch --erasure

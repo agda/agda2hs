@@ -8,7 +8,7 @@ on:
       - 'lib/**'
       - 'src/**'
       - 'test/**'
-      - 'lib/agda2hs/agda2hs.agda-lib'
+      - 'lib/base/base.agda-lib'
       - 'agda2hs.cabal'
       - 'cabal.project'
       - 'Makefile'
@@ -24,12 +24,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        derivation: [agda2hs, agda2hs-lib]
+        derivation: [agda2hs, base-lib]
         include:
           - pretty: "Compile agda2hs"
             derivation: agda2hs
           - pretty: "Typecheck with Agda"
-            derivation: agda2hs-lib
+            derivation: base-lib
     steps:
     - uses: actions/checkout@v3
     - uses: cachix/install-nix-action@v22
