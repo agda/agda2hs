@@ -1,4 +1,3 @@
-{-# OPTIONS --erasure #-}
 
 -- | Proofs on 'Set'.
 module Data.Set.Prop where
@@ -13,7 +12,7 @@ open import Haskell.Data.Set
     Properties
     Basic
 ------------------------------------------------------------------------------}
-module _ {a : Set} {{_ : Ord a}} where
+module _ {a : Type} {{_ : Ord a}} where
 
   --
   prop-null-empty
@@ -26,11 +25,11 @@ module _ {a : Set} {{_ : Ord a}} where
     Properties
     https://en.wikipedia.org/wiki/Boolean_algebra_(structure)
 ------------------------------------------------------------------------------}
-module _ {a : Set} {{_ : Ord a}} where
+module _ {a : Type} {{_ : Ord a}} where
 
   --
   prop-union-idem
-    : ∀ {sa : ℙ a}
+    : ∀ {sa : Set a}
     → union sa sa
         ≡ sa
   --
@@ -41,12 +40,12 @@ module _ {a : Set} {{_ : Ord a}} where
         → member x (union sa sa) ≡ member x sa
       eq x
         rewrite prop-member-union x sa sa
-        rewrite prop-||-idem (member x sa)
+        | prop-||-idem (member x sa)
         = refl
 
   --
   prop-union-assoc
-    : ∀ {sa sb sc : ℙ a}
+    : ∀ {sa sb sc : Set a}
     → union (union sa sb) sc
       ≡ union sa (union sb sc)
   --
@@ -58,15 +57,15 @@ module _ {a : Set} {{_ : Ord a}} where
           ≡ member x (union sa (union sb sc))
       eq x
         rewrite prop-member-union x (union sa sb) sc
-        rewrite prop-member-union x sa sb
-        rewrite prop-member-union x sa (union sb sc)
-        rewrite prop-member-union x sb sc
-        rewrite prop-||-assoc (member x sa) (member x sb) (member x sc)
+        | prop-member-union x sa sb
+        | prop-member-union x sa (union sb sc)
+        | prop-member-union x sb sc
+        | prop-||-assoc (member x sa) (member x sb) (member x sc)
         = refl
 
   --
   prop-union-sym
-    : ∀ {sa sb : ℙ a}
+    : ∀ {sa sb : Set a}
     → union sa sb
         ≡ union sb sa
   --
@@ -77,13 +76,13 @@ module _ {a : Set} {{_ : Ord a}} where
         → member x (union sa sb) ≡ member x (union sb sa)
       eq x
         rewrite prop-member-union x sa sb
-        rewrite prop-member-union x sb sa
-        rewrite prop-||-sym (member x sa) (member x sb)
+        | prop-member-union x sb sa
+        | prop-||-sym (member x sa) (member x sb)
         = refl
 
   --
   prop-union-absorb
-    : ∀ {sa sb : ℙ a}
+    : ∀ {sa sb : Set a}
     → union sa (intersection sa sb)
       ≡ sa
   --
@@ -94,13 +93,13 @@ module _ {a : Set} {{_ : Ord a}} where
         → member x (union sa (intersection sa sb)) ≡ member x sa
       eq x
         rewrite prop-member-union x sa (intersection sa sb)
-        rewrite prop-member-intersection x sa sb
-        rewrite prop-||-absorb (member x sa) (member x sb)
+        | prop-member-intersection x sa sb
+        | prop-||-absorb (member x sa) (member x sb)
         = refl
 
   --
   prop-union-identity
-    : ∀ {sa : ℙ a}
+    : ∀ {sa : Set a}
     → union sa empty
       ≡ sa
   --
@@ -111,13 +110,13 @@ module _ {a : Set} {{_ : Ord a}} where
         → member x (union sa empty) ≡ member x sa
       eq x
         rewrite prop-member-union x sa empty
-        rewrite prop-member-empty x
-        rewrite prop-||-identity (member x sa)
+        | prop-member-empty x
+        | prop-||-identity (member x sa)
         = refl
 
   --
   prop-union-intersection-distribute
-    : ∀ {sa sb sc : ℙ a}
+    : ∀ {sa sb sc : Set a}
     → union sa (intersection sb sc)
       ≡ intersection (union sa sb) (union sa sc)
   --
@@ -129,17 +128,17 @@ module _ {a : Set} {{_ : Ord a}} where
           ≡ member x (intersection (union sa sb) (union sa sc))
       eq x
         rewrite prop-member-union x sa (intersection sb sc)
-        rewrite prop-member-intersection x sb sc
-        rewrite prop-member-intersection x (union sa sb) (union sa sc)
-        rewrite prop-member-union x sa sb
-        rewrite prop-member-union x sa sc
-        rewrite prop-||-&&-distribute (member x sa) (member x sb) (member x sc)
+        | prop-member-intersection x sb sc
+        | prop-member-intersection x (union sa sb) (union sa sc)
+        | prop-member-union x sa sb
+        | prop-member-union x sa sc
+        | prop-||-&&-distribute (member x sa) (member x sb) (member x sc)
         = refl
 
 
   --
   prop-intersection-idem
-    : ∀ {sa : ℙ a}
+    : ∀ {sa : Set a}
     → intersection sa sa
         ≡ sa
   --
@@ -150,12 +149,12 @@ module _ {a : Set} {{_ : Ord a}} where
         → member x (intersection sa sa) ≡ member x sa
       eq x
         rewrite prop-member-intersection x sa sa
-        rewrite prop-&&-idem (member x sa)
+        | prop-&&-idem (member x sa)
         = refl
 
   --
   prop-intersection-assoc
-    : ∀ {sa sb sc : ℙ a}
+    : ∀ {sa sb sc : Set a}
     → intersection (intersection sa sb) sc
       ≡ intersection sa (intersection sb sc)
   --
@@ -167,15 +166,15 @@ module _ {a : Set} {{_ : Ord a}} where
           ≡ member x (intersection sa (intersection sb sc))
       eq x
         rewrite prop-member-intersection x (intersection sa sb) sc
-        rewrite prop-member-intersection x sa sb
-        rewrite prop-member-intersection x sa (intersection sb sc)
-        rewrite prop-member-intersection x sb sc
-        rewrite prop-&&-assoc (member x sa) (member x sb) (member x sc)
+        | prop-member-intersection x sa sb
+        | prop-member-intersection x sa (intersection sb sc)
+        | prop-member-intersection x sb sc
+        | prop-&&-assoc (member x sa) (member x sb) (member x sc)
         = refl
 
   --
   prop-intersection-sym
-    : ∀ {sa sb : ℙ a}
+    : ∀ {sa sb : Set a}
     → intersection sa sb
         ≡ intersection sb sa
   --
@@ -186,13 +185,13 @@ module _ {a : Set} {{_ : Ord a}} where
         → member x (intersection sa sb) ≡ member x (intersection sb sa)
       eq x
         rewrite prop-member-intersection x sa sb
-        rewrite prop-member-intersection x sb sa
-        rewrite prop-&&-sym (member x sa) (member x sb)
+        | prop-member-intersection x sb sa
+        | prop-&&-sym (member x sa) (member x sb)
         = refl
 
   --
   prop-intersection-absorb
-    : ∀ {sa sb : ℙ a}
+    : ∀ {sa sb : Set a}
     → intersection sa (union sa sb)
       ≡ sa
   --
@@ -203,13 +202,13 @@ module _ {a : Set} {{_ : Ord a}} where
         → member x (intersection sa (union sa sb)) ≡ member x sa
       eq x
         rewrite prop-member-intersection x sa (union sa sb)
-        rewrite prop-member-union x sa sb
-        rewrite prop-&&-absorb (member x sa) (member x sb)
+        | prop-member-union x sa sb
+        | prop-&&-absorb (member x sa) (member x sb)
         = refl
 
   --
   prop-intersection-union-distribute
-    : ∀ {sa sb sc : ℙ a}
+    : ∀ {sa sb sc : Set a}
     → intersection sa (union sb sc)
       ≡ union (intersection sa sb) (intersection sa sc)
   --
@@ -221,16 +220,16 @@ module _ {a : Set} {{_ : Ord a}} where
           ≡ member x (union (intersection sa sb) (intersection sa sc))
       eq x
         rewrite prop-member-intersection x sa (union sb sc)
-        rewrite prop-member-union x sb sc
-        rewrite prop-member-union x (intersection sa sb) (intersection sa sc)
-        rewrite prop-member-intersection x sa sb
-        rewrite prop-member-intersection x sa sc
-        rewrite prop-&&-||-distribute (member x sa) (member x sb) (member x sc)
+        | prop-member-union x sb sc
+        | prop-member-union x (intersection sa sb) (intersection sa sc)
+        | prop-member-intersection x sa sb
+        | prop-member-intersection x sa sc
+        | prop-&&-||-distribute (member x sa) (member x sb) (member x sc)
         = refl
 
   --
   prop-intersection-empty-right
-    : ∀ {sa : ℙ a}
+    : ∀ {sa : Set a}
     → intersection sa empty
       ≡ empty
   --
@@ -241,13 +240,13 @@ module _ {a : Set} {{_ : Ord a}} where
         → member x (intersection sa empty) ≡ member x empty
       eq x
         rewrite prop-member-intersection x sa empty
-        rewrite prop-member-empty x
-        rewrite prop-x-&&-False (member x sa)
+        | prop-member-empty x
+        | prop-x-&&-False (member x sa)
         = refl
 
   --
   prop-intersection-empty-left
-    : ∀ {sa : ℙ a}
+    : ∀ {sa : Set a}
     → intersection empty sa
       ≡ empty
   --
@@ -258,18 +257,18 @@ module _ {a : Set} {{_ : Ord a}} where
         → member x (intersection empty sa) ≡ member x empty
       eq x
         rewrite prop-member-intersection x empty sa
-        rewrite prop-member-empty x
+        | prop-member-empty x
         = refl
 
 {-----------------------------------------------------------------------------
     Properties
     involving  difference
 ------------------------------------------------------------------------------}
-module _ {a : Set} {{_ : Ord a}} where
+module _ {a : Type} {{_ : Ord a}} where
 
   --
   prop-intersection-difference
-    : ∀ {sa sb : ℙ a}
+    : ∀ {sa sb : Set a}
     → intersection sb (difference sa sb)
       ≡ empty
   --
@@ -280,10 +279,9 @@ module _ {a : Set} {{_ : Ord a}} where
         → member x (intersection sb (difference sa sb)) ≡ member x empty
       eq x
         rewrite prop-member-intersection x sb (difference sa sb)
-        rewrite prop-member-difference x sa sb
-        rewrite prop-member-empty x
-        with member x sa
-        with member x sb
+        | prop-member-difference x sa sb
+        | prop-member-empty x
+        with member x sa | member x sb
       ... | True  | True  = refl
       ... | False | True  = refl
       ... | True  | False = refl
@@ -291,7 +289,7 @@ module _ {a : Set} {{_ : Ord a}} where
 
   --
   prop-disjoint-difference
-    : ∀ {sa sb : ℙ a}
+    : ∀ {sa sb : Set a}
     → disjoint sb (difference sa sb)
       ≡ True
   --
@@ -300,7 +298,7 @@ module _ {a : Set} {{_ : Ord a}} where
 
   --
   prop-union-difference
-    : ∀ {sa sb : ℙ a}
+    : ∀ {sa sb : Set a}
     → union (difference sa sb) sb
       ≡ union sa sb
   --
@@ -312,10 +310,9 @@ module _ {a : Set} {{_ : Ord a}} where
           ≡ member x (union sa sb)
       eq x
         rewrite prop-member-union x (difference sa sb) sb
-        rewrite prop-member-difference x sa sb
-        rewrite prop-member-union x sa sb
-        with member x sa
-        with member x sb
+        | prop-member-difference x sa sb
+        | prop-member-union x sa sb
+        with member x sa | member x sb
       ... | True  | True  = refl
       ... | False | True  = refl
       ... | True  | False = refl
@@ -323,7 +320,7 @@ module _ {a : Set} {{_ : Ord a}} where
 
   --
   prop-difference-union-x
-    : ∀ {sa sb sc : ℙ a}
+    : ∀ {sa sb sc : Set a}
     → difference (union sa sb) sc
       ≡ union (difference sa sc) (difference sb sc)
   --
@@ -335,19 +332,18 @@ module _ {a : Set} {{_ : Ord a}} where
           ≡ member x (union (difference sa sc) (difference sb sc))
       eq x
         rewrite prop-member-difference x (union sa sb) sc
-        rewrite prop-member-union x sa sb
-        rewrite prop-member-union x (difference sa sc) (difference sb sc)
-        rewrite prop-member-difference x sa sc
-        rewrite prop-member-difference x sb sc
-        with member x sa
-        with member x sb
+        | prop-member-union x sa sb
+        | prop-member-union x (difference sa sc) (difference sb sc)
+        | prop-member-difference x sa sc
+        | prop-member-difference x sb sc
+        with member x sa | member x sb
       ... | False | r = refl
       ... | True  | True  = sym (prop-||-idem (not (member x sc)))
       ... | True  | False = sym (prop-x-||-False (not (member x sc)))
 
   --
   prop-deMorgan-difference-intersection
-    : ∀ {sa sb sc : ℙ a}
+    : ∀ {sa sb sc : Set a}
     → difference sa (intersection sb sc)
       ≡ union (difference sa sb) (difference sa sc)
   --
@@ -359,17 +355,17 @@ module _ {a : Set} {{_ : Ord a}} where
           ≡ member x (union (difference sa sb) (difference sa sc))
       eq x
         rewrite prop-member-difference x sa (intersection sb sc)
-        rewrite prop-member-intersection x sb sc
-        rewrite prop-member-union x (difference sa sb) (difference sa sc)
-        rewrite prop-member-difference x sa sb
-        rewrite prop-member-difference x sa sc
+        | prop-member-intersection x sb sc
+        | prop-member-union x (difference sa sb) (difference sa sc)
+        | prop-member-difference x sa sb
+        | prop-member-difference x sa sc
         with member x sa
       ... | False = refl
       ... | True  = prop-deMorgan-not-&& (member x sb) (member x sc)
 
   --
   prop-deMorgan-difference-union
-    : ∀ {sa sb sc : ℙ a}
+    : ∀ {sa sb sc : Set a}
     → difference sa (union sb sc)
       ≡ intersection (difference sa sb) (difference sa sc)
   --
@@ -381,10 +377,10 @@ module _ {a : Set} {{_ : Ord a}} where
           ≡ member x (intersection (difference sa sb) (difference sa sc))
       eq x
         rewrite prop-member-difference x sa (union sb sc)
-        rewrite prop-member-union x sb sc
-        rewrite prop-member-intersection x (difference sa sb) (difference sa sc)
-        rewrite prop-member-difference x sa sb
-        rewrite prop-member-difference x sa sc
+        | prop-member-union x sb sc
+        | prop-member-intersection x (difference sa sb) (difference sa sc)
+        | prop-member-difference x sa sb
+        | prop-member-difference x sa sc
         with member x sa
       ... | False = refl
       ... | True  = prop-deMorgan-not-|| (member x sb) (member x sc)
@@ -393,11 +389,11 @@ module _ {a : Set} {{_ : Ord a}} where
     Properties
     involving  isSubsetOf
 ------------------------------------------------------------------------------}
-module _ {a : Set} {{_ : Ord a}} where
+module _ {a : Type} {{_ : Ord a}} where
 
   -- | The 'empty' set is a subset of every set.
   prop-isSubsetOf-empty
-    : ∀ {sa : ℙ a}
+    : ∀ {sa : Set a}
     → isSubsetOf empty sa ≡ True
   --
   prop-isSubsetOf-empty {sa} =
@@ -405,7 +401,7 @@ module _ {a : Set} {{_ : Ord a}} where
 
   -- | 'isSubsetOf' is reflexive
   prop-isSubsetOf-refl
-    : ∀ {sa : ℙ a}
+    : ∀ {sa : Set a}
     → isSubsetOf sa sa ≡ True
   --
   prop-isSubsetOf-refl {sa} =
@@ -413,7 +409,7 @@ module _ {a : Set} {{_ : Ord a}} where
 
   -- | 'isSubsetOf' is antisymmetric
   prop-isSubsetOf-antisym
-    : ∀ {sa sb : ℙ a}
+    : ∀ {sa sb : Set a}
     → isSubsetOf sa sb ≡ True
     → isSubsetOf sb sa ≡ True
     → sa ≡ sb
@@ -440,7 +436,7 @@ module _ {a : Set} {{_ : Ord a}} where
 
   -- | 'isSubsetOf' is transitive
   prop-isSubsetOf-trans
-    : ∀ {sa sb sc : ℙ a}
+    : ∀ {sa sb sc : Set a}
     → isSubsetOf sa sb ≡ True
     → isSubsetOf sb sc ≡ True
     → isSubsetOf sa sc ≡ True
@@ -471,7 +467,7 @@ module _ {a : Set} {{_ : Ord a}} where
 
   --
   prop-isSubsetOf-intersection
-    : ∀ {sa sb : ℙ a}
+    : ∀ {sa sb : Set a}
     → isSubsetOf (intersection sa sb) sb ≡ True
   --
   prop-isSubsetOf-intersection {sa} {sb} =
@@ -482,12 +478,12 @@ module _ {a : Set} {{_ : Ord a}} where
         ≡ intersection sa sb
       eq
         rewrite prop-intersection-assoc {_} {sa} {sb} {sb}
-        rewrite prop-intersection-idem {_} {sb}
+        | prop-intersection-idem {_} {sb}
         = refl
 
   --
   prop-isSubsetOf-difference
-    : ∀ {sa sb : ℙ a}
+    : ∀ {sa sb : Set a}
     → isSubsetOf (difference sa sb) sa ≡ True
   --
   prop-isSubsetOf-difference {sa} {sb} =
@@ -499,7 +495,7 @@ module _ {a : Set} {{_ : Ord a}} where
           ≡ member x (difference sa sb)
       eq x
         rewrite prop-member-intersection x (difference sa sb) sa
-        rewrite prop-member-difference x sa sb
+        | prop-member-difference x sa sb
         with member x sa
       ... | False = refl
       ... | True  = prop-x-&&-True (not (member x sb))
