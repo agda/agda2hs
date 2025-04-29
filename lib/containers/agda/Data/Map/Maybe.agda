@@ -1,4 +1,3 @@
-{-# OPTIONS --erasure #-}
 
 module Data.Map.Maybe
     {-

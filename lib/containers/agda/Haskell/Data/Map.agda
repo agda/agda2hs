@@ -1,4 +1,3 @@
-{-# OPTIONS --erasure #-}
 
 -- | Postulates and definitions of the operations supported by 'Map'.
 module Haskell.Data.Map where
@@ -13,13 +12,15 @@ open import Haskell.Data.Maybe using
 
 import Data.Map.Maybe as Maybe
 import Haskell.Prelude as List using (map)
+
+open import Data.Set using (Set)
 import Data.Set as Set
 
 {-----------------------------------------------------------------------------
     Helper predicates
 ------------------------------------------------------------------------------}
-AntitonicPred : {a : Set} → {{Ord a}} → (a → Bool) → Set
-AntitonicPred {a} p =
+Antitonic : {a : Type} → {{Ord a}} → (a → Bool) → Type
+Antitonic {a} p =
   ∀ {x y : a} → ((x <= y) ≡ True) → ((p x >= p y) ≡ True)
 
 {-----------------------------------------------------------------------------
@@ -27,9 +28,9 @@ AntitonicPred {a} p =
     involving 1 value type
 ------------------------------------------------------------------------------}
 postulate
-  Map : ∀ (k : Set) → Set → Set
+  Map : ∀ (k : Type) → Type → Type
 
-module _ {k a : Set} {{_ : Ord k}} where
+module _ {k a : Type} {{_ : Ord k}} where
   postulate
     lookup    : k → Map k a → Maybe a
     null      : Map k a → Bool
@@ -44,7 +45,7 @@ module _ {k a : Set} {{_ : Ord k}} where
   keys : Map k a → List k
   keys = List.map fst ∘ toAscList
 
-  keysSet : Map k a → Set.ℙ k
+  keysSet : Map k a → Set k
   keysSet = Set.fromList ∘ keys
 
   size : Map k a → Int
@@ -120,13 +121,13 @@ module _ {k a : Set} {{_ : Ord k}} where
         ≡ Maybe.filter (p key) (lookup key m)
 
     prop-lookup-takeWhileAntitone
-      : ∀ (p : k → Bool) → AntitonicPred p
+      : ∀ (p : k → Bool) → Antitonic p
       → ∀ (key : k) (m : Map k a)
       → lookup key (takeWhileAntitone p m)
         ≡ lookup key (filterWithKey (λ k _ → p k) m)
 
     prop-lookup-dropWhileAntitone
-      : ∀ (p : k → Bool) → AntitonicPred p
+      : ∀ (p : k → Bool) → Antitonic p
       → ∀ (key : k) (m : Map k a)
       → lookup key (dropWhileAntitone p m)
         ≡ lookup key (filterWithKey (λ k _ → not (p k)) m)
@@ -145,10 +146,10 @@ module _ {k a : Set} {{_ : Ord k}} where
     Nothing → insert k new m
     (Just old) → insert k (f new old) m
 
-  withoutKeys : Map k a → Set.ℙ k → Map k a
+  withoutKeys : Map k a → Set k → Map k a
   withoutKeys m s = filterWithKey (λ k _ → not (Set.member k s)) m
 
-  restrictKeys : Map k a → Set.ℙ k → Map k a
+  restrictKeys : Map k a → Set k → Map k a
   restrictKeys m s = filterWithKey (λ k _ → Set.member k s) m
 
   filter : (a → Bool) → Map k a → Map k a
@@ -164,23 +165,25 @@ module _ {k a : Set} {{_ : Ord k}} where
   foldMap' f = foldMap f ∘ List.map snd ∘ toAscList
 
 instance
-  iMapFoldable : ∀ {k : Set} {{_ : Ord k}} → Foldable (Map k)
+  iMapFoldable : ∀ {k : Type} {{_ : Ord k}} → Foldable (Map k)
   iMapFoldable =
     record {DefaultFoldable (record {foldMap = foldMap'})}
 
 instance
-  iEqMap : ∀ {k v : Set} {{_ : Ord k}} {{_ : Eq v}} → Eq (Map k v)
+  iEqMap : ∀ {k v : Type} {{_ : Ord k}} {{_ : Eq v}} → Eq (Map k v)
   iEqMap ._==_ m1 m2 = toAscList m1 == toAscList m2
 
 {-----------------------------------------------------------------------------
     Operations
     involving 2 value types
 ------------------------------------------------------------------------------}
-module _ {k a b : Set} {{_ : Ord k}} where
+module _ {k : Type} {{_ : Ord k}} where
   postulate
-
     instance
-      iMapFunctor : Functor (Map k)
+      iMapFunctor : Functor (Map k)    
+
+module _ {k a b : Type} {{_ : Ord k}} where
+  postulate
 
     mapWithKey : (k → a → b) → Map k a → Map k b
     mapMaybeWithKey : (k → a → Maybe b) → Map k a → Map k b
@@ -218,7 +221,7 @@ module _ {k a b : Set} {{_ : Ord k}} where
     Operations
     involving 3 value types
 ------------------------------------------------------------------------------}
-module _ {k a b c : Set} {{_ : Ord k}} where
+module _ {k a b c : Type} {{_ : Ord k}} where
   postulate
 
     intersectionWith : (a → b → c) → Map k a → Map k b → Map k c

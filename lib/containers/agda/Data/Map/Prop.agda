@@ -1,4 +1,3 @@
-{-# OPTIONS --erasure #-}
 
 -- | Proofs on 'Map'.
 module Data.Map.Prop where
@@ -14,13 +13,14 @@ open import Haskell.Data.Maybe using
 
 import Data.Map.Maybe as Maybe
 import Haskell.Prelude as List using (map)
+open import Data.Set using (Set)
 import Data.Set as Set
 
 {-----------------------------------------------------------------------------
     Proofs
     involving 1 value type
 ------------------------------------------------------------------------------}
-module _ {k a : Set} {{_ : Ord k}} where
+module _ {k a : Type} {{_ : Ord k}} where
 
   --
   prop-member-null
@@ -210,7 +210,7 @@ module _ {k a : Set} {{_ : Ord k}} where
     Proofs
     involving keysSet
 ------------------------------------------------------------------------------}
-module _ {k a : Set} {{_ : Ord k}} where
+module _ {k a : Type} {{_ : Ord k}} where
 
   --
   prop-member-keysSet
@@ -325,12 +325,11 @@ module _ {k a : Set} {{_ : Ord k}} where
           ≡ Set.member key (Set.union (keysSet ma) (keysSet mb))
       lem1 key
         rewrite prop-member-keysSet {key} {union ma mb}
-        rewrite prop-lookup-union key ma mb
-        rewrite Set.prop-member-union {k} key (keysSet ma) (keysSet mb)
-        rewrite prop-member-keysSet {key} {ma}
-        rewrite prop-member-keysSet {key} {mb}
-        with lookup key ma
-        with lookup key mb
+        | prop-lookup-union key ma mb
+        | Set.prop-member-union {k} key (keysSet ma) (keysSet mb)
+        | prop-member-keysSet {key} {ma}
+        | prop-member-keysSet {key} {mb}
+        with lookup key ma | lookup key mb
       ... | Nothing | Nothing = refl
       ... | Just a  | Nothing = refl
       ... | Nothing | Just b  = refl 
@@ -355,11 +354,11 @@ module _ {k a : Set} {{_ : Ord k}} where
     Proofs
     involving withoutKeys and restrictKeys
 ------------------------------------------------------------------------------}
-module _ {k a : Set} {{_ : Ord k}} where
+module _ {k a : Type} {{_ : Ord k}} where
 
   --
   prop-lookup-withoutKeys
-    : ∀ (key : k) (m : Map k a) (ks : Set.ℙ k)
+    : ∀ (key : k) (m : Map k a) (ks : Set k)
     → lookup key (withoutKeys m ks)
       ≡ Maybe.filt (not (Set.member key ks)) (lookup key m)
   --
@@ -377,7 +376,7 @@ module _ {k a : Set} {{_ : Ord k}} where
 
   --
   prop-lookup-restrictKeys
-    : ∀ (key : k) (m : Map k a) (ks : Set.ℙ k)
+    : ∀ (key : k) (m : Map k a) (ks : Set k)
     → lookup key (restrictKeys m ks)
       ≡ Maybe.filt (Set.member key ks) (lookup key m)
   --
@@ -441,7 +440,7 @@ module _ {k a : Set} {{_ : Ord k}} where
 
   --
   prop-restrictKeys-union
-    : ∀ (ma mb : Map k a) (ks : Set.ℙ k)
+    : ∀ (ma mb : Map k a) (ks : Set k)
     → restrictKeys (union ma mb) ks
       ≡ union (restrictKeys ma ks) (restrictKeys mb ks)
   --
@@ -499,7 +498,7 @@ module _ {k a : Set} {{_ : Ord k}} where
 
   --
   prop-withoutKeys-union
-    : ∀ (ma mb : Map k a) (ks : Set.ℙ k)
+    : ∀ (ma mb : Map k a) (ks : Set k)
     → withoutKeys (union ma mb) ks
       ≡ union (withoutKeys ma ks) (withoutKeys mb ks)
   --
@@ -531,7 +530,7 @@ module _ {k a : Set} {{_ : Ord k}} where
 
   --
   prop-withoutKeys-difference
-    : ∀ (m : Map k a) (ka kb : Set.ℙ k)
+    : ∀ (m : Map k a) (ka kb : Set k)
     → withoutKeys m (Set.difference ka kb)
       ≡ union (withoutKeys m ka) (restrictKeys m kb)
   --
@@ -582,7 +581,7 @@ module _ {k a : Set} {{_ : Ord k}} where
 
   --
   prop-withoutKeys-withoutKeys
-    : ∀ (m : Map k a) (ka kb : Set.ℙ k)
+    : ∀ (m : Map k a) (ka kb : Set k)
     → withoutKeys (withoutKeys m ka) kb
       ≡ withoutKeys m (Set.union ka kb)
   --
@@ -625,7 +624,7 @@ module _ {k a : Set} {{_ : Ord k}} where
 
   --
   @0 prop-withoutKeys-intersection
-    : ∀ (m : Map k a) (ka kb : Set.ℙ k)
+    : ∀ (m : Map k a) (ka kb : Set k)
     → withoutKeys m (Set.intersection ka kb)
       ≡ union (withoutKeys m ka) (withoutKeys m kb)
   --
@@ -686,8 +685,8 @@ module _ {k a : Set} {{_ : Ord k}} where
           ≡ lookup key ma
       eq-key key
         rewrite prop-lookup-union key ma (restrictKeys mb (keysSet ma))
-        rewrite prop-lookup-restrictKeys key mb (keysSet ma)
-        rewrite prop-member-keysSet {k} {a} {key} {ma}
+        | prop-lookup-restrictKeys key mb (keysSet ma)
+        | prop-member-keysSet {k} {a} {key} {ma}
         with lookup key ma
       ... | Nothing = refl
       ... | Just a
