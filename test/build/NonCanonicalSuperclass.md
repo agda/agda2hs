@@ -1,4 +1,0 @@
-```
-test/Fail/NonCanonicalSuperclass.agda:28,3-15
-illegal instance:  record { foo = id }
-```
