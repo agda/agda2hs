@@ -1,0 +1,55 @@
+cabal-version:      3.0
+name:               containers-prop
+build-type:         Simple
+version:            0.8
+synopsis:           Properties of containers, machine-checked
+description:
+  This package collects properties about data structures from the
+  [containers](https://hackage.haskell.org/package/containers) package,
+  such as `Data.Set` and `Data.Map`.
+  .
+  Basic properties are postulated, hoping that the implementation
+  satisfies them.
+  However, more complicated properties are proven from the basic properties.
+  These proofs are formalized and machine-checked
+  using [agda2hs](https://hackage.haskell.org/package/agda2hs).
+
+homepage:           https://github.com/agda/agda2hs
+license:            BSD-3-Clause
+author:             Heinrich Apfelmus
+maintainer:         apfelmus@quantentunnel.de
+copyright:          2025 Cardano Foundation
+category:           Language
+extra-doc-files:    CHANGELOG.md
+extra-source-files:
+  agda/**/*.agda
+  containers.agda-lib
+  generate-haskell.sh
+
+common language
+  default-language: Haskell2010
+
+common opts-lib
+  ghc-options:
+    -Wall -Wcompat -Wincomplete-record-updates
+    -Wno-incomplete-uni-patterns -Wno-redundant-constraints
+    -Wno-unused-matches -Wno-unused-imports
+
+library
+  import:          language, opts-lib
+  hs-source-dirs:  haskell
+  build-depends:
+    , base        >=4.13 && <4.21
+    , containers  >=0.6  && <0.9
+
+  exposed-modules:
+
+  --    Data.Maps.Maybe
+  --    Data.Map.Prop
+  --    Data.Map.Set
+  other-modules:
+    Test.Agda2Hs.Data.Map
+    Test.Agda2Hs.Data.Set
+  autogen-modules:
+    Test.Agda2Hs.Data.Map
+    Test.Agda2Hs.Data.Set

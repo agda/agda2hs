@@ -1,3 +1,5 @@
-packages: ./agda2hs.cabal
-constraints: Agda +debug
+packages:
+  ./agda2hs.cabal
+  ./lib/containers/containers-prop.cabal
 
+constraints: Agda +debug
