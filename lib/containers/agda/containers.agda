@@ -2,3 +2,6 @@
 
 import Data.Map
 import Data.Set
+
+import Test.Agda2Hs.Data.Map
+import Test.Agda2Hs.Data.Set

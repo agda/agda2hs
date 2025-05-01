@@ -1,4 +1,4 @@
-.PHONY : install agda repl libHtml test testHtml golden docs
+.PHONY : install agda repl libHtml test testContainers testHtml golden docs
 FILES = $(shell find src -type f)
 
 install :
@@ -17,7 +17,10 @@ libHtml :
 test/agda2hs : $(FILES)
 	cabal install agda2hs --overwrite-policy=always --installdir=test --install-method=copy
 
-test : test/agda2hs
+testContainers:
+	cd ./lib/containers && ./generate-haskell.sh && cabal build containers-prop
+
+test : test/agda2hs testContainers
 	make -C test
 
 testHtml : test/agda2hs
