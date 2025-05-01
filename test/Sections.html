@@ -1,0 +1,27 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Sections</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda">
+<a id="2" class="Keyword">module</a> <a id="9" href="Sections.html" class="Module">Sections</a> <a id="18" class="Keyword">where</a>
+
+<a id="25" class="Keyword">open</a> <a id="30" class="Keyword">import</a> <a id="37" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="test₁"></a><a id="54" href="Sections.html#54" class="Function">test₁</a> <a id="60" class="Symbol">:</a> <a id="62" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a> <a id="66" class="Symbol">→</a> <a id="68" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a>
+<a id="72" href="Sections.html#54" class="Function">test₁</a> <a id="78" class="Symbol">=</a> <a id="80" class="Number">5</a> <a id="82" href="Haskell.Prim.Num.html#552" class="Field Operator">+_</a>
+
+<a id="test₂"></a><a id="86" href="Sections.html#86" class="Function">test₂</a> <a id="92" class="Symbol">:</a> <a id="94" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a> <a id="98" class="Symbol">→</a> <a id="100" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a>
+<a id="104" href="Sections.html#86" class="Function">test₂</a> <a id="110" class="Symbol">=</a> <a id="112" href="Haskell.Prim.Num.html#552" class="Field Operator">_+</a> <a id="115" class="Number">5</a>
+
+<a id="test₃"></a><a id="118" href="Sections.html#118" class="Function">test₃</a> <a id="124" class="Symbol">:</a> <a id="126" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a> <a id="130" class="Symbol">→</a> <a id="132" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a>
+<a id="136" href="Sections.html#118" class="Function">test₃</a> <a id="142" class="Symbol">=</a> <a id="144" href="Haskell.Prim.Num.html#552" class="Field Operator">_+_</a> <a id="148" class="Number">5</a>
+
+<a id="test₄"></a><a id="151" href="Sections.html#151" class="Function">test₄</a> <a id="157" class="Symbol">:</a> <a id="159" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a> <a id="163" class="Symbol">→</a> <a id="165" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a>
+<a id="169" href="Sections.html#151" class="Function">test₄</a> <a id="175" class="Symbol">=</a> <a id="177" class="Symbol">λ</a> <a id="179" href="Sections.html#179" class="Bound">x</a> <a id="181" class="Symbol">→</a> <a id="183" href="Sections.html#179" class="Bound">x</a> <a id="185" href="Haskell.Prim.Num.html#552" class="Field Operator">+</a> <a id="187" class="Number">5</a>
+
+<a id="test₅"></a><a id="190" href="Sections.html#190" class="Function">test₅</a> <a id="196" class="Symbol">:</a> <a id="198" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a> <a id="202" class="Symbol">→</a> <a id="204" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a>
+<a id="208" href="Sections.html#190" class="Function">test₅</a> <a id="214" class="Symbol">=</a> <a id="216" class="Symbol">λ</a> <a id="218" href="Sections.html#218" class="Bound">x</a> <a id="220" class="Symbol">→</a> <a id="222" class="Number">5</a> <a id="224" href="Haskell.Prim.Num.html#552" class="Field Operator">+</a> <a id="226" href="Sections.html#218" class="Bound">x</a> <a id="228" class="Comment">-- Agda eta-contracts this before we get to see it</a>
+
+<a id="280" class="Symbol">{-#</a> <a id="284" class="Keyword">COMPILE</a> <a id="292" class="Keyword">AGDA2HS</a> <a id="300" href="Sections.html#54" class="Function">test₁</a> <a id="306" class="Symbol">#-}</a>
+<a id="310" class="Symbol">{-#</a> <a id="314" class="Keyword">COMPILE</a> <a id="322" class="Keyword">AGDA2HS</a> <a id="330" href="Sections.html#86" class="Function">test₂</a> <a id="336" class="Symbol">#-}</a>
+<a id="340" class="Symbol">{-#</a> <a id="344" class="Keyword">COMPILE</a> <a id="352" class="Keyword">AGDA2HS</a> <a id="360" href="Sections.html#118" class="Function">test₃</a> <a id="366" class="Symbol">#-}</a>
+<a id="370" class="Symbol">{-#</a> <a id="374" class="Keyword">COMPILE</a> <a id="382" class="Keyword">AGDA2HS</a> <a id="390" href="Sections.html#151" class="Function">test₄</a> <a id="396" class="Symbol">#-}</a>
+<a id="400" class="Symbol">{-#</a> <a id="404" class="Keyword">COMPILE</a> <a id="412" class="Keyword">AGDA2HS</a> <a id="420" href="Sections.html#190" class="Function">test₅</a> <a id="426" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Sections.html"/></div></body></html>

@@ -1,0 +1,19 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Haskell.Law.Semigroup.List</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="Agda"><a id="1" class="Keyword">module</a> <a id="8" href="Haskell.Law.Semigroup.List.html" class="Module">Haskell.Law.Semigroup.List</a> <a id="35" class="Keyword">where</a>
+
+<a id="42" class="Keyword">open</a> <a id="47" class="Keyword">import</a> <a id="54" href="Haskell.Prim.html" class="Module">Haskell.Prim</a>
+<a id="67" class="Keyword">open</a> <a id="72" class="Keyword">import</a> <a id="79" href="Haskell.Prim.List.html" class="Module">Haskell.Prim.List</a>
+
+<a id="98" class="Keyword">open</a> <a id="103" class="Keyword">import</a> <a id="110" href="Haskell.Prim.Monoid.html" class="Module">Haskell.Prim.Monoid</a>
+
+<a id="131" class="Keyword">open</a> <a id="136" class="Keyword">import</a> <a id="143" href="Haskell.Law.Equality.html" class="Module">Haskell.Law.Equality</a>
+<a id="164" class="Keyword">open</a> <a id="169" class="Keyword">import</a> <a id="176" href="Haskell.Law.List.html" class="Module">Haskell.Law.List</a>
+<a id="193" class="Keyword">open</a> <a id="198" class="Keyword">import</a> <a id="205" href="Haskell.Law.Semigroup.Def.html" class="Module">Haskell.Law.Semigroup.Def</a>
+
+<a id="232" class="Keyword">instance</a>
+  <a id="iLawfulSemigroupList"></a><a id="243" href="Haskell.Law.Semigroup.List.html#243" class="Function">iLawfulSemigroupList</a> <a id="264" class="Symbol">:</a> <a id="266" href="Haskell.Law.Semigroup.Def.html#138" class="Record">IsLawfulSemigroup</a> <a id="284" class="Symbol">(</a><a id="285" href="Agda.Builtin.List.html#147" class="Datatype">List</a> <a id="290" href="Haskell.Prim.html#1214" class="Generalizable">a</a><a id="291" class="Symbol">)</a>
+  <a id="295" href="Haskell.Law.Semigroup.List.html#243" class="Function">iLawfulSemigroupList</a> <a id="316" class="Symbol">.</a><a id="317" href="Haskell.Law.Semigroup.Def.html#275" class="Field">associativity</a> <a id="331" href="Agda.Builtin.List.html#184" class="InductiveConstructor">[]</a>       <a id="340" class="Symbol">_</a>  <a id="343" class="Symbol">_</a>  <a id="346" class="Symbol">=</a> <a id="348" href="Agda.Builtin.Equality.html#207" class="InductiveConstructor">refl</a>
+  <a id="355" href="Haskell.Law.Semigroup.List.html#243" class="Function">iLawfulSemigroupList</a> <a id="376" class="Symbol">.</a><a id="377" href="Haskell.Law.Semigroup.Def.html#275" class="Field">associativity</a> <a id="391" class="Symbol">(</a><a id="392" href="Haskell.Law.Semigroup.List.html#392" class="Bound">x</a> <a id="394" href="Agda.Builtin.List.html#199" class="InductiveConstructor Operator">∷</a> <a id="396" href="Haskell.Law.Semigroup.List.html#396" class="Bound">xs</a><a id="398" class="Symbol">)</a> <a id="400" href="Haskell.Law.Semigroup.List.html#400" class="Bound">ys</a> <a id="403" href="Haskell.Law.Semigroup.List.html#403" class="Bound">zs</a>
+    <a id="410" class="Keyword">rewrite</a> <a id="418" href="Haskell.Law.Equality.html#404" class="Function">sym</a> <a id="422" class="Symbol">(</a><a id="423" href="Haskell.Law.List.html#2020" class="Function">++-assoc</a> <a id="432" href="Haskell.Law.Semigroup.List.html#396" class="Bound">xs</a> <a id="435" href="Haskell.Law.Semigroup.List.html#400" class="Bound">ys</a> <a id="438" href="Haskell.Law.Semigroup.List.html#403" class="Bound">zs</a><a id="440" class="Symbol">)</a>
+    <a id="446" class="Symbol">=</a> <a id="448" href="Agda.Builtin.Equality.html#207" class="InductiveConstructor">refl</a>
+</pre></body></html>
