@@ -5,10 +5,11 @@
 let
   lib = import ./lib.nix { inherit pkgs; };
   version = "1.3";
+
   base-lib = pkgs.agdaPackages.mkDerivation {
     pname = "base";
     meta = { };
-    version = version;
+    version = "4.18";
     preBuild = ''
       echo "{-# OPTIONS --sized-types #-}" > Everything.agda
       echo "module Everything where" >> Everything.agda
@@ -19,5 +20,5 @@ let
 in
 {
   inherit (lib) agda2hs;
-  base-lib = base-lib;
+  inherit base-lib;
 }
