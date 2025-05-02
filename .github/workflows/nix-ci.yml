@@ -24,12 +24,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        derivation: [agda2hs, base-lib]
+        derivation: [agda2hs, base-lib, containers-lib]
         include:
           - pretty: "Compile agda2hs"
             derivation: agda2hs
           - pretty: "Typecheck with Agda"
             derivation: base-lib
+          - pretty: "Typecheck with Agda"
+            derivation: containers-lib
     steps:
     - uses: actions/checkout@v3
     - uses: nixbuild/nix-quick-install-action@v30
