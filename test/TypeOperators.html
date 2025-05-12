@@ -1,0 +1,35 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>TypeOperators</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Keyword">module</a> <a id="8" href="TypeOperators.html" class="Module">TypeOperators</a> <a id="22" class="Keyword">where</a>
+
+<a id="29" class="Symbol">{-#</a> <a id="33" class="Keyword">FOREIGN</a> <a id="41" class="Pragma">AGDA2HS</a> <a id="49" class="Symbol">{-#</a> <a id="53" class="Pragma">LANGUAGE</a> <a id="62" class="Pragma">TypeOperators</a> <a id="76" class="Symbol">#-}</a> <a id="80" class="Symbol">#-}</a>
+
+<a id="85" class="Keyword">open</a> <a id="90" class="Keyword">import</a> <a id="97" href="Haskell.Prim.html" class="Module">Haskell.Prim</a> <a id="110" class="Keyword">using</a> <a id="116" class="Symbol">(</a><a id="117" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="121" class="Symbol">)</a>
+<a id="123" class="Keyword">open</a> <a id="128" class="Keyword">import</a> <a id="135" href="Haskell.Prim.Either.html" class="Module">Haskell.Prim.Either</a>
+
+<a id="156" class="Keyword">open</a> <a id="161" class="Keyword">import</a> <a id="168" href="Agda.Builtin.Nat.html" class="Module">Agda.Builtin.Nat</a>
+<a id="185" class="Keyword">open</a> <a id="190" class="Keyword">import</a> <a id="197" href="Agda.Builtin.Bool.html" class="Module">Agda.Builtin.Bool</a>
+
+<a id="_:++:_"></a><a id="216" href="TypeOperators.html#216" class="Function Operator">_:++:_</a> <a id="223" class="Symbol">:</a> <a id="225" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="230" class="Symbol">→</a> <a id="232" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="237" class="Symbol">→</a> <a id="239" href="Agda.Primitive.html#388" class="Primitive">Type</a>
+<a id="244" href="TypeOperators.html#216" class="Function Operator">_:++:_</a> <a id="251" class="Symbol">=</a> <a id="253" href="Haskell.Prim.Either.html#159" class="Datatype">Either</a>
+<a id="260" class="Symbol">{-#</a> <a id="264" class="Keyword">COMPILE</a> <a id="272" class="Keyword">AGDA2HS</a> <a id="280" href="TypeOperators.html#216" class="Function Operator">_:++:_</a> <a id="287" class="Symbol">#-}</a>
+
+<a id="mx"></a><a id="292" href="TypeOperators.html#292" class="Function">mx</a> <a id="295" class="Symbol">:</a> <a id="297" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a> <a id="302" href="TypeOperators.html#216" class="Function Operator">:++:</a> <a id="307" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a>
+<a id="311" href="TypeOperators.html#292" class="Function">mx</a> <a id="314" class="Symbol">=</a> <a id="316" href="Haskell.Prim.Either.html#194" class="InductiveConstructor">Left</a> <a id="321" href="Agda.Builtin.Bool.html#198" class="InductiveConstructor">true</a>
+<a id="326" class="Symbol">{-#</a> <a id="330" class="Keyword">COMPILE</a> <a id="338" class="Keyword">AGDA2HS</a> <a id="346" href="TypeOperators.html#292" class="Function">mx</a> <a id="349" class="Symbol">#-}</a>
+
+<a id="_++++_"></a><a id="354" href="TypeOperators.html#354" class="Function Operator">_++++_</a> <a id="361" class="Symbol">:</a> <a id="363" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="368" class="Symbol">→</a> <a id="370" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="375" class="Symbol">→</a> <a id="377" href="Agda.Primitive.html#388" class="Primitive">Type</a>
+<a id="382" href="TypeOperators.html#354" class="Function Operator">_++++_</a> <a id="389" class="Symbol">=</a> <a id="391" href="Haskell.Prim.Either.html#159" class="Datatype">Either</a>
+<a id="398" class="Symbol">{-#</a> <a id="402" class="Keyword">COMPILE</a> <a id="410" class="Keyword">AGDA2HS</a> <a id="418" href="TypeOperators.html#354" class="Function Operator">_++++_</a> <a id="425" class="Symbol">#-}</a>
+
+<a id="mx&#39;"></a><a id="430" href="TypeOperators.html#430" class="Function">mx&#39;</a> <a id="434" class="Symbol">:</a> <a id="436" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a> <a id="441" href="TypeOperators.html#354" class="Function Operator">++++</a> <a id="446" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a>
+<a id="450" href="TypeOperators.html#430" class="Function">mx&#39;</a> <a id="454" class="Symbol">=</a> <a id="456" href="Haskell.Prim.Either.html#194" class="InductiveConstructor">Left</a> <a id="461" href="Agda.Builtin.Bool.html#198" class="InductiveConstructor">true</a>
+<a id="466" class="Symbol">{-#</a> <a id="470" class="Keyword">COMPILE</a> <a id="478" class="Keyword">AGDA2HS</a> <a id="486" href="TypeOperators.html#430" class="Function">mx&#39;</a> <a id="490" class="Symbol">#-}</a>
+
+<a id="495" class="Keyword">data</a> <a id="_****_"></a><a id="500" href="TypeOperators.html#500" class="Datatype Operator">_****_</a> <a id="507" class="Symbol">(</a><a id="508" href="TypeOperators.html#508" class="Bound">a</a> <a id="510" href="TypeOperators.html#510" class="Bound">b</a> <a id="512" class="Symbol">:</a> <a id="514" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="518" class="Symbol">):</a> <a id="521" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="526" class="Keyword">where</a>
+  <a id="_****_._:****_"></a><a id="534" href="TypeOperators.html#534" class="InductiveConstructor Operator">_:****_</a> <a id="542" class="Symbol">:</a> <a id="544" href="TypeOperators.html#508" class="Bound">a</a> <a id="546" class="Symbol">→</a> <a id="548" href="TypeOperators.html#510" class="Bound">b</a> <a id="550" class="Symbol">→</a> <a id="552" href="TypeOperators.html#508" class="Bound">a</a> <a id="554" href="TypeOperators.html#500" class="Datatype Operator">****</a> <a id="559" href="TypeOperators.html#510" class="Bound">b</a>
+<a id="561" class="Symbol">{-#</a> <a id="565" class="Keyword">COMPILE</a> <a id="573" class="Keyword">AGDA2HS</a> <a id="581" href="TypeOperators.html#500" class="Datatype Operator">_****_</a> <a id="588" class="Symbol">#-}</a>
+
+<a id="cross"></a><a id="593" href="TypeOperators.html#593" class="Function">cross</a> <a id="599" class="Symbol">:</a> <a id="601" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a> <a id="606" href="TypeOperators.html#500" class="Datatype Operator">****</a> <a id="611" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a>
+<a id="615" href="TypeOperators.html#593" class="Function">cross</a> <a id="621" class="Symbol">=</a> <a id="623" href="Agda.Builtin.Bool.html#198" class="InductiveConstructor">true</a> <a id="628" href="TypeOperators.html#534" class="InductiveConstructor Operator">:****</a> <a id="634" class="Number">1</a>
+<a id="636" class="Symbol">{-#</a> <a id="640" class="Keyword">COMPILE</a> <a id="648" class="Keyword">AGDA2HS</a> <a id="656" href="TypeOperators.html#593" class="Function">cross</a> <a id="662" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/TypeOperators.html"/></div></body></html>
