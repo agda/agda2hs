@@ -32,8 +32,16 @@ jobs:
             derivation: base-lib
     steps:
     - uses: actions/checkout@v3
-    - uses: cachix/install-nix-action@v22
-    - uses: DeterminateSystems/magic-nix-cache-action@v2
+    - uses: nixbuild/nix-quick-install-action@v30
+      with:
+        nix_conf: |
+          keep-env-derivations = true
+          keep-outputs = true
+    - name: Restore and save Nix store
+      uses: nix-community/cache-nix-action@v6
+      with:
+        # restore and save a cache using this key
+        primary-key: nix-${{ matrix.derivation }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
     - run: nix build .#${{ matrix.derivation }} --print-build-logs
 
   nix-shell:
@@ -41,7 +49,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: cachix/install-nix-action@v22
-    - uses: DeterminateSystems/magic-nix-cache-action@v2
-    # for some reason this doesn't work without update, even though it doesn't download anything
-    - run: nix develop -Lv -c bash -c "cabal update; cabal v1-build"
+    - uses: nixbuild/nix-quick-install-action@v30
+      with:
+        nix_conf: |
+          keep-env-derivations = true
+          keep-outputs = true
+    - name: Restore and save Nix store
+      uses: nix-community/cache-nix-action@v6
+      with:
+        primary-key: nix-devshell-${{ hashFiles('**/*.nix', '**/flake.lock') }}
+    - name: drop into the devshell and run cabal
+      # for some reason this doesn't work without update
+      # even though it doesn't actually download anything
+      run: nix develop -Lv -c bash -c "cabal update; cabal v1-build"
