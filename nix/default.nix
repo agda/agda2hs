@@ -6,7 +6,7 @@ let
   lib = import ./lib.nix { inherit pkgs; };
   version = "1.3";
 
-  base-lib = pkgs.agdaPackages.mkDerivation {
+  base-lib = lib.mkDerivation {
     pname = "base";
     meta = { };
     version = "4.18";
