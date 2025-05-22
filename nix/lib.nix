@@ -25,5 +25,5 @@ in
   agda2hs-pkg = hsrc;
   agda2hs-hs = hpkg;
   agda2hs-expr = expr;
-  inherit (agda2hs) agda2hs withPackages;
+  inherit (agda2hs) agda2hs withPackages mkDerivation;
 }
