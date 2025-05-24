@@ -11,38 +11,33 @@ open import Haskell.Law.List
 open import Haskell.Law.Applicative.List
 
 instance
-  iLawfulMonadList :  IsLawfulMonad List
-  iLawfulMonadList .leftIdentity a k 
-    rewrite ++-[] (k a)
+  iPreLawfulMonadList : PreLawfulMonad List
+  iPreLawfulMonadList .leftIdentity _ _ = ++-[] _
+
+  iPreLawfulMonadList .rightIdentity [] = refl
+  iPreLawfulMonadList .rightIdentity (x ∷ xs)
+    rewrite iPreLawfulMonadList .PreLawfulMonad.rightIdentity xs
     = refl
 
-  iLawfulMonadList .rightIdentity [] = refl
-  iLawfulMonadList .rightIdentity (_ ∷ xs)
-    rewrite rightIdentity xs
-    = refl
-
-  iLawfulMonadList .associativity [] f g = refl
-  iLawfulMonadList .associativity (x ∷ xs) f g
+  iPreLawfulMonadList .associativity []       f g = refl
+  iPreLawfulMonadList .associativity (x ∷ xs) f g
     rewrite associativity xs f g
-      | concatMap-++-distr (f x) (xs >>= f) g
-    = refl  
-
-  iLawfulMonadList .pureIsReturn _ = refl
-
-  iLawfulMonadList .sequence2bind [] _ = refl
-  iLawfulMonadList .sequence2bind (f ∷ fs) xs 
-    rewrite sequence2bind fs xs
-      | map-concatMap f xs
+    | concatMap-++-distr (f x) (xs >>= f) g
     = refl
 
-  iLawfulMonadList .fmap2bind f [] = refl
-  iLawfulMonadList .fmap2bind f (_ ∷ xs)
-    rewrite fmap2bind f xs
+  iPreLawfulMonadList .def->>->>= _ _ = refl
+  iPreLawfulMonadList .def-pure-return _ = refl
+
+  iPreLawfulMonadList .def-fmap->>= _ [] = refl
+  iPreLawfulMonadList .def-fmap->>= f (x ∷ xs)
+    rewrite iPreLawfulMonadList .PreLawfulMonad.def-fmap->>= f xs
     = refl
 
-  iLawfulMonadList .rSequence2rBind [] mb = refl
-  iLawfulMonadList .rSequence2rBind (x ∷ ma) mb
-    rewrite rSequence2rBind ma mb 
-      | map-id mb 
+  iPreLawfulMonadList .def-<*>->>= []       xs = refl
+  iPreLawfulMonadList .def-<*>->>= (f ∷ fs) xs
+    rewrite iPreLawfulMonadList .PreLawfulMonad.def-<*>->>= fs xs
+    | map-concatMap f xs
     = refl
 
+  iIsLawfulMonadList : IsLawfulMonad List
+  iIsLawfulMonadList = record {}

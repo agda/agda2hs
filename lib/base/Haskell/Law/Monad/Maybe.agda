@@ -10,26 +10,26 @@ open import Haskell.Law.Monad.Def
 open import Haskell.Law.Applicative.Maybe
 
 instance
-  iLawfulMonadMaybe : IsLawfulMonad Maybe
-  iLawfulMonadMaybe .leftIdentity _ _ = refl
+  iPreLawfulMonadMaybe : PreLawfulMonad Maybe
+  iPreLawfulMonadMaybe = λ where
+    .leftIdentity _ _ → refl
+    .rightIdentity → λ where
+      Nothing  → refl
+      (Just _) → refl
+    .associativity → λ where
+      Nothing  _ _ → refl
+      (Just _) _ _ → refl
 
-  iLawfulMonadMaybe .rightIdentity = λ { Nothing → refl; (Just _) → refl }
+    .def->>->>= _ _ → refl
+    .def-pure-return _ → refl
 
-  iLawfulMonadMaybe .associativity = λ { Nothing _ _ → refl; (Just _) _ _ → refl }
+    .def-fmap->>= _ → λ where
+      Nothing → refl
+      (Just _) → refl
+    .def-<*>->>= → λ where
+      Nothing  _        → refl
+      (Just _) Nothing  → refl
+      (Just _) (Just _) → refl
 
-  iLawfulMonadMaybe .pureIsReturn _ = refl
-
-  iLawfulMonadMaybe .sequence2bind =
-    λ { Nothing  _        → refl
-      ; (Just _) Nothing  → refl
-      ; (Just _) (Just _) → refl
-      }
-
-  iLawfulMonadMaybe .fmap2bind = λ { _ Nothing → refl; _ (Just _) → refl }
-
-  iLawfulMonadMaybe .rSequence2rBind =
-    λ { Nothing  _        → refl
-      ; (Just _) Nothing  → refl
-      ; (Just _) (Just _) → refl
-      }
-
+  iIsLawfulMonadMaybe : IsLawfulMonad Maybe
+  iIsLawfulMonadMaybe = record {}
