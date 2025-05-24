@@ -9,34 +9,69 @@ open import Haskell.Prim.Monoid
 open import Haskell.Prim.Tuple
 
 open import Haskell.Law.Applicative
+open import Haskell.Law.Equality
+open import Haskell.Law.Extensionality
 
-record IsLawfulMonad (F : Type → Type) ⦃ iMonadF : Monad F ⦄ : Type₁ where
+-- Helper function: Substitution in the second argument of '(>>=)'.
+cong-monad
+  : ∀ ⦃ _ : Monad m ⦄ (mx : m a) {f g : a → m b}
+  → (∀ x → f x ≡ g x)
+  → (do x ← mx; f x) ≡ (do x ← mx; g x)
+--
+cong-monad mx {f} {g} eq = cong (mx >>=_) (ext eq)
+
+-------------------------------------------------------------------------------
+-- Monad laws, grouped
+--
+-- We have split the 'IsLawfulMonad' class into different groups,
+-- because 'IsLawfulApplicative' can be proven from the other groups.
+-- At usage sites, it is convenient to automatically have
+-- an instance 'IsLawfulApplicative' in scope whenever an instance of
+-- 'IsLawfulMonad' is in scope, hence we use it as a superclass.
+
+-- Core laws
+record MonadLaws (m : Type → Type) ⦃ _ : Monad m ⦄ : Type₁ where
   field
-    overlap ⦃ super ⦄ : IsLawfulApplicative F
+    leftIdentity  : ∀ {a} (x : a) (k : a → m b)
+      → (return x >>= k) ≡ k x
 
-    -- Left identity: return a >>= k = k a
-    leftIdentity : {a : Type} → (a' : a) (k : a → F b) → ((return a') >>= k) ≡ k a'
+    rightIdentity : ∀ {a} (ma : m a)
+      → (ma >>= return) ≡ ma
 
-    -- Right identity: m >>= return = m
-    rightIdentity : {a : Type} → (ma : F a) → (ma >>= return) ≡ ma
-
-    -- Associativity: m >>= (\x -> k x >>= h) = (m >>= k) >>= h
-    associativity : {a b c : Type} → (ma : F a) (f : a → F b) (g : b → F c)
+    associativity : ∀ {a b c} (ma : m a) (f : a → m b) (g : b → m c)
       → (ma >>= (λ x → f x >>= g)) ≡ ((ma >>= f) >>= g)
 
-    -- pure = return
-    pureIsReturn : (a' : a) → pure a' ≡ (Monad.return iMonadF a')
-    -- m1 <*> m2 = m1 >>= (\x1 -> m2 >>= (\x2 -> return (x1 x2)))
-    sequence2bind : {a b : Type} → (mab : F (a → b)) (ma : F a)
-      → (mab <*> ma) ≡ (mab >>= (λ x1 → (ma >>= (λ x2 → return (x1 x2)))))
+open MonadLaws ⦃ ... ⦄ public
 
-    -- fmap f xs  =  xs >>= return . f
-    fmap2bind : {a b : Type} → (f : a → b) (ma : F a)
-      → fmap f ma ≡ (ma >>= (return ∘ f))
-    -- (>>) = (*>)
-    rSequence2rBind : (ma : F a) → (mb : F b) → (ma *> mb) ≡ (ma >> mb)
+-- Default and superclass functions
+-- are defined in terms of '>>=' and 'return'
+record IsDefaultMonad (m : Type → Type) ⦃ iMonad : Monad m ⦄ : Type₁ where
+  field
+    def->>->>= : ∀ {a b} (ma : m a) (mb : m b)
+      → ma >> mb ≡ ma >>= (λ x → mb)
+
+    def-pure-return : ∀ {a} (x : a)
+      → pure x ≡ return {{iMonad}} x
+
+    def-fmap->>= : ∀ {a b} (f : a → b) (ma : m a)
+      → fmap f ma ≡ ma >>= (return ∘ f)
+
+    def-<*>->>= : ∀ {a b} (mab : m (a → b)) (ma : m a)
+      → (mab <*> ma) ≡ (mab >>= (λ f → (ma >>= (λ x → return (f x)))))
+
+open IsDefaultMonad ⦃ ... ⦄ public
+
+-- All laws together
+record IsLawfulMonad (m : Type → Type) ⦃ iMonadm : Monad m ⦄ : Type₁ where
+  field
+    overlap ⦃ applicative ⦄ : IsLawfulApplicative m
+    overlap ⦃ default ⦄     : IsDefaultMonad m
+    overlap ⦃ monad ⦄       : MonadLaws m
 
 open IsLawfulMonad ⦃ ... ⦄ public
+
+-------------------------------------------------------------------------------
+-- postulated monad laws, to be proven
 
 instance postulate
   iLawfulMonadFun : IsLawfulMonad (λ b → a → b)

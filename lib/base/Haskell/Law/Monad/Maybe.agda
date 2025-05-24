@@ -10,26 +10,21 @@ open import Haskell.Law.Monad.Def
 open import Haskell.Law.Applicative.Maybe
 
 instance
-  iLawfulMonadMaybe : IsLawfulMonad Maybe
-  iLawfulMonadMaybe .leftIdentity _ _ = refl
+  iMonadLawsMaybe : MonadLaws Maybe
+  iMonadLawsMaybe .leftIdentity _ _ = refl
+  iMonadLawsMaybe .rightIdentity Nothing  = refl
+  iMonadLawsMaybe .rightIdentity (Just x) = refl
+  iMonadLawsMaybe .associativity Nothing  = λ f g → refl
+  iMonadLawsMaybe .associativity (Just x) = λ f g → refl
 
-  iLawfulMonadMaybe .rightIdentity = λ { Nothing → refl; (Just _) → refl }
+  iIsDefaultMonadMaybe : IsDefaultMonad Maybe
+  iIsDefaultMonadMaybe .def->>->>= = λ ma mb → refl
+  iIsDefaultMonadMaybe .def-pure-return = λ x → refl
+  iIsDefaultMonadMaybe .def-fmap->>= f Nothing  = refl
+  iIsDefaultMonadMaybe .def-fmap->>= f (Just x) = refl
+  iIsDefaultMonadMaybe .def-<*>->>= Nothing = λ ma → refl
+  iIsDefaultMonadMaybe .def-<*>->>= (Just x) Nothing = refl
+  iIsDefaultMonadMaybe .def-<*>->>= (Just x) (Just y) = refl
 
-  iLawfulMonadMaybe .associativity = λ { Nothing _ _ → refl; (Just _) _ _ → refl }
-
-  iLawfulMonadMaybe .pureIsReturn _ = refl
-
-  iLawfulMonadMaybe .sequence2bind =
-    λ { Nothing  _        → refl
-      ; (Just _) Nothing  → refl
-      ; (Just _) (Just _) → refl
-      }
-
-  iLawfulMonadMaybe .fmap2bind = λ { _ Nothing → refl; _ (Just _) → refl }
-
-  iLawfulMonadMaybe .rSequence2rBind =
-    λ { Nothing  _        → refl
-      ; (Just _) Nothing  → refl
-      ; (Just _) (Just _) → refl
-      }
-
+  iIsLawfulMonadMaybe : IsLawfulMonad Maybe
+  iIsLawfulMonadMaybe = record {}

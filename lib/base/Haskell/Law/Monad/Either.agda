@@ -10,25 +10,21 @@ open import Haskell.Law.Monad.Def
 open import Haskell.Law.Applicative.Either
 
 instance
-  iLawfulMonadEither : IsLawfulMonad (Either a)
-  iLawfulMonadEither .leftIdentity _ _ = refl
+  iMonadLawsEither : MonadLaws (Either a)
+  iMonadLawsEither .leftIdentity _ _ = refl
+  iMonadLawsEither .rightIdentity (Left  x) = refl
+  iMonadLawsEither .rightIdentity (Right x) = refl
+  iMonadLawsEither .associativity (Left  x) = λ f g → refl
+  iMonadLawsEither .associativity (Right x) = λ f g → refl
 
-  iLawfulMonadEither .rightIdentity = λ { (Left _) → refl; (Right _) → refl }
+  iIsDefaultMonadEither : IsDefaultMonad (Either a)
+  iIsDefaultMonadEither .def->>->>= = λ ma mb → refl
+  iIsDefaultMonadEither .def-pure-return = λ x → refl
+  iIsDefaultMonadEither .def-fmap->>= f (Left x) = refl
+  iIsDefaultMonadEither .def-fmap->>= f (Right x) = refl
+  iIsDefaultMonadEither .def-<*>->>= (Left x) = λ ma → refl
+  iIsDefaultMonadEither .def-<*>->>= (Right x) (Left  y) = refl
+  iIsDefaultMonadEither .def-<*>->>= (Right x) (Right y) = refl
 
-  iLawfulMonadEither .associativity = λ { (Left _) _ _ → refl; (Right _) _ _ → refl }
-
-  iLawfulMonadEither .pureIsReturn _ = refl
-
-  iLawfulMonadEither .sequence2bind =
-    λ { (Left _)  _         → refl
-      ; (Right _) (Left _)  → refl
-      ; (Right _) (Right _) → refl
-      }
-
-  iLawfulMonadEither .fmap2bind = λ { _ (Left _) → refl; _ (Right _) → refl }
-
-  iLawfulMonadEither .rSequence2rBind =
-    λ { (Left _)  _         → refl
-      ; (Right _) (Left _)  → refl
-      ; (Right _) (Right _) → refl
-      }
+  iIsLawfulMonadEither : IsLawfulMonad (Either a)
+  iIsLawfulMonadEither = record {}
