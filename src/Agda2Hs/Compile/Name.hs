@@ -12,9 +12,6 @@ import Data.List ( intercalate, isPrefixOf, stripPrefix )
 import Data.Text ( unpack )
 import qualified Data.Map.Strict as Map
 
-import qualified Language.Haskell.Exts.Pretty as Hs
-import qualified Language.Haskell.Exts.Syntax as Hs
-
 import Agda.Compiler.Backend hiding ( topLevelModuleName )
 import Agda.Compiler.Common ( topLevelModuleName )
 
@@ -41,7 +38,9 @@ import Agda.Utils.Monad ( orM, whenM )
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
-import Agda2Hs.Language.Haskell.Utils
+
+import qualified Agda2Hs.Language.Haskell as Hs
+import Agda2Hs.Language.Haskell.Utils ( hsName, hsModuleName, pp )
 
 
 isSpecialCon :: QName -> Maybe (Hs.QName ())

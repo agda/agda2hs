@@ -8,9 +8,6 @@ import Data.List ( nub )
 import Data.Maybe ( isNothing, mapMaybe )
 import qualified Data.HashMap.Strict as HMap
 
-import qualified Language.Haskell.Exts.Extension as Hs
-import qualified Language.Haskell.Exts.Syntax as Hs
-
 import Agda.Compiler.Backend
 import Agda.Compiler.Common ( curDefs, sortDefs )
 
@@ -40,8 +37,9 @@ import Agda2Hs.Compile.Term
 import Agda2Hs.Compile.Type
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
-import Agda2Hs.Language.Haskell.Utils
 
+import qualified Agda2Hs.Language.Haskell as Hs
+import Agda2Hs.Language.Haskell.Utils ( hsName, pp, replaceName, unQual )
 
 enableCopatterns :: C a -> C a
 enableCopatterns = local $ \e -> e { copatternsEnabled = True }

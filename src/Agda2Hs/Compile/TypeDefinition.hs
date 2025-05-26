@@ -4,8 +4,6 @@ import Control.Monad ( unless )
 
 import Data.Maybe ( fromMaybe )
 
-import qualified Language.Haskell.Exts.Syntax as Hs
-
 import Agda.Compiler.Backend
 
 import Agda.Syntax.Common ( namedArg )
@@ -21,10 +19,11 @@ import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTyp
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
-import Agda2Hs.Language.Haskell.Utils
 import Agda.Syntax.Common.Pretty (prettyShow)
 import Agda.TypeChecking.Substitute
 
+import qualified Agda2Hs.Language.Haskell as Hs
+import Agda2Hs.Language.Haskell.Utils ( hsName )
 
 compileTypeDef :: Hs.Name () -> Definition -> C [Hs.Decl ()]
 compileTypeDef name (Defn {..}) = do

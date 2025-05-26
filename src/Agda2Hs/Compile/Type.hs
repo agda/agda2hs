@@ -11,9 +11,6 @@ import Data.List ( find )
 import Data.Maybe ( mapMaybe, isJust )
 import qualified Data.Set as Set ( singleton )
 
-import qualified Language.Haskell.Exts.Syntax as Hs
-import qualified Language.Haskell.Exts.Extension as Hs
-
 import Agda.Compiler.Backend hiding ( Args )
 
 import Agda.Syntax.Common
@@ -37,7 +34,9 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var
 import Agda2Hs.AgdaUtils
+import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
+  ( Strictness(Lazy), hsName, tApp, constrainType, qualifyType )
 
 
 -- | Type definitions from the prelude that get special translation rules.

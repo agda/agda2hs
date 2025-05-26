@@ -31,10 +31,7 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Pragma
 
-import qualified Language.Haskell.Exts.Extension as Hs
-import qualified Language.Haskell.Exts.Syntax as Hs
-import qualified Language.Haskell.Exts.Pretty as Hs
-
+import qualified Agda2Hs.Language.Haskell as Hs
 
 initCompileEnv :: TopLevelModuleName -> SpecialRules -> CompileEnv
 initCompileEnv tlm rewrites = CompileEnv

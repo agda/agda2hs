@@ -12,10 +12,6 @@ import qualified Data.Set as Set
 import System.FilePath ( takeDirectory, (</>) )
 import System.Directory ( createDirectoryIfMissing )
 
-import qualified Language.Haskell.Exts.Syntax as Hs
-import qualified Language.Haskell.Exts.ExactPrint as Hs
-import qualified Language.Haskell.Exts.Extension as Hs
-
 import Agda.Compiler.Backend
 import Agda.Compiler.Common ( compileDir )
 
@@ -31,7 +27,9 @@ import Agda2Hs.Compile
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Imports
 import Agda2Hs.Compile.Utils ( primModules )
+import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
+  ( extToName, pp, moveToTop, insertParens )
 import Agda2Hs.Pragma ( getForeignPragmas )
 
 -- Rendering --------------------------------------------------------------

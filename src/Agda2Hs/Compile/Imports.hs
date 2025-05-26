@@ -2,13 +2,14 @@ module Agda2Hs.Compile.Imports ( compileImports, preludeImportDecl ) where
 
 import Data.Char ( isUpper )
 import Data.List ( isPrefixOf )
+import qualified Data.List as L
 import Data.Map ( Map )
 import qualified Data.Map as Map
 import Data.Set ( Set )
 import qualified Data.Set as Set
 
-import qualified Language.Haskell.Exts.Pretty as Hs
-import qualified Language.Haskell.Exts.Syntax as Hs
+import qualified Agda2Hs.Language.Haskell as Hs
+import Agda2Hs.Language.Haskell.Utils ( validVarId, validConId, pp )
 
 import Agda.Compiler.Backend
 import Agda.TypeChecking.Pretty ( text )
@@ -18,8 +19,6 @@ import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
-import Agda2Hs.Language.Haskell.Utils
-import qualified Data.List as L
 
 type ImportSpecMap = Map NamespacedName (Set NamespacedName)
 type ImportDeclMap = Map (Hs.ModuleName (), Qualifier) ImportSpecMap

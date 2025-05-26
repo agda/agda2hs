@@ -7,8 +7,6 @@ import Control.Monad.IO.Class ( MonadIO(liftIO) )
 import System.Console.GetOpt
 import System.Environment ( getArgs )
 
-import qualified Language.Haskell.Exts.Extension as Hs
-
 import Agda.Main
 import Agda.Compiler.Backend
 
@@ -17,6 +15,8 @@ import Agda2Hs.Compile
 import Agda2Hs.Config ( checkConfig )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Render
+
+import qualified Agda2Hs.Language.Haskell as Hs
 
 import Paths_agda2hs ( version, getDataFileName )
 
