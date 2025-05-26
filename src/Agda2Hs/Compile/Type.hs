@@ -37,7 +37,7 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var
 import Agda2Hs.AgdaUtils
-import Agda2Hs.HsUtils
+import Agda2Hs.Language.Haskell.Utils
 
 
 -- | Type definitions from the prelude that get special translation rules.

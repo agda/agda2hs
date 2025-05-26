@@ -31,7 +31,7 @@ import Agda2Hs.Compile
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Imports
 import Agda2Hs.Compile.Utils ( primModules )
-import Agda2Hs.HsUtils
+import Agda2Hs.Language.Haskell.Utils
 import Agda2Hs.Pragma ( getForeignPragmas )
 
 -- Rendering --------------------------------------------------------------

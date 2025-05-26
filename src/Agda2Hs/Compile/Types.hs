@@ -26,7 +26,7 @@ import Agda.TypeChecking.Warnings ( MonadWarning )
 import Agda.Utils.Null
 import Agda.Utils.Impossible
 
-import Agda2Hs.HsUtils ( Strictness )
+import Agda2Hs.Language.Haskell.Utils ( Strictness )
 
 type ModuleEnv   = TopLevelModuleName
 type ModuleRes   = ()

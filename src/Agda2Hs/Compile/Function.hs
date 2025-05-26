@@ -48,7 +48,7 @@ import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
-import Agda2Hs.HsUtils
+import Agda2Hs.Language.Haskell.Utils
 
 
 -- | Compilation rules for specific constructors in patterns.

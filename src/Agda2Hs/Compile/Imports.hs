@@ -18,7 +18,7 @@ import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
-import Agda2Hs.HsUtils
+import Agda2Hs.Language.Haskell.Utils
 import qualified Data.List as L
 
 type ImportSpecMap = Map NamespacedName (Set NamespacedName)

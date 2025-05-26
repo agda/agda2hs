@@ -10,7 +10,7 @@ import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda2Hs.Compile.Type ( compileType )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
-import Agda2Hs.HsUtils
+import Agda2Hs.Language.Haskell.Utils
 
 compilePostulate :: Definition -> C [Hs.Decl ()]
 compilePostulate def = do

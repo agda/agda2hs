@@ -40,7 +40,7 @@ import Agda2Hs.Compile.Term
 import Agda2Hs.Compile.Type
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
-import Agda2Hs.HsUtils
+import Agda2Hs.Language.Haskell.Utils
 
 
 enableCopatterns :: C a -> C a

@@ -50,7 +50,7 @@ import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTel
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
-import Agda2Hs.HsUtils
+import Agda2Hs.Language.Haskell.Utils
 
 import {-# SOURCE #-} Agda2Hs.Compile.Function ( compileClause' )
 import qualified Data.List as L

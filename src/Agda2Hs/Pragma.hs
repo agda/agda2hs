@@ -16,7 +16,7 @@ import Agda.Syntax.Position
 import Agda.Utils.FileName ( filePath )
 import Agda.Utils.Maybe.Strict ( toLazy )
 
-import Agda2Hs.HsUtils
+import Agda2Hs.Language.Haskell.Utils
 import Agda2Hs.Compile.Types
 
 pragmaName :: String

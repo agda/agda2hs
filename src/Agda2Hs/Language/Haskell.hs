@@ -11,11 +11,14 @@ module Agda2Hs.Language.Haskell
   , module Language.Haskell.Exts.Parser
   , module Language.Haskell.Exts.Pretty
   , module Language.Haskell.Exts.Syntax
+  , module Agda2Hs.Language.Haskell.Utils
   ) where
 
-import Language.Haskell.Exts.Build
+import Agda2Hs.Language.Haskell.Utils
+
+import Language.Haskell.Exts.Build hiding (pApp)
 import Language.Haskell.Exts.ExactPrint (exactPrint)
-import Language.Haskell.Exts.Extension
+import Language.Haskell.Exts.Extension hiding (Strict, Lazy)
 import Language.Haskell.Exts.Parser
 import Language.Haskell.Exts.Pretty
 import Language.Haskell.Exts.Syntax

@@ -30,7 +30,7 @@ import Agda2Hs.Compile.Function ( compileFun )
 import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds, compileDom, DomOutput(..) )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
-import Agda2Hs.HsUtils
+import Agda2Hs.Language.Haskell.Utils
 
 -- | Primitive fields and default implementations
 type MinRecord = ([Hs.Name ()], Map (Hs.Name ()) (Hs.Decl ()))

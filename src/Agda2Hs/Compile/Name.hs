@@ -41,7 +41,7 @@ import Agda.Utils.Monad ( orM, whenM )
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
-import Agda2Hs.HsUtils
+import Agda2Hs.Language.Haskell.Utils
 
 
 isSpecialCon :: QName -> Maybe (Hs.QName ())

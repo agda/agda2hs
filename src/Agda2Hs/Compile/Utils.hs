@@ -47,7 +47,7 @@ import Agda.Utils.Singleton
 import AgdaInternals
 import Agda2Hs.AgdaUtils ( (~~) )
 import Agda2Hs.Compile.Types
-import Agda2Hs.HsUtils
+import Agda2Hs.Language.Haskell.Utils
 import Agda2Hs.Pragma
 import qualified Data.List as L
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
