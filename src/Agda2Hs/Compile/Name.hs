@@ -12,7 +12,8 @@ import Data.List ( intercalate, isPrefixOf, stripPrefix )
 import Data.Text ( unpack )
 import qualified Data.Map.Strict as Map
 
-import qualified Language.Haskell.Exts as Hs
+import qualified Language.Haskell.Exts.Pretty as Hs
+import qualified Language.Haskell.Exts.Syntax as Hs
 
 import Agda.Compiler.Backend hiding ( topLevelModuleName )
 import Agda.Compiler.Common ( topLevelModuleName )

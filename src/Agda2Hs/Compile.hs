@@ -21,8 +21,6 @@ import Agda.Utils.List
 import Agda.Utils.Null
 import Agda.Utils.Monad ( whenM, anyM, when, unless )
 
-import qualified Language.Haskell.Exts.Extension as Hs
-
 import Agda2Hs.Compile.ClassInstance ( compileInstance )
 import Agda2Hs.Compile.Data ( compileData )
 import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkInlinePragma )
@@ -32,6 +30,8 @@ import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Pragma
+
+import qualified Language.Haskell.Exts.Extension as Hs
 import qualified Language.Haskell.Exts.Syntax as Hs
 import qualified Language.Haskell.Exts.Pretty as Hs
 

@@ -12,9 +12,7 @@ import qualified Data.Set as Set
 import System.FilePath ( takeDirectory, (</>) )
 import System.Directory ( createDirectoryIfMissing )
 
-import qualified Language.Haskell.Exts.SrcLoc as Hs
 import qualified Language.Haskell.Exts.Syntax as Hs
-import qualified Language.Haskell.Exts.Build as Hs
 import qualified Language.Haskell.Exts.ExactPrint as Hs
 import qualified Language.Haskell.Exts.Extension as Hs
 
@@ -35,8 +33,6 @@ import Agda2Hs.Compile.Imports
 import Agda2Hs.Compile.Utils ( primModules )
 import Agda2Hs.HsUtils
 import Agda2Hs.Pragma ( getForeignPragmas )
-
-import Language.Haskell.Exts as Hs (prettyPrint, prelude_mod)
 
 -- Rendering --------------------------------------------------------------
 

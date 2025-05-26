@@ -12,7 +12,10 @@ import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text ( unpack )
 import qualified Data.Set as Set ( singleton )
 
-import qualified Language.Haskell.Exts as Hs
+import qualified Language.Haskell.Exts.Build as Hs
+import qualified Language.Haskell.Exts.Extension as Hs
+import qualified Language.Haskell.Exts.Pretty as Hs
+import qualified Language.Haskell.Exts.Syntax as Hs
 
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import qualified Agda.Syntax.Common.Pretty as P

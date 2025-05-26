@@ -7,9 +7,6 @@ import Control.Monad.IO.Class ( MonadIO(liftIO) )
 import System.Console.GetOpt
 import System.Environment ( getArgs )
 
-import qualified Language.Haskell.Exts.Syntax as Hs
-import qualified Language.Haskell.Exts.Build as Hs
-import qualified Language.Haskell.Exts.Parser as Hs
 import qualified Language.Haskell.Exts.Extension as Hs
 
 import Agda.Main

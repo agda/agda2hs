@@ -8,8 +8,8 @@ import Data.List ( nub )
 import Data.Maybe ( isNothing, mapMaybe )
 import qualified Data.HashMap.Strict as HMap
 
-import qualified Language.Haskell.Exts as Hs
-import Language.Haskell.Exts.Extension as Hs
+import qualified Language.Haskell.Exts.Extension as Hs
+import qualified Language.Haskell.Exts.Syntax as Hs
 
 import Agda.Compiler.Backend
 import Agda.Compiler.Common ( curDefs, sortDefs )

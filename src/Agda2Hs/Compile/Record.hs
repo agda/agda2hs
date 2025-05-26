@@ -8,7 +8,8 @@ import Data.List.NonEmpty ( NonEmpty(..) )
 import Data.Map ( Map )
 import qualified Data.Map as Map
 
-import qualified Language.Haskell.Exts as Hs
+import qualified Language.Haskell.Exts.Pretty as Hs
+import qualified Language.Haskell.Exts.Syntax as Hs
 
 import Agda.Compiler.Backend
 

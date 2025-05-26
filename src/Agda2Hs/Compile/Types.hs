@@ -14,7 +14,7 @@ import Data.Set ( Set )
 import Data.Map ( Map )
 import Data.String ( IsString(..) )
 
-import qualified Language.Haskell.Exts.SrcLoc as Hs
+import qualified Language.Haskell.Exts.SrcLoc as Hs (SrcSpanInfo)
 import qualified Language.Haskell.Exts.Syntax as Hs
 import qualified Language.Haskell.Exts.Extension as Hs
 import qualified Language.Haskell.Exts.Comments as Hs

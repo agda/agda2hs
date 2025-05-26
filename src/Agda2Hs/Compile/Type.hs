@@ -13,7 +13,6 @@ import qualified Data.Set as Set ( singleton )
 
 import qualified Language.Haskell.Exts.Syntax as Hs
 import qualified Language.Haskell.Exts.Extension as Hs
-import qualified Language.Haskell.Exts.Pretty as Hs
 
 import Agda.Compiler.Backend hiding ( Args )
 

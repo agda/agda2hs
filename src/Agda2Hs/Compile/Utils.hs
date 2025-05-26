@@ -11,7 +11,9 @@ import Data.List ( isPrefixOf, stripPrefix )
 import Data.Maybe ( isJust )
 import qualified Data.Map as M
 
-import qualified Language.Haskell.Exts as Hs
+import qualified Language.Haskell.Exts.Extension as Hs
+import qualified Language.Haskell.Exts.Pretty as Hs
+import qualified Language.Haskell.Exts.Syntax as Hs
 
 import Agda.Compiler.Backend hiding ( Args )
 

@@ -7,7 +7,8 @@ import qualified Data.Map as Map
 import Data.Set ( Set )
 import qualified Data.Set as Set
 
-import qualified Language.Haskell.Exts as Hs
+import qualified Language.Haskell.Exts.Pretty as Hs
+import qualified Language.Haskell.Exts.Syntax as Hs
 
 import Agda.Compiler.Backend
 import Agda.TypeChecking.Pretty ( text )

@@ -10,7 +10,9 @@ import Data.List
 import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text
 
-import qualified Language.Haskell.Exts as Hs
+import qualified Language.Haskell.Exts.Build as Hs (charP)
+import qualified Language.Haskell.Exts.Syntax as Hs
+import qualified Language.Haskell.Exts.Pretty as Hs
 
 import Agda.Compiler.Backend
 import Agda.Compiler.Common
