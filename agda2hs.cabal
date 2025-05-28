@@ -46,6 +46,7 @@ executable agda2hs
                        Agda2Hs.Compile.Var,
                        Agda2Hs.Config,
                        Agda2Hs.Language.Haskell,
+                       Agda2Hs.Language.Haskell.Pretty,
                        Agda2Hs.Language.Haskell.Utils,
                        Agda2Hs.Pragma,
                        Agda2Hs.Render,
