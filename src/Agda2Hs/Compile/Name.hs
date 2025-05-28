@@ -34,9 +34,8 @@ import Agda.TypeChecking.Records ( isRecordConstructor )
 import Agda.TypeChecking.Warnings ( warning )
 
 import qualified Agda.Utils.List1 as List1
-import Agda.Utils.Monad
 import Agda.Utils.Maybe ( isJust, isNothing, whenJust, fromMaybe, caseMaybeM )
-import Agda.Utils.Monad ( whenM )
+import Agda.Utils.Monad ( orM, whenM )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Types
