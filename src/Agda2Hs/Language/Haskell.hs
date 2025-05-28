@@ -13,9 +13,11 @@ module Agda2Hs.Language.Haskell
   , module Language.Haskell.Exts.Pretty
   , module Language.Haskell.Exts.SrcLoc
   , module Language.Haskell.Exts.Syntax
+  , module Agda2Hs.Language.Haskell.Pretty
   , module Agda2Hs.Language.Haskell.Utils
   ) where
 
+import Agda2Hs.Language.Haskell.Pretty
 import Agda2Hs.Language.Haskell.Utils
 
 import Language.Haskell.Exts.Comments (Comment)
