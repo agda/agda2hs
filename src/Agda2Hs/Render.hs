@@ -74,6 +74,27 @@ moduleFileName opts name = do
 ensureDirectory :: FilePath -> IO ()
 ensureDirectory = createDirectoryIfMissing True . takeDirectory
 
+-- | Compile the full import list,
+-- with special handling for the @Prelude@ as prescribed by 'Options'.
+compileImportsWithPrelude
+  :: Options -> String -> Imports -> TCM [Hs.ImportDecl ()]
+compileImportsWithPrelude opts mod imps = do
+    -- if the prelude is supposed to be implicit,
+    -- or the prelude imports have been fixed in the config file,
+    -- we remove it from the list of imports
+    let filteredImps =
+          if not preludeImplicit && isNothing preludeImports
+            then imps
+            else filter ((/= Hs.prelude_mod ()) . importModule) imps
+
+    -- then we try to add it back
+    if (not preludeImplicit && isNothing preludeImports) || null preludeHiding
+      then compileImports mod filteredImps
+      else (preludeImportDecl preOpts:) <$> compileImports mod filteredImps
+  where
+    preOpts@PreludeOpts{..} = optPrelude opts
+
+-- | Render the @.hs@ module as a 'String' and write it to a file.
 writeModule :: Options -> ModuleEnv -> IsMain -> TopLevelModuleName
             -> [(CompiledDef, CompileOutput)] -> TCM ModuleRes
 writeModule opts _ isMain m outs = do
@@ -89,24 +110,8 @@ writeModule opts _ isMain m outs = do
     let unlines' [] = []
         unlines' ss = unlines ss ++ "\n"
 
-    let preOpts@PreludeOpts{..} = optPrelude opts
-
-    -- if the prelude is supposed to be implicit,
-    -- or the prelude imports have been fixed in the config file,
-    -- we remove it from the list of imports
-    let filteredImps =
-          if not preludeImplicit && isNothing preludeImports
-            then imps
-            else filter ((/= Hs.prelude_mod ()) . importModule) imps
-
-    -- then we try to add it back
-    let autoImportList =
-          if (not preludeImplicit && isNothing preludeImports) || null preludeHiding
-            then compileImports mod filteredImps
-            else (preludeImportDecl preOpts:) <$> compileImports mod filteredImps
-
-    -- Add automatic imports
-    autoImports <- (unlines' . map Hs.prettyShowImportDecl) <$> autoImportList
+    autoImports <- unlines' . map Hs.prettyShowImportDecl
+      <$> compileImportsWithPrelude opts mod imps
 
     -- The comments make it hard to generate and pretty print a full module
     hsFile <- moduleFileName opts m
