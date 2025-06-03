@@ -74,53 +74,27 @@ moduleFileName opts name = do
 ensureDirectory :: FilePath -> IO ()
 ensureDirectory = createDirectoryIfMissing True . takeDirectory
 
--- We have to rewrite this so that in the IThingAll and IThingWith import specs,
--- the "type" prefixes get before type operators if necessary.
--- But see haskell-src-exts, PR #475. If it gets merged, this will be unnecessary.
-prettyShowImportDecl :: Hs.ImportDecl () -> String
-prettyShowImportDecl (Hs.ImportDecl _ m qual src safe mbPkg mbName mbSpecs) =
-  unwords $ ("import" :) $
-            (if src  then ("{-# SOURCE #-}" :) else id) $
-            (if safe then ("safe" :) else id) $
-            (if qual then ("qualified" :) else id) $
-            maybeAppend (\ str -> show str) mbPkg $
-            (pp m :) $
-            maybeAppend (\m' -> "as " ++ pp m') mbName $
-            (case mbSpecs of {Just specs -> [prettyShowSpecList specs]; Nothing -> []})
-    where
-      maybeAppend :: (a -> String) -> Maybe a -> ([String] -> [String])
-      maybeAppend f (Just a) = (f a :)
-      maybeAppend _ Nothing  = id
+-- | Compile the full import list,
+-- with special handling for the @Prelude@ as prescribed by 'Options'.
+compileImportsWithPrelude
+  :: Options -> String -> Imports -> TCM [Hs.ImportDecl ()]
+compileImportsWithPrelude opts mod imps = do
+    -- if the prelude is supposed to be implicit,
+    -- or the prelude imports have been fixed in the config file,
+    -- we remove it from the list of imports
+    let filteredImps =
+          if not preludeImplicit && isNothing preludeImports
+            then imps
+            else filter ((/= Hs.prelude_mod ()) . importModule) imps
 
-      prettyShowSpecList :: Hs.ImportSpecList () -> String
-      prettyShowSpecList (Hs.ImportSpecList _ b ispecs)  =
-            (if b then "hiding " else "")
-                ++ parenList (map prettyShowSpec ispecs)
+    -- then we try to add it back
+    if (not preludeImplicit && isNothing preludeImports) || null preludeHiding
+      then compileImports mod filteredImps
+      else (preludeImportDecl preOpts:) <$> compileImports mod filteredImps
+  where
+    preOpts@PreludeOpts{..} = optPrelude opts
 
-      parenList :: [String] -> String
-      parenList [] = "()"
-      parenList (x:xs) = '(' : (x ++ go xs)
-        where
-          go :: [String] -> String
-          go [] = ")"
-          go (x:xs) = ", " ++ x ++ go xs
-
-      -- this is why we have rewritten it
-      prettyShowSpec :: Hs.ImportSpec () -> String
-      prettyShowSpec (Hs.IVar _ name  )        = pp name
-      prettyShowSpec (Hs.IAbs _ ns name)       = let ppns = pp ns in case ppns of
-          []                                  -> pp name -- then we don't write a space before it
-          _                                   -> ppns ++ (' ' : pp name)
-      prettyShowSpec (Hs.IThingAll _ name) = let rest = pp name ++ "(..)" in
-        case name of
-          -- if it's a symbol, append a "type" prefix to the beginning
-          (Hs.Symbol _ _)                     -> pp (Hs.TypeNamespace ()) ++ (' ' : rest)
-          (Hs.Ident  _ _)                     -> rest
-      prettyShowSpec (Hs.IThingWith _ name nameList) = let rest = pp name ++ (parenList . map pp $ nameList) in
-        case name of
-          (Hs.Symbol _ _)                     -> pp (Hs.TypeNamespace ()) ++ (' ' : rest)
-          (Hs.Ident  _ _)                     -> rest
-
+-- | Render the @.hs@ module as a 'String' and write it to a file.
 writeModule :: Options -> ModuleEnv -> IsMain -> TopLevelModuleName
             -> [(CompiledDef, CompileOutput)] -> TCM ModuleRes
 writeModule opts _ isMain m outs = do
@@ -136,24 +110,8 @@ writeModule opts _ isMain m outs = do
     let unlines' [] = []
         unlines' ss = unlines ss ++ "\n"
 
-    let preOpts@PreludeOpts{..} = optPrelude opts
-
-    -- if the prelude is supposed to be implicit,
-    -- or the prelude imports have been fixed in the config file,
-    -- we remove it from the list of imports
-    let filteredImps =
-          if not preludeImplicit && isNothing preludeImports
-            then imps
-            else filter ((/= Hs.prelude_mod ()) . importModule) imps
-
-    -- then we try to add it back
-    let autoImportList =
-          if (not preludeImplicit && isNothing preludeImports) || null preludeHiding
-            then compileImports mod filteredImps
-            else (preludeImportDecl preOpts:) <$> compileImports mod filteredImps
-
-    -- Add automatic imports
-    autoImports <- (unlines' . map prettyShowImportDecl) <$> autoImportList
+    autoImports <- unlines' . map Hs.prettyShowImportDecl
+      <$> compileImportsWithPrelude opts mod imps
 
     -- The comments make it hard to generate and pretty print a full module
     hsFile <- moduleFileName opts m
