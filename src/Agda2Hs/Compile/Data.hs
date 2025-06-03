@@ -1,7 +1,5 @@
 module Agda2Hs.Compile.Data where
 
-import qualified Language.Haskell.Exts.Syntax as Hs
-
 import Control.Monad ( when )
 import Agda.Compiler.Backend
 import Agda.Syntax.Common
@@ -18,7 +16,9 @@ import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
-import Agda2Hs.HsUtils
+
+import qualified Agda2Hs.Language.Haskell as Hs
+import Agda2Hs.Language.Haskell.Utils ( hsName )
 
 checkNewtype :: Hs.Name () -> [Hs.QualConDecl ()] -> C ()
 checkNewtype name cs = do

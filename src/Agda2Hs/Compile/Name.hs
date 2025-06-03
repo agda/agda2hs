@@ -12,8 +12,6 @@ import Data.List ( intercalate, isPrefixOf, stripPrefix )
 import Data.Text ( unpack )
 import qualified Data.Map.Strict as Map
 
-import qualified Language.Haskell.Exts as Hs
-
 import Agda.Compiler.Backend hiding ( topLevelModuleName )
 import Agda.Compiler.Common ( topLevelModuleName )
 
@@ -34,14 +32,15 @@ import Agda.TypeChecking.Records ( isRecordConstructor )
 import Agda.TypeChecking.Warnings ( warning )
 
 import qualified Agda.Utils.List1 as List1
-import Agda.Utils.Monad
 import Agda.Utils.Maybe ( isJust, isNothing, whenJust, fromMaybe, caseMaybeM )
-import Agda.Utils.Monad ( whenM )
+import Agda.Utils.Monad ( orM, whenM )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
-import Agda2Hs.HsUtils
+
+import qualified Agda2Hs.Language.Haskell as Hs
+import Agda2Hs.Language.Haskell.Utils ( hsName, hsModuleName, pp )
 
 
 isSpecialCon :: QName -> Maybe (Hs.QName ())

@@ -4,10 +4,6 @@ import Data.List ( isPrefixOf )
 import Data.Maybe ( fromMaybe )
 import qualified Data.Map as Map
 
-import qualified Language.Haskell.Exts.Syntax as Hs
-import qualified Language.Haskell.Exts.Parser as Hs
-import qualified Language.Haskell.Exts.Extension as Hs
-
 import Agda.Compiler.Backend
 import Agda.Compiler.Common ( curIF )
 
@@ -16,8 +12,10 @@ import Agda.Syntax.Position
 import Agda.Utils.FileName ( filePath )
 import Agda.Utils.Maybe.Strict ( toLazy )
 
-import Agda2Hs.HsUtils
 import Agda2Hs.Compile.Types
+
+import qualified Agda2Hs.Language.Haskell as Hs
+import Agda2Hs.Language.Haskell.Utils ( Strictness(..), srcLocToRange )
 
 pragmaName :: String
 pragmaName = "AGDA2HS"

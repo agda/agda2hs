@@ -1,5 +1,5 @@
 
-module Agda2Hs.HsUtils where
+module Agda2Hs.Language.Haskell.Utils where
 
 import Control.Monad ( guard )
 

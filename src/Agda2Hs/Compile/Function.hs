@@ -10,8 +10,6 @@ import Data.List
 import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text
 
-import qualified Language.Haskell.Exts as Hs
-
 import Agda.Compiler.Backend
 import Agda.Compiler.Common
 
@@ -46,8 +44,10 @@ import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
-import Agda2Hs.HsUtils
 
+import qualified Agda2Hs.Language.Haskell as Hs
+import Agda2Hs.Language.Haskell.Utils
+  ( Strictness, hsName, pApp, patToExp, constrainType, qualifyType )
 
 -- | Compilation rules for specific constructors in patterns.
 isSpecialCon :: QName -> Maybe (Type -> NAPs -> C (Hs.Pat ()))

@@ -12,8 +12,6 @@ import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text ( unpack )
 import qualified Data.Set as Set ( singleton )
 
-import qualified Language.Haskell.Exts as Hs
-
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import qualified Agda.Syntax.Common.Pretty as P
 import Agda.Syntax.Common
@@ -47,7 +45,10 @@ import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTel
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
-import Agda2Hs.HsUtils
+
+import qualified Agda2Hs.Language.Haskell as Hs
+import Agda2Hs.Language.Haskell.Utils
+  ( hsName, pp, eApp, hsLambda, hsUnqualName, hsVar )
 
 import {-# SOURCE #-} Agda2Hs.Compile.Function ( compileClause' )
 import qualified Data.List as L

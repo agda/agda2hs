@@ -11,8 +11,6 @@ import Data.List ( isPrefixOf, stripPrefix )
 import Data.Maybe ( isJust )
 import qualified Data.Map as M
 
-import qualified Language.Haskell.Exts as Hs
-
 import Agda.Compiler.Backend hiding ( Args )
 
 import Agda.Syntax.Common
@@ -45,10 +43,13 @@ import Agda.Utils.Singleton
 import AgdaInternals
 import Agda2Hs.AgdaUtils ( (~~) )
 import Agda2Hs.Compile.Types
-import Agda2Hs.HsUtils
 import Agda2Hs.Pragma
 import qualified Data.List as L
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
+
+import qualified Agda2Hs.Language.Haskell as Hs
+import Agda2Hs.Language.Haskell.Utils
+  ( Strictness(..), validVarName, validTypeName, validConName, hsName, pp )
 
 data HsModuleKind
   = PrimModule

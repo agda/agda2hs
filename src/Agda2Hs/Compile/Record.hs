@@ -8,8 +8,6 @@ import Data.List.NonEmpty ( NonEmpty(..) )
 import Data.Map ( Map )
 import qualified Data.Map as Map
 
-import qualified Language.Haskell.Exts as Hs
-
 import Agda.Compiler.Backend
 
 import Agda.Syntax.Common ( Arg(unArg), defaultArg )
@@ -29,7 +27,9 @@ import Agda2Hs.Compile.Function ( compileFun )
 import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds, compileDom, DomOutput(..) )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
-import Agda2Hs.HsUtils
+
+import qualified Agda2Hs.Language.Haskell as Hs
+import Agda2Hs.Language.Haskell.Utils ( hsName, definedName, pp )
 
 -- | Primitive fields and default implementations
 type MinRecord = ([Hs.Name ()], Map (Hs.Name ()) (Hs.Decl ()))

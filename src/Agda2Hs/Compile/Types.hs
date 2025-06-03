@@ -14,11 +14,6 @@ import Data.Set ( Set )
 import Data.Map ( Map )
 import Data.String ( IsString(..) )
 
-import qualified Language.Haskell.Exts.SrcLoc as Hs
-import qualified Language.Haskell.Exts.Syntax as Hs
-import qualified Language.Haskell.Exts.Extension as Hs
-import qualified Language.Haskell.Exts.Comments as Hs
-
 import Agda.Compiler.Backend
 import Agda.Syntax.Position ( Range )
 import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
@@ -26,7 +21,8 @@ import Agda.TypeChecking.Warnings ( MonadWarning )
 import Agda.Utils.Null
 import Agda.Utils.Impossible
 
-import Agda2Hs.HsUtils ( Strictness )
+import qualified Agda2Hs.Language.Haskell as Hs
+import Agda2Hs.Language.Haskell.Utils ( Strictness )
 
 type ModuleEnv   = TopLevelModuleName
 type ModuleRes   = ()
