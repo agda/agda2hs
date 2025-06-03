@@ -1,0 +1,16 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>NonClassInstance</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda">
+<a id="2" class="Keyword">open</a> <a id="7" class="Keyword">import</a> <a id="14" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+<a id="30" class="Keyword">open</a> <a id="35" class="Keyword">import</a> <a id="42" href="Haskell.Extra.Dec.html" class="Module">Haskell.Extra.Dec</a>
+<a id="60" class="Keyword">open</a> <a id="65" class="Keyword">import</a> <a id="72" href="Haskell.Extra.Refinement.html" class="Module">Haskell.Extra.Refinement</a>
+
+<a id="foo"></a><a id="98" href="NonClassInstance.html#98" class="Function">foo</a> <a id="102" class="Symbol">:</a> <a id="104" class="Symbol">(</a><a id="105" href="NonClassInstance.html#105" class="Bound">b</a> <a id="107" class="Symbol">:</a> <a id="109" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a><a id="113" class="Symbol">)</a> <a id="115" class="Symbol">→</a> <a id="117" class="Symbol">{{</a><a id="119" href="Haskell.Extra.Dec.html#836" class="Function">Dec</a> <a id="123" class="Symbol">(</a><a id="124" href="Haskell.Prim.html#3213" class="Datatype">IsTrue</a> <a id="131" href="NonClassInstance.html#105" class="Bound">b</a><a id="132" class="Symbol">)}}</a> <a id="136" class="Symbol">→</a> <a id="138" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+<a id="143" href="NonClassInstance.html#98" class="Function">foo</a> <a id="147" class="Symbol">_</a> <a id="149" class="Symbol">{{</a><a id="151" href="NonClassInstance.html#151" class="Bound">b</a> <a id="153" href="Haskell.Extra.Refinement.html#208" class="InductiveConstructor Operator">⟨</a> <a id="155" class="Symbol">_</a> <a id="157" href="Haskell.Extra.Refinement.html#208" class="InductiveConstructor Operator">⟩</a><a id="158" class="Symbol">}}</a> <a id="161" class="Symbol">=</a> <a id="163" href="Haskell.Prim.Bool.html#273" class="Function">not</a> <a id="167" href="NonClassInstance.html#151" class="Bound">b</a>
+
+<a id="170" class="Symbol">{-#</a> <a id="174" class="Keyword">COMPILE</a> <a id="182" class="Keyword">AGDA2HS</a> <a id="190" href="NonClassInstance.html#98" class="Function">foo</a> <a id="194" class="Symbol">#-}</a>
+
+<a id="bar"></a><a id="199" href="NonClassInstance.html#199" class="Function">bar</a> <a id="203" class="Symbol">:</a> <a id="205" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a> <a id="210" class="Symbol">→</a> <a id="212" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+<a id="217" href="NonClassInstance.html#199" class="Function">bar</a> <a id="221" href="NonClassInstance.html#221" class="Bound">b</a> <a id="223" class="Symbol">=</a> <a id="225" href="NonClassInstance.html#98" class="Function">foo</a> <a id="229" href="NonClassInstance.html#221" class="Bound">b</a>
+
+<a id="232" class="Symbol">{-#</a> <a id="236" class="Keyword">COMPILE</a> <a id="244" class="Keyword">AGDA2HS</a> <a id="252" href="NonClassInstance.html#199" class="Function">bar</a> <a id="256" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/NonClassInstance.html"/></div></body></html>

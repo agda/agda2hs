@@ -1,0 +1,10 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Fail.Issue142</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Keyword">module</a> <a id="8" href="Fail.Issue142.html" class="Module">Fail.Issue142</a> <a id="22" class="Keyword">where</a>
+
+<a id="29" class="Keyword">open</a> <a id="34" class="Keyword">import</a> <a id="41" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="58" class="Comment">-- `coerce` is a primitive but this general structure remains disallowed</a>
+<a id="falseCoerce"></a><a id="131" href="Fail.Issue142.html#131" class="Function">falseCoerce</a> <a id="143" class="Symbol">:</a> <a id="145" class="Symbol">@</a><a id="146" class="Symbol">0</a> <a id="148" href="Haskell.Prim.html#1214" class="Generalizable">a</a> <a id="150" href="Agda.Builtin.Equality.html#150" class="Datatype Operator">≡</a> <a id="152" href="Haskell.Prim.html#1216" class="Generalizable">b</a> <a id="154" class="Symbol">→</a> <a id="156" href="Haskell.Prim.html#1214" class="Generalizable">a</a> <a id="158" class="Symbol">→</a> <a id="160" href="Haskell.Prim.html#1216" class="Generalizable">b</a>
+<a id="162" href="Fail.Issue142.html#131" class="Function">falseCoerce</a> <a id="174" href="Agda.Builtin.Equality.html#207" class="InductiveConstructor">refl</a> <a id="179" href="Fail.Issue142.html#179" class="Bound">x</a> <a id="181" class="Symbol">=</a> <a id="183" href="Fail.Issue142.html#179" class="Bound">x</a>
+<a id="185" class="Symbol">{-#</a> <a id="189" class="Keyword">COMPILE</a> <a id="197" class="Keyword">AGDA2HS</a> <a id="205" href="Fail.Issue142.html#131" class="Function">falseCoerce</a> <a id="217" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Issue142.html"/></div></body></html>

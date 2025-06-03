@@ -1,0 +1,54 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Importer</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Keyword">open</a> <a id="6" class="Keyword">import</a> <a id="13" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="30" class="Symbol">{-#</a> <a id="34" class="Keyword">FOREIGN</a> <a id="42" class="Pragma">AGDA2HS</a>
+<a id="50" class="Pragma">--</a> <a id="53" class="Pragma">**</a> <a id="56" class="Pragma">simple</a> <a id="63" class="Pragma">imports</a> <a id="71" class="Pragma">(possibly</a> <a id="81" class="Pragma">with</a> <a id="86" class="Pragma">transitive</a> <a id="97" class="Pragma">dependencies)</a>
+<a id="111" class="Symbol">#-}</a>
+
+<a id="116" class="Keyword">open</a> <a id="121" class="Keyword">import</a> <a id="128" href="Importee.html" class="Module">Importee</a>
+<a id="137" class="Keyword">open</a> <a id="142" class="Keyword">import</a> <a id="149" href="OtherImportee.html" class="Module">OtherImportee</a> <a id="163" class="Keyword">using</a> <a id="169" class="Symbol">(</a><a id="170" href="OtherImportee.html#59" class="InductiveConstructor">MkFoo</a><a id="175" class="Symbol">)</a>
+
+<a id="bar"></a><a id="178" href="Importer.html#178" class="Function">bar</a> <a id="182" class="Symbol">:</a> <a id="184" href="Haskell.Prim.Int.html#367" class="Datatype">Int</a>
+<a id="188" href="Importer.html#178" class="Function">bar</a> <a id="192" class="Symbol">=</a> <a id="194" href="Importee.html#30" class="Function">foo</a>
+<a id="198" class="Symbol">{-#</a> <a id="202" class="Keyword">COMPILE</a> <a id="210" class="Keyword">AGDA2HS</a> <a id="218" href="Importer.html#178" class="Function">bar</a> <a id="222" class="Symbol">#-}</a>
+
+<a id="anotherBar"></a><a id="227" href="Importer.html#227" class="Function">anotherBar</a> <a id="238" class="Symbol">:</a> <a id="240" href="Haskell.Prim.Int.html#367" class="Datatype">Int</a>
+<a id="244" href="Importer.html#227" class="Function">anotherBar</a> <a id="255" class="Symbol">=</a> <a id="257" href="SecondImportee.html#31" class="Function">anotherFoo</a>
+<a id="268" class="Symbol">{-#</a> <a id="272" class="Keyword">COMPILE</a> <a id="280" class="Keyword">AGDA2HS</a> <a id="288" href="Importer.html#227" class="Function">anotherBar</a> <a id="299" class="Symbol">#-}</a>
+
+<a id="baz"></a><a id="304" href="Importer.html#304" class="Function">baz</a> <a id="308" class="Symbol">:</a> <a id="310" href="Haskell.Prim.Int.html#367" class="Datatype">Int</a>
+<a id="314" href="Importer.html#304" class="Function">baz</a> <a id="318" class="Symbol">=</a> <a id="320" class="Number">21</a> <a id="323" href="Importee.html#78" class="Function Operator">!#</a> <a id="326" class="Number">21</a>
+<a id="329" class="Symbol">{-#</a> <a id="333" class="Keyword">COMPILE</a> <a id="341" class="Keyword">AGDA2HS</a> <a id="349" href="Importer.html#304" class="Function">baz</a> <a id="353" class="Symbol">#-}</a>
+
+<a id="mkFoo"></a><a id="358" href="Importer.html#358" class="Function">mkFoo</a> <a id="364" class="Symbol">:</a> <a id="366" href="Importee.html#151" class="Datatype">Foo</a>
+<a id="370" href="Importer.html#358" class="Function">mkFoo</a> <a id="376" class="Symbol">=</a> <a id="378" href="Importee.html#170" class="InductiveConstructor">MkFoo</a> <a id="384" class="Comment">-- This is MkFoo from Importee, NOT from OtherImportee!!</a>
+<a id="441" class="Symbol">{-#</a> <a id="445" class="Keyword">COMPILE</a> <a id="453" class="Keyword">AGDA2HS</a> <a id="461" href="Importer.html#358" class="Function">mkFoo</a> <a id="467" class="Symbol">#-}</a>
+
+<a id="fooable"></a><a id="472" href="Importer.html#472" class="Function">fooable</a> <a id="480" class="Symbol">:</a> <a id="482" href="Importee.html#151" class="Datatype">Foo</a>
+<a id="486" href="Importer.html#472" class="Function">fooable</a> <a id="494" class="Symbol">=</a> <a id="496" href="Importee.html#269" class="Field">doTheFoo</a>
+<a id="505" class="Symbol">{-#</a> <a id="509" class="Keyword">COMPILE</a> <a id="517" class="Keyword">AGDA2HS</a> <a id="525" href="Importer.html#472" class="Function">fooable</a> <a id="533" class="Symbol">#-}</a>
+
+<a id="538" class="Symbol">{-#</a> <a id="542" class="Keyword">FOREIGN</a> <a id="550" class="Pragma">AGDA2HS</a>
+<a id="558" class="Pragma">--</a> <a id="561" class="Pragma">**</a> <a id="564" class="Pragma">interplay</a> <a id="574" class="Pragma">with</a> <a id="579" class="Pragma">class</a> <a id="585" class="Pragma">default</a> <a id="593" class="Pragma">methods</a>
+<a id="601" class="Symbol">#-}</a>
+
+<a id="defaultBar"></a><a id="606" href="Importer.html#606" class="Function">defaultBar</a> <a id="617" class="Symbol">:</a> <a id="619" href="Importee.html#151" class="Datatype">Foo</a>
+<a id="623" href="Importer.html#606" class="Function">defaultBar</a> <a id="634" class="Symbol">=</a> <a id="636" href="Importee.html#278" class="Field">defaultFoo</a>
+<a id="647" class="Symbol">{-#</a> <a id="651" class="Keyword">COMPILE</a> <a id="659" class="Keyword">AGDA2HS</a> <a id="667" href="Importer.html#606" class="Function">defaultBar</a> <a id="678" class="Symbol">#-}</a>
+
+<a id="683" class="Symbol">{-#</a> <a id="687" class="Keyword">FOREIGN</a> <a id="695" class="Pragma">AGDA2HS</a>
+<a id="703" class="Pragma">--</a> <a id="706" class="Pragma">**</a> <a id="709" class="Pragma">interplay</a> <a id="719" class="Pragma">with</a> <a id="724" class="Pragma">methods</a> <a id="732" class="Pragma">of</a> <a id="735" class="Pragma">existing</a> <a id="744" class="Pragma">class</a>
+<a id="750" class="Symbol">#-}</a>
+
+<a id="testFoldMap"></a><a id="755" href="Importer.html#755" class="Function">testFoldMap</a> <a id="767" class="Symbol">:</a> <a id="769" href="Agda.Builtin.List.html#147" class="Datatype">List</a> <a id="774" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a> <a id="778" class="Symbol">→</a> <a id="780" href="Agda.Builtin.List.html#147" class="Datatype">List</a> <a id="785" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a>
+<a id="789" href="Importer.html#755" class="Function">testFoldMap</a> <a id="801" class="Symbol">=</a> <a id="803" href="Haskell.Prim.Foldable.html#484" class="Field">foldMap</a> <a id="811" href="Agda.Builtin.List.html#199" class="InductiveConstructor Operator">_∷_</a> <a id="815" href="Agda.Builtin.List.html#184" class="InductiveConstructor">[]</a>
+<a id="818" class="Symbol">{-#</a> <a id="822" class="Keyword">COMPILE</a> <a id="830" class="Keyword">AGDA2HS</a> <a id="838" href="Importer.html#755" class="Function">testFoldMap</a> <a id="850" class="Symbol">#-}</a>
+
+<a id="855" class="Symbol">{-#</a> <a id="859" class="Keyword">FOREIGN</a> <a id="867" class="Pragma">AGDA2HS</a>
+<a id="875" class="Pragma">--</a> <a id="878" class="Pragma">**</a> <a id="881" class="Pragma">interplay</a> <a id="891" class="Pragma">with</a> <a id="896" class="Pragma">default</a> <a id="904" class="Pragma">methods</a> <a id="912" class="Pragma">of</a> <a id="915" class="Pragma">existing</a> <a id="924" class="Pragma">class</a>
+<a id="930" class="Symbol">#-}</a>
+
+<a id="testFoldr"></a><a id="935" href="Importer.html#935" class="Function">testFoldr</a> <a id="945" class="Symbol">:</a> <a id="947" href="Agda.Builtin.List.html#147" class="Datatype">List</a> <a id="952" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a> <a id="956" class="Symbol">→</a> <a id="958" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a>
+<a id="962" href="Importer.html#935" class="Function">testFoldr</a> <a id="972" class="Symbol">=</a> <a id="974" href="Haskell.Prim.Foldable.html#531" class="Field">foldr</a> <a id="980" class="Symbol">(λ</a> <a id="983" href="Importer.html#983" class="Bound">_</a> <a id="985" href="Importer.html#985" class="Bound">x</a> <a id="987" class="Symbol">→</a> <a id="989" href="Importer.html#985" class="Bound">x</a><a id="990" class="Symbol">)</a> <a id="992" class="Number">0</a>
+<a id="994" class="Symbol">{-#</a> <a id="998" class="Keyword">COMPILE</a> <a id="1006" class="Keyword">AGDA2HS</a> <a id="1014" href="Importer.html#935" class="Function">testFoldr</a> <a id="1024" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Importer.html"/></div></body></html>
