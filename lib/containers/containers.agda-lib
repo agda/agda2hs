@@ -2,4 +2,4 @@ name: containers
 include: agda
 depend:
   base
-flags: --erasure --no-import-sorts
+flags: --erasure --no-import-sorts --no-projection-like

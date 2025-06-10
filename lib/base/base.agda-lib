@@ -5,4 +5,4 @@
 name: base
 depend:
 include: .
-flags: -W noUnsupportedIndexedMatch --erasure
+flags: -W noUnsupportedIndexedMatch --erasure --no-projection-like
