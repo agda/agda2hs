@@ -1,3 +1,5 @@
+{-# OPTIONS --projection-like #-}
+
 module ProjLike where
 
 open import Haskell.Prelude
