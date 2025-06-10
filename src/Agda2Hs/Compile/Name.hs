@@ -122,7 +122,7 @@ compileQName f
 
     unless existsInHaskell $ do
       reportSDoc "agda2hs.name" 20 $ text "DOES NOT EXIST IN HASKELL"
-      typeError $ CustomBackendError (Text.pack "agda2hs") $ P.text $
+      typeError $ CustomBackendError "agda2hs" $ P.text $
         "Symbol " ++ Hs.prettyPrint hf ++ " is missing a COMPILE pragma or rewrite rule"
 
     currMod <- hsTopLevelModuleName <$> asks currModule

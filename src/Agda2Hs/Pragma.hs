@@ -19,7 +19,7 @@ import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils ( Strictness(..), srcLocToRange )
 
 pragmaName :: Text.Text
-pragmaName = Text.pack "AGDA2HS"
+pragmaName = "AGDA2HS"
 
 languagePragmas :: Code -> [Hs.Extension]
 languagePragmas (Hs.Module _ _ ps _ _, _) =
