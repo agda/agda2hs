@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Agda2Hs.Compile.Function where
 
 import Control.Arrow ( (***) )
