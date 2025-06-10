@@ -10,6 +10,9 @@ import Control.Monad.State ( put, modify )
 import Data.List ( isPrefixOf, stripPrefix )
 import Data.Maybe ( isJust )
 import qualified Data.Map as M
+import Data.String ( IsString(..) )
+
+import GHC.Stack (HasCallStack)
 
 import Agda.Compiler.Backend hiding ( Args )
 
@@ -50,6 +53,16 @@ import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
   ( Strictness(..), validVarName, validTypeName, validConName, hsName, pp )
+
+agda2hsError :: (HasCallStack, MonadTCError m) => Doc -> m a
+agda2hsError msg = typeError $ CustomBackendError "agda2hs" msg
+
+agda2hsErrorM :: (HasCallStack, MonadTCError m) => m Doc -> m a
+agda2hsErrorM msg = agda2hsError =<< msg
+
+agda2hsStringError :: (HasCallStack, MonadTCError m) => String -> m a
+agda2hsStringError = agda2hsError . fromString
+
 
 data HsModuleKind
   = PrimModule
@@ -117,7 +130,7 @@ makeList' nil cons err v = do
     Con c _ es
       | []      <- vis es, conName c ~~ nil  -> return []
       | [x, xs] <- vis es, conName c ~~ cons -> (x :) <$> makeList' nil cons err xs
-    _ -> genericDocError =<< err
+    _ -> agda2hsErrorM err
   where
     vis es = [ unArg a | Apply a <- es, visible a ]
 
@@ -127,7 +140,7 @@ makeListP' nil cons err p = do
     ConP c _ ps
       | []      <- vis ps, conName c ~~ nil  -> return []
       | [x, xs] <- vis ps, conName c ~~ cons -> (x :) <$> makeListP' nil cons err xs
-    _ -> genericDocError =<< err
+    _ -> agda2hsErrorM err
   where
     vis ps = [ namedArg p | p <- ps, visible p ]
 
@@ -285,29 +298,29 @@ hsLCase :: [Hs.Alt ()] -> C (Hs.Exp ())
 hsLCase = (incrementLCase >>) . return . Hs.LCase ()
 
 ensureNoLocals :: String -> C ()
-ensureNoLocals msg = unlessM (null <$> asks locals) $ genericError msg
+ensureNoLocals msg = unlessM (null <$> asks locals) $ agda2hsStringError msg
 
 withLocals :: LocalDecls -> C a -> C a
 withLocals ls = local $ \e -> e { locals = ls }
 
 checkValidVarName :: Hs.Name () -> C ()
-checkValidVarName x = unless (validVarName x) $ genericDocError =<< do
+checkValidVarName x = unless (validVarName x) $ agda2hsErrorM $ do
   text "Invalid name for Haskell variable: " <+> text (Hs.prettyPrint x)
 
 checkValidTyVarName :: Hs.Name () -> C ()
-checkValidTyVarName x = unless (validVarName x) $ genericDocError =<< do
+checkValidTyVarName x = unless (validVarName x) $ agda2hsErrorM $ do
   text "Invalid name for Haskell type variable: " <+> text (Hs.prettyPrint x)
 
 checkValidFunName :: Hs.Name () -> C ()
-checkValidFunName x = unless (validVarName x) $ genericDocError =<< do
+checkValidFunName x = unless (validVarName x) $ agda2hsErrorM $ do
   text "Invalid name for Haskell function: " <+> text (Hs.prettyPrint x)
 
 checkValidTypeName :: Hs.Name () -> C ()
-checkValidTypeName x = unless (validTypeName x) $ genericDocError =<< do
+checkValidTypeName x = unless (validTypeName x) $ agda2hsErrorM $ do
   text "Invalid name for Haskell type: " <+> text (Hs.prettyPrint x)
 
 checkValidConName :: Hs.Name () -> C ()
-checkValidConName x = unless (validConName x) $ genericDocError =<< do
+checkValidConName x = unless (validConName x) $ agda2hsErrorM $ do
   text "Invalid name for Haskell constructor: " <+> text (Hs.prettyPrint x)
 
 tellImport :: Import -> C ()
@@ -331,7 +344,7 @@ addTyBang Strict ty = tellExtension Hs.BangPatterns >>
 addTyBang Lazy   ty = return ty
 
 checkSingleElement :: Hs.Name () -> [b] -> String -> C ()
-checkSingleElement name fs s = unless (length fs == 1) $ genericDocError =<< do
+checkSingleElement name fs s = unless (length fs == 1) $ agda2hsErrorM $ do
   text (s ++ ":") <+> text (Hs.prettyPrint name)
 
 checkNewtypeCon :: Hs.Name () -> [b] -> C ()
@@ -342,8 +355,8 @@ checkFixityLevel :: QName -> FixityLevel -> C (Maybe Int)
 checkFixityLevel name Unrelated = pure Nothing
 checkFixityLevel name (Related lvl) =
   if lvl /= fromInteger (round lvl) || lvl < 0
-    then genericDocError =<< text "Invalid fixity" <+> pretty lvl
-                         <+> text "for operator"   <+> prettyTCM name
+    then agda2hsErrorM $ text "Invalid fixity" <+> pretty lvl
+                     <+> text "for operator"   <+> prettyTCM name
     else pure (Just (round lvl))
 
 maybePrependFixity :: QName -> Fixity -> C [Hs.Decl ()] -> C [Hs.Decl ()]
@@ -374,7 +387,7 @@ checkNoAsPatterns = \case
   where
     checkPatternInfo :: PatternInfo -> C ()
     checkPatternInfo i = unless (null $ patAsNames i) $
-      genericDocError =<< text "not supported by agda2hs: as patterns"
+      agda2hsError "not supported: as patterns"
 
 noWriteImports :: C a -> C a
 noWriteImports = local $ \e -> e { writeImports = False }

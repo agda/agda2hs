@@ -51,9 +51,9 @@ compileData newtyp ds def = do
     allIndicesErased t = reduce (unEl t) >>= \case
       Pi dom t -> compileDomType (absName t) dom >>= \case
         DomDropped      -> allIndicesErased (unAbs t)
-        DomType{}       -> genericDocError =<< text "Not supported: indexed datatypes"
-        DomConstraint{} -> genericDocError =<< text "Not supported: constraints in types"
-        DomForall{}     -> genericDocError =<< text "Not supported: indexed datatypes"
+        DomType{}       -> agda2hsError "Not supported: indexed datatypes"
+        DomConstraint{} -> agda2hsError "Not supported: constraints in types"
+        DomForall{}     -> agda2hsError "Not supported: indexed datatypes"
       _ -> return ()
 
 compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl ())
@@ -74,6 +74,6 @@ compileConstructorArgs (ExtendTel a tel) = compileDomType (absName tel) a >>= \c
   DomType s hsA     -> do
     ty <- addTyBang s hsA
     (ty :) <$> underAbstraction a tel compileConstructorArgs
-  DomConstraint hsA -> genericDocError =<< text "Not supported: constructors with class constraints"
+  DomConstraint hsA -> agda2hsError "Not supported: constructors with class constraints"
   DomDropped        -> underAbstraction a tel compileConstructorArgs
   DomForall{}       -> __IMPOSSIBLE__

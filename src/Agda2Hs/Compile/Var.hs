@@ -10,7 +10,7 @@ import Agda.Syntax.Internal ( unDom )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.Syntax.Abstract.Name ( nameConcrete )
 import Agda.TypeChecking.Pretty ( text )
-import Agda.TypeChecking.Monad.Base ( ContextEntry(..), genericDocError )
+import Agda.TypeChecking.Monad.Base ( ContextEntry(..) )
 import Agda.TypeChecking.Monad.Context ( lookupBV )
 import Agda.Utils.Monad ( whenM )
 
