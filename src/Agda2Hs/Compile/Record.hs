@@ -86,7 +86,7 @@ compileMinRecords def sls = do
   -- 2. assert that all default implementations are the same (for a certain field)
   let getUnique f (x :| xs)
         | all (x ==) xs = return x
-        | otherwise     = genericDocError =<< do
+        | otherwise     = agda2hsErrorM $ do
           text ("Conflicting default implementations for " ++ pp f ++ ":") $$
             vcat [ text "-" <+> multilineText (pp d) | d <- nub (x : xs) ]
   decls <- Map.traverseWithKey getUnique
@@ -129,10 +129,10 @@ compileRecord target def = do
     -- record module has been opened.
     checkFieldInScope f = isInScopeUnqualified f >>= \case
       True  -> return ()
-      False -> setCurrentRangeQ f $ genericError $
-        "Record projections (`" ++ prettyShow (qnameName f) ++
-        "` in this case) must be brought into scope when compiling to Haskell record types. " ++
-        "Add `open " ++ Hs.prettyPrint rName ++ " public` after the record declaration to fix this."
+      False -> setCurrentRangeQ f $ agda2hsErrorM $
+        ("Record projections (`" <> prettyTCM (qnameName f) <>"` in this case)") <+>
+        "must be brought into scope when compiling to Haskell record types." <+>
+        "Add `open" <+> text (Hs.prettyPrint rName) <+> "public` after the record declaration to fix this."
 
     Record{..} = theDef def
 
@@ -157,7 +157,7 @@ compileRecord target def = do
             return (hsAssts, decl fieldName fieldType : hsFields)
           DomConstraint hsA -> case target of
             ToClass{} -> return (hsA : hsAssts , hsFields)
-            ToRecord{} -> genericError $
+            ToRecord{} -> agda2hsError $
               "Not supported: record/class with constraint fields"
           DomDropped -> return (hsAssts , hsFields)
           DomForall{} -> __IMPOSSIBLE__
@@ -182,8 +182,8 @@ checkUnboxPragma def = do
 
   -- recRecursive can be used again after agda 2.6.4.2 is released
   -- see agda/agda#7042
-  unless (all null recMutual) $ genericDocError
-    =<< text "Unboxed record" <+> prettyTCM (defName def)
+  unless (all null recMutual) $ agda2hsErrorM $
+        text "Unboxed record" <+> prettyTCM (defName def)
     <+> text "cannot be recursive"
 
   TelV tel _ <- telViewUpTo recPars (defType def)
@@ -191,8 +191,8 @@ checkUnboxPragma def = do
     pars <- getContextArgs
     let fieldTel = recTel `apply` pars
     fields <- nonErasedFields fieldTel
-    unless (length fields == 1) $ genericDocError
-      =<< text "Unboxed record" <+> prettyTCM (defName def)
+    unless (length fields == 1) $ agda2hsErrorM $
+          text "Unboxed record" <+> prettyTCM (defName def)
       <+> text "should have exactly one non-erased field"
 
   where
@@ -200,6 +200,6 @@ checkUnboxPragma def = do
     nonErasedFields EmptyTel = return []
     nonErasedFields (ExtendTel a tel) = compileDom a >>= \case
       DODropped  -> underAbstraction a tel nonErasedFields
-      DOType -> genericDocError =<< text "Type field in unboxed record not supported"
-      DOInstance -> genericDocError =<< text "Instance field in unboxed record not supported"
+      DOType -> agda2hsError "Type field in unboxed record not supported"
+      DOInstance -> agda2hsError "Instance field in unboxed record not supported"
       DOTerm -> (absName tel:) <$> underAbstraction a tel nonErasedFields

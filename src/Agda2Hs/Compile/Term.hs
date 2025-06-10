@@ -108,7 +108,7 @@ ifThenElse ty args = compileArgs ty args >>= \case
   -- fully applied
   b : t : f : es' -> return $ Hs.If () b t f `eApp` es'
   -- partially applied
-  _               -> genericError "if_then_else_ must be fully applied"
+  _               -> agda2hsError "if_then_else_ must be fully applied"
 
 
 -- | Compile @case_of_@ to Haskell @\case@ expression.
@@ -121,7 +121,7 @@ caseOf ty args = compileArgs ty args >>= \case
     let lam [] = id
         lam qs = Hs.Lambda () qs
     in return $ eApp (Hs.Case () e [Hs.Alt () p (Hs.UnGuardedRhs () $ lam ps b) Nothing]) es'
-  _ -> genericError "case_of_ must be fully applied to a lambda term"
+  _ -> agda2hsError "case_of_ must be fully applied to a lambda term"
 
 
 -- | Compile @the@ to an explicitly-annotated Haskell expression.
@@ -130,14 +130,14 @@ expTypeSig ty args@(_:typ:_:_) = do
     annot    <- compileType typ
     exp:args <- compileArgs ty args
     pure (Hs.ExpTypeSig () exp annot `eApp` args)
-expTypeSig _ _ = genericError "`the` must be fully applied"
+expTypeSig _ _ = agda2hsError "`the` must be fully applied"
 
 primWord64FromNat :: DefCompileRule
 primWord64FromNat ty args = compileArgs ty args >>= \case
   -- literal
   n@Hs.Lit{} : _ -> return n
   -- anything else
-  _ -> genericError "primWord64FromNat must be applied to a literal"
+  _ -> agda2hsError "primWord64FromNat must be applied to a literal"
 
 
 compileVar :: Int -> Type -> [Term] -> C (Hs.Exp ())
@@ -231,7 +231,7 @@ compileTupleProjection :: QName -> Hs.Boxed -> ProjCompileRule
 compileTupleProjection f b wty w ty args = do
   -- TODO: avoid redoing all of this work each time
   -- by storing the fields of each tuple type somewhere
-  when (b == Hs.Unboxed) $ genericError "projecting from unboxed tuples is not allowed"
+  when (b == Hs.Unboxed) $ agda2hsError "projecting from unboxed tuples is not allowed"
   reportSDoc "agda2hs.term.proj" 12 $ text "compiling tuple projection"
   (r, pars, def) <- lift $ fromMaybe __IMPOSSIBLE__ <$> isRecordType wty
   let fields = map unDom $ _recFields def
@@ -240,8 +240,8 @@ compileTupleProjection f b wty w ty args = do
     [f1,f2] | f == f1 -> return $ hsName "fst"
             | f == f2 -> return $ hsName "snd"
             | otherwise -> __IMPOSSIBLE__
-    fs' -> genericDocError =<<
-      text ("cannot project from tuple with " ++ show (size fs') ++ " fields")
+    fs' -> agda2hsStringError $
+      "cannot project from tuple with " ++ show (size fs') ++ " fields"
   cw <- compileTerm wty w
   cargs <- compileArgs ty args
   return $ eApp (Hs.Var () $ Hs.UnQual () fname) (cw:cargs)
@@ -254,8 +254,8 @@ compileTupleProjection f b wty w ty args = do
     compileTupleField f ty = compileDom ty >>= \case
       DODropped -> return Nothing
       DOTerm -> return (Just f)
-      DOType -> genericDocError =<< text "illegal type field in tuple record:" <+> prettyTCM f
-      DOInstance -> genericDocError =<< text "illegal instance field in tuple record:" <+> prettyTCM f
+      DOType -> agda2hsErrorM $ "illegal type field in tuple record:" <+> prettyTCM f
+      DOInstance -> agda2hsErrorM $ "illegal instance field in tuple record:" <+> prettyTCM f
 
 
 -- | Compile a projection(-like) definition
@@ -389,7 +389,7 @@ erasedTerm _ _ = pure (Hs.Tuple () Hs.Boxed [])
 int64Term :: ConCompileRule
 int64Term ty args = compileArgs ty args >>= \case
   n@Hs.Lit{} : _ -> return n
-  _ -> genericError "int64 must be applied to a literal"
+  _ -> agda2hsError "int64 must be applied to a literal"
 
 -- | @compileErasedApp@ compiles the application of unboxed constructors
 -- and transparent functions.
@@ -458,8 +458,8 @@ compileTerm ty v = do
 
   v <- instantiate v
 
-  let bad s t = genericDocError =<< vcat
-        [ text "agda2hs: cannot compile" <+> text (s ++ ":")
+  let bad s t = agda2hsErrorM $ vcat
+        [ text "cannot compile" <+> text (s ++ ":")
         , nest 2 $ prettyTCM t
         ]
 
@@ -510,8 +510,8 @@ compileLam ty argi abs = do
   -- usable domain, user-written lambda is preserved
   else if getOrigin argi == UserWritten then do
 
-    when (patternInTeleName `isPrefixOf` absName abs) $ genericDocError =<<
-      text "Record pattern translation not supported. Use a pattern matching lambda instead."
+    when (patternInTeleName `isPrefixOf` absName abs) $ agda2hsError $
+      "Record pattern translation not supported. Use a pattern matching lambda instead."
 
     reportSDoc "agda2hs.compile" 17 $ text "compiling regular lambda"
 
@@ -575,7 +575,7 @@ compileInlineFunctionApp f ty args = do
             $ unfoldDefinitionStep (Def f [] `applys` args) f (Apply . defaultArg <$> args)
       case r of
         YesReduction _ t -> pure t
-        _ -> genericDocError =<< text "Could not reduce inline function" <+> prettyTCM f
+        _ -> agda2hsErrorM $ text "Could not reduce inline function" <+> prettyTCM f
 
     etaExpand (p:ps) ty args = do
       (dom, cod) <- mustBePi ty
@@ -611,7 +611,7 @@ checkValidType x = noWriteImports (compileType x) *> return ()
 
 clauseToAlt :: Hs.Match () -> C (Hs.Alt ())
 clauseToAlt (Hs.Match _ _ [p] rhs wh) = pure $ Hs.Alt () p rhs wh
-clauseToAlt (Hs.Match _ _ ps _ _)     = genericError "Pattern matching lambdas must take a single argument"
+clauseToAlt (Hs.Match _ _ ps _ _)     = agda2hsError "Pattern matching lambdas must take a single argument"
 clauseToAlt Hs.InfixMatch{}           = __IMPOSSIBLE__
 
 compileLiteral :: Literal -> C (Hs.Exp ())
@@ -621,7 +621,7 @@ compileLiteral (LitWord64 w) = return $ Hs.Lit () $ Hs.PrimWord () (fromIntegral
 compileLiteral (LitChar c)   = return $ Hs.charE c
 compileLiteral (LitString t) = return $ Hs.Lit () $ Hs.String () s s
   where s = Text.unpack t
-compileLiteral l             = genericDocError =<< text "bad term:" <?> prettyTCM (Lit l)
+compileLiteral l             = agda2hsErrorM $ text "bad term:" <?> prettyTCM (Lit l)
 
 
 checkInstance :: Term -> C ()
@@ -649,7 +649,7 @@ checkInstance u = do
     illegalInstance :: C ()
     illegalInstance = do
       reportSDoc "agda2hs.checkInstance" 15 $ text "illegal instance: " <+> pretty u
-      genericDocError =<< text "illegal instance: " <+> prettyTCM u
+      agda2hsErrorM $ text "illegal instance: " <+> prettyTCM u
 
     checkInstanceElims :: Elims -> C ()
     checkInstanceElims = mapM_ checkInstanceElim

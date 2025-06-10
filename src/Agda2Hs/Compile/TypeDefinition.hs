@@ -38,7 +38,7 @@ compileTypeDef name (Defn {..}) = do
     Function{..} = theDef
     singleClause = \case
       [cl] -> return cl
-      _    -> genericError "Not supported: type definition with several clauses"
+      _    -> agda2hsError "Not supported: type definition with several clauses"
 
 compileTypePatternArgs :: Type -> NAPs -> C [Hs.TyVarBind ()]
 compileTypePatternArgs ty naps = do
@@ -48,11 +48,11 @@ compileTypePatternArgs ty naps = do
     assertIsTyVarBind :: Hs.Type () -> C (Hs.TyVarBind ())
     assertIsTyVarBind = \case
       Hs.TyVar _ n -> pure $ Hs.UnkindedVar () n
-      _ -> genericError "Not supported: type definition by pattern matching"
+      _ -> agda2hsError "Not supported: type definition by pattern matching"
 
 compileTypeArg :: DeBruijnPattern -> C (Hs.TyVarBind ())
 compileTypeArg p@(VarP o i) = do
   name <- hsName <$> compileDBVar (dbPatVarIndex i)
   checkValidTyVarName name
   return $ Hs.UnkindedVar () name
-compileTypeArg _ = genericError "Not supported: type definition by pattern matching"
+compileTypeArg _ = agda2hsError "Not supported: type definition by pattern matching"

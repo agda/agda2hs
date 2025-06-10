@@ -67,7 +67,7 @@ unitType _ = return $ Hs.TyTuple () Hs.Boxed []
 delayType :: Elims -> C (Hs.Type ())
 delayType (Apply a : _) = compileType (unArg a)
 delayType (_       : _) = __IMPOSSIBLE__
-delayType [] = genericDocError =<< text "Cannot compile unapplied Delay type"
+delayType [] = agda2hsError "Cannot compile unapplied Delay type"
 
 
 -- | Compile an Agda term into a Haskell type, along with its strictness.
@@ -103,8 +103,8 @@ compileType t = do
     Def f es -> maybeUnfoldCopy f es compileType $ \f es -> do
       def <- getConstInfo f
       if | not (usableModality def) ->
-            genericDocError
-              =<< text "Cannot use erased definition" <+> prettyTCM f
+            agda2hsErrorM $
+                  text "Cannot use erased definition" <+> prettyTCM f
               <+> text "in Haskell type"
          | Just semantics <- isSpecialType f -> setCurrentRange f $ semantics es
          | Just args <- allApplyElims es ->
@@ -119,8 +119,8 @@ compileType t = do
 
     Var x es | Just args <- allApplyElims es -> do
       CtxVar _ ti <- lookupBV x
-      unless (usableModality ti) $ genericDocError
-        =<< text "Cannot use erased variable" <+> prettyTCM (var x)
+      unless (usableModality ti) $ agda2hsErrorM $
+            text "Cannot use erased variable" <+> prettyTCM (var x)
         <+> text "in Haskell type"
       vs <- compileTypeArgs (unDom ti) args
       x  <- hsName <$> compileDBVar x
@@ -142,10 +142,10 @@ compileType t = do
          -- Rewrite `\x -> f x` to `f`
          | Hs.TyApp _ f (Hs.TyVar _ y) <- body
          , y == x0 -> return f
-         | otherwise -> genericDocError =<< text "Not supported: type-level lambda" <+> prettyTCM t
+         | otherwise -> agda2hsErrorM $ text "Not supported: type-level lambda" <+> prettyTCM t
 
     _ -> fail
-  where fail = genericDocError =<< text "Bad Haskell type:" <?> prettyTCM t
+  where fail = agda2hsErrorM $ text "Bad Haskell type:" <?> prettyTCM t
 
 
 compileTypeArgs :: Type -> Args -> C [Hs.Type ()]
@@ -156,7 +156,7 @@ compileTypeArgs ty (x:xs) = do
   reportSDoc "agda2hs.compile.type" 16 $ text "                a =" <+> prettyTCM a
   reportSDoc "agda2hs.compile.type" 16 $ text "         modality =" <+> prettyTCM (getModality a)
   let rest = compileTypeArgs (absApp b $ unArg x) xs
-  let fail msg = genericDocError =<< (text msg <> text ":") <+> parens (prettyTCM (absName b) <+> text ":" <+> prettyTCM (unDom a))
+  let fail msg = agda2hsErrorM $ (text msg <> text ":") <+> parens (prettyTCM (absName b) <+> text ":" <+> prettyTCM (unDom a))
   compileDom a >>= \case
     DODropped -> rest
     DOInstance -> fail "Type-level instance argument not supported"
@@ -210,7 +210,7 @@ compileInlineType f args = do
 
   let [ Clause { namedClausePats = pats } ] = filter (isJust . clauseBody) cs
 
-  when (length args < length pats) $ genericDocError =<<
+  when (length args < length pats) $ agda2hsErrorM $
     text "Cannot compile inlinable type alias" <+> prettyTCM f <+> text "as it must be fully applied."
 
   r <- liftReduce $ locallyReduceDefs (OnlyReduceDefs $ Set.singleton f)
@@ -218,7 +218,7 @@ compileInlineType f args = do
 
   case r of
     YesReduction _ t -> compileType t
-    _                -> genericDocError =<< text "Could not reduce inline type alias " <+> prettyTCM f
+    _                -> agda2hsErrorM $ text "Could not reduce inline type alias " <+> prettyTCM f
 
 
 data DomOutput = DOInstance | DODropped | DOType | DOTerm
@@ -268,14 +268,14 @@ compileTeleBinds :: Telescope -> C [Hs.TyVarBind ()]
 compileTeleBinds EmptyTel = return []
 compileTeleBinds (ExtendTel a tel) = do
   reportSDoc "agda2hs.compile.type" 15 $ text "Compiling type parameter: " <+> prettyTCM a
-  let fail msg = genericDocError =<< (text msg <> text ":") <+> parens (prettyTCM (absName tel) <+> text ":" <+> prettyTCM (unDom a))
+  let fail msg = agda2hsErrorM $ (text msg <> text ":") <+> parens (prettyTCM (absName tel) <+> text ":" <+> prettyTCM (unDom a))
   compileDom a >>= \case
     DODropped  -> underAbstraction a tel compileTeleBinds
     DOType -> do
       ha <- compileKeptTeleBind (hsName $ absName tel) (unDom a)
       (ha:) <$> underAbstraction a tel compileTeleBinds
-    DOInstance -> fail "Constraint in type parameter not supported"
-    DOTerm -> fail "Term variable in type parameter not supported"
+    DOInstance -> agda2hsError "Constraint in type parameter not supported"
+    DOTerm -> agda2hsError "Term variable in type parameter not supported"
 
 compileKeptTeleBind :: Hs.Name () -> Type -> C (Hs.TyVarBind ())
 compileKeptTeleBind x t = do
@@ -293,4 +293,4 @@ compileKind t = case unEl t of
     DOInstance -> err
   _ -> err
   where
-    err = genericDocError =<< text "Not a valid Haskell kind: " <+> prettyTCM t
+    err = agda2hsErrorM $ text "Not a valid Haskell kind: " <+> prettyTCM t
