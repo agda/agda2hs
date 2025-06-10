@@ -114,7 +114,7 @@ double :: Monoid a => a -> a
 double x = x <> x
 
 doubleSum :: NatSum -> NatSum
-doubleSum = double
+doubleSum = \ x -> x <> x
 
 hd :: [a] -> a
 hd [] = error "hd: empty list"

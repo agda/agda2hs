@@ -1,7 +1,7 @@
 module Agda2Hs.Compile.Term where
 
 import Control.Arrow ( (>>>), (&&&), second )
-import Control.Monad ( unless, zipWithM )
+import Control.Monad ( zipWithM )
 import Control.Monad.Except
 import Control.Monad.Reader
 

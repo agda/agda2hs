@@ -1,2 +1,2 @@
-test/Fail/ExplicitInstance.agda:17,1-5
+test/Fail/ExplicitInstance.agda:17.1-5: error: [GenericDocError]
 illegal instance:  λ { .Fail.ExplicitInstance.theDefault → True }

@@ -1,2 +1,2 @@
-test/Fail/Copatterns.agda:14,1-5
+test/Fail/Copatterns.agda:14.1-5: error: [GenericDocError]
 not supported in Haskell: copatterns

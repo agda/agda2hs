@@ -28,5 +28,5 @@ baz :: DiscreteOrd a => a -> Bool
 baz x = x < x
 
 usebaz :: Bool
-usebaz = baz True
+usebaz = True < True
 

@@ -1,2 +1,2 @@
-test/Fail/InvalidName.agda:6,1-2
+test/Fail/InvalidName.agda:6.1-2: error: [GenericDocError]
 Invalid name for Haskell function:  F

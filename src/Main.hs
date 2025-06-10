@@ -1,14 +1,15 @@
 module Main where
 
 import Data.Maybe ( fromMaybe )
+import qualified Data.Text as Text
 import Data.Version ( showVersion )
 import Control.Monad.IO.Class ( MonadIO(liftIO) )
 
-import System.Console.GetOpt
 import System.Environment ( getArgs )
 
 import Agda.Main
 import Agda.Compiler.Backend
+import Agda.Utils.GetOpt
 
 import Agda2Hs.Compile.Name ( defaultSpecialRules )
 import Agda2Hs.Compile
@@ -49,8 +50,8 @@ extensionOpt ext opts = return opts { optExtensions = Hs.parseExtension ext : op
 
 backend :: Backend' Options Options ModuleEnv ModuleRes (CompiledDef, CompileOutput)
 backend = Backend'
-  { backendName           = "agda2hs"
-  , backendVersion        = Just (showVersion version)
+  { backendName           = Text.pack "agda2hs"
+  , backendVersion        = Just $ Text.pack $ showVersion version
   , options               = defaultOptions
   , commandLineFlags      =
       [ Option ['d'] ["disable-backend"] (NoArg disableOpt)
@@ -72,6 +73,8 @@ backend = Backend'
   , compileDef            = compile
   , scopeCheckingSuffices = False
   , mayEraseType          = \ _ -> return True
+  , backendInteractTop    = Nothing
+  , backendInteractHole   = Nothing
   }
   where
     verifyAndWriteModule opts env isM m out = verifyOutput opts env isM m out >> writeModule opts env isM m out
@@ -88,7 +91,7 @@ main = do
 
   -- Issue #370: `agda2hs locate` will print out the path to the prelude agda-lib file
   if args == ["locate"] then
-    putStrLn =<< getDataFileName "agda2hs.agda-lib"
+    putStrLn =<< getDataFileName "lib/base/base.agda-lib"
   else do
     -- Issue #201: disable backend when run in interactive mode
     isInt <- isInteractive
