@@ -71,3 +71,13 @@ You can use agda2hs with the [Haskell
 Stack](https://docs.haskellstack.org/en/stable/) tool.
 
 TODO: integrate agda2hs as a preprocessor for stack
+
+### Creating an Agda2Hs project
+
+All agda2hs projects should have a dependency on the `base` library provided by
+Agda, and can also optionally depend on the `containers` library. Using Agda's
+standard library with agda2hs is not supported.
+
+All agda2hs projects should enable the `--erasure` option of Agda. It is also
+recommended to  enable the `--no-projection-like` flag since otherwise functions
+might get inlined inadvertently.
