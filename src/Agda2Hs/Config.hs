@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- Read additional configuration options from a file.
 module Agda2Hs.Config (checkConfig) where
 

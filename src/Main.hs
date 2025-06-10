@@ -50,7 +50,7 @@ extensionOpt ext opts = return opts { optExtensions = Hs.parseExtension ext : op
 
 backend :: Backend' Options Options ModuleEnv ModuleRes (CompiledDef, CompileOutput)
 backend = Backend'
-  { backendName           = Text.pack "agda2hs"
+  { backendName           = "agda2hs"
   , backendVersion        = Just $ Text.pack $ showVersion version
   , options               = defaultOptions
   , commandLineFlags      =

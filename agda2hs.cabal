@@ -81,4 +81,5 @@ executable agda2hs
                        NamedFieldPuns
                        PatternSynonyms
                        NondecreasingIndentation
+                       OverloadedStrings
   ghc-options:         -Werror -rtsopts
