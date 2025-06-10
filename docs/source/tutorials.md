@@ -23,7 +23,7 @@ This is how the `example-basics.agda-lib` file looks for our project:
 ```
 name: example-basics
 include: .
-depend: base
+depend: agda2hs-base
 flags: --erasure --no-projection-like
 ```
 The `include` label specifies the current folder as the path for files to be included in the library. For our toy example it works perfectly, but for a bigger library it might be handy to place all the `.agda` files in a single repository such as `src`.

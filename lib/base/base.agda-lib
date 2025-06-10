@@ -2,7 +2,7 @@
 -- * mirrors the Haskell `base` package
 -- * is intertwined with `agda2hs`
 
-name: base
+name: agda2hs-base
 depend:
 include: .
 flags: -W noUnsupportedIndexedMatch --erasure --no-projection-like
