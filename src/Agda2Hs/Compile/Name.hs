@@ -211,7 +211,7 @@ isWhereFunction f = do
   return $ any (qnameModule f `isLeChildModuleOf`) whereMods
 
 hsTopLevelModuleName :: TopLevelModuleName -> Hs.ModuleName ()
-hsTopLevelModuleName = hsModuleName . intercalate "." . map Text.unpack
+hsTopLevelModuleName = hsModuleName . Text.unpack . Text.intercalate "."
                      . List1.toList . moduleNameParts
 
 -- | Given a module name (assumed to be a toplevel module),
