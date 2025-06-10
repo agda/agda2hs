@@ -10,6 +10,10 @@ let
     meta = { };
     version = version;
     preBuild = ''
+      # workaround for https://github.com/NixOS/nixpkgs/issues/16144
+      export HOME=$TMP
+
+      # assemble Everything.agda
       echo "{-# OPTIONS --sized-types #-}" > Everything.agda
       echo "module Everything where" >> Everything.agda
       find . -name '*.agda' ! -name 'Everything.agda' | sed -e 's/.\///;s/\//./g;s/\.agda$//;s/^/import /' >> Everything.agda
