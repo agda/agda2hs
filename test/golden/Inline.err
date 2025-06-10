@@ -1,2 +1,2 @@
-test/Fail/Inline.agda:5,1-6
+test/Fail/Inline.agda:5.1-6: error: [GenericDocError]
 Cannot make function tail' inlinable. An inline function must have exactly one clause.

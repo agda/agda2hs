@@ -9,7 +9,7 @@ import Control.Monad.Reader
 import Data.Functor ( (<&>) )
 import Data.Bifunctor ( bimap )
 import Data.List ( intercalate, isPrefixOf, stripPrefix )
-import Data.Text ( unpack )
+import qualified Data.Text as Text
 import qualified Data.Map.Strict as Map
 
 import Agda.Compiler.Backend hiding ( topLevelModuleName )
@@ -122,7 +122,7 @@ compileQName f
 
     unless existsInHaskell $ do
       reportSDoc "agda2hs.name" 20 $ text "DOES NOT EXIST IN HASKELL"
-      typeError $ CustomBackendError "agda2hs" $ P.text $
+      typeError $ CustomBackendError (Text.pack "agda2hs") $ P.text $
         "Symbol " ++ Hs.prettyPrint hf ++ " is missing a COMPILE pragma or rewrite rule"
 
     currMod <- hsTopLevelModuleName <$> asks currModule
@@ -211,7 +211,7 @@ isWhereFunction f = do
   return $ any (qnameModule f `isLeChildModuleOf`) whereMods
 
 hsTopLevelModuleName :: TopLevelModuleName -> Hs.ModuleName ()
-hsTopLevelModuleName = hsModuleName . intercalate "." . map unpack
+hsTopLevelModuleName = hsModuleName . intercalate "." . map Text.unpack
                      . List1.toList . moduleNameParts
 
 -- | Given a module name (assumed to be a toplevel module),

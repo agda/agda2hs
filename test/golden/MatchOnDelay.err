@@ -1,2 +1,2 @@
-test/Fail/MatchOnDelay.agda:7,1-4
+test/Fail/MatchOnDelay.agda:7.1-4: error: [GenericDocError]
 constructor `now` not supported in patterns

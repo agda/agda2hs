@@ -1,2 +1,2 @@
-test/Fail/Issue357b.agda:10,1-2
+test/Fail/Issue357b.agda:10.1-2: error: [GenericDocError]
 Bad Haskell type: Level
