@@ -418,4 +418,4 @@ checkInlinePragma def@Defn{defName = f} = do
         allowedPat _ = pure False
 
         allowedPats :: NAPs -> C Bool
-        allowedPats pats = allM pats (allowedPat . dget . dget)
+        allowedPats pats = allM (allowedPat . dget . dget) pats

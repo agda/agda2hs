@@ -38,15 +38,6 @@ instance Subst Definition where
   applySubst rhoP d@Defn{..} =
     d {defType = applyPatSubst rhoP defType, theDef = applySubst rhoP theDef}
 
-instance (Monoid r, MonadFresh i m) => MonadFresh i (WriterT r m)
-instance (Monoid r, MonadInteractionPoints m) => MonadInteractionPoints (WriterT r m)
-instance (Monoid r, MonadStConcreteNames m) => MonadStConcreteNames (WriterT r m) where
-  --runStConcreteNames :: StateT ConcreteNames (WriterT r m) a -> WriterT r m a
-  runStConcreteNames m = WriterT $ runStConcreteNames $ StateT $ \s -> do
-    ((x,s'),ns) <- runWriterT $ runStateT m s
-    return ((x,ns),s')
-instance (Monoid r, Monad m, IsString (m a)) => IsString (WriterT r m a) where
-  fromString s = WriterT $ fmap (,mempty) $ fromString s
 instance (Monoid r, MonadBlock m) => MonadBlock (WriterT r m) where
   catchPatternErr h m = WriterT $ catchPatternErr (runWriterT . h) (runWriterT m)
 instance MonadBlock m => MonadBlock (StateT s m) where

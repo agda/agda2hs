@@ -1,2 +1,2 @@
-test/Fail/ErasedRecordParameter.agda:6,8-10
+test/Fail/ErasedRecordParameter.agda:6.8-10: error: [GenericDocError]
 Cannot use erased variable a in Haskell type

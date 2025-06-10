@@ -54,7 +54,7 @@ executable agda2hs
                        Paths_agda2hs
   autogen-modules:     Paths_agda2hs
   build-depends:       base                 >= 4.13    && < 4.21,
-                       Agda                 >= 2.7.0   && < 2.8.0,
+                       Agda                 >= 2.8.0   && < 2.9.0,
                        bytestring           >= 0.11.5  && < 0.13,
                        containers           >= 0.6     && < 0.8,
                        unordered-containers >= 0.2.19  && < 0.3,

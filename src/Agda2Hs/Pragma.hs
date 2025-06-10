@@ -3,6 +3,7 @@ module Agda2Hs.Pragma where
 import Data.List ( isPrefixOf )
 import Data.Maybe ( fromMaybe )
 import qualified Data.Map as Map
+import qualified Data.Text as Text
 
 import Agda.Compiler.Backend
 import Agda.Compiler.Common ( curIF )
@@ -17,8 +18,8 @@ import Agda2Hs.Compile.Types
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils ( Strictness(..), srcLocToRange )
 
-pragmaName :: String
-pragmaName = "AGDA2HS"
+pragmaName :: Text.Text
+pragmaName = Text.pack "AGDA2HS"
 
 languagePragmas :: Code -> [Hs.Extension]
 languagePragmas (Hs.Module _ _ ps _ _, _) =

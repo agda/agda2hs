@@ -118,11 +118,11 @@ compileType t = do
          | otherwise -> fail
 
     Var x es | Just args <- allApplyElims es -> do
-      xi <- lookupBV x
-      unless (usableModality xi) $ genericDocError
+      CtxVar _ ti <- lookupBV x
+      unless (usableModality ti) $ genericDocError
         =<< text "Cannot use erased variable" <+> prettyTCM (var x)
         <+> text "in Haskell type"
-      vs <- compileTypeArgs (snd $ unDom xi) args
+      vs <- compileTypeArgs (unDom ti) args
       x  <- hsName <$> compileDBVar x
       return $ tApp (Hs.TyVar () x) vs
 

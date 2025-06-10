@@ -1,2 +1,2 @@
-test/Fail/NonStarDatatypeIndex.agda:5,6-7
+test/Fail/NonStarDatatypeIndex.agda:5.6-7: error: [GenericDocError]
 Term variable in type parameter not supported: (n : Nat)
