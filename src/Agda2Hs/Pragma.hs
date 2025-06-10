@@ -9,6 +9,7 @@ import Agda.Compiler.Backend
 import Agda.Compiler.Common ( curIF )
 
 import Agda.Syntax.Position
+import Agda.TypeChecking.Pretty (text)
 
 import Agda.Utils.FileName ( filePath )
 import Agda.Utils.Maybe.Strict ( toLazy )
@@ -42,7 +43,7 @@ getForeignPragmas exts = do
                        Just l  -> "{-# LINE " ++ show l ++ show file ++ " #-}\n"
                        Nothing -> ""
           case Hs.parseWithComments pmode (line ++ code) of
-            Hs.ParseFailed loc msg -> setCurrentRange (srcLocToRange loc) $ genericError msg
+            Hs.ParseFailed loc msg -> setCurrentRange (srcLocToRange loc) $ typeError <$> CustomBackendError "agda2hs" =<< text msg
             Hs.ParseOk m           -> ((r, m) :) <$> getCode (exts ++ languagePragmas m) pragmas
 
 data ParsedPragma
@@ -76,7 +77,7 @@ processDeriving r d pragma = do
   -- dummy datatype and then only keeping the deriving part
   case Hs.parseDecl ("data X = X " ++ d) of
     Hs.ParseFailed loc msg -> do
-      setCurrentRange r $ genericError msg
+      setCurrentRange r $ typeError <$> CustomBackendError "agda2hs" =<< text msg
     Hs.ParseOk (Hs.DataDecl _ _ _ _ _ ds) ->
       return $ pragma (map (() <$) ds)
     Hs.ParseOk _ -> return $ pragma []

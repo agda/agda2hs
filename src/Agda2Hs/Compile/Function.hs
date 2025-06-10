@@ -64,7 +64,7 @@ isSpecialCon qn = case prettyShow qn of
       ]
 
     itsBad :: Type -> NAPs -> C (Hs.Pat ())
-    itsBad _ _ = genericDocError =<< "constructor `" <> prettyTCM qn <> "` not supported in patterns"
+    itsBad _ _ = agda2hsErrorM $ "constructor `" <> prettyTCM qn <> "` not supported in patterns"
 
 -- | Translate Int.pos pattern.
 posIntPat :: Type -> NAPs -> C (Hs.Pat ())
@@ -91,7 +91,7 @@ compileLitNatPat = \case
     | prettyShow (conName ch) == "Agda.Builtin.Nat.Nat.zero" -> return 0
     | prettyShow (conName ch) == "Agda.Builtin.Nat.Nat.suc"
     , [p] <- ps -> (1+) <$> compileLitNatPat (namedArg p)
-  p -> genericDocError =<< "not a literal natural number pattern:" <?> prettyTCM p
+  p -> agda2hsErrorM $ "not a literal natural number pattern:" <?> prettyTCM p
 
 
 compileFun, compileFun'
@@ -110,7 +110,7 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
   reportSDoc "agda2hs.compile" 6 $ "Compiling function: " <+> prettyTCM defName
 
   whenM ((withSig &&) <$> inRecordMod defName) $
-    genericDocError =<< text "not supported by agda2hs: functions inside a record module"
+    agda2hsError "not supported: functions inside a record module"
 
   ifM (endsInSort defType)
     -- if the function type ends in Sort, it's a type alias!
@@ -154,8 +154,8 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
       cs  <- map (addPats paramPats) <$>
         mapMaybeM (compileClause m (Just defName) x typ) clauses
 
-      when (null cs) $ genericDocError
-        =<< text "Functions defined with absurd patterns exclusively are not supported."
+      when (null cs) $ agda2hsErrorM $
+            text "Functions defined with absurd patterns exclusively are not supported."
         <+> text "Use function `error` from the Haskell.Prelude instead."
 
       return $ sig ++ [Hs.FunBind () cs]
@@ -259,7 +259,7 @@ compilePats _ [] = pure []
 compilePats ty ((namedArg -> ProjP po pn):ps) = do
   reportSDoc "agda2hs.compile" 10 $ "compiling copattern: " <+> text (prettyShow pn)
   unlessM (asks copatternsEnabled `or2M` (isJust <$> isUnboxProjection pn)) $
-    genericDocError =<< "not supported in Haskell: copatterns"
+    agda2hsError "not supported in Haskell: copatterns"
 
   ty     <- fromMaybe __IMPOSSIBLE__ <$> getDefType pn ty
   (a, b) <- mustBePi ty
@@ -278,7 +278,7 @@ compilePats ty ((namedArg -> pat):ps) = do
     DOTerm     -> do
       checkNoAsPatterns pat
       (:) <$> compilePat (unDom a) pat <*> rest
-  where checkForced  = when (isForcedPat pat) $ genericDocError =<< "not supported by agda2hs: forced (dot) patterns in non-erased positions"
+  where checkForced  = when (isForcedPat pat) $ agda2hsError "not supported: forced (dot) patterns in non-erased positions"
 
 
 compilePat :: Type -> DeBruijnPattern -> C (Hs.Pat ())
@@ -308,7 +308,7 @@ compilePat ty (LitP _ l) = compileLitPat l
 
 
 -- nothing else is supported
-compilePat _ p = genericDocError =<< "bad pattern:" <?> prettyTCM p
+compilePat _ p = agda2hsErrorM $ "bad pattern:" <?> prettyTCM p
 
 
 compileErasedConP :: Type -> Strictness -> NAPs -> C (Hs.Pat ())
@@ -319,7 +319,7 @@ compileErasedConP ty s ps = compilePats ty ps >>= \case
 compileLitPat :: Literal -> C (Hs.Pat ())
 compileLitPat = \case
   LitChar c -> return $ Hs.charP c
-  l -> genericDocError =<< "bad literal pattern:" <?> prettyTCM l
+  l -> agda2hsErrorM $ "bad literal pattern:" <?> prettyTCM l
 
 compileTupleConP :: Type -> Hs.Boxed -> NAPs -> C (Hs.Pat ())
 compileTupleConP ty b ps = do
@@ -388,7 +388,7 @@ checkTransparentPragma def = compileFun False def >>= \case
     checkTransparentTypeDef (Hs.DHApp _ _ (Hs.UnkindedVar _ x)) (Hs.TyVar _ y) | x == y = return ()
     checkTransparentTypeDef _ _ = errNotTransparent
 
-    errNotTransparent = genericDocError =<<
+    errNotTransparent = agda2hsErrorM $
       "Cannot make function" <+> prettyTCM (defName def) <+> "transparent." <+>
       "A transparent function must have exactly one non-erased argument and return it unchanged."
 
@@ -399,11 +399,11 @@ checkInlinePragma def@Defn{defName = f} = do
   let Function{funClauses = cs} = theDef def
   case filter (isJust . clauseBody) cs of
     [c] ->
-      unlessM (allowedPats (namedClausePats c)) $ genericDocError =<<
+      unlessM (allowedPats (namedClausePats c)) $ agda2hsErrorM $
         "Cannot make function" <+> prettyTCM (defName def) <+> "inlinable." <+>
         "Inline functions can only use variable patterns or transparent record constructor patterns."
     _ ->
-      genericDocError =<<
+      agda2hsErrorM $
         "Cannot make function" <+> prettyTCM f <+> "inlinable." <+>
         "An inline function must have exactly one clause."
 

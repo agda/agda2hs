@@ -94,7 +94,7 @@ compileInstance ToDefinition def@Defn{..} =
           text "compileInstance compiled clauses: " :
           map (nest 2 . text . pp) ds
         when (length (nub rs) > 1) $
-          genericDocError =<< fsep (pwords "More than one minimal record used.")
+          agda2hsErrorM $ fsep (pwords "More than one minimal record used.")
         return $ Hs.InstDecl () Nothing ir (Just ds)
     where Function{..} = theDef
 
@@ -138,7 +138,7 @@ compileInstRule cs ty = do
 
 etaExpandClause :: Clause -> C [Clause]
 etaExpandClause cl@Clause{clauseBody = Nothing} =
-  genericError "Instance definition with absurd pattern!"
+  agda2hsError "Instance definition with absurd pattern!"
 etaExpandClause cl@Clause{namedClausePats = ps, clauseBody = Just t} = do
   case t of
     Con c _ _ -> do
@@ -147,7 +147,7 @@ etaExpandClause cl@Clause{namedClausePats = ps, clauseBody = Just t} = do
                       clauseBody      = Just $ t `applyE` [Proj ProjSystem $ unArg f] }
                 | f <- fields ]
       return cls
-    _ -> genericDocError =<< fsep (pwords $
+    _ -> agda2hsErrorM $ fsep (pwords $
       "Type class instances must be defined using copatterns (or top-level" ++
       " records) and cannot be defined using helper functions.")
 
@@ -221,9 +221,9 @@ compileInstanceClause' curModule ty (p:ps) c
     if
       -- Instance field: check canonicity.
       | isInstance arg -> do
-          unless (null ps) $ genericDocError =<< text "not allowed: explicitly giving superclass"
+          unless (null ps) $ agda2hsError "not allowed: explicitly giving superclass"
           body <- case clauseBody c' of
-            Nothing -> genericDocError =<< text "not allowed: absurd clause for superclass"
+            Nothing -> agda2hsError "not allowed: absurd clause for superclass"
             Just b  -> return b
           addContext (clauseTel c) $ do
             liftTCM $ setModuleCheckpoint curModule
@@ -257,7 +257,7 @@ compileInstanceClause' curModule ty (p:ps) c
        -- same (minimal) dictionary as the primitive fields.
       | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
       , n .~ q -> do
-        let err = genericDocError =<< text "illegal instance declaration: instances using default methods should use a named definition or an anonymous `λ where`."
+        let err = agda2hsError $ "illegal instance declaration: instances using default methods should use a named definition or an anonymous `λ where`."
             filterArgs :: Type -> [Term] -> C [Term]
             filterArgs ty [] = return []
             filterArgs ty (v:vs) = do
@@ -308,7 +308,7 @@ fieldArgInfo f = do
     df : _ -> return $ getArgInfo df
     []     -> badness
   where
-    badness = genericDocError =<< text "Not a record field:" <+> prettyTCM f
+    badness = agda2hsErrorM $ text "Not a record field:" <+> prettyTCM f
 
 
 findDefinitions :: (QName -> Definition -> C Bool) -> ModuleName -> C [Definition]
@@ -326,7 +326,7 @@ resolveStringName s = do
   rname  <- liftTCM $ resolveName cqname
   case rname of
     DefinedName _ aname _ -> return $ anameName aname
-    _ -> genericDocError =<< text ("Couldn't find " ++ s)
+    _ -> agda2hsStringError $ "Couldn't find " ++ s
 
 
 lookupDefaultImplementations :: QName -> [Hs.Name ()] -> C [Definition]
@@ -339,4 +339,4 @@ classMemberNames :: Definition -> C [Hs.Name ()]
 classMemberNames def =
   case theDef def of
     Record{recFields = fs} -> fmap unQual <$> traverse compileQName (map unDom fs)
-    _ -> genericDocError =<< text "Not a record:" <+> prettyTCM (defName def)
+    _ -> agda2hsErrorM $ text "Not a record:" <+> prettyTCM (defName def)

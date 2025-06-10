@@ -106,7 +106,7 @@ compile opts tlm _ def =
         (DefaultPragma _     , Function{}) -> compileFun True def
         (DefaultPragma ds    , Record{}  ) -> pure <$> compileRecord (ToRecord False ds) def
 
-        _ -> genericDocError =<<  text "Don't know how to compile" <+> prettyTCM (defName def)
+        _ -> agda2hsErrorM $ text "Don't know how to compile" <+> prettyTCM (defName def)
 
     postCompile :: C ()
     postCompile = whenM (gets $ lcaseUsed >>> (> 0)) $ tellExtension Hs.LambdaCase
@@ -131,14 +131,14 @@ verifyOutput _ _ _ m ls = do
               Hs.RecDecl _ n _ -> n
           duplicateCons = filter ((> 1) . length) . group . sort  $ allCons
       when (length duplicateCons > 0) $
-        genericDocError =<< vcat (map (\x -> text $ "Cannot generate multiple constructors with the same identifier: " <> Hs.prettyPrint (headWithDefault __IMPOSSIBLE__ x)) duplicateCons)
+        agda2hsErrorM $ vcat (map (\x -> text $ "Cannot generate multiple constructors with the same identifier: " <> Hs.prettyPrint (headWithDefault __IMPOSSIBLE__ x)) duplicateCons)
 
     ensureNoOutputFromHsModules = unless (null $ concat $ map fst ls) $ do
       let hsModName = hsTopLevelModuleName m
       case hsModuleKind hsModName of
         HsModule -> do
           reportSDoc "agda2hs.compile" 10 $ text "Haskell module" <+> prettyTCM m <+> text "has non-null output."
-          genericDocError =<< hsep
+          agda2hsErrorM $ hsep
             (  pwords "The `Haskell.` namespace are reserved for binding existing Haskell modules, so the module"
             ++ [text "`" <> prettyTCM m <> text "`"]
             ++ pwords "should not contain any"
