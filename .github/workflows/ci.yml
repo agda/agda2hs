@@ -55,7 +55,7 @@ jobs:
         restore-keys: ${{ runner.os }}-${{ matrix.ghc }}-
 
     - name: Run test suite
-      run: make test
+      run: make test && git diff --exit-code
 
     - name: Generate Prelude HTML
       if: ${{ (matrix.ghc == matrix.deploy-ghc) && (github.ref == 'refs/heads/master') }}
