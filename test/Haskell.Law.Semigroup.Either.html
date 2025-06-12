@@ -1,0 +1,15 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Haskell.Law.Semigroup.Either</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="Agda"><a id="1" class="Keyword">module</a> <a id="8" href="Haskell.Law.Semigroup.Either.html" class="Module">Haskell.Law.Semigroup.Either</a> <a id="37" class="Keyword">where</a>
+
+<a id="44" class="Keyword">open</a> <a id="49" class="Keyword">import</a> <a id="56" href="Haskell.Prim.html" class="Module">Haskell.Prim</a>
+<a id="69" class="Keyword">open</a> <a id="74" class="Keyword">import</a> <a id="81" href="Haskell.Prim.Either.html" class="Module">Haskell.Prim.Either</a>
+
+<a id="102" class="Keyword">open</a> <a id="107" class="Keyword">import</a> <a id="114" href="Haskell.Prim.Monoid.html" class="Module">Haskell.Prim.Monoid</a>
+
+<a id="135" class="Keyword">open</a> <a id="140" class="Keyword">import</a> <a id="147" href="Haskell.Law.Equality.html" class="Module">Haskell.Law.Equality</a>
+<a id="168" class="Keyword">open</a> <a id="173" class="Keyword">import</a> <a id="180" href="Haskell.Law.Semigroup.Def.html" class="Module">Haskell.Law.Semigroup.Def</a>
+
+<a id="207" class="Keyword">instance</a>
+  <a id="iLawfulSemigroupEither"></a><a id="218" href="Haskell.Law.Semigroup.Either.html#218" class="Function">iLawfulSemigroupEither</a> <a id="241" class="Symbol">:</a> <a id="243" href="Haskell.Law.Semigroup.Def.html#138" class="Record">IsLawfulSemigroup</a> <a id="261" class="Symbol">(</a><a id="262" href="Haskell.Prim.Either.html#159" class="Datatype">Either</a> <a id="269" href="Haskell.Prim.html#1214" class="Generalizable">a</a> <a id="271" href="Haskell.Prim.html#1216" class="Generalizable">b</a><a id="272" class="Symbol">)</a>
+  <a id="276" href="Haskell.Law.Semigroup.Either.html#218" class="Function">iLawfulSemigroupEither</a> <a id="299" class="Symbol">.</a><a id="300" href="Haskell.Law.Semigroup.Def.html#275" class="Field">associativity</a>  <a id="315" class="Symbol">=</a> <a id="317" class="Symbol">λ</a> <a id="319" class="Symbol">{</a> <a id="321" class="Symbol">(</a><a id="322" href="Haskell.Prim.Either.html#194" class="InductiveConstructor">Left</a> <a id="327" class="Symbol">_)</a> <a id="330" class="Symbol">_</a> <a id="332" class="Symbol">_</a> <a id="334" class="Symbol">→</a> <a id="336" href="Agda.Builtin.Equality.html#207" class="InductiveConstructor">refl</a><a id="340" class="Symbol">;</a> <a id="342" class="Symbol">(</a><a id="343" href="Haskell.Prim.Either.html#219" class="InductiveConstructor">Right</a> <a id="349" class="Symbol">_)</a> <a id="352" class="Symbol">_</a> <a id="354" class="Symbol">_</a> <a id="356" class="Symbol">→</a> <a id="358" href="Agda.Builtin.Equality.html#207" class="InductiveConstructor">refl</a> <a id="363" class="Symbol">}</a>
+</pre></body></html>

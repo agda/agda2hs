@@ -1,0 +1,59 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Issue305</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Keyword">open</a> <a id="6" class="Keyword">import</a> <a id="13" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="30" class="Keyword">module</a> <a id="37" href="Issue305.html" class="Module">Issue305</a> <a id="46" class="Symbol">(@</a><a id="48" class="Symbol">0</a> <a id="50" href="Issue305.html#50" class="Bound">X</a> <a id="52" class="Symbol">:</a> <a id="54" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="58" class="Symbol">)</a> <a id="60" class="Keyword">where</a>
+
+<a id="67" class="Keyword">record</a> <a id="Class"></a><a id="74" href="Issue305.html#74" class="Record">Class</a> <a id="80" class="Symbol">(</a><a id="81" href="Issue305.html#81" class="Bound">a</a> <a id="83" class="Symbol">:</a> <a id="85" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="89" class="Symbol">)</a> <a id="91" class="Symbol">:</a> <a id="93" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="98" class="Keyword">where</a>
+  <a id="106" class="Keyword">field</a>
+    <a id="Class.foo"></a><a id="116" href="Issue305.html#116" class="Field">foo</a> <a id="120" class="Symbol">:</a> <a id="122" href="Issue305.html#81" class="Bound">a</a> <a id="124" class="Symbol">→</a> <a id="126" href="Issue305.html#81" class="Bound">a</a>
+<a id="128" class="Keyword">open</a> <a id="133" href="Issue305.html#74" class="Module">Class</a> <a id="139" class="Symbol">{{...}}</a> <a id="147" class="Keyword">public</a>
+
+<a id="155" class="Symbol">{-#</a> <a id="159" class="Keyword">COMPILE</a> <a id="167" class="Keyword">AGDA2HS</a> <a id="175" href="Issue305.html#74" class="Record">Class</a> <a id="181" class="Pragma">class</a> <a id="187" class="Symbol">#-}</a>
+
+<a id="192" class="Keyword">instance</a>
+  <a id="ClassInt"></a><a id="203" href="Issue305.html#203" class="Function">ClassInt</a> <a id="212" class="Symbol">:</a> <a id="214" href="Issue305.html#74" class="Record">Class</a> <a id="220" href="Haskell.Prim.Int.html#367" class="Datatype">Int</a>
+  <a id="226" href="Issue305.html#203" class="Function">ClassInt</a> <a id="235" class="Symbol">.</a><a id="236" href="Issue305.html#116" class="Field">foo</a> <a id="240" class="Symbol">=</a> <a id="242" href="Haskell.Prim.Num.html#552" class="Field Operator">_+</a> <a id="245" class="Number">1</a>
+
+<a id="248" class="Symbol">{-#</a> <a id="252" class="Keyword">COMPILE</a> <a id="260" class="Keyword">AGDA2HS</a> <a id="268" href="Issue305.html#203" class="Function">ClassInt</a> <a id="277" class="Symbol">#-}</a>
+
+<a id="282" class="Keyword">instance</a>
+  <a id="ClassBool"></a><a id="293" href="Issue305.html#293" class="Function">ClassBool</a> <a id="303" class="Symbol">:</a> <a id="305" href="Issue305.html#74" class="Record">Class</a> <a id="311" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+  <a id="318" href="Issue305.html#293" class="Function">ClassBool</a> <a id="328" class="Symbol">.</a><a id="329" href="Issue305.html#116" class="Field">foo</a> <a id="333" class="Symbol">=</a> <a id="335" href="Haskell.Prim.Bool.html#273" class="Function">not</a>
+
+<a id="340" class="Symbol">{-#</a> <a id="344" class="Keyword">COMPILE</a> <a id="352" class="Keyword">AGDA2HS</a> <a id="360" href="Issue305.html#293" class="Function">ClassBool</a> <a id="370" class="Symbol">#-}</a>
+
+<a id="test"></a><a id="375" href="Issue305.html#375" class="Function">test</a> <a id="380" class="Symbol">:</a> <a id="382" href="Haskell.Prim.Int.html#367" class="Datatype">Int</a>
+<a id="386" href="Issue305.html#375" class="Function">test</a> <a id="391" class="Symbol">=</a> <a id="393" href="Issue305.html#116" class="Field">foo</a> <a id="397" class="Number">41</a>
+
+<a id="401" class="Symbol">{-#</a> <a id="405" class="Keyword">COMPILE</a> <a id="413" class="Keyword">AGDA2HS</a> <a id="421" href="Issue305.html#375" class="Function">test</a> <a id="426" class="Symbol">#-}</a>
+
+<a id="anotherTest"></a><a id="431" href="Issue305.html#431" class="Function">anotherTest</a> <a id="443" class="Symbol">:</a> <a id="445" href="Haskell.Prim.Int.html#367" class="Datatype">Int</a>
+<a id="449" href="Issue305.html#431" class="Function">anotherTest</a> <a id="461" class="Symbol">=</a> <a id="463" href="Issue305.html#375" class="Function">test</a>
+
+<a id="469" class="Symbol">{-#</a> <a id="473" class="Keyword">COMPILE</a> <a id="481" class="Keyword">AGDA2HS</a> <a id="489" href="Issue305.html#431" class="Function">anotherTest</a> <a id="501" class="Symbol">#-}</a>
+
+<a id="yetAnotherTest"></a><a id="506" href="Issue305.html#506" class="Function">yetAnotherTest</a> <a id="521" class="Symbol">:</a> <a id="523" href="Haskell.Prim.Int.html#367" class="Datatype">Int</a>
+<a id="527" href="Issue305.html#506" class="Function">yetAnotherTest</a> <a id="542" class="Symbol">=</a> <a id="544" href="Haskell.Prim.html#1635" class="Function Operator">case</a> <a id="549" href="Haskell.Prim.Maybe.html#189" class="InductiveConstructor">Just</a> <a id="554" href="Agda.Builtin.Bool.html#198" class="InductiveConstructor">True</a> <a id="559" href="Haskell.Prim.html#1635" class="Function Operator">of</a> <a id="562" class="Symbol">λ</a> <a id="564" class="Keyword">where</a>
+  <a id="572" href="Haskell.Prim.Maybe.html#169" class="InductiveConstructor">Nothing</a> <a id="580" class="Symbol">→</a> <a id="582" href="Haskell.Prelude.html#3251" class="Function">error</a> <a id="588" class="String">&quot;unreachable&quot;</a>
+  <a id="604" class="Symbol">(</a><a id="605" href="Haskell.Prim.Maybe.html#189" class="InductiveConstructor">Just</a> <a id="610" href="Issue305.html#610" class="Bound">y</a><a id="611" class="Symbol">)</a> <a id="613" class="Symbol">→</a> <a id="615" href="Issue305.html#116" class="Field">foo</a> <a id="619" class="Number">5</a>
+<a id="621" class="Symbol">{-#</a> <a id="625" class="Keyword">COMPILE</a> <a id="633" class="Keyword">AGDA2HS</a> <a id="641" href="Issue305.html#506" class="Function">yetAnotherTest</a> <a id="656" class="Symbol">#-}</a>
+
+<a id="andOneMoreTest"></a><a id="661" href="Issue305.html#661" class="Function">andOneMoreTest</a> <a id="676" class="Symbol">:</a> <a id="678" href="Haskell.Prim.Int.html#367" class="Datatype">Int</a> <a id="682" class="Symbol">→</a> <a id="684" href="Haskell.Prim.Int.html#367" class="Datatype">Int</a>
+<a id="688" href="Issue305.html#661" class="Function">andOneMoreTest</a> <a id="703" href="Issue305.html#703" class="Bound">x</a> <a id="705" class="Symbol">=</a> <a id="707" href="Issue305.html#116" class="Field">foo</a> <a id="711" class="Number">5</a>
+<a id="713" class="Symbol">{-#</a> <a id="717" class="Keyword">COMPILE</a> <a id="725" class="Keyword">AGDA2HS</a> <a id="733" href="Issue305.html#661" class="Function">andOneMoreTest</a> <a id="748" class="Symbol">#-}</a>
+
+<a id="753" class="Keyword">record</a> <a id="Subclass"></a><a id="760" href="Issue305.html#760" class="Record">Subclass</a> <a id="769" class="Symbol">(</a><a id="770" href="Issue305.html#770" class="Bound">a</a> <a id="772" class="Symbol">:</a> <a id="774" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="778" class="Symbol">)</a> <a id="780" class="Symbol">:</a> <a id="782" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="787" class="Keyword">where</a>
+  <a id="795" class="Keyword">field</a>
+    <a id="805" class="Keyword">overlap</a> <a id="813" class="Symbol">{{</a><a id="Subclass.super"></a><a id="815" href="Issue305.html#815" class="Field">super</a><a id="820" class="Symbol">}}</a> <a id="823" class="Symbol">:</a> <a id="825" href="Issue305.html#74" class="Record">Class</a> <a id="831" href="Issue305.html#770" class="Bound">a</a>
+    <a id="Subclass.bar"></a><a id="837" href="Issue305.html#837" class="Field">bar</a> <a id="841" class="Symbol">:</a> <a id="843" href="Issue305.html#770" class="Bound">a</a>
+<a id="845" class="Keyword">open</a> <a id="850" href="Issue305.html#760" class="Module">Subclass</a> <a id="859" class="Symbol">{{...}}</a> <a id="867" class="Keyword">public</a>
+
+<a id="875" class="Symbol">{-#</a> <a id="879" class="Keyword">COMPILE</a> <a id="887" class="Keyword">AGDA2HS</a> <a id="895" href="Issue305.html#760" class="Record">Subclass</a> <a id="904" class="Pragma">class</a> <a id="910" class="Symbol">#-}</a>
+
+<a id="915" class="Keyword">instance</a> 
+  <a id="SubclassBool"></a><a id="927" href="Issue305.html#927" class="Function">SubclassBool</a> <a id="940" class="Symbol">:</a> <a id="942" href="Issue305.html#760" class="Record">Subclass</a> <a id="951" href="Agda.Builtin.Bool.html#173" class="Datatype">Bool</a>
+  <a id="958" href="Issue305.html#927" class="Function">SubclassBool</a> <a id="971" class="Symbol">.</a><a id="972" href="Issue305.html#815" class="Field">super</a> <a id="978" class="Symbol">=</a> <a id="980" href="Issue305.html#293" class="Function">ClassBool</a>
+  <a id="992" href="Issue305.html#927" class="Function">SubclassBool</a> <a id="1005" class="Symbol">.</a><a id="1006" href="Issue305.html#837" class="Field">bar</a> <a id="1010" class="Symbol">=</a> <a id="1012" href="Agda.Builtin.Bool.html#192" class="InductiveConstructor">False</a>
+
+<a id="1019" class="Symbol">{-#</a> <a id="1023" class="Keyword">COMPILE</a> <a id="1031" class="Keyword">AGDA2HS</a> <a id="1039" href="Issue305.html#927" class="Function">SubclassBool</a> <a id="1052" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Issue305.html"/></div></body></html>

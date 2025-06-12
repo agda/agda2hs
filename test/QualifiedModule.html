@@ -1,0 +1,28 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>QualifiedModule</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda">
+<a id="2" class="Keyword">open</a> <a id="7" class="Keyword">import</a> <a id="14" href="Haskell.Prim.html" class="Module">Haskell.Prim</a> <a id="27" class="Keyword">hiding</a> <a id="34" class="Symbol">(</a><a id="35" href="Haskell.Prim.html#1233" class="Generalizable">f</a><a id="36" class="Symbol">)</a>
+
+<a id="39" class="Comment">-- Names of definitions inside a module should not be qualified in the</a>
+<a id="110" class="Comment">-- generated Haskell code!</a>
+
+<a id="138" class="Keyword">module</a> <a id="145" href="QualifiedModule.html" class="Module">_</a> <a id="147" class="Keyword">where</a>
+
+<a id="154" class="Keyword">module</a> <a id="A"></a><a id="161" href="QualifiedModule.html#161" class="Module">A</a> <a id="163" class="Keyword">where</a>
+
+  <a id="172" class="Keyword">data</a> <a id="A.D"></a><a id="177" href="QualifiedModule.html#177" class="Datatype">D</a> <a id="179" class="Symbol">:</a> <a id="181" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="186" class="Keyword">where</a>
+    <a id="A.D.C"></a><a id="196" href="QualifiedModule.html#196" class="InductiveConstructor">C</a> <a id="198" class="Symbol">:</a> <a id="200" href="QualifiedModule.html#177" class="Datatype">D</a>
+  <a id="204" class="Symbol">{-#</a> <a id="208" class="Keyword">COMPILE</a> <a id="216" class="Keyword">AGDA2HS</a> <a id="224" href="QualifiedModule.html#177" class="Datatype">D</a> <a id="226" class="Symbol">#-}</a>
+
+  <a id="A.f"></a><a id="233" href="QualifiedModule.html#233" class="Function">f</a> <a id="235" class="Symbol">:</a> <a id="237" href="QualifiedModule.html#177" class="Datatype">D</a> <a id="239" class="Symbol">→</a> <a id="241" href="QualifiedModule.html#177" class="Datatype">D</a>
+  <a id="245" href="QualifiedModule.html#233" class="Function">f</a> <a id="247" href="QualifiedModule.html#196" class="InductiveConstructor">C</a> <a id="249" class="Symbol">=</a> <a id="251" href="QualifiedModule.html#196" class="InductiveConstructor">C</a>
+  <a id="255" class="Symbol">{-#</a> <a id="259" class="Keyword">COMPILE</a> <a id="267" class="Keyword">AGDA2HS</a> <a id="275" href="QualifiedModule.html#233" class="Function">f</a> <a id="277" class="Symbol">#-}</a>
+
+  <a id="A.g"></a><a id="284" href="QualifiedModule.html#284" class="Function">g</a> <a id="286" class="Symbol">:</a> <a id="288" href="QualifiedModule.html#177" class="Datatype">D</a>
+  <a id="292" href="QualifiedModule.html#284" class="Function">g</a> <a id="294" class="Symbol">=</a> <a id="296" href="QualifiedModule.html#314" class="Function">h</a>
+    <a id="302" class="Keyword">where</a>
+      <a id="314" href="QualifiedModule.html#314" class="Function">h</a> <a id="316" class="Symbol">:</a> <a id="318" href="QualifiedModule.html#177" class="Datatype">D</a>
+      <a id="326" href="QualifiedModule.html#314" class="Function">h</a> <a id="328" class="Symbol">=</a> <a id="330" href="QualifiedModule.html#196" class="InductiveConstructor">C</a>
+  <a id="334" class="Symbol">{-#</a> <a id="338" class="Keyword">COMPILE</a> <a id="346" class="Keyword">AGDA2HS</a> <a id="354" href="QualifiedModule.html#284" class="Function">g</a> <a id="356" class="Symbol">#-}</a>
+
+<a id="361" class="Keyword">open</a> <a id="366" href="QualifiedModule.html#161" class="Module">A</a> <a id="368" class="Keyword">public</a>
+</pre><div class="split right"><embed src="build/QualifiedModule.html"/></div></body></html>
