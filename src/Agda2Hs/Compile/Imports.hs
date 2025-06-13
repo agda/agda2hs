@@ -81,7 +81,7 @@ compileImports top is0 = do
     checkClashingImports [] = return ()
     checkClashingImports (Import mod as p q _ : is) =
       case filter isClashing is of
-        (i : _) -> genericDocError =<< text (mkErrorMsg i)
+        (i : _) -> agda2hsStringError $ mkErrorMsg i
         []      -> checkClashingImports is
      where
         isClashing (Import _ as' p' q' _) = (as' == as) && (p' /= p) && (q' == q)
