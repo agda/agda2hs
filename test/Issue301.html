@@ -1,0 +1,39 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Issue301</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda">
+<a id="2" class="Keyword">open</a> <a id="7" class="Keyword">import</a> <a id="14" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+<a id="30" class="Keyword">open</a> <a id="35" class="Keyword">import</a> <a id="42" href="Haskell.Prim.Monoid.html" class="Module">Haskell.Prim.Monoid</a>
+<a id="62" class="Keyword">open</a> <a id="67" class="Keyword">import</a> <a id="74" href="Haskell.Prim.Foldable.html" class="Module">Haskell.Prim.Foldable</a>
+
+<a id="97" class="Keyword">data</a> <a id="MyData"></a><a id="102" href="Issue301.html#102" class="Datatype">MyData</a> <a id="109" class="Symbol">(</a><a id="110" href="Issue301.html#110" class="Bound">a</a> <a id="112" class="Symbol">:</a> <a id="114" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="118" class="Symbol">)</a> <a id="120" class="Symbol">:</a> <a id="122" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="127" class="Keyword">where</a>
+  <a id="MyData.Nuttin&#39;"></a><a id="135" href="Issue301.html#135" class="InductiveConstructor">Nuttin&#39;</a> <a id="143" class="Symbol">:</a> <a id="145" href="Issue301.html#102" class="Datatype">MyData</a> <a id="152" href="Issue301.html#110" class="Bound">a</a>
+<a id="154" class="Symbol">{-#</a> <a id="158" class="Keyword">COMPILE</a> <a id="166" class="Keyword">AGDA2HS</a> <a id="174" href="Issue301.html#102" class="Datatype">MyData</a> <a id="181" class="Symbol">#-}</a>
+
+<a id="186" class="Comment">-- notice this does not occur with other classes such as Foldable</a>
+<a id="myDataDefaultFoldable"></a><a id="252" href="Issue301.html#252" class="Function">myDataDefaultFoldable</a> <a id="274" class="Symbol">:</a> <a id="276" href="Haskell.Prim.Foldable.html#1043" class="Record">DefaultFoldable</a> <a id="292" href="Issue301.html#102" class="Datatype">MyData</a>
+<a id="299" href="Haskell.Prim.Foldable.html#1129" class="Field">DefaultFoldable.foldMap</a> <a id="323" href="Issue301.html#252" class="Function">myDataDefaultFoldable</a> <a id="345" class="Symbol">_</a> <a id="347" class="Symbol">_</a> <a id="349" class="Symbol">=</a> <a id="351" href="Haskell.Prim.Monoid.html#1470" class="Field">mempty</a>
+
+<a id="359" class="Keyword">instance</a>
+  <a id="MyDataFoldable"></a><a id="370" href="Issue301.html#370" class="Function">MyDataFoldable</a> <a id="385" class="Symbol">:</a> <a id="387" href="Haskell.Prim.Foldable.html#431" class="Record">Foldable</a> <a id="396" href="Issue301.html#102" class="Datatype">MyData</a>
+  <a id="405" href="Issue301.html#370" class="Function">MyDataFoldable</a> <a id="420" class="Symbol">=</a> <a id="422" class="Keyword">record</a> <a id="429" class="Symbol">{</a><a id="430" href="Issue301.html#430" class="Module">DefaultFoldable</a> <a id="446" href="Issue301.html#252" class="Function">myDataDefaultFoldable</a><a id="467" class="Symbol">}</a>
+<a id="469" class="Symbol">{-#</a> <a id="473" class="Keyword">COMPILE</a> <a id="481" class="Keyword">AGDA2HS</a> <a id="489" href="Issue301.html#370" class="Function">MyDataFoldable</a> <a id="504" class="Symbol">#-}</a>
+
+<a id="509" class="Comment">-- need to create instance for semigroup first</a>
+<a id="556" class="Comment">-- (requires explicitly typed function AFAICT)</a>
+<a id="_&gt;&lt;_"></a><a id="603" href="Issue301.html#603" class="Function Operator">_&gt;&lt;_</a> <a id="608" class="Symbol">:</a> <a id="610" class="Symbol">{</a><a id="611" href="Issue301.html#611" class="Bound">a</a> <a id="613" class="Symbol">:</a> <a id="615" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="619" class="Symbol">}</a> <a id="621" class="Symbol">-&gt;</a> <a id="624" href="Issue301.html#102" class="Datatype">MyData</a> <a id="631" href="Issue301.html#611" class="Bound">a</a> <a id="633" class="Symbol">-&gt;</a> <a id="636" href="Issue301.html#102" class="Datatype">MyData</a> <a id="643" href="Issue301.html#611" class="Bound">a</a> <a id="645" class="Symbol">-&gt;</a> <a id="648" href="Issue301.html#102" class="Datatype">MyData</a> <a id="655" href="Issue301.html#611" class="Bound">a</a>
+<a id="657" class="Symbol">_</a> <a id="659" href="Issue301.html#603" class="Function Operator">&gt;&lt;</a> <a id="662" class="Symbol">_</a> <a id="664" class="Symbol">=</a> <a id="666" href="Issue301.html#135" class="InductiveConstructor">Nuttin&#39;</a>
+<a id="674" class="Symbol">{-#</a> <a id="678" class="Keyword">COMPILE</a> <a id="686" class="Keyword">AGDA2HS</a> <a id="694" href="Issue301.html#603" class="Function Operator">_&gt;&lt;_</a> <a id="699" class="Symbol">#-}</a>
+
+<a id="704" class="Keyword">instance</a>
+  <a id="MyDataSemigroup"></a><a id="715" href="Issue301.html#715" class="Function">MyDataSemigroup</a> <a id="731" class="Symbol">:</a> <a id="733" href="Haskell.Prim.Monoid.html#288" class="Record">Semigroup</a> <a id="743" class="Symbol">(</a><a id="744" href="Issue301.html#102" class="Datatype">MyData</a> <a id="751" href="Haskell.Prim.html#1214" class="Generalizable">a</a><a id="752" class="Symbol">)</a>
+  <a id="756" href="Issue301.html#715" class="Function">MyDataSemigroup</a> <a id="772" class="Symbol">.</a><a id="773" href="Haskell.Prim.Monoid.html#346" class="Field Operator">_&lt;&gt;_</a> <a id="778" class="Symbol">=</a> <a id="780" href="Issue301.html#603" class="Function Operator">_&gt;&lt;_</a>
+<a id="785" class="Symbol">{-#</a> <a id="789" class="Keyword">COMPILE</a> <a id="797" class="Keyword">AGDA2HS</a> <a id="805" href="Issue301.html#715" class="Function">MyDataSemigroup</a> <a id="821" class="Symbol">#-}</a>
+
+<a id="826" class="Keyword">instance</a>
+  <a id="myDataDefaultMonoid"></a><a id="837" href="Issue301.html#837" class="Function">myDataDefaultMonoid</a> <a id="857" class="Symbol">:</a> <a id="859" href="Haskell.Prim.Monoid.html#1588" class="Record">DefaultMonoid</a> <a id="873" class="Symbol">(</a><a id="874" href="Issue301.html#102" class="Datatype">MyData</a> <a id="881" href="Haskell.Prim.html#1214" class="Generalizable">a</a><a id="882" class="Symbol">)</a>
+  <a id="886" href="Haskell.Prim.Monoid.html#1638" class="Field">DefaultMonoid.mempty</a> <a id="907" href="Issue301.html#837" class="Function">myDataDefaultMonoid</a> <a id="927" class="Symbol">=</a> <a id="929" href="Issue301.html#135" class="InductiveConstructor">Nuttin&#39;</a>
+
+<a id="938" class="Keyword">instance</a>
+  <a id="MyDataMonoid"></a><a id="949" href="Issue301.html#949" class="Function">MyDataMonoid</a> <a id="962" class="Symbol">:</a> <a id="964" href="Haskell.Prim.Monoid.html#1427" class="Record">Monoid</a> <a id="971" class="Symbol">(</a><a id="972" href="Issue301.html#102" class="Datatype">MyData</a> <a id="979" href="Haskell.Prim.html#1214" class="Generalizable">a</a><a id="980" class="Symbol">)</a>
+  <a id="984" href="Issue301.html#949" class="Function">MyDataMonoid</a> <a id="997" class="Symbol">=</a> <a id="999" class="Keyword">record</a> <a id="1006" class="Symbol">{</a><a id="1007" href="Issue301.html#1007" class="Module">DefaultMonoid</a> <a id="1021" href="Issue301.html#837" class="Function">myDataDefaultMonoid</a><a id="1040" class="Symbol">}</a>
+<a id="1042" class="Symbol">{-#</a> <a id="1046" class="Keyword">COMPILE</a> <a id="1054" class="Keyword">AGDA2HS</a> <a id="1062" href="Issue301.html#949" class="Function">MyDataMonoid</a> <a id="1075" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Issue301.html"/></div></body></html>
