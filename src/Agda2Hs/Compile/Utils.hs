@@ -241,14 +241,19 @@ moduleFileName opts name = do
   outDir <- compileDir
   return $ fromMaybe outDir (optOutDir opts) </> moduleNameToFileName name "hs"
 
+getDefAndPragma :: QName -> C (Definition, ParsedPragma)
+getDefAndPragma q = do
+  def <- getConstInfo q
+  pgm <- processPragma $ defName def
+  return (def, pgm)
+
+getPragma :: QName -> C ParsedPragma
+getPragma q = snd <$> getDefAndPragma q
+
 isUnboxRecord :: QName -> C (Maybe Strictness)
-isUnboxRecord q = do
-  getConstInfo q >>= \case
-    Defn{defName = r, theDef = Record{}} ->
-      processPragma r <&> \case
-        UnboxPragma s -> Just s
-        _             -> Nothing
-    _ -> return Nothing
+isUnboxRecord q = getPragma q <&> \case
+  UnboxPragma s -> Just s
+  _ -> Nothing
 
 isUnboxConstructor :: QName -> C (Maybe Strictness)
 isUnboxConstructor q =
@@ -259,13 +264,9 @@ isUnboxProjection q =
   caseMaybeM (liftTCM $ getRecordOfField q) (return Nothing) isUnboxRecord
 
 isTupleRecord :: QName -> C (Maybe Hs.Boxed)
-isTupleRecord q = do
-  getConstInfo q >>= \case
-    Defn{defName = r, theDef = Record{}} ->
-      processPragma r <&> \case
-        TuplePragma b -> Just b
-        _             -> Nothing
-    _ -> return Nothing
+isTupleRecord q = getPragma q <&> \case
+  TuplePragma b -> Just b
+  _ -> Nothing
 
 isTupleConstructor :: QName -> C (Maybe Hs.Boxed)
 isTupleConstructor q =
@@ -276,18 +277,10 @@ isTupleProjection q =
   caseMaybeM (liftTCM $ getRecordOfField q) (return Nothing) isTupleRecord
 
 isTransparentFunction :: QName -> C Bool
-isTransparentFunction q = do
-  getConstInfo q >>= \case
-    Defn{defName = r, theDef = Function{}} ->
-      (TransparentPragma ==) <$> processPragma r
-    _ -> return False
+isTransparentFunction q = (== TransparentPragma) <$> getPragma q
 
 isInlinedFunction :: QName -> C Bool
-isInlinedFunction q = do
-  getConstInfo q >>= \case
-    Defn{defName = r, theDef = Function{}} ->
-      (InlinePragma ==) <$> processPragma r
-    _ -> return False
+isInlinedFunction q = (== InlinePragma) <$> getPragma q
 
 withNestedType :: C a -> C a
 withNestedType = local $ \e -> e { isNestedInType = True }
