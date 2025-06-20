@@ -1,0 +1,4 @@
+```
+test/Fail/NonStarDatatypeIndex.agda:5,6-7
+Term variable in type parameter not supported: (n : Nat)
+```

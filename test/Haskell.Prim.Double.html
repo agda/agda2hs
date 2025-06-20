@@ -1,0 +1,17 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Haskell.Prim.Double</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="Agda">
+<a id="2" class="Keyword">module</a> <a id="9" href="Haskell.Prim.Double.html" class="Module">Haskell.Prim.Double</a> <a id="29" class="Keyword">where</a>
+
+<a id="36" class="Keyword">open</a> <a id="41" class="Keyword">import</a> <a id="48" href="Agda.Builtin.Float.html" class="Module">Agda.Builtin.Float</a> <a id="67" class="Keyword">public</a> <a id="74" class="Keyword">renaming</a> <a id="83" class="Symbol">(</a><a id="84" href="Agda.Builtin.Float.html#353" class="Postulate">Float</a> <a id="90" class="Symbol">to</a> <a id="93" class="Postulate">Double</a><a id="99" class="Symbol">)</a>
+
+<a id="102" class="Keyword">open</a> <a id="107" class="Keyword">import</a> <a id="114" href="Haskell.Prim.html" class="Module">Haskell.Prim</a>
+
+<a id="128" class="Keyword">instance</a>
+  <a id="iNumberDouble"></a><a id="139" href="Haskell.Prim.Double.html#139" class="Function">iNumberDouble</a> <a id="153" class="Symbol">:</a> <a id="155" href="Agda.Builtin.FromNat.html#196" class="Record">Number</a> <a id="162" href="Haskell.Prim.Double.html#93" class="Postulate">Double</a>
+  <a id="171" href="Haskell.Prim.Double.html#139" class="Function">iNumberDouble</a> <a id="185" class="Symbol">.</a><a id="186" href="Agda.Builtin.FromNat.html#252" class="Field">Number.Constraint</a> <a id="204" class="Symbol">_</a> <a id="206" class="Symbol">=</a> <a id="208" href="Agda.Builtin.Unit.html#175" class="Record">⊤</a>
+  <a id="212" href="Haskell.Prim.Double.html#139" class="Function">iNumberDouble</a> <a id="226" class="Symbol">.</a><a id="227" href="Agda.Builtin.FromNat.html#281" class="Field">fromNat</a> <a id="235" href="Haskell.Prim.Double.html#235" class="Bound">n</a> <a id="237" class="Symbol">=</a> <a id="239" href="Agda.Builtin.Float.html#822" class="Primitive">primNatToFloat</a> <a id="254" href="Haskell.Prim.Double.html#235" class="Bound">n</a>
+
+  <a id="iNegativeDouble"></a><a id="259" href="Haskell.Prim.Double.html#259" class="Function">iNegativeDouble</a> <a id="275" class="Symbol">:</a> <a id="277" href="Agda.Builtin.FromNeg.html#196" class="Record">Negative</a> <a id="286" href="Haskell.Prim.Double.html#93" class="Postulate">Double</a>
+  <a id="295" href="Haskell.Prim.Double.html#259" class="Function">iNegativeDouble</a> <a id="311" class="Symbol">.</a><a id="312" href="Agda.Builtin.FromNeg.html#254" class="Field">Negative.Constraint</a> <a id="332" class="Symbol">_</a> <a id="334" class="Symbol">=</a> <a id="336" href="Agda.Builtin.Unit.html#175" class="Record">⊤</a>
+  <a id="340" href="Haskell.Prim.Double.html#259" class="Function">iNegativeDouble</a> <a id="356" class="Symbol">.</a><a id="357" href="Agda.Builtin.FromNeg.html#283" class="Field">fromNeg</a> <a id="365" href="Haskell.Prim.Double.html#365" class="Bound">n</a> <a id="367" class="Symbol">=</a> <a id="369" href="Agda.Builtin.Float.html#1394" class="Primitive">primFloatMinus</a> <a id="384" class="Number">0.0</a> <a id="388" class="Symbol">(</a><a id="389" href="Agda.Builtin.FromNat.html#281" class="Field">fromNat</a> <a id="397" href="Haskell.Prim.Double.html#365" class="Bound">n</a><a id="398" class="Symbol">)</a>
+</pre></body></html>
