@@ -7,6 +7,11 @@ open import Haskell.Prim.Monad
 
 open import Haskell.Law.Monad.Def
 
-open import Haskell.Law.Applicative.IO
+open import Haskell.Law.Applicative.IO using (iLawfulApplicativeIO)
 
-instance postulate iLawfulMonadIO : IsLawfulMonad IO
+instance
+  postulate
+    iPreLawfulMonadIO : PreLawfulMonad IO
+
+  iIsLawfulMonadIO : IsLawfulMonad IO
+  iIsLawfulMonadIO = record { applicative = iLawfulApplicativeIO }

@@ -13,7 +13,7 @@ open import Haskell.Prim.Monoid
 open import Haskell.Prim.String
 open import Haskell.Prim.Tuple
 
---------------------------------------------------
+-------------------------------------------------------------------------------
 -- Monad
 
 module Do where
@@ -64,13 +64,6 @@ sequence₋ : ⦃ Monad m ⦄ → ⦃ Foldable t ⦄ → t (m a) → m ⊤
 sequence₋ = foldr (λ mx my → mx >> my) (pure tt)
 
 -- ** instances
-private
-  mkMonad : DefaultMonad t → Monad t
-  mkMonad x = record {DefaultMonad x}
-
-  infix 0 bind=_
-  bind=_ : ⦃ Applicative m ⦄ → (∀ {a b} → m a → (a → m b) → m b) → Monad m
-  bind= x = record {DefaultMonad (record {_>>=_ = x})}
 instance
   iDefaultMonadList : DefaultMonad List
   iDefaultMonadList .DefaultMonad._>>=_ = flip concatMap
@@ -110,7 +103,22 @@ instance
   iMonadTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → Monad (a × b ×_)
   iMonadTuple₃ = record {DefaultMonad iDefaultMonadTuple₃}
 
-instance postulate iMonadIO : Monad IO
+-- For 'Monad IO', we only postulate the '_>>=_' operation,
+-- and construct the instance via 'DefaultMonad' as usual.
+-- This is necessary to ensure that the existing 'Applicative IO'
+-- instance is picked for the 'super' instance field.
+postulate
+  bindIO : IO a → (a → IO b) → IO b
+
+instance  
+  iDefaultMonadIO : DefaultMonad IO
+  iDefaultMonadIO .DefaultMonad._>>=_ = bindIO
+
+  iMonadIO : Monad IO
+  iMonadIO = record {DefaultMonad iDefaultMonadIO}
+
+-------------------------------------------------------------------------------
+-- MonadFail class
 
 record MonadFail (m : Type → Type) : Type₁ where
   field
