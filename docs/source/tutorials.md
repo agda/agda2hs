@@ -23,14 +23,14 @@ This is how the `example-basics.agda-lib` file looks for our project:
 ```
 name: example-basics
 include: .
-depend: agda2hs
-flags: --erasure
+depend: agda2hs-base
+flags: --erasure --no-projection-like
 ```
 The `include` label specifies the current folder as the path for files to be included in the library. For our toy example it works perfectly, but for a bigger library it might be handy to place all the `.agda` files in a single repository such as `src`.
 
 The only dependency we need so far is `agda2hs`, as that is where `Haskell.Prelude` and agda2hs pragmas live. 
 
-Finally, to be able to  import modules we need in this example, erasure needs to be enabled. We add it as a flag.
+Finally, to be able to  import modules we need in this example, erasure needs to be enabled. We add it as a flag. We also enable the `--no-projection-like` flag since otherwise functions might get inlined inadvertently.
 
 Let's look at the `HelloWorld.agda` file now:
 

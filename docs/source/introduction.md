@@ -9,7 +9,7 @@
 - [Agda programming language](https://github.com/agda/agda)
   - version >= 2.6.4 && < 2.6.5
 - [Agda standard library](https://github.com/agda/agda-stdlib)
-- Agda library `base`
+- Agda library `agda2hs-base`
   - this Agda library is included in the `agda2hs` repository; see
     [`base.agda-lib`](https://github.com/agda/agda2hs/blob/master/lib/base/base.agda-lib)
   - you can navigate the library in [HTML format](https://agda.github.io/agda2hs/lib/),
@@ -34,7 +34,7 @@ agda2hs locate >> ~/.agda/libraries
 Optionally, the `base.agda-lib` library can also be added as a default global import:
 
 ```sh
-echo base >> ~/.agda/defaults
+echo agda2hs-base >> ~/.agda/defaults
 ```
 
 ### Manual installation
@@ -51,7 +51,7 @@ cabal install
 # register the base Agda library
 echo $(pwd)/lib/base/base.agda-lib >> ~/.agda/libraries
 # register the base Agda library as a default
-echo base >> ~/.agda/defaults
+echo agda2hs-base >> ~/.agda/defaults
 ```
 
 ### Running `agda2hs`
@@ -71,3 +71,13 @@ You can use agda2hs with the [Haskell
 Stack](https://docs.haskellstack.org/en/stable/) tool.
 
 TODO: integrate agda2hs as a preprocessor for stack
+
+### Creating an Agda2Hs project
+
+All agda2hs projects should have a dependency on the `agda2hs-base` library provided by
+Agda, and can also optionally depend on the `agda2hs-containers` library. Using Agda's
+standard library with agda2hs is not supported.
+
+All agda2hs projects should enable the `--erasure` option of Agda. It is also
+recommended to  enable the `--no-projection-like` flag since otherwise functions
+might get inlined inadvertently.

@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- Read additional configuration options from a file.
 module Agda2Hs.Config (checkConfig) where
 
@@ -15,7 +14,9 @@ import qualified Data.Yaml as Yaml
 
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Name ( toNameImport )
-import Agda.TypeChecking.Monad.Base ( TCM, genericDocError )
+import Agda2Hs.Compile.Utils ( agda2hsError )
+
+import Agda.TypeChecking.Monad.Base ( TCM )
 import Agda.Syntax.Common.Pretty
 
 -- | Config file data.
@@ -48,7 +49,7 @@ instance FromJSON Config where
 readConfigFile :: FilePath -> TCM Config
 readConfigFile src = do
   liftIO (Yaml.decodeFileEither src) >>= \case
-    Left err  -> genericDocError $ vcat
+    Left err  -> agda2hsError $ vcat
       [ text "An error occured while trying to parse config file " <> text src <>":"
       , multiLineText (Yaml.prettyPrintParseException err)
       ]
