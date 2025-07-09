@@ -1,6 +1,9 @@
 .PHONY : install agda repl libHtml test testContainers testHtml golden docs
 FILES = $(shell find src -type f)
 
+build :
+	cabal build
+
 install :
 	cabal install --overwrite-policy=always
 
@@ -28,6 +31,9 @@ testHtml : test/agda2hs
 
 golden :
 	make -C test golden
+
+clean :
+	make -C test clean
 
 docs :
 	make -C docs html

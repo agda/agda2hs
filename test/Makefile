@@ -57,6 +57,6 @@ renderTranslations : html/index.html html/fail/index.html renderTranslations.sh
 	./renderTranslations.sh
 
 clean :
-	@rm -rf build/ html/
+	@rm -rf _build/ build/ html/
 
 force-recompile :
