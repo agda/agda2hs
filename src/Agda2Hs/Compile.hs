@@ -139,7 +139,7 @@ verifyOutput _ _ _ m ls = do
       when (length duplicateCons > 0) $
         agda2hsErrorM $ vcat (map (\x -> text $ "Cannot generate multiple constructors with the same identifier: " <> Hs.prettyPrint (headWithDefault __IMPOSSIBLE__ x)) duplicateCons)
 
-    ensureNoOutputFromHsModules = unless (null $ concat $ map (getAllRtc . fst) ls) $ do
+    ensureNoOutputFromHsModules = unless (all (null . getAllRtc . fst) ls) $ do
       let hsModName = hsTopLevelModuleName m
       case hsModuleKind hsModName of
         HsModule -> do

@@ -31,11 +31,11 @@ type Ranged a    = (Range, a)
 
 type Code = (Hs.Module Hs.SrcSpanInfo, [Hs.Comment])
 
-data WithRtc d = WithRtc {
-  defn :: d,
-  -- Runtime check
-  rtcDefn :: d
-}
+data WithRtc d = WithRtc
+  { defn :: d,
+    -- Runtime check
+    rtcDefn :: d
+  }
 
 instance Functor WithRtc where
   fmap f (WithRtc d r) = WithRtc (f d) (f r)
