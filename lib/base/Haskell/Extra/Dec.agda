@@ -63,14 +63,8 @@ instance
       isFalseIsTrueNot {False} IsFalse.itsFalse = IsTrue.itsTrue
   {-# COMPILE AGDA2HS iDecIsFalse inline #-}
 
-
-  decNonEmpty : {xs : List a} → Dec (NonEmpty xs)
-  decNonEmpty {xs = []} = False ⟨ (λ ()) ⟩
-  decNonEmpty {xs = _ ∷ _} = True ⟨ NonEmpty.itsNonEmpty ⟩
-  {-# COMPILE AGDA2HS decNonEmpty #-}
-
 module _ where
-  open import Haskell.Prim hiding (ℓ)
+  open import Haskell.Prim hiding (ℓ ; ℓ')
   variable
     ℓ' : Level
     A : Set ℓ
@@ -88,42 +82,77 @@ module _ where
   allNoTail : (All B xs → ⊥) → All B (x ∷ xs) → ⊥
   allNoTail np allCons = np it
 
+instance
+  decNonEmpty : {xs : List a} → Dec (NonEmpty xs)
+  decNonEmpty {_} {xs} =  case xs of λ where
+    ([]) ⦃ refl ⦄ → False ⟨ (λ ()) ⟩
+    (_ ∷ _) ⦃ refl ⦄ → True ⟨ NonEmpty.itsNonEmpty ⟩
+  --decNonEmpty {xs = []}      = False ⟨ (λ ()) ⟩
+  --decNonEmpty {xs = (_ ∷ _)} = True ⟨ NonEmpty.itsNonEmpty ⟩
+  {-# COMPILE AGDA2HS decNonEmpty inline #-}
+
 interleaved mutual
   instance
     -- must name these variables explicitly or Agda2Hs gets confused
-    decAll : ∀ {a : Set ℓ} {B : a → Set ℓ'} {xs} ⦃ p : ∀ {x} → Dec (B x) ⦄ → Dec (All B xs)
+    decAll : ∀ {a : Set ℓ} {B : a → Set ℓ'} {xs}
+           → ⦃ p : ∀ {x} → Dec (B x) ⦄ → Dec (All B xs)
+  
+  decAllTail : ∀ {a : Set ℓ} {B : a → Set ℓ'} {@0 x} {@0 xs}
+            → ⦃ @0 i : B x ⦄ → Dec (All B xs) → Dec (All B (x ∷ xs))
+  decAllTail p = case p of λ where
+    (False ⟨ p ⟩) → False ⟨ allNoTail p ⟩
+    (True  ⟨ p ⟩) → True ⟨ allCons ⦃ is = p ⦄ ⟩
+  --decAllTail (False ⟨ p ⟩) = False ⟨ allNoTail p ⟩
+  --decAllTail (True ⟨ p ⟩) = True ⟨ allCons ⦃ is = p ⦄ ⟩
 
-  decAllTail : ∀ {a : Set ℓ} {B : a → Set ℓ'} {@0 x} {@0 xs} ⦃ @0 i : B x ⦄ → Dec (All B xs) → Dec (All B (x ∷ xs))
-  decAllTail (False ⟨ p ⟩) = False ⟨ allNoTail p ⟩
-  decAllTail (True ⟨ p ⟩) = True ⟨ allCons ⦃ is = p ⦄ ⟩
+  decAllHead : ∀ {a : Set ℓ} {B : a → Set ℓ'} {@0 x} {xs}
+             → ⦃ d : Dec (B x) ⦄ → ⦃ p : ∀ {x} → Dec (B x) ⦄ → Dec (All B (x ∷ xs))
+  decAllHead ⦃ d = d ⦄ = case d of λ where
+    (False ⟨ i ⟩) → False ⟨ allNoHead i ⟩
+    (True  ⟨ i ⟩) → decAllTail ⦃ i = i ⦄ decAll
+  --decAllHead ⦃ False ⟨ i ⟩ ⦄ = False ⟨ allNoHead i ⟩
+  --decAllHead ⦃ True ⟨ i ⟩ ⦄ = decAllTail ⦃ i = i ⦄ decAll
 
-  decAllHead : ∀ {a : Set ℓ} {B : a → Set ℓ'} {@0 x} {xs} → ⦃ Dec (B x) ⦄ → ⦃ p : ∀ {x} → Dec (B x) ⦄ → Dec (All B (x ∷ xs))
-  decAllHead ⦃ False ⟨ i ⟩ ⦄ = False ⟨ allNoHead i ⟩
-  decAllHead ⦃ True ⟨ i ⟩ ⦄ = decAllTail ⦃ i = i ⦄ decAll
+  decAll {xs = xs} = case xs of λ where
+    ([]) ⦃ refl ⦄ → True ⟨ allNil ⟩
+    (x ∷ xs) ⦃ refl ⦄ → decAllHead
+  --decAll {xs = []} = True ⟨ allNil ⟩
+  --decAll {xs = x ∷ xs} = decAllHead
 
-  decAll {xs = []} = True ⟨ allNil ⟩
-  decAll {xs = x ∷ xs} = decAllHead
-
-  {-# COMPILE AGDA2HS decAll #-}
-  {-# COMPILE AGDA2HS decAllTail #-}
-  {-# COMPILE AGDA2HS decAllHead #-}
+  {-# COMPILE AGDA2HS decAll     inline #-}
+  {-# COMPILE AGDA2HS decAllTail inline #-}
+  {-# COMPILE AGDA2HS decAllHead inline #-}
 
 
 interleaved mutual
   instance
-    decAny : ∀ {a : Set ℓ} {B : a → Set ℓ'} {xs} ⦃ p : ∀ {x} → Dec (B x) ⦄ → Dec (Any B xs)
+    decAny : ∀ {a : Set ℓ} {B : a → Set ℓ'} {xs}
+           → ⦃ p : ∀ {x} → Dec (B x) ⦄ → Dec (Any B xs)
 
-  decAnyTail : ∀ {a : Set ℓ} {B : a → Set ℓ'} {@0 x} {@0 xs} (@0 i : B x → ⊥) → Dec (Any B xs) → Dec (Any B (x ∷ xs))
-  decAnyTail i (False ⟨ p ⟩) = False ⟨ anyNone i p ⟩
-  decAnyTail _ (True ⟨ p ⟩) = True ⟨ anyThere ⦃ is = p ⦄ ⟩
+  decAnyTail : ∀ {a : Set ℓ} {B : a → Set ℓ'} {@0 x} {@0 xs} (@0 i : B x → ⊥)
+             → Dec (Any B xs) → Dec (Any B (x ∷ xs))
+  decAnyTail i d = case d of λ where
+    (False ⟨ p ⟩) → False ⟨ anyNone i p ⟩
+    (True  ⟨ p ⟩) → True ⟨ anyThere ⦃ is = p ⦄ ⟩
+  --decAnyTail i (False ⟨ p ⟩) = False ⟨ anyNone i p ⟩
+  --decAnyTail _ (True ⟨ p ⟩) = True ⟨ anyThere ⦃ is = p ⦄ ⟩
 
-  decAnyHead : ∀ {a : Set ℓ} {B : a → Set ℓ'} {@0 x} {xs} → ⦃ Dec (B x) ⦄ → ⦃ p : ∀ {x} → Dec (B x) ⦄ → Dec (Any B (x ∷ xs))
-  decAnyHead ⦃ False ⟨ i ⟩ ⦄ = decAnyTail i decAny
-  decAnyHead ⦃ True ⟨ i ⟩ ⦄ = True ⟨ anyHere ⦃ i = i ⦄ ⟩
+  decAnyHead : ∀ {a : Set ℓ} {B : a → Set ℓ'} {@0 x} {xs}
+             → ⦃ d : Dec (B x) ⦄
+             → ⦃ p : ∀ {x} → Dec (B x) ⦄
+             → Dec (Any B (x ∷ xs))
+  decAnyHead ⦃ d = d ⦄ = case d of λ where
+    (False ⟨ i ⟩) → decAnyTail i decAny
+    (True  ⟨ i ⟩) → True ⟨ anyHere ⦃ i = i ⦄ ⟩
+  --decAnyHead ⦃ False ⟨ i ⟩ ⦄ = decAnyTail i decAny
+  --decAnyHead ⦃ True ⟨ i ⟩ ⦄ = True ⟨ anyHere ⦃ i = i ⦄ ⟩
 
-  decAny {xs = []} = False ⟨ (λ ()) ⟩
-  decAny {xs = x ∷ xs} = decAnyHead
+  decAny {xs = xs} = case xs of λ where
+    ([]) ⦃ refl ⦄ → False ⟨ (λ ()) ⟩
+    (x ∷ xs) ⦃ refl ⦄ → decAnyHead
+  --decAny {xs = []} = False ⟨ (λ ()) ⟩
+  --decAny {xs = x ∷ xs} = decAnyHead
 
-  {-# COMPILE AGDA2HS decAny #-}
-  {-# COMPILE AGDA2HS decAnyTail #-}
-  {-# COMPILE AGDA2HS decAnyHead #-}
+  {-# COMPILE AGDA2HS decAny     inline #-}
+  {-# COMPILE AGDA2HS decAnyTail inline #-}
+  {-# COMPILE AGDA2HS decAnyHead inline #-}

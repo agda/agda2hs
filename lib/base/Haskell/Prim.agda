@@ -23,8 +23,10 @@ open import Agda.Builtin.Strict     public
 open import Agda.Builtin.List       public
 
 variable
-  @0 ℓ : Level
+  @0 ℓ ℓ' : Level
   a b c d e : Type
+  al : Type ℓ
+  bl : Type ℓ'
   f m s t : Type → Type
 
 
@@ -53,7 +55,7 @@ f $ x = f x
 -- Language constructs
 
 infix -1 case_of_
-case_of_ : (a' : a) → ((a'' : a) → @0 {{ a' ≡ a'' }} → b) → b
+case_of_ : (a' : al) → ((a'' : al) → @0 {{ a' ≡ a'' }} → bl) → bl
 case x of f = f x
 
 infix -2 if_then_else_
