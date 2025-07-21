@@ -98,7 +98,7 @@ compileQName f
       " to special constructor: " ++ Hs.prettyPrint c
     return c
   | otherwise = do
-    f <- isRecordConstructor f >>= return . \case
+    f <- isRecordConstructor f <&> \case
       Just (r, def) | not (_recNamedCon def) -> r -- use record name for unnamed constructors
       _                                      -> f
     hf0 <- compileName (qnameName f)
@@ -160,7 +160,7 @@ compileQName f
     return qf
   where
     parentName :: QName -> C (Maybe QName)
-    parentName q = (theDef <$> getConstInfo q) >>= return . \case
+    parentName q = (theDef <$> getConstInfo q) <&> \case
       Constructor {conData = dt} -> Just dt
       Function {funProjection = proj}
         | Right (Projection {projProper = Just{}, projFromType = rt}) <- proj
@@ -192,12 +192,13 @@ compileQName f
     -- _getSort is not for that; e. g. a data has the same sort as its constructor.
     getNamespace :: QName -> C (Hs.Namespace ())
     getNamespace qName = do
-      definition <- getConstInfo qName
-      case isSort $ unEl $ getResultType $ defType definition of
-        Just _         -> (reportSDoc "agda2hs.name" 25 $ text $ (prettyShow $ nameCanonical $ qnameName f)
-                                              ++ " is a type operator; will add \"type\" prefix before it") >>
-                          return (Hs.TypeNamespace ())
-        _              -> return (Hs.NoNamespace ())
+      qType <- unEl . getResultType . defType <$> getConstInfo qName
+      if isJust $ isSort qType then do
+        let fname = nameCanonical $ qnameName f
+        reportSDoc "agda2hs.name" 25 $ pretty fname <+>
+          " is a type operator; will add \"type\" prefix before it"
+        return $ Hs.TypeNamespace ()
+      else return $ Hs.NoNamespace ()
 
     -- Gets the type of the result of the function (the type after the last "->").
     getResultType :: Type -> Type
@@ -220,8 +221,7 @@ compileModuleName :: ModuleName -> C (HsModuleKind, Hs.ModuleName ())
 compileModuleName m = do
   tlm <- liftTCM $ hsTopLevelModuleName <$> getTopLevelModuleForModuleName m
   reportSDoc "agda2hs.name" 25 $
-    text "Top-level module name for" <+> prettyTCM m <+>
-    text "is" <+> text (pp tlm)
+    "Top-level module name for" <+> prettyTCM m <+> "is" <+> text (pp tlm)
   case hsModuleKind tlm of
     PrimModule -> return (PrimModule, Hs.ModuleName () "Prelude")
     HsModule   -> return (HsModule, dropHaskellPrefix tlm)
