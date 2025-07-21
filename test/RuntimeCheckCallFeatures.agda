@@ -2,6 +2,7 @@
 module RuntimeCheckCallFeatures where
 
 open import Haskell.Prelude
+open import Haskell.Extra.Dec
 open import RuntimeCheckFeatures
 
 externalFunCaller : Nat

@@ -67,7 +67,7 @@ compile
   :: Options -> ModuleEnv -> IsMain -> Definition
   -> TCM (RtcDefs, CompileOutput)
 compile opts tlm _ def = do
-  when rtc importDec
+  --when rtc importDec
   withCurrentModule (qnameModule qname)
     $ runC tlm rtc (optRewrites opts)
     $ setCurrentRangeQ qname

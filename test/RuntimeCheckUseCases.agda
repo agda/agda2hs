@@ -1,7 +1,7 @@
 module RuntimeCheckUseCases where
 
 open import Haskell.Prelude
-open import Haskell.Extra.Dec.Instances
+open import Haskell.Extra.Dec
 
 subtractFromGreater : (x y : Nat) ⦃@0 _ : IsFalse (x < y)⦄ → Nat
 subtractFromGreater x y = x - y

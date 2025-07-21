@@ -1,6 +1,7 @@
 module RuntimeCheckAutoImport where
 
 open import Haskell.Prelude
+open import Haskell.Extra.Dec
 
 simpleFun : (x : Nat) ⦃@0 _ : IsTrue (x > 0)⦄ → Nat
 simpleFun _ = 0

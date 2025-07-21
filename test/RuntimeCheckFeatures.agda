@@ -2,9 +2,9 @@
 module RuntimeCheckFeatures where
 
 open import Haskell.Prelude
+open import Haskell.Extra.Dec
 open import Haskell.Extra.Delay
 open import Haskell.Extra.Erase
-open import Haskell.Extra.Dec.Instances
 
 noneErasedFun : Nat → Nat
 noneErasedFun _ = 1
