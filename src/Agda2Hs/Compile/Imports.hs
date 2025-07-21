@@ -25,7 +25,10 @@ type ImportDeclMap = Map (Hs.ModuleName (), Qualifier) ImportSpecMap
 
 compileImports :: String -> Imports -> TCM [Hs.ImportDecl ()]
 compileImports top is0 = do
-  let is = filter ((top /=) . Hs.prettyPrint . importModule) is0
+  -- We need to filter out the current module from the imports,
+  -- because it was added in Name.hs
+  -- The PostRtc part is excluded because we add it later as a blank import
+  let is = filter ((\n -> top /= n && (top ++ ".PostRtc") /= n ) . Hs.prettyPrint . importModule) is0
   checkClashingImports is
   let imps = Map.toList $ groupModules is
   reportSLn "agda2hs.import" 10 $ "All imported modules: " ++ show (map (pp . fst . fst) imps)
