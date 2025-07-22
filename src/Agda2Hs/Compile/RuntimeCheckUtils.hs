@@ -13,7 +13,7 @@ import Agda.Syntax.Translation.ConcreteToAbstract (ToAbstract (toAbstract))
 import Agda.TypeChecking.InstanceArguments (findInstance)
 import Agda.TypeChecking.MetaVars (newInstanceMeta, newLevelMeta)
 import Agda.TypeChecking.Monad
-import Agda.TypeChecking.Pretty (PrettyTCM (prettyTCM), (<+>))
+import Agda.TypeChecking.Pretty (PrettyTCM (prettyTCM), (<+>), pretty, prettyA)
 import Agda.TypeChecking.Reduce (instantiate)
 import Agda.TypeChecking.Substitute (telView', theTel)
 import Agda.TypeChecking.Telescope (splitTelescopeAt)
@@ -45,9 +45,11 @@ importDec = do
       importDecl q = [AC.Import noRange (haskellExtra q) Nothing AC.DontOpen directives]
       decl = importDecl $ AC.QName decname
       nicedec = fst $ runNice (NiceEnv True AC.NoWhere_) $ niceDeclarations empty decl
+  reportSDoc "agda2hs.rtc.import" 30 $ "Formed an import statement: " <+> pretty decl
   ads <- case nicedec of
     Left _ -> __IMPOSSIBLE__
     Right ds -> toAbstract ds
+  reportSDoc "agda2hs.rtc.import" 30 $ "Formed an abstract import: " <+> prettyA ads
   return ()
 
 -- Retrieve constructor name and generated smart constructor qname.
