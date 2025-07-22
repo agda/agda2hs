@@ -125,16 +125,16 @@ compileQName f
       typeError $ CustomBackendError "agda2hs" $ P.text $
         "Symbol " ++ Hs.prettyPrint hf ++ " is missing a COMPILE pragma or rewrite rule"
 
-    currMod <- hsTopLevelModuleName <$> asks currModule
+    currMod <- asks $ hsTopLevelModuleName . currModule
     let skipModule = mod == currMod
                   || isJust mimpBuiltin
                   || prettyShow mod0 `elem` primMonadModules
-    qual <- if | skipModule -> return Unqualified
-               | otherwise  -> getQualifier (fromMaybe f parent) mod
+    qual <- if skipModule then return Unqualified
+              else getQualifier (fromMaybe f parent) mod
     -- we only calculate this when dealing with type operators; usually that's where 'type' prefixes are needed in imports
-    namespace <- (case hf of
+    namespace <- case hf of
           Hs.Symbol _ _ -> getNamespace f
-          Hs.Ident  _ _ -> return (Hs.NoNamespace ()))
+          Hs.Ident  _ _ -> return (Hs.NoNamespace ())
     let
       -- We don't generate "import Prelude" for primitive modules,
       -- unless a name is qualified.
@@ -202,7 +202,7 @@ compileQName f
 
     -- Gets the type of the result of the function (the type after the last "->").
     getResultType :: Type -> Type
-    getResultType typ = case (unEl typ) of
+    getResultType typ = case unEl typ of
       (Pi _ absType) -> getResultType $ unAbs absType
       _              -> typ
 
