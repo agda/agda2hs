@@ -136,11 +136,11 @@ compileQName f
           Hs.Symbol _ _ -> getNamespace f
           Hs.Ident  _ _ -> return (Hs.NoNamespace ())
     let
-      -- We don't generate "import Prelude" for primitive modules,
-      -- unless a name is qualified.
-      mimp = if mkind /= PrimModule || isQualified qual
-             then Just (Import mod qual par hf namespace)
-             else Nothing
+      -- We generate import statements for everything except
+      -- unqualified prim modules (Prelude)
+      mimp = if mkind == PrimModule && not (isQualified qual)
+             then Nothing
+             else Just (Import mod qual par hf namespace)
       qf = qualify mod hf qual
 
     -- add (possibly qualified) import
