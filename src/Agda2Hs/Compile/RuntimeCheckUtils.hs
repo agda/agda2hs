@@ -35,19 +35,19 @@ import Data.Tree (flatten, unfoldTree)
 import Data.Tuple (swap)
 import qualified Language.Haskell.Exts as Hs
 
--- Import Haskell.Extra.Dec{,.Instances}
+-- Import Haskell.Extra.Dec
 -- based on Agda.Syntax.Translation.ConcreteToAbstract.importPrimitives
 importDec :: TCM ()
 importDec = do
   let haskellExtra = AN.Qual (AC.simpleName "Haskell") . AN.Qual (AC.simpleName "Extra")
-      dec = AC.simpleName "Dec"
+      decname = AC.simpleName "Dec"
       directives = ImportDirective noRange UseEverything [] [] Nothing
       importDecl q = [AC.Import noRange (haskellExtra q) Nothing AC.DontOpen directives]
-      run ds = case fst $ runNice (NiceEnv True AC.NoWhere_) $ niceDeclarations empty $ importDecl ds of
-        Left _ -> __IMPOSSIBLE__
-        Right ds -> toAbstract ds
-  run $ AC.QName dec
-  run $ AN.Qual dec $ AC.QName $ AC.simpleName "Instances"
+      decl = importDecl $ AC.QName decname
+      nicedec = fst $ runNice (NiceEnv True AC.NoWhere_) $ niceDeclarations empty decl
+  ads <- case nicedec of
+    Left _ -> __IMPOSSIBLE__
+    Right ds -> toAbstract ds
   return ()
 
 -- Retrieve constructor name and generated smart constructor qname.
@@ -312,7 +312,7 @@ binds decls = Just $ Hs.BDecls () decls
 -- Turn a type into its Dec version
 decify :: Type -> C Type
 decify t = do
-  dec <- resolveStringName "Haskell.Extra.Dec.Dec"
+  dec <- resolveStringName "Haskell.Extra.Dec"
   level <- liftTCM newLevelMeta
   let vArg = defaultArg
       hArg = setHiding Hidden . vArg
