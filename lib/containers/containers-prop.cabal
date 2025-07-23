@@ -39,7 +39,7 @@ library
   import:          language, opts-lib
   hs-source-dirs:  haskell
   build-depends:
-    , base        >=4.13 && <4.21
+    , base        >=4.13 && <4.22
     , containers  >=0.6  && <0.9
 
   exposed-modules:
