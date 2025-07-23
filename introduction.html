@@ -48,6 +48,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#manual-installation">Manual installation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#running-agda2hs">Running <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#using-agda2hs-with-stack">Using agda2hs with Stack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#creating-an-agda2hs-project">Creating an Agda2Hs project</a></li>
 </ul>
 </li>
 </ul>
@@ -98,7 +99,7 @@
 </ul>
 </li>
 <li><p><a class="reference external" href="https://github.com/agda/agda-stdlib">Agda standard library</a></p></li>
-<li><p>Agda library <code class="docutils literal notranslate"><span class="pre">base</span></code></p>
+<li><p>Agda library <code class="docutils literal notranslate"><span class="pre">agda2hs-base</span></code></p>
 <ul>
 <li><p>this Agda library is included in the <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> repository; see
 <a class="reference external" href="https://github.com/agda/agda2hs/blob/master/lib/base/base.agda-lib"><code class="docutils literal notranslate"><span class="pre">base.agda-lib</span></code></a></p></li>
@@ -121,7 +122,7 @@ can be registered in the Agda config using the <code class="docutils literal not
 </pre></div>
 </div>
 <p>Optionally, the <code class="docutils literal notranslate"><span class="pre">base.agda-lib</span></code> library can also be added as a default global import:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span><span class="w"> </span>base<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.agda/defaults
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span><span class="w"> </span>agda2hs-base<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.agda/defaults
 </pre></div>
 </div>
 </section>
@@ -138,7 +139,7 @@ cabal<span class="w"> </span>install
 <span class="c1"># register the base Agda library</span>
 <span class="nb">echo</span><span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/lib/base/base.agda-lib<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.agda/libraries
 <span class="c1"># register the base Agda library as a default</span>
-<span class="nb">echo</span><span class="w"> </span>base<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.agda/defaults
+<span class="nb">echo</span><span class="w"> </span>agda2hs-base<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.agda/defaults
 </pre></div>
 </div>
 </section>
@@ -158,6 +159,15 @@ cabal<span class="w"> </span>install
 <p>You can use agda2hs with the <a class="reference external" href="https://docs.haskellstack.org/en/stable/">Haskell
 Stack</a> tool.</p>
 <p>TODO: integrate agda2hs as a preprocessor for stack</p>
+</section>
+<section id="creating-an-agda2hs-project">
+<h3>Creating an Agda2Hs project<a class="headerlink" href="#creating-an-agda2hs-project" title="Permalink to this heading"></a></h3>
+<p>All agda2hs projects should have a dependency on the <code class="docutils literal notranslate"><span class="pre">agda2hs-base</span></code> library provided by
+Agda, and can also optionally depend on the <code class="docutils literal notranslate"><span class="pre">agda2hs-containers</span></code> library. Using Agda’s
+standard library with agda2hs is not supported.</p>
+<p>All agda2hs projects should enable the <code class="docutils literal notranslate"><span class="pre">--erasure</span></code> option of Agda. It is also
+recommended to  enable the <code class="docutils literal notranslate"><span class="pre">--no-projection-like</span></code> flag since otherwise functions
+might get inlined inadvertently.</p>
 </section>
 </section>
 </section>

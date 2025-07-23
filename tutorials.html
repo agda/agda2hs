@@ -104,13 +104,13 @@
 <p>This is how the <code class="docutils literal notranslate"><span class="pre">example-basics.agda-lib</span></code> file looks for our project:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">name</span><span class="p">:</span> <span class="n">example</span><span class="o">-</span><span class="n">basics</span>
 <span class="n">include</span><span class="p">:</span> <span class="o">.</span>
-<span class="n">depend</span><span class="p">:</span> <span class="n">agda2hs</span>
-<span class="n">flags</span><span class="p">:</span> <span class="o">--</span><span class="n">erasure</span>
+<span class="n">depend</span><span class="p">:</span> <span class="n">agda2hs</span><span class="o">-</span><span class="n">base</span>
+<span class="n">flags</span><span class="p">:</span> <span class="o">--</span><span class="n">erasure</span> <span class="o">--</span><span class="n">no</span><span class="o">-</span><span class="n">projection</span><span class="o">-</span><span class="n">like</span>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">include</span></code> label specifies the current folder as the path for files to be included in the library. For our toy example it works perfectly, but for a bigger library it might be handy to place all the <code class="docutils literal notranslate"><span class="pre">.agda</span></code> files in a single repository such as <code class="docutils literal notranslate"><span class="pre">src</span></code>.</p>
 <p>The only dependency we need so far is <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code>, as that is where <code class="docutils literal notranslate"><span class="pre">Haskell.Prelude</span></code> and agda2hs pragmas live.</p>
-<p>Finally, to be able to  import modules we need in this example, erasure needs to be enabled. We add it as a flag.</p>
+<p>Finally, to be able to  import modules we need in this example, erasure needs to be enabled. We add it as a flag. We also enable the <code class="docutils literal notranslate"><span class="pre">--no-projection-like</span></code> flag since otherwise functions might get inlined inadvertently.</p>
 <p>Let’s look at the <code class="docutils literal notranslate"><span class="pre">HelloWorld.agda</span></code> file now:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">module</span><span class="w"> </span><span class="n">HelloWorld</span><span class="w"> </span><span class="kr">where</span>
 
