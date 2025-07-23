@@ -17,7 +17,8 @@ pkgs.haskellPackages.shellFor {
   nativeBuildInputs = with pkgs.haskellPackages; [
     # related to haskell
     cabal-install
-    haskell-language-server
+    # FIXME: broken in haskell-updates, uncomment when upstream fixes it
+    # haskell-language-server
     # general goodies
     pkgs.agda
     pkgs.nixfmt-rfc-style

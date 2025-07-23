@@ -1,42 +1,68 @@
 # This file should be very close to a copy of nixpkgs/pkgs/build-support/agda/default.nix
-# The present file appears to be an amalgaman of
-#   https://github.com/NixOS/nixpkgs/blob/bbe6402ecacfc3a0e2c65e3527c2cbe148b98ff8/pkgs/build-support/agda/default.nix
-#   https://github.com/NixOS/nixpkgs/blob/583eef75e722741878b186f5bdf5a826d638f868/pkgs/build-support/agda/default.nix
+# The present file is based on https://github.com/NixOS/nixpkgs/blob/1d2cfef5e965ca6933a8aa696eadfa556d90fab3/pkgs/build-support/agda/default.nix
+# FIXME: this file is haskell-updates, double-check that nothing changes once it gets merged in unstable
 # but it would be nice to expose this in upstream so that we don't have to duplicate the file
 {
   stdenv,
   lib,
   self,
   agda2hs,
-  runCommandNoCC,
+  runCommand,
   makeWrapper,
   writeText,
   ghcWithPackages,
 }:
-
-with lib.strings;
 let
-  withPackages' = {
-      pkgs,
-      ghc ? ghcWithPackages (p: with p; [ ieee754 ])
-  }: let
-    pkgs' = if builtins.isList pkgs then pkgs else pkgs self;
-    library-file = writeText "libraries" ''
+  inherit (lib)
+    elem
+    filter
+    filterAttrs
+    isList
+    isAttrs
+    platforms
+    ;
+
+  inherit (lib.strings)
+    concatMapStringsSep
+    optionalString
+    ;
+
+  mkLibraryFile =
+    pkgs:
+    let
+      pkgs' = if isList pkgs then pkgs else pkgs self;
+    in
+    writeText "libraries" ''
       ${(concatMapStringsSep "\n" (p: "${p}/${p.libraryFile}") pkgs')}
     '';
-    pname = "agda2hsWithPackages";
-    version = agda2hs.version;
-  in runCommandNoCC "${pname}-${version}" {
-    inherit pname version;
-    nativeBuildInputs = [ makeWrapper ];
-    passthru.unwrapped = agda2hs;
-  } ''
-    mkdir -p $out/bin
-    makeWrapper ${agda2hs}/bin/agda2hs $out/bin/agda2hs \
-      --add-flags "--with-compiler=${ghc}/bin/ghc" \
-      --add-flags "--library-file=${library-file}"
-    '';
-  withPackages = arg: if builtins.isAttrs arg then withPackages' arg else withPackages' { pkgs = arg; };
+
+  withPackages' =
+    {
+      pkgs,
+      ghc ? ghcWithPackages (p: with p; [ ieee754 ]),
+    }:
+    let
+      library-file = mkLibraryFile pkgs;
+      pname = "agda2hsWithPackages";
+      version = agda2hs.version;
+    in
+    runCommand "${pname}-${version}"
+      {
+        inherit pname version;
+        nativeBuildInputs = [ makeWrapper ];
+        passthru = {
+          unwrapped = agda2hs;
+          inherit withPackages;
+        };
+      }
+      ''
+        mkdir -p $out/bin
+        makeWrapper ${agda2hs}/bin/agda2hs $out/bin/agda2hs \
+          ${lib.optionalString (ghc != null) ''--add-flags "--with-compiler=${ghc}/bin/ghc"''} \
+          --add-flags "--library-file=${library-file}"
+      '';
+
+  withPackages = arg: if isAttrs arg then withPackages' arg else withPackages' { pkgs = arg; };
 
   extensions = [
     "agda"
@@ -55,8 +81,6 @@ let
       pname,
       meta,
       buildInputs ? [ ],
-      everythingFile ? "./Everything.agda",
-      includePaths ? [ ],
       libraryName ? pname,
       libraryFile ? "${libraryName}.agda-lib",
       buildPhase ? null,
@@ -65,17 +89,14 @@ let
       ...
     }:
     let
-      agdaWithArgs = withPackages (filter (p: p ? isAgdaDerivation) buildInputs);
-      includePathArgs = concatMapStrings (path: "-i" + path + " ") (
-        includePaths ++ [ (dirOf everythingFile) ]
-      );
+      agdaWithPkgs = withPackages (filter (p: p ? isAgdaDerivation) buildInputs);
     in
     {
       inherit libraryName libraryFile;
 
       isAgdaDerivation = true;
 
-      buildInputs = buildInputs ++ [ agdaWithArgs ];
+      buildInputs = buildInputs ++ [ agdaWithPkgs ];
 
       buildPhase =
         if buildPhase != null then
@@ -83,8 +104,7 @@ let
         else
           ''
             runHook preBuild
-            agda2hs ${includePathArgs} ${everythingFile}
-            rm ${everythingFile} ${everythingFile}i
+            agda2hs --build-library
             runHook postBuild
           '';
 
@@ -112,6 +132,6 @@ let
 in {
   mkDerivation = args: stdenv.mkDerivation (args // defaults args);
 
-  inherit withPackages;
+  inherit mkLibraryFile withPackages withPackages';
   agda2hs = withPackages [];
 }

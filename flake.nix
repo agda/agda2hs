@@ -1,7 +1,7 @@
 {
   description = "Agda2hs";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/haskell-updates";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
   outputs =
