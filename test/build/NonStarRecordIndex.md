@@ -1,4 +1,0 @@
-```
-test/Fail/NonStarRecordIndex.agda:5.8-9: error: [CustomBackendError]
-agda2hs: Term variable in type parameter not supported
-```
