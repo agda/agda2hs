@@ -1,0 +1,4 @@
+```
+test/Fail/PartialCase.agda:5.1-7: error: [CustomBackendError]
+agda2hs: case_of_ must be fully applied to a lambda term
+```

@@ -1,0 +1,5 @@
+```
+test/Fail/ExplicitInstance.agda:17.1-5: error: [CustomBackendError]
+agda2hs:
+  illegal instance:  λ { .Fail.ExplicitInstance.theDefault → True }
+```

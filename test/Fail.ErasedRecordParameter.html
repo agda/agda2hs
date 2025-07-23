@@ -1,0 +1,12 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Fail.ErasedRecordParameter</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Comment">-- c.f. Issue #145, this is the record variant</a>
+<a id="48" class="Keyword">module</a> <a id="55" href="Fail.ErasedRecordParameter.html" class="Module">Fail.ErasedRecordParameter</a> <a id="82" class="Keyword">where</a>
+
+<a id="89" class="Keyword">open</a> <a id="94" class="Keyword">import</a> <a id="101" href="Haskell.Prim.html" class="Module">Haskell.Prim</a> <a id="114" class="Keyword">using</a> <a id="120" class="Symbol">(</a><a id="121" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="125" class="Symbol">)</a>
+
+<a id="128" class="Keyword">record</a> <a id="Ok"></a><a id="135" href="Fail.ErasedRecordParameter.html#135" class="Record">Ok</a> <a id="138" class="Symbol">(</a><a id="139" class="Symbol">@0</a> <a id="142" href="Fail.ErasedRecordParameter.html#142" class="Bound">a</a> <a id="144" class="Symbol">:</a> <a id="146" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="150" class="Symbol">)</a> <a id="152" class="Symbol">:</a> <a id="154" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="159" class="Keyword">where</a>
+  <a id="167" class="Keyword">constructor</a> <a id="Thing"></a><a id="179" href="Fail.ErasedRecordParameter.html#179" class="InductiveConstructor">Thing</a>
+  <a id="187" class="Keyword">field</a> <a id="Ok.unThing"></a><a id="193" href="Fail.ErasedRecordParameter.html#193" class="Field">unThing</a> <a id="201" class="Symbol">:</a> <a id="203" href="Fail.ErasedRecordParameter.html#142" class="Bound">a</a>
+<a id="205" class="Keyword">open</a> <a id="210" href="Fail.ErasedRecordParameter.html#135" class="Module">Ok</a> <a id="213" class="Keyword">public</a>
+<a id="220" class="Symbol">{-#</a> <a id="224" class="Keyword">COMPILE</a> <a id="232" class="Keyword">AGDA2HS</a> <a id="240" href="Fail.ErasedRecordParameter.html#135" class="Record">Ok</a> <a id="243" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/ErasedRecordParameter.html"/></div></body></html>

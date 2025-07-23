@@ -1,0 +1,4 @@
+```
+test/Fail/Copatterns.agda:14.1-5: error: [CustomBackendError]
+agda2hs: not supported in Haskell: copatterns
+```
