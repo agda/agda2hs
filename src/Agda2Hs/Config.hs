@@ -18,6 +18,7 @@ import Agda2Hs.Compile.Utils ( agda2hsError )
 
 import Agda.TypeChecking.Monad.Base ( TCM )
 import Agda.Syntax.Common.Pretty
+import Agda.Syntax.Position
 
 -- | Config file data.
 data Config = Config
@@ -61,7 +62,7 @@ applyConfig opts cfg =
        , optRewrites = foldl addRewrite (optRewrites opts) (fold $ cfgRewrites cfg)
        }
   where addRewrite :: SpecialRules -> Rewrite -> SpecialRules
-        addRewrite rules (Rewrite from to importing) = Map.insert from (toNameImport to importing) rules
+        addRewrite rules (Rewrite from to importing) = Map.insert from (toNameImport noRange to importing) rules
 
 checkConfig :: Options -> TCM Options
 checkConfig opts

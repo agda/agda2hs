@@ -12,7 +12,7 @@ import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils ( validVarId, validConId, pp )
 
 import Agda.Compiler.Backend
-import Agda.TypeChecking.Pretty ( text )
+import Agda.TypeChecking.Pretty ( text, pretty, (<+>) )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda2Hs.AgdaUtils
@@ -41,10 +41,10 @@ compileImports top is0 = do
 
     groupModules :: [Import] -> ImportDeclMap
     groupModules = flip foldr Map.empty $ \case
-        (Import mod as p q ns) ->
+        (Import mod as p q ns _) ->
           Map.insertWith mergeChildren (mod,as)
                          (makeSingle (parentNN p) (NamespacedName ns q))
-        (ImportInstances mod) ->
+        (ImportInstances mod _) ->
           Map.insertWith mergeChildren (mod,Unqualified) Map.empty
       where
         parentNN :: Maybe (Hs.Name ()) -> Maybe NamespacedName
@@ -79,19 +79,21 @@ compileImports top is0 = do
 
     checkClashingImports :: Imports -> TCM ()
     checkClashingImports [] = return ()
-    checkClashingImports (Import mod as p q _ : is) =
+    checkClashingImports (Import mod as p q _ r : is) =
       case filter isClashing is of
-        (i : _) -> agda2hsStringError $ mkErrorMsg i
+        (i : _) -> do
+          reportSDoc "agda2hs" 10 $ "Clashing import of" <+> text (pp q)
+          reportSDoc "agda2hs" 10 $ "  range: " <+> pretty r
+          setCurrentRange r $ agda2hsStringError $ mkErrorMsg i
         []      -> checkClashingImports is
      where
-        isClashing (Import _ as' p' q' _) = (as' == as) && (p' /= p) && (q' == q)
+        isClashing (Import _ as' p' q' _ _) = (as' == as) && (p' /= p) && (q' == q)
         isClashing ImportInstances{} = False
-        mkErrorMsg (Import _ _ p' q' _) =
+        mkErrorMsg (Import _ _ p' q' _ _) =
              "Clashing import: " ++ pp q ++ " (both from "
           ++ prettyShow (pp <$> p) ++ " and "
           ++ prettyShow (pp <$> p') ++ ")"
-        -- TODO: no range information as we only have Haskell names at this point
-    checkClashingImports (ImportInstances mod : is) = checkClashingImports is
+    checkClashingImports (ImportInstances mod _ : is) = checkClashingImports is
 
 
 -- | Generate a prelude import considering prelude config options (hiding, implicit, etc).

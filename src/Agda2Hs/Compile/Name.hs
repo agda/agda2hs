@@ -54,11 +54,11 @@ isSpecialCon = prettyShow >>> \case
   where special c = Just (Hs.Special () $ c ())
 
 -- | Convert identifier and import module strings into the Haskell equivalent syntax.
-toNameImport :: String -> Maybe String -> (Hs.Name (), Maybe Import)
-toNameImport x Nothing = (hsName x, Nothing)
-toNameImport x (Just mod) =
+toNameImport :: Range -> String -> Maybe String -> (Hs.Name (), Maybe Import)
+toNameImport r x Nothing = (hsName x, Nothing)
+toNameImport r x (Just mod) =
   ( hsName x
-  , Just $ Import (hsModuleName mod) Unqualified Nothing (hsName x) (Hs.NoNamespace ())
+  , Just $ Import (hsModuleName mod) Unqualified Nothing (hsName x) (Hs.NoNamespace ()) r
   )
 
 -- | Default rewrite rules.
@@ -80,7 +80,7 @@ defaultSpecialRules = Map.fromList
   ]
   where infixr 6 `to`, `importing`
         to = (,)
-        importing = toNameImport
+        importing = toNameImport noRange
 
 -- | Check whether the given name should be rewritten to a special Haskell name, possibly with new imports.
 isSpecialName :: QName -> C (Maybe (Hs.Name (), Maybe Import))
@@ -139,7 +139,7 @@ compileQName f
       -- We don't generate "import Prelude" for primitive modules,
       -- unless a name is qualified.
       mimp = if mkind /= PrimModule || isQualified qual
-             then Just (Import mod qual par hf namespace)
+             then Just (Import mod qual par hf namespace (getRange f))
              else Nothing
       qf = qualify mod hf qual
 
@@ -157,6 +157,7 @@ compileQName f
       ++ "\ncurrent module: " ++ Hs.prettyPrint currMod
       ++ "\nqualifier: " ++ prettyShow (fmap (fmap pp) qual)
       ++ "\n(qualified) haskell name: " ++ pp qf
+      ++ "\nname range: " ++ prettyShow (getRange f)
     return qf
   where
     parentName :: QName -> C (Maybe QName)
@@ -232,4 +233,4 @@ importInstance f = do
   (kind, mod) <- compileModuleName $ qnameModule f
   unless (kind == PrimModule) $ do
     reportSLn "agda2hs.import" 20 $ "Importing instances from " ++ pp mod
-    tellImport $ ImportInstances mod
+    tellImport $ ImportInstances mod (getRange f)

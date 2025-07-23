@@ -112,12 +112,16 @@ data Import = Import
                     -- ^^ if this is a type or something like that, we can add a namespace qualifier to the import spec
                     -- now it's only useful for differentiating type operators; so for others we always put Hs.NoNamespace () here
                     -- (we don't calculate it if it's not necessary)
+  , _importRange     :: Range
   }
-  | ImportInstances (Hs.ModuleName ())
+  | ImportInstances
+  { _importInstModule :: Hs.ModuleName ()
+  , _importInstRange  :: Range
+  }
 
 importModule :: Import -> Hs.ModuleName ()
 importModule (Import{ _importModule = mod }) = mod
-importModule (ImportInstances mod) = mod
+importModule (ImportInstances{ _importInstModule = mod }) = mod
 
 type Imports = [Import]
 
