@@ -1,3 +1,0 @@
-test/Fail/Issue169-record.agda:22.3-16: error: [CustomBackendError]
-agda2hs:
-  illegal instance declaration: instances using default methods should use a named definition or an anonymous `λ where`.

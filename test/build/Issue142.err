@@ -1,3 +1,0 @@
-test/Fail/Issue142.agda:6.1-12: error: [CustomBackendError]
-agda2hs:
-  not supported: forced (dot) patterns in non-erased positions

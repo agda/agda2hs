@@ -1,4 +1,0 @@
-```
-test/Fail/NewTypeRecordTwoFields.agda:5.8-11: error: [CustomBackendError]
-agda2hs: Newtype must have exactly one field in constructor: MkDuo
-```
