@@ -1,0 +1,10 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Fail.Issue154</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Keyword">module</a> <a id="8" href="Fail.Issue154.html" class="Module">Fail.Issue154</a> <a id="22" class="Keyword">where</a>
+
+<a id="29" class="Keyword">open</a> <a id="34" class="Keyword">import</a> <a id="41" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="foo"></a><a id="58" href="Fail.Issue154.html#58" class="Function">foo</a> <a id="62" class="Symbol">:</a> <a id="64" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a> <a id="68" class="Symbol">→</a> <a id="70" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a>
+<a id="74" href="Fail.Issue154.html#58" class="Function">foo</a> <a id="78" href="Agda.Builtin.Nat.html#221" class="InductiveConstructor">zero</a> <a id="83" class="Symbol">=</a> <a id="85" href="Agda.Builtin.Nat.html#221" class="InductiveConstructor">zero</a>
+<a id="90" href="Fail.Issue154.html#58" class="Function">foo</a> <a id="94" class="Symbol">(</a><a id="95" href="Agda.Builtin.Nat.html#234" class="InductiveConstructor">suc</a> <a id="99" href="Fail.Issue154.html#99" class="Bound">x</a><a id="100" class="Symbol">)</a> <a id="102" class="Symbol">=</a> <a id="104" href="Fail.Issue154.html#99" class="Bound">x</a>
+<a id="106" class="Symbol">{-#</a> <a id="110" class="Keyword">COMPILE</a> <a id="118" class="Keyword">AGDA2HS</a> <a id="126" href="Fail.Issue154.html#58" class="Function">foo</a> <a id="130" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Issue154.html"/></div></body></html>

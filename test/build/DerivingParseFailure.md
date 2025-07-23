@@ -1,0 +1,4 @@
+```
+test/Fail/DerivingParseFailure.agda:6.1-44: error: [CustomBackendError]
+agda2hs: Parse error: !&
+```

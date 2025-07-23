@@ -1,0 +1,27 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Fail.NonCopatternInstance</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda">
+<a id="2" class="Keyword">module</a> <a id="9" href="Fail.NonCopatternInstance.html" class="Module">Fail.NonCopatternInstance</a> <a id="35" class="Keyword">where</a>
+
+<a id="42" class="Keyword">open</a> <a id="47" class="Keyword">import</a> <a id="54" href="Haskell.Prim.html" class="Module">Haskell.Prim</a> <a id="67" class="Keyword">using</a> <a id="73" class="Symbol">(</a><a id="74" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="78" class="Symbol">)</a>
+
+<a id="81" class="Keyword">record</a> <a id="HasId"></a><a id="88" href="Fail.NonCopatternInstance.html#88" class="Record">HasId</a> <a id="94" class="Symbol">(</a><a id="95" href="Fail.NonCopatternInstance.html#95" class="Bound">a</a> <a id="97" class="Symbol">:</a> <a id="99" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="103" class="Symbol">)</a> <a id="105" class="Symbol">:</a> <a id="107" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="112" class="Keyword">where</a>
+  <a id="120" class="Keyword">field</a> <a id="HasId.id"></a><a id="126" href="Fail.NonCopatternInstance.html#126" class="Field">id</a> <a id="129" class="Symbol">:</a> <a id="131" href="Fail.NonCopatternInstance.html#95" class="Bound">a</a> <a id="133" class="Symbol">→</a> <a id="135" href="Fail.NonCopatternInstance.html#95" class="Bound">a</a>
+
+<a id="138" class="Keyword">open</a> <a id="143" href="Fail.NonCopatternInstance.html#88" class="Module">HasId</a> <a id="149" class="Symbol">⦃</a> <a id="151" class="Symbol">...</a> <a id="155" class="Symbol">⦄</a>
+
+<a id="158" class="Symbol">{-#</a> <a id="162" class="Keyword">COMPILE</a> <a id="170" class="Keyword">AGDA2HS</a> <a id="178" href="Fail.NonCopatternInstance.html#88" class="Record">HasId</a> <a id="184" class="Pragma">class</a> <a id="190" class="Symbol">#-}</a>
+
+<a id="195" class="Keyword">data</a> <a id="Unit"></a><a id="200" href="Fail.NonCopatternInstance.html#200" class="Datatype">Unit</a> <a id="205" class="Symbol">:</a> <a id="207" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="212" class="Keyword">where</a>
+  <a id="Unit.MkUnit"></a><a id="220" href="Fail.NonCopatternInstance.html#220" class="InductiveConstructor">MkUnit</a> <a id="227" class="Symbol">:</a> <a id="229" href="Fail.NonCopatternInstance.html#200" class="Datatype">Unit</a>
+
+<a id="235" class="Symbol">{-#</a> <a id="239" class="Keyword">COMPILE</a> <a id="247" class="Keyword">AGDA2HS</a> <a id="255" href="Fail.NonCopatternInstance.html#200" class="Datatype">Unit</a> <a id="260" class="Symbol">#-}</a>
+
+<a id="265" class="Keyword">instance</a>
+  <a id="UnitHasId"></a><a id="276" href="Fail.NonCopatternInstance.html#276" class="Function">UnitHasId</a> <a id="286" class="Symbol">:</a> <a id="288" href="Fail.NonCopatternInstance.html#88" class="Record">HasId</a> <a id="294" href="Fail.NonCopatternInstance.html#200" class="Datatype">Unit</a>
+  <a id="301" href="Fail.NonCopatternInstance.html#276" class="Function">UnitHasId</a> <a id="311" class="Symbol">=</a> <a id="313" href="Fail.NonCopatternInstance.html#360" class="Function">r</a>                     <a id="335" class="Comment">-- NOT CORRECT</a>
+    <a id="354" class="Keyword">where</a> <a id="360" href="Fail.NonCopatternInstance.html#360" class="Function">r</a> <a id="362" class="Symbol">=</a> <a id="364" class="Keyword">record</a> <a id="371" class="Symbol">{</a><a id="372" href="Fail.NonCopatternInstance.html#126" class="Field">id</a> <a id="375" class="Symbol">=</a> <a id="377" class="Symbol">λ</a> <a id="379" href="Fail.NonCopatternInstance.html#379" class="Bound">x</a> <a id="381" class="Symbol">→</a> <a id="383" href="Fail.NonCopatternInstance.html#379" class="Bound">x</a><a id="384" class="Symbol">}</a>
+  <a id="388" class="Comment">-- UnitHasId .id x = x                -- CORRECT</a>
+  <a id="439" class="Comment">-- UnitHasId = record {id = λ x → x}  -- CORRECT</a>
+
+<a id="489" class="Symbol">{-#</a> <a id="493" class="Keyword">COMPILE</a> <a id="501" class="Keyword">AGDA2HS</a> <a id="509" href="Fail.NonCopatternInstance.html#276" class="Function">UnitHasId</a> <a id="519" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/NonCopatternInstance.html"/></div></body></html>

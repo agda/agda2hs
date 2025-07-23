@@ -1,0 +1,15 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Fail.Issue119</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Keyword">module</a> <a id="8" href="Fail.Issue119.html" class="Module">Fail.Issue119</a> <a id="22" class="Keyword">where</a>
+
+<a id="29" class="Keyword">open</a> <a id="34" class="Keyword">import</a> <a id="41" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="aaa"></a><a id="58" href="Fail.Issue119.html#58" class="Function">aaa</a> <a id="62" class="Symbol">:</a> <a id="64" href="Haskell.Prim.Int.html#367" class="Datatype">Int</a>
+<a id="68" href="Fail.Issue119.html#58" class="Function">aaa</a> <a id="72" class="Symbol">=</a> <a id="74" class="Number">21</a>
+
+<a id="78" class="Comment">-- Oops, forgot compile pragma for aaa</a>
+
+<a id="bbb"></a><a id="118" href="Fail.Issue119.html#118" class="Function">bbb</a> <a id="122" class="Symbol">:</a> <a id="124" href="Haskell.Prim.Int.html#367" class="Datatype">Int</a>
+<a id="128" href="Fail.Issue119.html#118" class="Function">bbb</a> <a id="132" class="Symbol">=</a> <a id="134" href="Fail.Issue119.html#58" class="Function">aaa</a> <a id="138" href="Haskell.Prim.Num.html#552" class="Field Operator">+</a> <a id="140" href="Fail.Issue119.html#58" class="Function">aaa</a>
+
+<a id="145" class="Symbol">{-#</a> <a id="149" class="Keyword">COMPILE</a> <a id="157" class="Keyword">AGDA2HS</a> <a id="165" href="Fail.Issue119.html#118" class="Function">bbb</a> <a id="169" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Issue119.html"/></div></body></html>

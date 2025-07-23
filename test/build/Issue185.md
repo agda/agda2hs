@@ -1,0 +1,4 @@
+```
+test/Fail/Issue185.agda:10.3-19: error: [CustomBackendError]
+agda2hs: not supported: functions inside a record module
+```
