@@ -2,6 +2,7 @@
 # The present file is based on https://github.com/NixOS/nixpkgs/blob/1d2cfef5e965ca6933a8aa696eadfa556d90fab3/pkgs/build-support/agda/default.nix
 # FIXME: this file is haskell-updates, double-check that nothing changes once it gets merged in unstable
 # but it would be nice to expose this in upstream so that we don't have to duplicate the file
+
 {
   stdenv,
   lib,
@@ -12,13 +13,14 @@
   writeText,
   ghcWithPackages,
 }:
+
 let
   inherit (lib)
     elem
     filter
     filterAttrs
-    isList
     isAttrs
+    isList
     platforms
     ;
 
@@ -54,6 +56,7 @@ let
           unwrapped = agda2hs;
           inherit withPackages;
         };
+        meta = agda2hs.meta;
       }
       ''
         mkdir -p $out/bin
@@ -127,9 +130,11 @@ let
       # the referenced issue doesn't seem to surface on darwin. Hence let's
       # set this only on non-darwin.
       LC_ALL = optionalString (!stdenv.hostPlatform.isDarwin) "C.UTF-8";
-    };
 
-in {
+      meta = if meta.broken or false then meta // { hydraPlatforms = platforms.none; } else meta;
+    };
+in
+{
   mkDerivation = args: stdenv.mkDerivation (args // defaults args);
 
   inherit mkLibraryFile withPackages withPackages';
