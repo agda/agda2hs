@@ -1,0 +1,26 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>ProjLike</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Symbol">{-#</a> <a id="5" class="Keyword">OPTIONS</a> <a id="13" class="Pragma">--projection-like</a> <a id="31" class="Symbol">#-}</a>
+
+<a id="36" class="Keyword">module</a> <a id="43" href="ProjLike.html" class="Module">ProjLike</a> <a id="52" class="Keyword">where</a>
+
+<a id="59" class="Keyword">open</a> <a id="64" class="Keyword">import</a> <a id="71" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="88" class="Keyword">module</a> <a id="M"></a><a id="95" href="ProjLike.html#95" class="Module">M</a> <a id="97" class="Symbol">(</a><a id="98" href="ProjLike.html#98" class="Bound">a</a> <a id="100" class="Symbol">:</a> <a id="102" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="106" class="Symbol">)</a> <a id="108" class="Keyword">where</a>
+
+  <a id="117" class="Keyword">data</a> <a id="M.Scope"></a><a id="122" href="ProjLike.html#122" class="Datatype">Scope</a> <a id="128" class="Symbol">:</a> <a id="130" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="135" class="Keyword">where</a>
+    <a id="M.Scope.Empty"></a><a id="145" href="ProjLike.html#145" class="InductiveConstructor">Empty</a> <a id="151" class="Symbol">:</a> <a id="153" href="ProjLike.html#122" class="Datatype">Scope</a>
+    <a id="M.Scope.Bind"></a><a id="163" href="ProjLike.html#163" class="InductiveConstructor">Bind</a>  <a id="169" class="Symbol">:</a> <a id="171" href="ProjLike.html#98" class="Bound">a</a> <a id="173" class="Symbol">→</a> <a id="175" href="ProjLike.html#122" class="Datatype">Scope</a> <a id="181" class="Symbol">→</a> <a id="183" href="ProjLike.html#122" class="Datatype">Scope</a>
+  
+  <a id="194" class="Symbol">{-#</a> <a id="198" class="Keyword">COMPILE</a> <a id="206" class="Keyword">AGDA2HS</a> <a id="214" href="ProjLike.html#122" class="Datatype">Scope</a> <a id="220" class="Symbol">#-}</a>
+
+  <a id="M.unbind"></a><a id="227" href="ProjLike.html#227" class="Function">unbind</a> <a id="234" class="Symbol">:</a> <a id="236" href="ProjLike.html#122" class="Datatype">Scope</a> <a id="242" class="Symbol">→</a> <a id="244" href="ProjLike.html#122" class="Datatype">Scope</a>
+  <a id="252" href="ProjLike.html#227" class="Function">unbind</a> <a id="259" href="ProjLike.html#145" class="InductiveConstructor">Empty</a>      <a id="270" class="Symbol">=</a> <a id="272" href="ProjLike.html#145" class="InductiveConstructor">Empty</a>
+  <a id="280" href="ProjLike.html#227" class="Function">unbind</a> <a id="287" class="Symbol">(</a><a id="288" href="ProjLike.html#163" class="InductiveConstructor">Bind</a> <a id="293" class="Symbol">_</a> <a id="295" href="ProjLike.html#295" class="Bound">s</a><a id="296" class="Symbol">)</a> <a id="298" class="Symbol">=</a> <a id="300" href="ProjLike.html#295" class="Bound">s</a>
+
+<a id="303" class="Keyword">open</a> <a id="308" href="ProjLike.html#95" class="Module">M</a> <a id="310" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a> <a id="314" class="Keyword">public</a>
+
+<a id="test"></a><a id="322" href="ProjLike.html#322" class="Function">test</a> <a id="327" class="Symbol">:</a> <a id="329" href="ProjLike.html#122" class="Datatype">Scope</a>
+<a id="335" href="ProjLike.html#322" class="Function">test</a> <a id="340" class="Symbol">=</a> <a id="342" href="ProjLike.html#227" class="Function">unbind</a> <a id="349" class="Symbol">(</a><a id="350" href="ProjLike.html#163" class="InductiveConstructor">Bind</a> <a id="355" class="Number">1</a> <a id="357" class="Symbol">(</a><a id="358" href="ProjLike.html#163" class="InductiveConstructor">Bind</a> <a id="363" class="Number">2</a> <a id="365" href="ProjLike.html#145" class="InductiveConstructor">Empty</a><a id="370" class="Symbol">))</a>
+
+<a id="374" class="Symbol">{-#</a> <a id="378" class="Keyword">COMPILE</a> <a id="386" class="Keyword">AGDA2HS</a> <a id="394" href="ProjLike.html#322" class="Function">test</a> <a id="399" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/ProjLike.html"/></div></body></html>

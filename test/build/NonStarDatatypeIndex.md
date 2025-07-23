@@ -1,0 +1,4 @@
+```
+test/Fail/NonStarDatatypeIndex.agda:5.6-7: error: [CustomBackendError]
+agda2hs: Term variable in type parameter not supported
+```
