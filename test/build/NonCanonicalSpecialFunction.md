@@ -1,0 +1,4 @@
+```
+test/Fail/NonCanonicalSpecialFunction.agda:17.1-5: error: [CustomBackendError]
+agda2hs: illegal instance:  sneaky
+```

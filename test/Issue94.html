@@ -1,0 +1,12 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Issue94</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Keyword">module</a> <a id="8" href="Issue94.html" class="Module">Issue94</a> <a id="16" class="Keyword">where</a>
+
+<a id="23" class="Keyword">open</a> <a id="28" class="Keyword">import</a> <a id="35" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+
+<a id="thing"></a><a id="52" href="Issue94.html#52" class="Function">thing</a> <a id="58" class="Symbol">:</a> <a id="60" href="Agda.Builtin.List.html#147" class="Datatype">List</a> <a id="65" href="Haskell.Prim.html#1214" class="Generalizable">a</a> <a id="67" class="Symbol">→</a> <a id="69" href="Agda.Builtin.List.html#147" class="Datatype">List</a> <a id="74" href="Haskell.Prim.html#1214" class="Generalizable">a</a>
+<a id="76" href="Issue94.html#52" class="Function">thing</a> <a id="82" href="Issue94.html#82" class="Bound">xs</a> <a id="85" class="Symbol">=</a> <a id="87" href="Issue94.html#106" class="Function">aux</a> <a id="91" href="Issue94.html#82" class="Bound">xs</a>
+  <a id="96" class="Keyword">where</a>
+    <a id="106" href="Issue94.html#106" class="Function">aux</a> <a id="110" class="Symbol">:</a> <a id="112" href="Agda.Builtin.List.html#147" class="Datatype">List</a> <a id="117" href="Haskell.Prim.html#1214" class="Generalizable">a</a> <a id="119" class="Symbol">→</a> <a id="121" href="Agda.Builtin.List.html#147" class="Datatype">List</a> <a id="126" href="Haskell.Prim.html#1214" class="Generalizable">a</a>
+    <a id="132" href="Issue94.html#106" class="Function">aux</a> <a id="136" href="Issue94.html#136" class="Bound">xs</a> <a id="139" class="Symbol">=</a> <a id="141" href="Issue94.html#136" class="Bound">xs</a>
+<a id="144" class="Symbol">{-#</a> <a id="148" class="Keyword">COMPILE</a> <a id="156" class="Keyword">AGDA2HS</a> <a id="164" href="Issue94.html#52" class="Function">thing</a> <a id="170" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Issue94.html"/></div></body></html>

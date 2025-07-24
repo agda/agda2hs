@@ -1,0 +1,194 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>AllTests</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Symbol">{-#</a> <a id="5" class="Keyword">OPTIONS</a> <a id="13" class="Pragma">--prop</a> <a id="20" class="Symbol">#-}</a>
+<a id="24" class="Keyword">module</a> <a id="31" href="AllTests.html" class="Module">AllTests</a> <a id="40" class="Keyword">where</a>
+
+<a id="47" class="Keyword">import</a> <a id="54" href="AllCubicalTests.html" class="Module">AllCubicalTests</a>
+
+<a id="71" class="Keyword">import</a> <a id="78" href="Issue14.html" class="Module">Issue14</a>
+<a id="86" class="Keyword">import</a> <a id="93" href="Issue65.html" class="Module">Issue65</a>
+<a id="101" class="Keyword">import</a> <a id="108" href="Issue69.html" class="Module">Issue69</a>
+<a id="116" class="Keyword">import</a> <a id="123" href="Issue73.html" class="Module">Issue73</a>
+<a id="131" class="Keyword">import</a> <a id="138" href="Fixities.html" class="Module">Fixities</a>
+<a id="147" class="Keyword">import</a> <a id="154" href="LanguageConstructs.html" class="Module">LanguageConstructs</a>
+<a id="173" class="Keyword">import</a> <a id="180" href="Numbers.html" class="Module">Numbers</a>
+<a id="188" class="Keyword">import</a> <a id="195" href="Pragmas.html" class="Module">Pragmas</a>
+<a id="203" class="Keyword">import</a> <a id="210" href="Sections.html" class="Module">Sections</a>
+<a id="219" class="Keyword">import</a> <a id="226" href="Test.html" class="Module">Test</a>
+<a id="231" class="Keyword">import</a> <a id="238" href="Tree.html" class="Module">Tree</a>
+<a id="243" class="Keyword">import</a> <a id="250" href="Tuples.html" class="Module">Tuples</a>
+<a id="257" class="Keyword">import</a> <a id="264" href="Where.html" class="Module">Where</a>
+<a id="270" class="Keyword">import</a> <a id="277" href="TypeSynonyms.html" class="Module">TypeSynonyms</a>
+<a id="290" class="Keyword">import</a> <a id="297" href="CanonicalInstance.html" class="Module">CanonicalInstance</a>
+<a id="315" class="Keyword">import</a> <a id="322" href="Coinduction.html" class="Module">Coinduction</a>
+<a id="334" class="Keyword">import</a> <a id="341" href="ConstrainedInstance.html" class="Module">ConstrainedInstance</a>
+<a id="361" class="Keyword">import</a> <a id="368" href="Datatypes.html" class="Module">Datatypes</a>
+<a id="378" class="Keyword">import</a> <a id="385" href="Records.html" class="Module">Records</a>
+<a id="393" class="Keyword">import</a> <a id="400" href="Default.html" class="Module">Default</a>
+<a id="408" class="Keyword">import</a> <a id="415" href="DefaultMethods.html" class="Module">DefaultMethods</a>
+<a id="430" class="Keyword">import</a> <a id="437" href="Vector.html" class="Module">Vector</a>
+<a id="444" class="Keyword">import</a> <a id="451" href="Issue90.html" class="Module">Issue90</a>
+<a id="459" class="Keyword">import</a> <a id="466" href="Issue93.html" class="Module">Issue93</a>
+<a id="474" class="Keyword">import</a> <a id="481" href="QualifiedModule.html" class="Module">QualifiedModule</a>
+<a id="497" class="Keyword">import</a> <a id="504" href="Superclass.html" class="Module">Superclass</a>
+<a id="515" class="Keyword">import</a> <a id="522" href="UnboxPragma.html" class="Module">UnboxPragma</a>
+<a id="534" class="Keyword">import</a> <a id="541" href="ScopedTypeVariables.html" class="Module">ScopedTypeV</a><a id="552" href="ScopedTypeVariables.html" class="CosmeticProblem Module">ariables</a><a id="560" class="CosmeticProblem">
+</a><a id="561" class="CosmeticProblem Keyword">impor</a><a id="566" class="Keyword">t</a> <a id="568" href="LiteralPatterns.html" class="Module">LiteralPatterns</a>
+<a id="584" class="Keyword">import</a> <a id="591" href="Issue92.html" class="Module">Issue92</a>
+<a id="599" class="Keyword">import</a> <a id="606" href="HeightMirror.html" class="Module">HeightMirror</a>
+<a id="619" class="Keyword">import</a> <a id="626" href="TransparentFun.html" class="Module">TransparentFun</a>
+<a id="641" class="Keyword">import</a> <a id="648" href="Issue115.html" class="Module">Issue115</a>
+<a id="657" class="Keyword">import</a> <a id="664" href="BangPatterns.html" class="Module">BangPatterns</a>
+<a id="677" class="Keyword">impo</a><a id="681" class="CosmeticProblem Keyword">rt</a><a id="683" class="CosmeticProblem"> </a><a id="684" href="Issue94.html" class="CosmeticProblem Module">Issue94</a><a id="691" class="CosmeticProblem">
+</a><a id="692" class="CosmeticProblem Keyword">imp</a><a id="695" class="Keyword">ort</a> <a id="699" href="Issue107.html" class="Module">Issue107</a>
+<a id="708" class="Keyword">import</a> <a id="715" href="DoNotation.html" class="Module">DoNotation</a>
+<a id="726" class="Keyword">import</a> <a id="733" href="NewTypePragma.html" class="Module">NewTypePragma</a>
+<a id="747" class="Keyword">import</a> <a id="754" href="Importer.html" class="Module">Importer</a>
+<a id="763" class="Keyword">import</a> <a id="770" href="QualifiedImports.html" class="Module">QualifiedImports</a>
+<a id="787" class="Keyword">import</a> <a id="794" href="CommonQualifiedImports.html" class="Module">CommonQualifiedImports</a>
+<a id="817" class="Keyword">import</a> <a id="824" href="RequalifiedImports.html" class="Module">RequalifiedImports</a>
+<a id="843" class="Keyword">import</a> <a id="850" href="QualifiedPrelude.html" class="Module">QualifiedPrelude</a>
+<a id="867" class="Keyword">import</a> <a id="874" href="AutoLambdaCaseInCase.html" class="Module">AutoLambdaCaseInCase</a>
+<a id="895" class="Keyword">import</a> <a id="902" href="AutoLambdaCaseInBind.html" class="Module">AutoLambdaCaseInBind</a>
+<a id="923" class="Keyword">import</a> <a id="930" href="WitnessedFlows.html" class="Module">WitnessedFlows</a>
+<a id="945" class="Keyword">import</a> <a id="952" href="Kinds.html" class="Module">Kinds</a>
+<a id="958" class="Keyword">import</a> <a id="965" href="LawfulOrd.html" class="Module">LawfulOrd</a>
+<a id="975" class="Keyword">import</a> <a id="982" href="Deriving.html" class="Module">Deriving</a>
+<a id="991" class="Keyword">import</a> <a id="998" href="ErasedLocalDefinitions.html" class="Module">ErasedLocalDefinitions</a>
+<a id="1021" class="Keyword">import</a> <a id="1028" href="TypeOperators.html" class="Module">TypeOperators</a>
+<a id="1042" class="Keyword">import</a> <a id="1049" href="ErasedTypeArguments.html" class="Module">ErasedTypeArguments</a>
+<a id="1069" class="Keyword">import</a> <a id="1076" href="TypeOperatorExport.html" class="Module">TypeOperatorExport</a>
+<a id="1095" class="Keyword">import</a> <a id="1102" href="TypeOperatorImport.html" class="Module">TypeOperatorImport</a>
+<a id="1121" class="Keyword">import</a> <a id="1128" href="IOFile.html" class="Module">IOFile</a>
+<a id="1135" class="Keyword">import</a> <a id="1142" href="IOInput.html" class="Module">IOInput</a>
+<a id="1150" class="Keyword">import</a> <a id="1157" href="Issue200.html" class="Module">Issue200</a>
+<a id="1166" class="Keyword">import</a> <a id="1173" href="Issue169.html" class="Module">Issue169</a>
+<a id="1182" class="Keyword">import</a> <a id="1189" href="Issue210.html" class="Module">Issue210</a>
+<a id="1198" class="Keyword">import</a> <a id="1205" href="TypeSignature.html" class="Module">TypeSignature</a>
+<a id="1219" class="Keyword">import</a> <a id="1226" href="ModuleParameters.html" class="Module">ModuleParameters</a>
+<a id="1243" class="Keyword">import</a> <a id="1250" href="ModuleParametersImports.html" class="Module">ModuleParametersImports</a>
+<a id="1274" class="Keyword">import</a> <a id="1281" href="Coerce.html" class="Module">Coerce</a>
+<a id="1288" class="Keyword">import</a> <a id="1295" href="Inlining.html" class="Module">Inlining</a>
+<a id="1304" class="Keyword">import</a> <a id="1311" href="EraseType.html" class="Module">EraseType</a>
+<a id="1321" class="Keyword">import</a> <a id="1328" href="Issue257.html" class="Module">Issue257</a>
+<a id="1337" class="Keyword">import</a> <a id="1344" href="Delay.html" class="Module">Delay</a>
+<a id="1350" class="Keyword">import</a> <a id="1357" href="Issue273.html" class="Module">Issue273</a>
+<a id="1366" class="Keyword">import</a> <a id="1373" href="TypeDirected.html" class="Module">TypeDirected</a>
+<a id="1386" class="Keyword">import</a> <a id="1393" href="ProjLike.html" class="Module">ProjLike</a>
+<a id="1402" class="Keyword">import</a> <a id="1409" href="Issue286.html" class="Module">Issue286</a>
+<a id="1418" class="Keyword">import</a> <a id="1425" href="NonClassInstance.html" class="Module">NonClassInstance</a>
+<a id="1442" class="Keyword">import</a> <a id="1449" href="Issue218.html" class="Module">Issue218</a>
+<a id="1458" class="Keyword">import</a> <a id="1465" href="Issue251.html" class="Module">Issue251</a>
+<a id="1474" class="Keyword">import</a> <a id="1481" href="TypeBasedUnboxing.html" class="Module">TypeBasedUnboxing</a>
+<a id="1499" class="Keyword">import</a> <a id="1506" href="Issue145.html" class="Module">Issue145</a>
+<a id="1515" class="Keyword">import</a> <a id="1522" href="Issue264.html" class="Module">Issue264</a>
+<a id="1531" class="Keyword">import</a> <a id="1538" href="Issue301.html" class="Module">Issue301</a>
+<a id="1547" class="Keyword">import</a> <a id="1554" href="Issue305.html" class="Module">Issue305</a>
+<a id="1563" class="Keyword">import</a> <a id="1570" href="Issue302.html" class="Module">Issue302</a>
+<a id="1579" class="Keyword">import</a> <a id="1586" href="Issue309.html" class="Module">Issue309</a>
+<a id="1595" class="Keyword">import</a> <a id="1602" href="Issue317.html" class="Module">Issue317</a>
+<a id="1611" class="Keyword">import</a> <a id="1618" href="Issue353.html" class="Module">Issue353</a>
+<a id="1627" class="Keyword">import</a> <a id="1634" href="RankNTypes.html" class="Module">RankNTypes</a>
+<a id="1645" class="Keyword">import</a> <a id="1652" href="ErasedPatternLambda.html" class="Module">ErasedPatternLambda</a>
+<a id="1672" class="Keyword">import</a> <a id="1679" href="CustomTuples.html" class="Module">CustomTuples</a>
+<a id="1692" class="Keyword">import</a> <a id="1699" href="ProjectionLike.html" class="Module">ProjectionLike</a>
+<a id="1714" class="Keyword">import</a> <a id="1721" href="FunCon.html" class="Module">FunCon</a>
+<a id="1728" class="Keyword">import</a> <a id="1735" href="Issue308.html" class="Module">Issue308</a>
+<a id="1744" class="Keyword">import</a> <a id="1751" href="Issue324.html" class="Module">Issue324</a>
+<a id="1760" class="Keyword">import</a> <a id="1767" href="Assert.html" class="Module">Assert</a>
+<a id="1774" class="Keyword">import</a> <a id="1781" href="Issue377.html" class="Module">Issue377</a>
+<a id="1790" class="Keyword">import</a> <a id="1797" href="Issue394.html" class="Module">Issue394</a>
+
+<a id="1807" class="Symbol">{-#</a> <a id="1811" class="Keyword">FOREIGN</a> <a id="1819" class="Pragma">AGDA2HS</a>
+<a id="1827" class="Pragma">import</a> <a id="1834" class="Pragma">Issue14</a>
+<a id="1842" class="Pragma">import</a> <a id="1849" class="Pragma">Issue65</a>
+<a id="1857" class="Pragma">import</a> <a id="1864" class="Pragma">Issue69</a>
+<a id="1872" class="Pragma">import</a> <a id="1879" class="Pragma">Issue73</a>
+<a id="1887" class="Pragma">import</a> <a id="1894" class="Pragma">Fixities</a>
+<a id="1903" class="Pragma">import</a> <a id="1910" class="Pragma">LanguageConstructs</a>
+<a id="1929" class="Pragma">import</a> <a id="1936" class="Pragma">Numbers</a>
+<a id="1944" class="Pragma">import</a> <a id="1951" class="Pragma">Pragmas</a>
+<a id="1959" class="Pragma">import</a> <a id="1966" class="Pragma">Sections</a>
+<a id="1975" class="Pragma">import</a> <a id="1982" class="Pragma">Test</a>
+<a id="1987" class="Pragma">import</a> <a id="1994" class="Pragma">Tree</a>
+<a id="1999" class="Pragma">import</a> <a id="2006" class="Pragma">Tuples</a>
+<a id="2013" class="Pragma">import</a> <a id="2020" class="Pragma">Where</a>
+<a id="2026" class="Pragma">import</a> <a id="2033" class="Pragma">TypeSynonyms</a>
+<a id="2046" class="Pragma">import</a> <a id="2053" class="Pragma">CanonicalInstance</a>
+<a id="2071" class="Pragma">import</a> <a id="2078" class="Pragma">Coinduction</a>
+<a id="2090" class="Pragma">import</a> <a id="2097" class="Pragma">ConstrainedInstance</a>
+<a id="2117" class="Pragma">import</a> <a id="2124" class="Pragma">Datatypes</a>
+<a id="2134" class="Pragma">import</a> <a id="2141" class="Pragma">Records</a>
+<a id="2149" class="Pragma">import</a> <a id="2156" class="Pragma">Default</a>
+<a id="2164" class="Pragma">import</a> <a id="2171" class="Pragma">DefaultMethods</a>
+<a id="2186" class="Pragma">import</a> <a id="2193" class="Pragma">Vector</a>
+<a id="2200" class="Pragma">import</a> <a id="2207" class="Pragma">Issue90</a>
+<a id="2215" class="Pragma">import</a> <a id="2222" class="Pragma">Issue93</a>
+<a id="2230" class="Pragma">import</a> <a id="2237" class="Pragma">QualifiedModule</a>
+<a id="2253" class="Pragma">import</a> <a id="2260" class="Pragma">Superclass</a>
+<a id="2271" class="Pragma">import</a> <a id="2278" class="Pragma">UnboxPragma</a>
+<a id="2290" class="Pragma">import</a> <a id="2297" class="Pragma">ScopedTypeVariables</a>
+<a id="2317" class="Pragma">import</a> <a id="2324" class="Pragma">LiteralPatterns</a>
+<a id="2340" class="Pragma">import</a> <a id="2347" class="Pragma">Issue92</a>
+<a id="2355" class="Pragma">import</a> <a id="2362" class="Pragma">HeightMirror</a>
+<a id="2375" class="Pragma">import</a> <a id="2382" class="Pragma">TransparentFun</a>
+<a id="2397" class="Pragma">import</a> <a id="2404" class="Pragma">Issue115</a>
+<a id="2413" class="Pragma">import</a> <a id="2420" class="Pragma">BangPatterns</a>
+<a id="2433" class="Pragma">import</a> <a id="2440" class="Pragma">Issue94</a>
+<a id="2448" class="Pragma">import</a> <a id="2455" class="Pragma">DoNotation</a>
+<a id="2466" class="Pragma">import</a> <a id="2473" class="Pragma">NewTypePragma</a>
+<a id="2487" class="Pragma">import</a> <a id="2494" class="Pragma">Importer</a>
+<a id="2503" class="Pragma">import</a> <a id="2510" class="Pragma">QualifiedImports</a>
+<a id="2527" class="Pragma">import</a> <a id="2534" class="Pragma">CommonQualifiedImports</a>
+<a id="2557" class="Pragma">import</a> <a id="2564" class="Pragma">RequalifiedImports</a>
+<a id="2583" class="Pragma">import</a> <a id="2590" class="Pragma">QualifiedPrelude</a>
+<a id="2607" class="Pragma">import</a> <a id="2614" class="Pragma">AutoLambdaCaseInCase</a>
+<a id="2635" class="Pragma">import</a> <a id="2642" class="Pragma">AutoLambdaCaseInBind</a>
+<a id="2663" class="Pragma">import</a> <a id="2670" class="Pragma">WitnessedFlows</a>
+<a id="2685" class="Pragma">import</a> <a id="2692" class="Pragma">Kinds</a>
+<a id="2698" class="Pragma">import</a> <a id="2705" class="Pragma">LawfulOrd</a>
+<a id="2715" class="Pragma">import</a> <a id="2722" class="Pragma">Deriving</a>
+<a id="2731" class="Pragma">import</a> <a id="2738" class="Pragma">ErasedLocalDefinitions</a>
+<a id="2761" class="Pragma">import</a> <a id="2768" class="Pragma">TypeOperators</a>
+<a id="2782" class="Pragma">import</a> <a id="2789" class="Pragma">ErasedTypeArguments</a>
+<a id="2809" class="Pragma">import</a> <a id="2816" class="Pragma">TypeOperatorExport</a>
+<a id="2835" class="Pragma">import</a> <a id="2842" class="Pragma">TypeOperatorImport</a>
+<a id="2861" class="Pragma">import</a> <a id="2868" class="Pragma">IOFile</a>
+<a id="2875" class="Pragma">import</a> <a id="2882" class="Pragma">IOInput</a>
+<a id="2890" class="Pragma">import</a> <a id="2897" class="Pragma">Issue200</a>
+<a id="2906" class="Pragma">import</a> <a id="2913" class="Pragma">Issue169</a>
+<a id="2922" class="Pragma">import</a> <a id="2929" class="Pragma">Issue210</a>
+<a id="2938" class="Pragma">import</a> <a id="2945" class="Pragma">TypeSignature</a>
+<a id="2959" class="Pragma">import</a> <a id="2966" class="Pragma">ModuleParameters</a>
+<a id="2983" class="Pragma">import</a> <a id="2990" class="Pragma">ModuleParametersImports</a>
+<a id="3014" class="Pragma">import</a> <a id="3021" class="Pragma">Coerce</a>
+<a id="3028" class="Pragma">import</a> <a id="3035" class="Pragma">Inlining</a>
+<a id="3044" class="Pragma">import</a> <a id="3051" class="Pragma">EraseType</a>
+<a id="3061" class="Pragma">import</a> <a id="3068" class="Pragma">Delay</a>
+<a id="3074" class="Pragma">import</a> <a id="3081" class="Pragma">Issue273</a>
+<a id="3090" class="Pragma">import</a> <a id="3097" class="Pragma">TypeDirected</a>
+<a id="3110" class="Pragma">import</a> <a id="3117" class="Pragma">ProjLike</a>
+<a id="3126" class="Pragma">import</a> <a id="3133" class="Pragma">Issue286</a>
+<a id="3142" class="Pragma">import</a> <a id="3149" class="Pragma">NonClassInstance</a>
+<a id="3166" class="Pragma">import</a> <a id="3173" class="Pragma">Issue218</a>
+<a id="3182" class="Pragma">import</a> <a id="3189" class="Pragma">Issue251</a>
+<a id="3198" class="Pragma">import</a> <a id="3205" class="Pragma">TypeBasedUnboxing</a>
+<a id="3223" class="Pragma">import</a> <a id="3230" class="Pragma">Issue145</a>
+<a id="3239" class="Pragma">import</a> <a id="3246" class="Pragma">Issue264</a>
+<a id="3255" class="Pragma">import</a> <a id="3262" class="Pragma">Issue301</a>
+<a id="3271" class="Pragma">import</a> <a id="3278" class="Pragma">Issue305</a>
+<a id="3287" class="Pragma">import</a> <a id="3294" class="Pragma">Issue302</a>
+<a id="3303" class="Pragma">import</a> <a id="3310" class="Pragma">Issue309</a>
+<a id="3319" class="Pragma">import</a> <a id="3326" class="Pragma">Issue317</a>
+<a id="3335" class="Pragma">import</a> <a id="3342" class="Pragma">Issue353</a>
+<a id="3351" class="Pragma">import</a> <a id="3358" class="Pragma">RankNTypes</a>
+<a id="3369" class="Pragma">import</a> <a id="3376" class="Pragma">ErasedPatternLambda</a>
+<a id="3396" class="Pragma">import</a> <a id="3403" class="Pragma">CustomTuples</a>
+<a id="3416" class="Pragma">import</a> <a id="3423" class="Pragma">ProjectionLike</a>
+<a id="3438" class="Pragma">import</a> <a id="3445" class="Pragma">FunCon</a>
+<a id="3452" class="Pragma">import</a> <a id="3459" class="Pragma">Issue308</a>
+<a id="3468" class="Pragma">import</a> <a id="3475" class="Pragma">Issue324</a>
+<a id="3484" class="Pragma">import</a> <a id="3491" class="Pragma">Assert</a>
+<a id="3498" class="Pragma">import</a> <a id="3505" class="Pragma">Issue377</a>
+<a id="3514" class="Pragma">import</a> <a id="3521" class="Pragma">Issue394</a>
+<a id="3530" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/AllTests.html"/></div></body></html>

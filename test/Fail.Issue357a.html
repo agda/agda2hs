@@ -1,0 +1,14 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Fail.Issue357a</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Keyword">open</a> <a id="6" class="Keyword">import</a> <a id="13" href="Haskell.Prelude.html" class="Module">Haskell.Prelude</a>
+<a id="29" class="Keyword">open</a> <a id="34" class="Keyword">import</a> <a id="41" href="Agda.Primitive.html" class="Module">Agda.Primitive</a>
+
+<a id="57" class="Keyword">module</a> <a id="64" href="Fail.Issue357a.html" class="Module">Fail.Issue357a</a> <a id="79" class="Keyword">where</a>
+
+<a id="k"></a><a id="86" href="Fail.Issue357a.html#86" class="Function">k</a> <a id="88" class="Symbol">:</a> <a id="90" href="Haskell.Prim.html#1214" class="Generalizable">a</a> <a id="92" class="Symbol">→</a> <a id="94" href="Haskell.Prim.html#1216" class="Generalizable">b</a> <a id="96" class="Symbol">→</a> <a id="98" href="Haskell.Prim.html#1214" class="Generalizable">a</a>
+<a id="100" href="Fail.Issue357a.html#86" class="Function">k</a> <a id="102" href="Fail.Issue357a.html#102" class="Bound">x</a> <a id="104" class="Symbol">_</a> <a id="106" class="Symbol">=</a> <a id="108" href="Fail.Issue357a.html#102" class="Bound">x</a>
+<a id="110" class="Symbol">{-#</a> <a id="114" class="Keyword">COMPILE</a> <a id="122" class="Keyword">AGDA2HS</a> <a id="130" href="Fail.Issue357a.html#86" class="Function">k</a> <a id="132" class="Symbol">#-}</a>
+
+<a id="testK"></a><a id="137" href="Fail.Issue357a.html#137" class="Function">testK</a> <a id="143" class="Symbol">:</a> <a id="145" href="Agda.Builtin.Nat.html#203" class="Datatype">Nat</a>
+<a id="149" href="Fail.Issue357a.html#137" class="Function">testK</a> <a id="155" class="Symbol">=</a> <a id="157" href="Fail.Issue357a.html#86" class="Function">k</a> <a id="159" class="Number">42</a> <a id="162" href="Agda.Primitive.html#915" class="Primitive">lzero</a>
+<a id="168" class="Symbol">{-#</a> <a id="172" class="Keyword">COMPILE</a> <a id="180" class="Keyword">AGDA2HS</a> <a id="188" href="Fail.Issue357a.html#137" class="Function">testK</a> <a id="194" class="Symbol">#-}</a>
+</pre><div class="split right"><embed src="build/Issue357a.html"/></div></body></html>
