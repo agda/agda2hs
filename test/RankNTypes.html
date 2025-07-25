@@ -1,0 +1,26 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>RankNTypes</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="split left Agda"><a id="1" class="Symbol">{-#</a> <a id="5" class="Keyword">FOREIGN</a> <a id="13" class="Pragma">AGDA2HS</a>
+<a id="21" class="Symbol">{-#</a> <a id="25" class="Pragma">LANGUAGE</a> <a id="34" class="Pragma">Haskell98</a> <a id="44" class="Symbol">#-}</a>
+<a id="48" class="Symbol">#-}</a>
+
+<a id="53" class="Keyword">open</a> <a id="58" class="Keyword">import</a> <a id="65" href="Haskell.Prim.html" class="Module">Haskell.Prim</a> <a id="78" class="Keyword">using</a> <a id="84" class="Symbol">(</a><a id="85" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="89" class="Symbol">)</a>
+
+<a id="92" class="Keyword">data</a> <a id="MyBool"></a><a id="97" href="RankNTypes.html#97" class="Datatype">MyBool</a> <a id="104" class="Symbol">:</a> <a id="106" href="Agda.Primitive.html#388" class="Primitive">Type</a> <a id="111" class="Keyword">where</a>
+    <a id="MyBool.MyTrue"></a><a id="121" href="RankNTypes.html#121" class="InductiveConstructor">MyTrue</a> <a id="128" class="Symbol">:</a> <a id="130" href="RankNTypes.html#97" class="Datatype">MyBool</a>
+    <a id="MyBool.MyFalse"></a><a id="141" href="RankNTypes.html#141" class="InductiveConstructor">MyFalse</a> <a id="149" class="Symbol">:</a> <a id="151" href="RankNTypes.html#97" class="Datatype">MyBool</a>
+<a id="158" class="Symbol">{-#</a> <a id="162" class="Keyword">COMPILE</a> <a id="170" class="Keyword">AGDA2HS</a> <a id="178" href="RankNTypes.html#97" class="Datatype">MyBool</a> <a id="185" class="Symbol">#-}</a>
+
+<a id="rank2ForallUse"></a><a id="190" href="RankNTypes.html#190" class="Function">rank2ForallUse</a> <a id="205" class="Symbol">:</a> <a id="207" class="Symbol">(∀</a> <a id="210" class="Symbol">(</a><a id="211" href="RankNTypes.html#211" class="Bound">a</a> <a id="213" class="Symbol">:</a> <a id="215" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="219" class="Symbol">)</a> <a id="221" class="Symbol">→</a> <a id="223" href="RankNTypes.html#211" class="Bound">a</a> <a id="225" class="Symbol">→</a> <a id="227" href="RankNTypes.html#211" class="Bound">a</a><a id="228" class="Symbol">)</a> <a id="230" class="Symbol">→</a> <a id="232" href="RankNTypes.html#97" class="Datatype">MyBool</a>
+<a id="239" href="RankNTypes.html#190" class="Function">rank2ForallUse</a> <a id="254" href="RankNTypes.html#254" class="Bound">f</a> <a id="256" class="Symbol">=</a> <a id="258" href="RankNTypes.html#254" class="Bound">f</a> <a id="260" href="RankNTypes.html#97" class="Datatype">MyBool</a> <a id="267" href="RankNTypes.html#121" class="InductiveConstructor">MyTrue</a>
+<a id="274" class="Symbol">{-#</a> <a id="278" class="Keyword">COMPILE</a> <a id="286" class="Keyword">AGDA2HS</a> <a id="294" href="RankNTypes.html#190" class="Function">rank2ForallUse</a> <a id="309" class="Symbol">#-}</a>
+
+<a id="314" class="Keyword">module</a> <a id="321" href="RankNTypes.html#321" class="Module">_</a>  <a id="324" class="Symbol">(</a><a id="325" href="RankNTypes.html#325" class="Bound">f</a> <a id="327" class="Symbol">:</a> <a id="329" class="Symbol">∀</a> <a id="331" class="Symbol">(</a><a id="332" href="RankNTypes.html#332" class="Bound">a</a> <a id="334" class="Symbol">:</a> <a id="336" href="Agda.Primitive.html#388" class="Primitive">Type</a><a id="340" class="Symbol">)</a> <a id="342" class="Symbol">→</a> <a id="344" href="RankNTypes.html#332" class="Bound">a</a> <a id="346" class="Symbol">→</a> <a id="348" href="RankNTypes.html#332" class="Bound">a</a><a id="349" class="Symbol">)</a> <a id="351" class="Keyword">where</a>
+    <a id="361" href="RankNTypes.html#361" class="Function">rank2Module</a> <a id="373" class="Symbol">:</a> <a id="375" href="RankNTypes.html#97" class="Datatype">MyBool</a>
+    <a id="386" href="RankNTypes.html#361" class="Function">rank2Module</a> <a id="398" class="Symbol">=</a> <a id="400" href="RankNTypes.html#325" class="Bound">f</a> <a id="402" href="RankNTypes.html#97" class="Datatype">MyBool</a> <a id="409" href="RankNTypes.html#121" class="InductiveConstructor">MyTrue</a>
+    <a id="420" class="Symbol">{-#</a> <a id="424" class="Keyword">COMPILE</a> <a id="432" class="Keyword">AGDA2HS</a> <a id="440" href="RankNTypes.html#361" class="Function">rank2Module</a> <a id="452" class="Symbol">#-}</a>
+
+<a id="457" class="Comment">-- ExistentialQuantification: Not supported yet, but also no error message yet</a>
+<a id="536" class="Comment">-- data Exist : Type₁ where</a>
+<a id="564" class="Comment">--     MkExist : ∀ (a : Type) → a → Exist</a>
+<a id="606" class="Comment">-- {-# COMPILE AGDA2HS Exist #-}</a>
+</pre><div class="split right"><embed src="build/RankNTypes.html"/></div></body></html>

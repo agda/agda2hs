@@ -1,0 +1,4 @@
+```
+test/Fail/Issue113a.agda:7.8-12: error: [CustomBackendError]
+agda2hs: Unboxed record Loop cannot be recursive
+```
