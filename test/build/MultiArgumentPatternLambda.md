@@ -1,4 +1,0 @@
-```
-test/Fail/MultiArgumentPatternLambda.agda:7.15-9.41: error: [CustomBackendError]
-agda2hs: Pattern matching lambdas must take a single argument
-```
