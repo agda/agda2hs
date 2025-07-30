@@ -18,7 +18,7 @@ pkgs.haskellPackages.shellFor {
     # related to haskell
     cabal-install
     # FIXME: broken in haskell-updates, uncomment when upstream fixes it
-    # haskell-language-server
+    haskell-language-server
     # general goodies
     pkgs.agda
     pkgs.nixfmt-rfc-style
