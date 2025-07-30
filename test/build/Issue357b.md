@@ -1,4 +1,0 @@
-```
-test/Fail/Issue357b.agda:10.1-2: error: [CustomBackendError]
-agda2hs: Bad Haskell type: Level
-```
