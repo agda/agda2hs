@@ -18,12 +18,9 @@ instance
     = refl
 
   iLawfulMonoidList .leftIdentity [] = refl
-  iLawfulMonoidList .leftIdentity (x ∷ xs)
-    rewrite ++-[] (x ∷ xs)
-    = refl
+  iLawfulMonoidList .leftIdentity (x ∷ xs) = refl
 
   iLawfulMonoidList .concatenation [] = refl
-  iLawfulMonoidList .concatenation (x ∷ xs) 
-    rewrite ++-[] (x ∷ xs)
-      | concatenation xs
+  iLawfulMonoidList .concatenation (x ∷ xs)
+    rewrite concatenation xs
     = refl
