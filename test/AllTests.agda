@@ -97,6 +97,7 @@ import Assert
 import Issue377
 import Issue394
 import Issue421
+import Issue409
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -191,4 +192,5 @@ import Assert
 import Issue377
 import Issue394
 import Issue421
+import Issue409
 #-}
