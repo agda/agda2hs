@@ -7,6 +7,8 @@ variable a b : Type
 
 -- parametrized record type exported as an Haskell record
 record Pair (a b : Type) : Type where
+  no-eta-equality
+  pattern
   constructor MkPair
   field
     proj₁ : a
@@ -19,6 +21,8 @@ open Pair public
 -- no named constructor means we reuse the record name
 
 record Wrap (a : Type) : Type where
+  no-eta-equality
+  pattern
   field unwrap : a
 open Wrap public
 {-# COMPILE AGDA2HS Wrap #-}
@@ -42,9 +46,9 @@ swap₂ (record {unwrap = p}) = record {unwrap = record { proj₁ = proj₂ p; p
 
 -- record with deriving clause
 record User : Type where
+  no-eta-equality
   field
     name : String
     code : Nat
 open User public
 {-# COMPILE AGDA2HS User deriving (Eq, Show) #-}
- 

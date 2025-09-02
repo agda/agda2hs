@@ -5,6 +5,7 @@ module Fail.Copatterns where
 open import Haskell.Prelude
 
 record R : Type where
+  no-eta-equality
   field
     foo : Bool
 open R public

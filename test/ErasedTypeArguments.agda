@@ -10,6 +10,7 @@ open import Agda.Builtin.Nat
 -- but the argument of the lambda is erased;
 -- so that it won't be dependent-typed after compilation.
 record Σ' {i j} (a : Type i) (b : @0 a -> Type j) : Type (i ⊔ j) where
+  no-eta-equality
   constructor _:^:_
   field
     proj₁ : a

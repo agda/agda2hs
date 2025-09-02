@@ -4,6 +4,7 @@ open import Haskell.Prelude
 module _ (@0 n : Bool) where
 
 record R : Type where
+  no-eta-equality
   field
     fld : Int
 open R public

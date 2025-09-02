@@ -1,0 +1,3 @@
+test/Fail/Issue320.agda:7.8-12: error: [CustomBackendError]
+agda2hs:
+  Agda records compiled to Haskell should have eta-equality disabled. Add no-eta-equality to the definition of Hash.

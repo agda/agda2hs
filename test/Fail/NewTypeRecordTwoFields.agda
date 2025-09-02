@@ -3,6 +3,7 @@ module Fail.NewTypeRecordTwoFields where
 open import Haskell.Prelude
 
 record Duo (a b : Type) : Type where
+    no-eta-equality
     constructor MkDuo
     field
         left : a

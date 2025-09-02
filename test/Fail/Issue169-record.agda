@@ -7,6 +7,8 @@ module Fail.Issue169-record where
 open import Haskell.Prelude
 
 record Identity (a : Type) : Type where
+    no-eta-equality
+    pattern
     field
         runIdentity : a
 open Identity public

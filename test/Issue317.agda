@@ -1,6 +1,7 @@
 open import Haskell.Prelude
 
 record D : Type where
+  no-eta-equality
   constructor C
   field unC : Int
 open D public

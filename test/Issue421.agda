@@ -3,6 +3,8 @@ module Issue421 where
 open import Haskell.Prelude
 
 record Identity (a : Type) : Type where
+  no-eta-equality
+  pattern
   constructor MkIdentity
   field runIdentity : a
 
