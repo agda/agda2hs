@@ -106,6 +106,7 @@ compileRecord target def = do
     let fieldTel = snd $ splitTelescopeAt recPars recTel
     case target of
       ToClass ms -> do
+        when (length binds > 1) $ tellExtension Hs.MultiParamTypeClasses
         (classConstraints, classDecls) <- compileRecFields classDecl recFields fieldTel
         let context = case classConstraints of
               []     -> Nothing
