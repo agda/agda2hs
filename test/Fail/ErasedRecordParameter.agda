@@ -4,6 +4,7 @@ module Fail.ErasedRecordParameter where
 open import Haskell.Prim using (Type)
 
 record Ok (@0 a : Type) : Type where
+  no-eta-equality
   constructor Thing
   field unThing : a
 open Ok public

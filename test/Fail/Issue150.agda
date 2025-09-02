@@ -3,6 +3,8 @@ module Fail.Issue150 where
 open import Haskell.Prelude
 
 record Tup (a b : Type) : Type where
+  no-eta-equality
+  pattern
   constructor MkTup
   field exl : a ; exr : b
 open Tup public

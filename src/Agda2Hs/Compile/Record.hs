@@ -10,7 +10,7 @@ import qualified Data.Map as Map
 
 import Agda.Compiler.Backend
 
-import Agda.Syntax.Common ( Arg(unArg), defaultArg )
+import Agda.Syntax.Common ( Arg(unArg), defaultArg, HasEta'(..) )
 import Agda.Syntax.Internal
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
@@ -116,6 +116,9 @@ compileRecord target def = do
         return $ Hs.ClassDecl () context hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
       ToRecord newtyp ds -> do
         checkValidConName cName
+        when (theEtaEquality recEtaEquality' == YesEta) $ agda2hsErrorM $
+          "Agda records compiled to Haskell should have eta-equality disabled." <+>
+          "Add no-eta-equality to the definition of" <+> (text (pp rName) <> ".")
         (constraints, fieldDecls) <- compileRecFields fieldDecl recFields fieldTel
         when newtyp $ checkNewtypeCon cName fieldDecls
         let target = if newtyp then Hs.NewType () else Hs.DataType ()

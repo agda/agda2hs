@@ -3,6 +3,7 @@ module Kinds where
 open import Haskell.Prelude
 
 record ReaderT (r : Type) (m : Type → Type) (a  : Type) : Type where
+  no-eta-equality
   constructor RdrT
   field runReaderT : r → m a
 open ReaderT public

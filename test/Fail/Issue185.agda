@@ -3,6 +3,7 @@ module Fail.Issue185 where
 open import Haskell.Prim using (Bool; True; Type)
 
 record RecordTest : Type where
+  no-eta-equality
   constructor MkRecord
   field
     aBool : Bool

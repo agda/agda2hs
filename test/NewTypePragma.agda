@@ -34,6 +34,7 @@ data Pair (a b : Type) : Type where
 #-}
 
 record Identity (a : Type) : Type where
+    no-eta-equality
     constructor MkIdentity
     field
         runIdentity : a
@@ -46,6 +47,7 @@ open Identity public
 #-}
 
 record Equal (a : Type) : Type where
+    no-eta-equality
     constructor MkEqual
     field
         pair : a × a
@@ -59,6 +61,7 @@ open Equal public
 #-}
 
 record Duo (a : Type) : Type where
+    no-eta-equality
     field
         duo : a × a
 open Duo public
