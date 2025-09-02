@@ -27,6 +27,7 @@ import Agda.TypeChecking.Records
 import Agda.TypeChecking.Telescope ( mustBePi, piApplyM )
 
 import Agda.Utils.Lens
+import Agda.Utils.List ( headWithDefault )
 import Agda.Utils.Monad ( ifNotM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
@@ -244,8 +245,14 @@ compileInstanceClause' curModule ty (p:ps) c
           text $ "raw name: " ++ prettyShow (Def n [])
         d@Defn{..} <- getConstInfo n
         let mod = if isExtendedLambdaName defName then curModule else qnameModule defName
-        (fc, rs) <- withCurrentModule mod $
-          concatUnzip <$> mapM (compileInstanceClause mod defType) (funClauses theDef)
+        let isMatchingProj [] = False
+            isMatchingProj (p:ps) | ProjP _ g <- namedArg p = g .~ q
+            isMatchingProj (p:ps) = isMatchingProj ps
+        (fc, rs) <- withCurrentModule mod
+            $ fmap concatUnzip
+            . mapM (compileInstanceClause mod defType)
+            . filter (isMatchingProj . namedClausePats)
+            $ funClauses theDef
         let hd = hsName $ prettyShow $ nameConcrete $ qnameName defName
         let fc' = {- dropPatterns 1 $ -} replaceName hd uf fc
         reportSDoc "agda2hs.compile.instance" 6 $ vcat $
