@@ -29,7 +29,7 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( hsName, definedName, pp )
+import Agda2Hs.Language.Haskell.Utils ( hsName, definedName, pp, isQuantifiedAsst )
 
 -- | Primitive fields and default implementations
 type MinRecord = ([Hs.Name ()], Map (Hs.Name ()) (Hs.Decl ()))
@@ -110,7 +110,7 @@ compileRecord target def = do
         (classConstraints, classDecls) <- compileRecFields classDecl recFields fieldTel
         let context = case classConstraints of
               []     -> Nothing
-              [asst] -> Just (Hs.CxSingle () asst)
+              [asst] | not (isQuantifiedAsst asst) -> Just (Hs.CxSingle () asst)
               assts  -> Just (Hs.CxTuple () assts)
         defaultDecls <- compileMinRecords def ms
         return $ Hs.ClassDecl () context hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
@@ -151,7 +151,7 @@ compileRecord target def = do
     compileRecFields decl ns tel = case (ns, tel) of
       (_   , EmptyTel          ) -> return ([], [])
       (n:ns, ExtendTel dom tel') -> do
-        hsDom <- compileDomType (absName tel') dom
+        hsDom <- withNestedType $ compileDomType (absName tel') dom
         (hsAssts, hsFields) <- underAbstraction dom tel' $ compileRecFields decl ns
         case hsDom of
           DomType s hsA -> do
@@ -160,7 +160,9 @@ compileRecord target def = do
             checkValidFunName fieldName
             return (hsAssts, decl fieldName fieldType : hsFields)
           DomConstraint hsA -> case target of
-            ToClass{} -> return (hsA : hsAssts , hsFields)
+            ToClass{} -> do
+              when (isQuantifiedAsst hsA) $ tellExtension Hs.QuantifiedConstraints
+              return (hsA : hsAssts , hsFields)
             ToRecord{} -> agda2hsError $
               "Not supported: record/class with constraint fields"
           DomDropped -> return (hsAssts , hsFields)

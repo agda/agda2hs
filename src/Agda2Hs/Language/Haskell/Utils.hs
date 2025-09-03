@@ -314,3 +314,8 @@ qualifyType a = \case
     TyForall _ (Just as) cs t -> TyForall () (Just (a:as)) cs      t
     TyForall _ Nothing   cs t -> TyForall () (Just [a]   ) cs      t
     t                         -> TyForall () (Just [a]   ) Nothing t
+
+isQuantifiedAsst :: Asst () -> Bool
+isQuantifiedAsst (TypeA _ TyForall{}) = True
+isQuantifiedAsst (IParam _ _ TyForall{}) = True
+isQuantifiedAsst _ = False
