@@ -82,4 +82,4 @@ executable agda2hs
                        PatternSynonyms
                        NondecreasingIndentation
                        OverloadedStrings
-  ghc-options:         -Werror -rtsopts
+  ghc-options:         -rtsopts
