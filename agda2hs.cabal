@@ -5,7 +5,7 @@ license:             BSD-3-Clause
 license-file:        LICENSE
 author:              Ulf Norell, Jesper Cockx, Orestis Melkonian, Sára Juhošová, James Chapman, Lucas Escot, Henry Blanchette, Viktor Csimma, Aleksander Wolska, Paul Bittner, Andreas Källberg, Bohdan Liesnikov, Jakob Naucke, and Heinrich Apfelmus
 maintainer:          jesper@sikanda.be
-copyright:           2024 Ulf Norell, Jesper Cockx, Orestis Melkonian, Sára Juhošová, James Chapman, Lucas Escot, Henry Blanchette, Viktor Csimma, Aleksander Wolska, Paul Bittner, Andreas Källberg, Bohdan Liesnikov, Jakob Naucke, and Heinrich Apfelmus
+copyright:           2025 Ulf Norell, Jesper Cockx, Orestis Melkonian, Sára Juhošová, James Chapman, Lucas Escot, Henry Blanchette, Viktor Csimma, Aleksander Wolska, Paul Bittner, Andreas Källberg, Bohdan Liesnikov, Jakob Naucke, and Heinrich Apfelmus
 category:            Language, Compiler
 build-type:          Simple
 synopsis:            Compiling Agda code to readable Haskell.
