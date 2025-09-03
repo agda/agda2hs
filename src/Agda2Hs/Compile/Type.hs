@@ -92,7 +92,7 @@ compileType t = do
   instantiate t >>= \case
     Pi a b -> do
       reportSDoc "agda2hs.compile.type" 13 $ text "Compiling pi type (" <+> prettyTCM (absName b)
-        <+> text ":" <+> prettyTCM a <+> text ") -> " <+> prettyTCM (unAbs b)
+        <+> text ":" <+> prettyTCM a <+> text ") -> " <+> underAbstraction a b prettyTCM
       let compileB = underAbstraction a b (compileType . unEl)
       compileDomType (absName b) a >>= \case
         DomType _ hsA -> Hs.TyFun () hsA <$> compileB
