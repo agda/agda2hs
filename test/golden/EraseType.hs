@@ -6,14 +6,14 @@ testErase = ()
 testMatch :: () -> ()
 testMatch () = ()
 
-testRezz :: Int
-testRezz = 42
+testSingleton :: Int
+testSingleton = 42
 
-testRezzErase :: ()
-testRezzErase = ()
+testSingletonErase :: ()
+testSingletonErase = ()
 
 testCong :: Int
-testCong = 1 + testRezz
+testCong = 1 + testSingleton
 
 rTail :: [Int] -> [Int]
 rTail = \ ys -> tail ys

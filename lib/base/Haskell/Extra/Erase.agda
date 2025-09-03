@@ -33,50 +33,50 @@ module Haskell.Extra.Erase where
   pattern <_> x = record { proj₁ = _ ; proj₂ = x }
 
   -- Resurrection of erased values
-  Rezz : (@0 x : a) → Type
-  Rezz x = ∃ _ (x ≡_)
+  Singleton : (@0 x : a) → Type
+  Singleton x = ∃ _ (x ≡_)
 
-  {-# COMPILE AGDA2HS Rezz inline #-}
+  {-# COMPILE AGDA2HS Singleton inline #-}
 
-  pattern rezz x = x ⟨ refl ⟩
+  pattern sing x = x ⟨ refl ⟩
 
   instance
-    rezz-id : {x : a} → Rezz x
-    rezz-id = rezz _
-  {-# COMPILE AGDA2HS rezz-id inline #-}
+    sing-id : {x : a} → Singleton x
+    sing-id = sing _
+  {-# COMPILE AGDA2HS sing-id inline #-}
 
-  rezzCong : {@0 a : Type} {@0 x : a} (f : a → b) → Rezz x → Rezz (f x)
-  rezzCong f (x ⟨ p ⟩) = f x ⟨ cong f p ⟩
-  {-# COMPILE AGDA2HS rezzCong inline #-}
+  singCong : {@0 a : Type} {@0 x : a} (f : a → b) → Singleton x → Singleton (f x)
+  singCong f (x ⟨ p ⟩) = f x ⟨ cong f p ⟩
+  {-# COMPILE AGDA2HS singCong inline #-}
 
-  rezzCong2 : (f : a → b → c) → Rezz x → Rezz y → Rezz (f x y)
-  rezzCong2 f (x ⟨ p ⟩) (y ⟨ q ⟩) = f x y ⟨ cong₂ f p q ⟩
-  {-# COMPILE AGDA2HS rezzCong2 inline #-}
+  singCong2 : (f : a → b → c) → Singleton x → Singleton y → Singleton (f x y)
+  singCong2 f (x ⟨ p ⟩) (y ⟨ q ⟩) = f x y ⟨ cong₂ f p q ⟩
+  {-# COMPILE AGDA2HS singCong2 inline #-}
 
-  rezzHead : Rezz (x ∷ xs) → Rezz x
-  rezzHead {x = x} (ys ⟨ p ⟩) =
+  singHead : Singleton (x ∷ xs) → Singleton x
+  singHead {x = x} (ys ⟨ p ⟩) =
     head ys
     ⟨ subst (λ ys → ⦃ @0 _ : NonEmpty ys ⦄ → x ≡ head ys)
             p refl ⟩
     where instance @0 ne : NonEmpty ys
                    ne = subst NonEmpty p itsNonEmpty
-  {-# COMPILE AGDA2HS rezzHead inline #-}
+  {-# COMPILE AGDA2HS singHead inline #-}
 
-  rezzTail : Rezz (x ∷ xs) → Rezz xs
-  rezzTail {xs = xs} (ys ⟨ p ⟩) =
+  singTail : Singleton (x ∷ xs) → Singleton xs
+  singTail {xs = xs} (ys ⟨ p ⟩) =
     tail ys
     ⟨ subst (λ ys → ⦃ @0 _ : NonEmpty ys ⦄ → xs ≡ tail ys)
             p refl ⟩
     where instance @0 ne : NonEmpty ys
                    ne = subst NonEmpty p itsNonEmpty
-  {-# COMPILE AGDA2HS rezzTail inline #-}
+  {-# COMPILE AGDA2HS singTail inline #-}
 
-  rezzErase : {@0 a : Type} {@0 x : a} → Rezz (Erased x)
-  rezzErase {x = x} = Erased x ⟨ refl ⟩
-  {-# COMPILE AGDA2HS rezzErase inline #-}
+  singErase : {@0 a : Type} {@0 x : a} → Singleton (Erased x)
+  singErase {x = x} = Erased x ⟨ refl ⟩
+  {-# COMPILE AGDA2HS singErase inline #-}
 
   erase-injective : Erased x ≡ Erased y → x ≡ y
   erase-injective refl = refl
 
-  inspect_by_ : (x : a) → (Rezz x → b) → b
-  inspect x by f = f (rezz x)
+  inspect_by_ : (x : a) → (Singleton x → b) → b
+  inspect x by f = f (sing x)
