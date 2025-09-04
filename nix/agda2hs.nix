@@ -1,6 +1,6 @@
 # This file should be very close to a copy of nixpkgs/pkgs/build-support/agda/default.nix
-# The present file is based on https://github.com/NixOS/nixpkgs/blob/1d2cfef5e965ca6933a8aa696eadfa556d90fab3/pkgs/build-support/agda/default.nix
-# FIXME: this file is haskell-updates, double-check that nothing changes once it gets merged in unstable
+# The present file is based on rev aaff8c16d7f, as pinned in flake.lock
+# upstream link: https://github.com/NixOS/nixpkgs/blob/aaff8c16d7fc04991cac6245bee1baa31f72b1e1/pkgs/build-support/agda/default.nix
 # but it would be nice to expose this in upstream so that we don't have to duplicate the file
 
 {
