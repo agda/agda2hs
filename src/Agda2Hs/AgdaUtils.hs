@@ -26,6 +26,7 @@ import Agda.TypeChecking.Telescope
 import Agda.TypeChecking.Reduce ( reduceDefCopy )
 
 import Agda.Utils.Either ( isRight )
+import Agda.Utils.GetOpt ( OptDescr(..) , ArgDescr(..) )
 import Agda.Utils.List ( initMaybe )
 import qualified Agda.Utils.List1 as List1
 import Agda.Utils.Monad ( ifM )
@@ -143,3 +144,19 @@ endsInSort :: (PureTCM m, MonadBlock m) => Type -> m Bool
 endsInSort t = do
   TelV tel b <- telView t
   addContext tel $ ifIsSort b (\_ -> return True) (return False)
+
+-- Heavily butchered version of the private function informationOptions in
+-- Agda.Interaction.Options.Base, just for the purpose of checking if the
+-- user has requested any information so we can disable the backend.
+infoFlags :: [OptDescr ()]
+infoFlags =
+    [ Option ['V']  ["version"] (NoArg ()) ""
+    , Option []     ["numeric-version"] (NoArg ()) ""
+    , Option ['?']  ["help"] (OptArg (const ()) "HELP_TOPIC") ""
+    , Option []     ["emacs-mode"] (ReqArg (const ()) "EMACS_MODE_COMMAND") ""
+    , Option []     ["print-agda-dir"] (NoArg ()) ""
+    , Option []     ["print-agda-app-dir"] (NoArg ()) ""
+    , Option []     ["print-agda-data-dir"] (NoArg ()) ""
+    , Option []     ["print-options"] (NoArg ()) ""
+    , Option []     ["setup"] (NoArg ()) ""
+    ]

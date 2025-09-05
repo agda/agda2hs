@@ -11,6 +11,7 @@ import Agda.Main
 import Agda.Compiler.Backend
 import Agda.Utils.GetOpt
 
+import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( defaultSpecialRules )
 import Agda2Hs.Compile
 import Agda2Hs.Config ( checkConfig )
@@ -79,11 +80,12 @@ backend = Backend'
   where
     verifyAndWriteModule opts env isM m out = verifyOutput opts env isM m out >> writeModule opts env isM m out
 
--- | Parse command-line arguments to check whether we are in interactive mode.
-isInteractive :: IO Bool
-isInteractive = do
+-- | Parse command-line arguments to check whether we are in interactive mode
+--   or the user is just requesting information.
+shouldDisable :: IO Bool
+shouldDisable = do
   let interactionFlag = Option ['I'] ["interactive", "interaction", "interaction-json"] (NoArg ()) ""
-  (i , _ , _) <- getOpt Permute [interactionFlag] <$> getArgs
+  (i , _ , _) <- getOpt Permute (interactionFlag:infoFlags) <$> getArgs
   return $ not $ null i
 
 main = do
@@ -94,8 +96,6 @@ main = do
     putStrLn =<< getDataFileName "lib/base/base.agda-lib"
   else do
     -- Issue #201: disable backend when run in interactive mode
-    isInt <- isInteractive
+    disable <- shouldDisable
 
-    if isInt
-      then runAgda [Backend backend{isEnabled = const False}]
-      else runAgda [Backend backend]
+    runAgda [Backend backend{isEnabled = const $ not disable }]
