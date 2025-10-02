@@ -1,4 +1,4 @@
 name: example-structure
 include: ./src/agda
-depend: agda2hs
+depend: agda2hs-base
 flags: --erasure --no-projection-like
