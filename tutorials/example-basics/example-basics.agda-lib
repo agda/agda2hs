@@ -1,4 +1,4 @@
 name: example-basics
-include: . 
-depend: agda2hs
+include: .
+depend: agda2hs-base
 flags: --erasure --no-projection-like
