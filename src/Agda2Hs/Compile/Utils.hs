@@ -50,7 +50,7 @@ import Agda.Utils.Monad
 import Agda.Utils.Singleton
 
 import AgdaInternals
-import Agda2Hs.AgdaUtils ( (~~) )
+import Agda2Hs.AgdaUtils ( (~~), resolveStringName )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Pragma
 import qualified Data.List as L
