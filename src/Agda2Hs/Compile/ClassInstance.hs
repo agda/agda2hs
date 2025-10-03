@@ -11,12 +11,9 @@ import qualified Data.HashMap.Strict as HMap
 import Agda.Compiler.Backend
 import Agda.Compiler.Common ( curDefs, sortDefs )
 
-import Agda.Interaction.BasicOps ( parseName )
-
 import Agda.Syntax.Common hiding ( Ranged )
 import Agda.Syntax.Internal
 import Agda.Syntax.Internal.Pattern ( patternToTerm )
-import Agda.Syntax.Position ( noRange )
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad ( resolveName )
 import Agda.Syntax.Common.Pretty ( prettyShow )
@@ -325,16 +322,6 @@ findDefinitions p m = do
   let allDefs = HMap.union localDefs importedDefs
       inMod = [ (x, def) | (x, def) <- HMap.toList allDefs, isInModule x m ]
   map snd <$> filterM (uncurry p) inMod
-
-
-resolveStringName :: String -> C QName
-resolveStringName s = do
-  cqname <- liftTCM $ parseName noRange s
-  rname  <- liftTCM $ resolveName cqname
-  case rname of
-    DefinedName _ aname _ -> return $ anameName aname
-    _ -> agda2hsStringError $ "Couldn't find " ++ s
-
 
 lookupDefaultImplementations :: QName -> [Hs.Name ()] -> C [Definition]
 lookupDefaultImplementations recName fields = do
