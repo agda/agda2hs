@@ -418,3 +418,9 @@ checkInlinePragma def@Defn{defName = f} = do
 
         allowedPats :: NAPs -> C Bool
         allowedPats pats = allM (allowedPat . dget . dget) pats
+
+checkCompileToFunctionPragma :: Definition -> String -> C ()
+checkCompileToFunctionPragma def s = do
+  r <- resolveStringName s
+  --TODO: actual checks
+  addCompileToName (defName def) r

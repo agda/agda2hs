@@ -7,6 +7,7 @@ import Control.Monad.Reader
 import Control.Monad.Writer ( tell )
 import Control.Monad.State ( put, modify )
 
+import Data.IORef
 import Data.List ( isPrefixOf, stripPrefix )
 import Data.Maybe ( isJust )
 import qualified Data.Map as M
@@ -195,6 +196,7 @@ hasCompilePragma q = processPragma q <&> \case
   ExistingClassPragma{} -> True
   UnboxPragma{} -> True
   TransparentPragma{} -> True
+  CompileToPragma{} -> True
   NewTypePragma{} -> True
   DerivePragma{} -> True
 
@@ -281,6 +283,31 @@ isTransparentFunction q = (== TransparentPragma) <$> getPragma q
 
 isInlinedFunction :: QName -> C Bool
 isInlinedFunction q = (== InlinePragma) <$> getPragma q
+
+debugCompileToMap :: C ()
+debugCompileToMap = do
+  ctMapRef <- asks $ compileToMap . globalEnv
+  ctMap <- liftIO $ readIORef ctMapRef
+  reportSDoc "agda2hs.compile.to" 50 $ text $
+    show $ map (\(x,y) -> prettyShow x ++ " |-> " ++ prettyShow y) $ M.toList ctMap
+
+getCompileToName :: QName -> C (Maybe QName)
+getCompileToName q = do
+  reportSDoc "agda2hs.compile.to" 35 $ text $
+    "Checking if there is a compile-to rule for " <> prettyShow q
+  debugCompileToMap
+  ctMapRef <- asks $ compileToMap . globalEnv
+  liftIO $ M.lookup q <$> readIORef ctMapRef
+
+addCompileToName :: QName -> QName -> C ()
+addCompileToName q r = do
+  reportSDoc "agda2hs.compile.to" 15 $ text $
+    "Adding rule to compile " <> prettyShow q <>
+    " to " <> prettyShow r
+  debugCompileToMap
+  ctMapRef <- asks $ compileToMap . globalEnv
+  liftIO $ modifyIORef ctMapRef $ M.insert q r
+  debugCompileToMap
 
 withNestedType :: C a -> C a
 withNestedType = local $ \e -> e { isNestedInType = True }

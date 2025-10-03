@@ -56,6 +56,7 @@ data ParsedPragma
   | TransparentPragma
   | NewTypePragma [Hs.Deriving ()]
   | TuplePragma Hs.Boxed
+  | CompileToPragma String
   | DerivePragma (Maybe (Hs.DerivStrategy ()))
   deriving (Eq, Show)
 
@@ -94,6 +95,7 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
     | s == "transparent"          -> return TransparentPragma
     | s == "tuple"                -> return $ TuplePragma Hs.Boxed
     | s == "unboxed-tuple"        -> return $ TuplePragma Hs.Unboxed
+    | "to" `isPrefixOf` s         -> return $ CompileToPragma (drop 3 s)
     | s == newtypePragma          -> return $ NewTypePragma []
     | s == derivePragma           -> return $ DerivePragma Nothing
     | derivePragma `isPrefixOf` s -> return $ DerivePragma (parseStrategy (drop (length derivePragma + 1) s))

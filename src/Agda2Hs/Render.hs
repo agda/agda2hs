@@ -88,9 +88,10 @@ compileImportsWithPrelude opts mod imps = do
     preOpts@PreludeOpts{..} = optPrelude opts
 
 -- | Render the @.hs@ module as a 'String' and write it to a file.
-writeModule :: Options -> ModuleEnv -> IsMain -> TopLevelModuleName
+writeModule :: GlobalEnv -> ModuleEnv -> IsMain -> TopLevelModuleName
             -> [(CompiledDef, CompileOutput)] -> TCM ModuleRes
-writeModule opts _ isMain m outs = do
+writeModule genv _ isMain m outs = do
+  let opts = globalOptions genv
   code <- getForeignPragmas (optExtensions opts)
   let mod  = prettyShow m
       (cdefs, impss, extss) = unzip3 $ flip map outs $

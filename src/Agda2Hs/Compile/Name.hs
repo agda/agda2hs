@@ -32,7 +32,7 @@ import Agda.TypeChecking.Records ( isRecordConstructor )
 import Agda.TypeChecking.Warnings ( warning )
 
 import qualified Agda.Utils.List1 as List1
-import Agda.Utils.Maybe ( isJust, isNothing, whenJust, fromMaybe, caseMaybeM )
+import Agda.Utils.Maybe
 import Agda.Utils.Monad ( orM, whenM )
 
 import Agda2Hs.AgdaUtils
@@ -90,14 +90,17 @@ compileName :: Applicative m => Name -> m (Hs.Name ())
 compileName n = hsName . show <$> pretty (nameConcrete n)
 
 compileQName :: QName -> C (Hs.QName ())
-compileQName f
-  | Just c <- isSpecialCon f
-  = do
-    reportSDoc "agda2hs.name" 25 $ text $
-      "compiling name: " ++ prettyShow f ++
-      " to special constructor: " ++ Hs.prettyPrint c
-    return c
-  | otherwise = do
+compileQName f = do
+  whenJustM (getCompileToName f) $ \g ->
+    reportSDoc "agda2hs.compile.to" 20 $ text $
+      "compiling name " <> prettyShow f <> " to " <> prettyShow g
+  f <- fromMaybe f <$> getCompileToName f
+  let compileSpecialCon c = do
+        reportSDoc "agda2hs.name" 25 $ text $
+          "compiling name: " ++ prettyShow f ++
+          " to special constructor: " ++ Hs.prettyPrint c
+        return c
+  ifJust (isSpecialCon f) compileSpecialCon $ do
     f <- isRecordConstructor f <&> \case
       Just (r, def) | not (_recNamedCon def) -> r -- use record name for unnamed constructors
       _                                      -> f
