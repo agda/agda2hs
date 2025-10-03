@@ -1,17 +1,20 @@
 module Agda2Hs.Compile.Data where
 
-import Control.Monad ( when )
 import Agda.Compiler.Backend
 import Agda.Syntax.Common
 import Agda.Syntax.Internal
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
+import Agda.TypeChecking.Datatypes
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Reduce
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
 
+import Agda.Utils.Monad
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
+
+import Agda2Hs.AgdaUtils
 
 import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds )
 import Agda2Hs.Compile.Types
@@ -77,3 +80,20 @@ compileConstructorArgs (ExtendTel a tel) = compileDomType (absName tel) a >>= \c
   DomConstraint hsA -> agda2hsError "Not supported: constructors with class constraints"
   DomDropped        -> underAbstraction a tel compileConstructorArgs
   DomForall{}       -> __IMPOSSIBLE__
+
+checkCompileToDataPragma :: Definition -> String -> C ()
+checkCompileToDataPragma def s = do
+  r <- resolveStringName s
+  let dcons = dataCons $ theDef def
+  unlessM (liftTCM $ isDatatype r) $ agda2hsErrorM $
+    "Cannot compile datatype" <+> prettyTCM (defName def) <+>
+    "to" <+> prettyTCM r <+> "because it is not a datatype"
+  -- TODO: check that parameters match
+  rcons <- liftTCM $ getConstructors r
+  -- TODO: filter out erased constructors
+  unless (length rcons == length dcons) $ agda2hsErrorM $
+    "Cannot compile datatype" <+> prettyTCM (defName def) <+>
+    "to" <+> prettyTCM r <+> "because they have a different number of constructors"
+  forM (zip dcons rcons) $ uncurry addCompileToName
+  --TODO: check that constructor types match
+  addCompileToName (defName def) r

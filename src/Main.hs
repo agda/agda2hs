@@ -49,7 +49,7 @@ extensionOpt :: String -> Flag Options
 extensionOpt ext opts = return opts { optExtensions = Hs.parseExtension ext : optExtensions opts }
 
 
-backend :: Backend' Options Options ModuleEnv ModuleRes (CompiledDef, CompileOutput)
+backend :: Backend' Options GlobalEnv ModuleEnv ModuleRes (CompiledDef, CompileOutput)
 backend = Backend'
   { backendName           = "agda2hs"
   , backendVersion        = Just $ Text.pack $ showVersion version
@@ -67,7 +67,7 @@ backend = Backend'
           "Provide additional configuration to agda2hs with a YAML file."
       ]
   , isEnabled             = optIsEnabled
-  , preCompile            = checkConfig
+  , preCompile            = globalSetup
   , postCompile           = \ _ _ _ -> return ()
   , preModule             = moduleSetup
   , postModule            = verifyAndWriteModule

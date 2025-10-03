@@ -2,10 +2,12 @@ module Agda2Hs.Compile where
 
 import Prelude hiding (null)
 
+import Control.Monad.IO.Class
 import Control.Monad.Trans.RWS.CPS ( evalRWST )
 import Control.Monad.State ( gets, liftIO )
 import Control.Arrow ((>>>))
 import Data.Functor
+import Data.IORef
 import Data.List ( isPrefixOf, group, sort )
 
 import qualified Data.Map as M
@@ -23,20 +25,28 @@ import Agda.Utils.Null
 import Agda.Utils.Monad ( whenM, anyM, when, unless )
 
 import Agda2Hs.Compile.ClassInstance ( compileInstance )
-import Agda2Hs.Compile.Data ( compileData )
-import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkInlinePragma )
+import Agda2Hs.Compile.Data ( compileData, checkCompileToDataPragma )
+import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkInlinePragma, checkCompileToFunctionPragma )
 import Agda2Hs.Compile.Name ( hsTopLevelModuleName )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
+import Agda2Hs.Config
 import Agda2Hs.Pragma
 
 import qualified Agda2Hs.Language.Haskell as Hs
 
-initCompileEnv :: TopLevelModuleName -> SpecialRules -> CompileEnv
-initCompileEnv tlm rewrites = CompileEnv
-  { currModule        = tlm
+globalSetup :: Options -> TCM GlobalEnv
+globalSetup opts = do
+  opts <- checkConfig opts
+  ctMap <- liftIO $ newIORef M.empty
+  return $ GlobalEnv opts ctMap
+
+initCompileEnv :: GlobalEnv -> TopLevelModuleName -> SpecialRules -> CompileEnv
+initCompileEnv genv tlm rewrites = CompileEnv
+  { globalEnv         = genv
+  , currModule        = tlm
   , minRecordName     = Nothing
   , isNestedInType    = False
   , locals            = []
@@ -50,11 +60,12 @@ initCompileEnv tlm rewrites = CompileEnv
 initCompileState :: CompileState
 initCompileState = CompileState { lcaseUsed = 0 }
 
-runC :: TopLevelModuleName -> SpecialRules -> C a -> TCM (a, CompileOutput)
-runC tlm rewrites c = evalRWST c (initCompileEnv tlm rewrites) initCompileState
+runC :: GlobalEnv -> TopLevelModuleName -> SpecialRules -> C a -> TCM (a, CompileOutput)
+runC genv tlm rewrites c = evalRWST c (initCompileEnv genv tlm rewrites) initCompileState
 
-moduleSetup :: Options -> IsMain -> TopLevelModuleName -> Maybe FilePath -> TCM (Recompile ModuleEnv ModuleRes)
-moduleSetup opts _ m mifile = do
+moduleSetup :: GlobalEnv -> IsMain -> TopLevelModuleName -> Maybe FilePath -> TCM (Recompile ModuleEnv ModuleRes)
+moduleSetup genv _ m mifile = do
+  let opts = globalOptions genv
   -- we never compile primitive modules
   if any (`isPrefixOf` prettyShow m) primModules then pure $ Skip ()
   else do
@@ -75,14 +86,15 @@ moduleSetup opts _ m mifile = do
 ------------------------
 
 compile
-  :: Options -> ModuleEnv -> IsMain -> Definition
+  :: GlobalEnv -> ModuleEnv -> IsMain -> Definition
   -> TCM (CompiledDef, CompileOutput)
-compile opts tlm _ def =
+compile genv tlm _ def =
   withCurrentModule (qnameModule qname)
-    $ runC tlm (optRewrites opts)
+    $ runC genv tlm (optRewrites opts)
     $ setCurrentRangeQ qname
     $ compileAndTag <* postCompile
   where
+    opts = globalOptions genv
     qname = defName def
 
     tag []   = []
@@ -107,6 +119,8 @@ compile opts tlm _ def =
         (TransparentPragma   , Function{}) -> [] <$ checkTransparentPragma def
         (InlinePragma        , Function{}) -> [] <$ checkInlinePragma def
         (TuplePragma b       , Record{}  ) -> return []
+        (CompileToPragma s   , Datatype{}) -> [] <$ checkCompileToDataPragma def s
+        (CompileToPragma s   , Function{}) -> [] <$ checkCompileToFunctionPragma def s
 
         (ClassPragma ms      , Record{}  ) -> pure <$> compileRecord (ToClass ms) def
         (NewTypePragma ds    , Record{}  ) -> pure <$> compileRecord (ToRecord True ds) def
@@ -125,7 +139,7 @@ compile opts tlm _ def =
     postCompile = whenM (gets $ lcaseUsed >>> (> 0)) $ tellExtension Hs.LambdaCase
 
 verifyOutput ::
-  Options -> ModuleEnv -> IsMain -> TopLevelModuleName
+  GlobalEnv -> ModuleEnv -> IsMain -> TopLevelModuleName
   -> [(CompiledDef, CompileOutput)] -> TCM ()
 verifyOutput _ _ _ m ls = do
   reportSDoc "agda2hs.compile" 5 $ text "Checking generated output before rendering: " <+> prettyTCM m

@@ -9,6 +9,7 @@ import Control.Monad.Trans.Control (MonadTransControl(..))
 import Control.Monad.State ( StateT(..) )
 import Control.DeepSeq ( NFData(..) )
 
+import Data.IORef
 import Data.Maybe ( isJust )
 import Data.Set ( Set )
 import Data.Map ( Map )
@@ -23,6 +24,12 @@ import Agda.Utils.Impossible
 
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils ( Strictness )
+
+data GlobalEnv = GlobalEnv
+  { globalOptions :: Options
+  , compileToMap :: IORef (Map QName QName)
+  -- ^ names with a compile-to pragma
+  }
 
 type ModuleEnv   = TopLevelModuleName
 type ModuleRes   = ()
@@ -71,7 +78,9 @@ instance NFData Options where
 type LocalDecls = [QName]
 
 data CompileEnv = CompileEnv
-  { currModule :: TopLevelModuleName
+  { globalEnv :: GlobalEnv
+  -- ^ global environment
+  , currModule :: TopLevelModuleName
   -- ^ the current module we are compiling
   , minRecordName :: Maybe ModuleName
   -- ^ keeps track of the current minimal record we are compiling
