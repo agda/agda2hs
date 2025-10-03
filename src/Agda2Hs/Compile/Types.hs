@@ -98,6 +98,8 @@ data CompileEnv = CompileEnv
   -- ^ Special compilation rules.
   , writeImports :: Bool
   -- ^ whether we should add imports of compiled names
+  , checkNames :: Bool
+  -- ^ whether we should check validity of compiled names
   }
 
 type Qualifier = Maybe (Maybe (Hs.ModuleName ()))

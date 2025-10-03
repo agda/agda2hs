@@ -95,7 +95,7 @@ compileLitNatPat = \case
 
 
 compileFun, compileFun'
-  :: Bool -- ^ Whether the type signature shuuld also be generated
+  :: Bool -- ^ Whether the type signature should also be generated
   -> Definition -> C [Hs.Decl ()]
 
 compileFun withSig def@Defn{..} =
@@ -111,6 +111,10 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
 
   whenM ((withSig &&) <$> inRecordMod defName) $
     agda2hsError "not supported: functions inside a record module"
+
+  x <- compileQName defName <&> \case
+    Hs.Qual _ _ x -> x
+    Hs.UnQual _ x -> x
 
   ifM (endsInSort defType)
     -- if the function type ends in Sort, it's a type alias!
@@ -163,7 +167,6 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
     Function{..} = theDef
     m = qnameModule defName
     n = qnameName defName
-    x = hsName $ prettyShow n
     err = "Not supported: type definition with `where` clauses"
 
     addPats :: [Hs.Pat ()] -> Hs.Match () -> Hs.Match ()
@@ -420,7 +423,37 @@ checkInlinePragma def@Defn{defName = f} = do
         allowedPats pats = allM (allowedPat . dget . dget) pats
 
 checkCompileToFunctionPragma :: Definition -> String -> C ()
-checkCompileToFunctionPragma def s = do
+checkCompileToFunctionPragma def s = noCheckNames $ do
   r <- resolveStringName s
-  --TODO: actual checks
+  let ppd = prettyTCM (defName def)
+      ppr = prettyTCM r
+  let fail reason = agda2hsErrorM $
+        "Cannot compile function" <+> liftTCM ppd <+>
+        "to" <+> liftTCM ppr <+> "because" <+> reason
+  -- Start by adding the compile-to rule because it makes the check
+  -- for matching clauses easier
   addCompileToName (defName def) r
+  -- Check that target is a function
+  reportSDoc "agda2hs.compileto" 20 $ "Checking that" <+> ppr <+> "is a function"
+  rdef <- getConstInfo r
+  case theDef rdef of
+    FunctionDefn{} -> return ()
+    _ -> fail "it is not a function"
+  -- Check that types match
+  -- TODO: support compile-to for type aliases
+  reportSDoc "agda2hs.compileto" 20 $ "Checking that type of" <+> ppd <+> "matches that of" <+> ppr
+  dtype <- compileType $ unEl $ defType def
+  rtype <- compileType $ unEl $ defType rdef
+  unless (dtype == rtype) $ fail $
+    "the type" <+> text (Hs.pp dtype) <+> "of" <+> prettyTCM (defName def) <+>
+    "does not match the type" <+> text (Hs.pp rtype) <+> "of" <+> prettyTCM r
+  -- Check that clauses match
+  reportSDoc "agda2hs.compileto" 20 $ "Checking that clauses of" <+> ppd <+> "matches those of" <+> ppr
+  [Hs.FunBind _ dcls] <- compileFun False def
+  [Hs.FunBind _ rcls] <- compileFun False rdef
+  unless (length dcls == length rcls) $ fail $
+    "they have a different number of clauses"
+  forM_ (zip dcls rcls) $ \(dcl , rcl) -> do
+    unless (dcl == rcl) $ fail $
+      "the clause" <+> text (Hs.pp dcl) <+>
+      "does not match the clause" <+> text (Hs.pp rcl)

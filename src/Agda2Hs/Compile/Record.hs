@@ -101,7 +101,7 @@ compileRecord target def = do
   TelV tel _ <- telViewUpTo recPars (defType def)
   addContext tel $ do
     checkValidTypeName rName
-    binds <- compileTeleBinds tel
+    binds <- compileTeleBinds False tel -- TODO: add kind annotations?
     let hd = foldl (Hs.DHApp ()) (Hs.DHead () rName) binds
     let fieldTel = snd $ splitTelescopeAt recPars recTel
     case target of

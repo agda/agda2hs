@@ -264,24 +264,28 @@ compileDomType x a =
         | otherwise -> return DomDropped
     DOTerm     -> fmap (uncurry DomType) . withNestedType . compileTypeWithStrictness . unEl $ unDom a
 
-compileTeleBinds :: Telescope -> C [Hs.TyVarBind ()]
-compileTeleBinds EmptyTel = return []
-compileTeleBinds (ExtendTel a tel) = do
-  reportSDoc "agda2hs.compile.type" 15 $ text "Compiling type parameter: " <+> prettyTCM a
-  let fail msg = agda2hsErrorM $ (text msg <> text ":") <+> parens (prettyTCM (absName tel) <+> text ":" <+> prettyTCM (unDom a))
-  compileDom a >>= \case
-    DODropped  -> underAbstraction a tel compileTeleBinds
-    DOType -> do
-      ha <- compileKeptTeleBind (hsName $ absName tel) (unDom a)
-      (ha:) <$> underAbstraction a tel compileTeleBinds
-    DOInstance -> agda2hsError "Constraint in type parameter not supported"
-    DOTerm -> agda2hsError "Term variable in type parameter not supported"
+compileTeleBinds :: Bool -> Telescope -> C [Hs.TyVarBind ()]
+compileTeleBinds kinded = go
+  where
+  go EmptyTel = return []
+  go (ExtendTel a tel) = do
+    reportSDoc "agda2hs.compile.type" 15 $ text "Compiling type parameter: " <+> prettyTCM (absName tel) <+> ":" <+> prettyTCM a
+    let fail msg = agda2hsErrorM $ (text msg <> text ":") <+> parens (prettyTCM (absName tel) <+> text ":" <+> prettyTCM (unDom a))
+    compileDom a >>= \case
+      DODropped  -> underAbstraction a tel go
+      DOType -> do
+        ha <- compileKeptTeleBind kinded (hsName $ absName tel) (unDom a)
+        (ha:) <$> underAbstraction a tel go
+      DOInstance -> agda2hsError "Constraint in type parameter not supported"
+      DOTerm -> agda2hsError "Term variable in type parameter not supported"
 
-compileKeptTeleBind :: Hs.Name () -> Type -> C (Hs.TyVarBind ())
-compileKeptTeleBind x t = do
+compileKeptTeleBind :: Bool -> Hs.Name () -> Type -> C (Hs.TyVarBind ())
+compileKeptTeleBind kinded x t = do
   checkValidTyVarName x
   k <- compileKind t
-  pure $ Hs.UnkindedVar () x -- In the future we may want to show kind annotations
+  pure $ if kinded
+    then Hs.KindedVar () x k
+    else Hs.UnkindedVar () x
 
 compileKind :: Type -> C (Hs.Kind ())
 compileKind t = case unEl t of

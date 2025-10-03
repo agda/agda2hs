@@ -55,6 +55,7 @@ initCompileEnv genv tlm rewrites = CompileEnv
   , copatternsEnabled = False
   , rewrites          = rewrites
   , writeImports      = True
+  , checkNames        = True
   }
 
 initCompileState :: CompileState
@@ -106,7 +107,7 @@ compile genv tlm _ def =
 
       reportSDoc "agda2hs.compile" 5  $ text "Compiling definition:" <+> prettyTCM qname
       reportSDoc "agda2hs.compile" 45 $ text "Pragma:" <+> text (show p)
-      reportSDoc "agda2hs.compile" 45 $ text "Compiling definition:" <+> pretty (theDef def)
+      reportSDoc "agda2hs.compile" 65 $ text "Compiling definition:" <+> pretty (theDef def)
 
       isInstance <- anyM (isClassName . instanceClass) $ defInstance def
 

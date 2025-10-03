@@ -1,13 +1,12 @@
 
-open import Haskell.Prim
 open import Haskell.Prelude
 
 private variable
     @0 n : Nat
 
-data Vec (a : Set) : @0 Nat → Set where
-    [] : Vec a 0
-    _∷_ : a → Vec a n → Vec a (suc n)
+data Vec (A : Set) : @0 Nat → Set where
+    [] : Vec A 0
+    _∷_ : A → Vec A n → Vec A (suc n)
 
 {-# COMPILE AGDA2HS Vec to List #-}
 
