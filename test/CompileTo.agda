@@ -1,5 +1,7 @@
 
 open import Haskell.Prelude
+open import Haskell.Extra.Refinement
+open import Haskell.Law.Equality
 
 private variable
     @0 n : Nat
@@ -32,13 +34,15 @@ llength (x ∷ xs) = 1 + llength xs
 
 {-# COMPILE AGDA2HS llength #-}
 
-vlength : Vec a n → Nat
-vlength [] = 0
-vlength (x ∷ xs) = 1 + vlength xs
+vlength : Vec a n → ∃ Nat (_≡ n)
+vlength [] = 0 ⟨ refl ⟩
+vlength (x ∷ xs) =
+  let n ⟨ eq ⟩ = vlength xs
+  in  (1 + n) ⟨ cong suc eq ⟩
 
 {-# COMPILE AGDA2HS vlength to llength #-}
 
-test3 : Nat
+test3 : ∃ Nat (_≡ 3)
 test3 = vlength test1
 
 {-# COMPILE AGDA2HS test3 #-}
