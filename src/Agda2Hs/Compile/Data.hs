@@ -11,17 +11,21 @@ import Agda.TypeChecking.Reduce
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
 
+import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils
 
+import Agda2Hs.Compile.Name
 import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils ( hsName )
+
+import Agda2Hs.Pragma
 
 checkNewtype :: Hs.Name () -> [Hs.QualConDecl ()] -> C ()
 checkNewtype name cs = do
@@ -39,8 +43,9 @@ compileData newtyp ds def = do
   reportSDoc "agda2hs.data" 10 $ text "Datatype telescope:" <+> prettyTCM tel
   allIndicesErased t
   let params = teleArgs tel
+  binds <- compileTeleBinds False tel -- TODO: add kind annotations?
   addContext tel $ do
-    binds <- compileTeleBinds tel
+    -- TODO: filter out erased constructors
     cs <- mapM (compileConstructor params) cs
     let hd = foldl (Hs.DHApp ()) (Hs.DHead () d) binds
 
@@ -49,21 +54,23 @@ compileData newtyp ds def = do
     when newtyp (checkNewtype d cs)
 
     return [Hs.DataDecl () target Nothing hd cs ds]
-  where
-    allIndicesErased :: Type -> C ()
-    allIndicesErased t = reduce (unEl t) >>= \case
-      Pi dom t -> compileDomType (absName t) dom >>= \case
-        DomDropped      -> allIndicesErased (unAbs t)
-        DomType{}       -> agda2hsError "Not supported: indexed datatypes"
-        DomConstraint{} -> agda2hsError "Not supported: constraints in types"
-        DomForall{}     -> agda2hsError "Not supported: indexed datatypes"
-      _ -> return ()
+
+allIndicesErased :: Type -> C ()
+allIndicesErased t = reduce (unEl t) >>= \case
+  Pi dom t -> compileDomType (absName t) dom >>= \case
+    DomDropped      -> allIndicesErased (unAbs t)
+    DomType{}       -> agda2hsError "Not supported: indexed datatypes"
+    DomConstraint{} -> agda2hsError "Not supported: constraints in types"
+    DomForall{}     -> agda2hsError "Not supported: indexed datatypes"
+  _ -> return ()
 
 compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl ())
 compileConstructor params c = do
   reportSDoc "agda2hs.data.con" 15 $ text "compileConstructor" <+> prettyTCM c
   reportSDoc "agda2hs.data.con" 20 $ text "  params = " <+> prettyTCM params
-  ty <- (`piApplyM` params) . defType =<< getConstInfo c
+  ty <- defType <$> getConstInfo c
+  reportSDoc "agda2hs.data.con" 30 $ text "  ty (before piApply) = " <+> prettyTCM ty
+  ty <- ty `piApplyM` params
   reportSDoc "agda2hs.data.con" 20 $ text "  ty = " <+> prettyTCM ty
   TelV tel _ <- telView ty
   let conName = hsName $ prettyShow $ qnameName c
@@ -82,18 +89,59 @@ compileConstructorArgs (ExtendTel a tel) = compileDomType (absName tel) a >>= \c
   DomForall{}       -> __IMPOSSIBLE__
 
 checkCompileToDataPragma :: Definition -> String -> C ()
-checkCompileToDataPragma def s = do
+checkCompileToDataPragma def s = noCheckNames $ do
   r <- resolveStringName s
-  let dcons = dataCons $ theDef def
-  unlessM (liftTCM $ isDatatype r) $ agda2hsErrorM $
-    "Cannot compile datatype" <+> prettyTCM (defName def) <+>
-    "to" <+> prettyTCM r <+> "because it is not a datatype"
-  -- TODO: check that parameters match
-  rcons <- liftTCM $ getConstructors r
-  -- TODO: filter out erased constructors
-  unless (length rcons == length dcons) $ agda2hsErrorM $
-    "Cannot compile datatype" <+> prettyTCM (defName def) <+>
-    "to" <+> prettyTCM r <+> "because they have a different number of constructors"
-  forM (zip dcons rcons) $ uncurry addCompileToName
-  --TODO: check that constructor types match
+  let ppd = prettyTCM (defName def)
+      ppr = prettyTCM r
+  let fail reason = agda2hsErrorM $
+        "Cannot compile datatype" <+> liftTCM ppd <+>
+        "to" <+> liftTCM ppr <+> "because" <+> reason
+  -- Start by adding compile-to rule because it makes the check
+  -- for constructor types easier
   addCompileToName (defName def) r
+  -- Check that target is a datatype with a regular COMPILE pragma
+  reportSDoc "agda2hs.compileto" 20 $ "Checking that" <+> ppr <+> "is a datatype"
+  unlessM (liftTCM $ isDatatype r) $ fail "it is not a datatype"
+  (rdef, rpragma) <- getDefAndPragma r
+  whenNothing (isSpecialCon r) $ case rpragma of
+    DefaultPragma{} -> return ()
+    NewTypePragma{} -> return ()
+    NoPragma{} -> fail "it is missing a COMPILE pragma"
+    _ -> fail "it has an unsupported COMPILE pragma"
+  -- Check that parameters match
+  reportSDoc "agda2hs.compileto" 20 $ "Checking that parameters of" <+> ppd <+> "match those of" <+> ppr
+  TelV dtel dtarget <- telViewUpTo (dataPars $ theDef def) (defType def)
+  rtel <- theTel <$> telViewUpTo (dataPars $ theDef rdef) (defType rdef)
+  dpars <- compileTeleBinds True dtel
+  rpars <- compileTeleBinds True rtel
+  unless (length rpars == length dpars) $ fail
+    "they have a different number of parameters"
+  forM (zip dpars rpars) $ \(Hs.KindedVar _ a ak, Hs.KindedVar _ b bk) ->
+    unless (ak == bk) $ fail $
+      "parameter" <+> text (Hs.pp a) <+> "of kind" <+> text (Hs.pp ak) <+>
+      "does not match" <+> text (Hs.pp b) <+> "of kind" <+> text (Hs.pp bk)
+  -- Check that d has no non-erased indices
+  addContext dtel $ allIndicesErased dtarget
+  -- Check that constructors match
+  -- TODO: filter out erased constructors
+  reportSDoc "agda2hs.compileto" 20 $ "Checking that constructors of" <+> ppd <+> "match those of" <+> ppr
+  let dcons = dataCons $ theDef def
+      rcons = dataCons $ theDef rdef
+  unless (length rcons == length dcons) $ fail
+    "they have a different number of constructors"
+  forM_ (zip dcons rcons) $ \(c1, c2) -> do
+    Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC1 args1) <-
+      addContext dtel $ compileConstructor (teleArgs dtel) c1
+    Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC2 args2) <-
+      addContext rtel $ compileConstructor (teleArgs rtel) c2
+    unless (hsC1 == hsC2) $ fail $
+      "name of constructor" <+> text (Hs.pp hsC1) <+>
+      "does not match" <+> text (Hs.pp hsC2)
+    unless (length args1 == length args2) $ fail $
+      "number of arguments to" <+> text (Hs.pp hsC1) <+>
+      "does not match with" <+> text (Hs.pp hsC2)
+    forM (zip args1 args2) $ \(b1, b2) ->
+      unless (b1 == b2) $ fail $
+        "constructor argument type" <+> text (Hs.pp b1) <+>
+        "does not match with" <+> text (Hs.pp b2)
+    addCompileToName c1 c2

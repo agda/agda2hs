@@ -336,23 +336,23 @@ withLocals :: LocalDecls -> C a -> C a
 withLocals ls = local $ \e -> e { locals = ls }
 
 checkValidVarName :: Hs.Name () -> C ()
-checkValidVarName x = unless (validVarName x) $ agda2hsErrorM $ do
+checkValidVarName x = whenM doNameCheck $ unless (validVarName x) $ agda2hsErrorM $ do
   text "Invalid name for Haskell variable: " <+> text (Hs.prettyPrint x)
 
 checkValidTyVarName :: Hs.Name () -> C ()
-checkValidTyVarName x = unless (validVarName x) $ agda2hsErrorM $ do
+checkValidTyVarName x = whenM doNameCheck $ unless (validVarName x) $ agda2hsErrorM $ do
   text "Invalid name for Haskell type variable: " <+> text (Hs.prettyPrint x)
 
 checkValidFunName :: Hs.Name () -> C ()
-checkValidFunName x = unless (validVarName x) $ agda2hsErrorM $ do
+checkValidFunName x = whenM doNameCheck $ unless (validVarName x) $ agda2hsErrorM $ do
   text "Invalid name for Haskell function: " <+> text (Hs.prettyPrint x)
 
 checkValidTypeName :: Hs.Name () -> C ()
-checkValidTypeName x = unless (validTypeName x) $ agda2hsErrorM $ do
+checkValidTypeName x = whenM doNameCheck $ unless (validTypeName x) $ agda2hsErrorM $ do
   text "Invalid name for Haskell type: " <+> text (Hs.prettyPrint x)
 
 checkValidConName :: Hs.Name () -> C ()
-checkValidConName x = unless (validConName x) $ agda2hsErrorM $ do
+checkValidConName x = whenM doNameCheck $ unless (validConName x) $ agda2hsErrorM $ do
   text "Invalid name for Haskell constructor: " <+> text (Hs.prettyPrint x)
 
 tellImport :: Import -> C ()
@@ -423,3 +423,9 @@ checkNoAsPatterns = \case
 
 noWriteImports :: C a -> C a
 noWriteImports = local $ \e -> e { writeImports = False }
+
+noCheckNames :: C a -> C a
+noCheckNames = local $ \e -> e { checkNames = False }
+
+doNameCheck :: C Bool
+doNameCheck = reader checkNames
