@@ -26,7 +26,7 @@ private
     rewrite sym $ concatMap-++-distr (map (u ∘_) v) (((pure _∘_) <*> us) <*> v) (λ f → map f w)
       | sym $ map-<*>-recomp v w u
       | compositionList us v w
-    = refl 
+    = refl
 
   interchangeList : {a b : Type} → (u : List (a → b)) → (y : a)
     → (u <*> (pure y)) ≡ (pure (_$ y) <*> u)

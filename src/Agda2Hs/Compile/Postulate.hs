@@ -10,7 +10,7 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( hsName, pp, hsError ) 
+import Agda2Hs.Language.Haskell.Utils ( hsName, pp, hsError )
 
 compilePostulate :: Definition -> C [Hs.Decl ()]
 compilePostulate def = do

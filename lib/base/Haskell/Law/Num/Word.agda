@@ -61,7 +61,7 @@ addWord-comm : Commutative addWord
 addWord-comm = map-comm addWord addNat w2n n2w (embedding +-wordsAsNats) addNat-comm
 
 addWord-assoc : Associative addWord
-addWord-assoc = map-assoc addWord addNat w2n n2w (embedding +-wordsAsNats) addNat-assoc 
+addWord-assoc = map-assoc addWord addNat w2n n2w (embedding +-wordsAsNats) addNat-assoc
 
 mulWord-comm : Commutative mulWord
 mulWord-comm = map-comm mulWord mulNat w2n n2w (embedding *-wordsAsNats) mulNat-comm

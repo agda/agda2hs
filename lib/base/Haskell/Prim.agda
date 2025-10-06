@@ -101,7 +101,7 @@ magic ()
 
 --principle of explosion
 exFalso : {x : Bool} → (x ≡ True) → (x ≡ False) → ⊥
-exFalso {False} () b 
+exFalso {False} () b
 exFalso {True} a ()
 
 -- Use to bundle up constraints

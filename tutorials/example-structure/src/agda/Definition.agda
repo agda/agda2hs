@@ -1,4 +1,4 @@
-module Definition where 
+module Definition where
 
 open import Haskell.Prelude
 

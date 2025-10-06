@@ -1,4 +1,4 @@
 name: example-proofs
 include: .
-depend: agda2hs-base, standard-library
+depend: agda2hs, standard-library
 flags: --erasure --no-projection-like

@@ -9,5 +9,5 @@ main = do file ← readFile "IOFile.agda"
           file2 ← readFile "IOFile2.agda"
           print file2
           return tt
-          
+
 {-# COMPILE AGDA2HS main #-}

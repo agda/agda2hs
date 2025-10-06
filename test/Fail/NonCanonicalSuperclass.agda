@@ -24,7 +24,7 @@ open Subclass {{...}} public
 
 {-# COMPILE AGDA2HS Subclass class #-}
 
-instance 
+instance
   SubclassBool : Subclass Bool
   SubclassBool .super = record { foo = id }
   SubclassBool .bar = False

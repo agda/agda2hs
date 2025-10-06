@@ -16,6 +16,6 @@ instance
   iLawfulMonoidMaybe .leftIdentity = λ { Nothing → refl; (Just _) → refl }
 
   iLawfulMonoidMaybe .concatenation [] = refl
-  iLawfulMonoidMaybe .concatenation (x ∷ xs) 
+  iLawfulMonoidMaybe .concatenation (x ∷ xs)
     rewrite (concatenation xs)
     = refl

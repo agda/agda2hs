@@ -19,7 +19,7 @@ module _ {a : Type} {{_ : Ord a}} where
     : null {a} empty ≡ True
   --
   prop-null-empty =
-    prop-member-null empty prop-member-empty 
+    prop-member-null empty prop-member-empty
 
 {-----------------------------------------------------------------------------
     Properties

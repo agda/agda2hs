@@ -9,7 +9,7 @@ module M (a : Type) where
   data Scope : Type where
     Empty : Scope
     Bind  : a → Scope → Scope
-  
+
   {-# COMPILE AGDA2HS Scope #-}
 
   unbind : Scope → Scope

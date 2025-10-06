@@ -12,7 +12,7 @@ open import Haskell.Prim.Applicative
 --------------------------------------------------
 -- _∷_
 
-module _ {x y : a} {xs ys : List a} where  
+module _ {x y : a} {xs ys : List a} where
   ∷-injective-left : x ∷ xs ≡ y ∷ ys → x ≡ y
   ∷-injective-left refl = refl
 
@@ -40,14 +40,14 @@ map-∘ g f (x ∷ xs) = cong (_ ∷_) (map-∘ g f xs)
 
 map-concatMap : ∀ (f : a → b) (xs : List a) → (map f xs) ≡ concatMap (λ g → f g ∷ []) xs
 map-concatMap f [] = refl
-map-concatMap f (x ∷ xs) 
+map-concatMap f (x ∷ xs)
   rewrite map-concatMap f xs
   = refl
 
-map-<*>-recomp : {a b c : Type} → (xs : List (a → b)) → (ys : List a) → (u : (b → c))  
+map-<*>-recomp : {a b c : Type} → (xs : List (a → b)) → (ys : List a) → (u : (b → c))
   → ((map (u ∘_) xs) <*> ys) ≡ map u (xs <*> ys)
 map-<*>-recomp [] _ _  = refl
-map-<*>-recomp (x ∷ xs) ys u 
+map-<*>-recomp (x ∷ xs) ys u
   rewrite map-∘ u x ys
     | map-++ u (map x ys) (xs <*> ys)
     | map-<*>-recomp  xs ys u
@@ -102,7 +102,7 @@ lengthNat-++ (x ∷ xs) = cong suc (lengthNat-++ xs)
 ++-cancel-right []       []       eq = refl
 ++-cancel-right (x ∷ xs) []       eq = ++-identity-left-unique (x ∷ xs) (sym eq)
 ++-cancel-right []       (y ∷ ys) eq = sym $ ++-identity-left-unique (y ∷ ys) eq
-++-cancel-right (x ∷ xs) (y ∷ ys) eq 
+++-cancel-right (x ∷ xs) (y ∷ ys) eq
   rewrite ∷-injective-left eq = cong (y ∷_) $ ++-cancel-right xs ys (∷-injective-right eq)
 
 ++-conical-left : (xs ys : List a) → xs ++ ys ≡ [] → xs ≡ []
@@ -114,7 +114,7 @@ lengthNat-++ (x ∷ xs) = cong suc (lengthNat-++ xs)
 ∷-not-identity : ∀ x (xs ys : List a) → (x ∷ xs) ++ ys ≡ ys → ⊥
 ∷-not-identity x xs ys eq = []≠∷ x xs (sym $ ++-identity-left-unique (x ∷ xs) (sym eq))
 
-concatMap-++-distr : ∀ (xs ys : List a) (f : a → List b) → 
+concatMap-++-distr : ∀ (xs ys : List a) (f : a → List b) →
   ((concatMap f xs) ++ (concatMap f ys)) ≡ (concatMap f (xs ++ ys))
 concatMap-++-distr [] ys f = refl
 concatMap-++-distr (x ∷ xs) ys f
@@ -129,7 +129,7 @@ foldr-universal : ∀ (h : List a → b) f e → (h [] ≡ e) →
                   (∀ x xs → h (x ∷ xs) ≡ f x (h xs)) →
                   ∀ xs → h xs ≡ foldr f e xs
 foldr-universal h f e base step []       = base
-foldr-universal h f e base step (x ∷ xs) rewrite step x xs = cong (f x) (foldr-universal h f e base step xs) 
+foldr-universal h f e base step (x ∷ xs) rewrite step x xs = cong (f x) (foldr-universal h f e base step xs)
 
 foldr-cong : ∀ {f g : a → b → b} {d e : b} →
             (∀ x y → f x y ≡ g x y) → d ≡ e →

@@ -32,7 +32,7 @@ Standard data type declarations have a simple equivalent in Agda.
 Agda:
 ```agda
 data Nat : Type where
-    Zero : Nat 
+    Zero : Nat
     Suc : Nat → Nat
 
 {-# COMPILE AGDA2HS Nat #-}
@@ -52,7 +52,7 @@ Agda:
 data Tree (a : Type) : Type where
     Leaf   : a → Tree a
     Branch : a → Tree a → Tree a → Tree a
-    
+
 {-# COMPILE AGDA2HS Tree #-}
 ```
 
@@ -197,7 +197,7 @@ negate True = False
 negate False = True
 
 negate' :: Bool -> Bool
-negate' x = case x of 
+negate' x = case x of
     True -> False
     False -> True
 
@@ -260,7 +260,7 @@ createRange low high = if low <= high then Just (MkRange low high) else Nothing
 {-# COMPILE AGDA2HS createRange #-}
 
 createRangeCase : Int → Int → Maybe Range
-createRangeCase low high = 
+createRangeCase low high =
     case low <= high of λ where
         True → Just (MkRange low high)
         False → Nothing
@@ -393,7 +393,7 @@ open Equal public
 {-# COMPILE AGDA2HS Equal newtype #-}
 
 constructEqual : ⦃ iEqA : Eq a ⦄ → @0 ⦃ IsLawfulEq a ⦄ → (c : a) → (d : a) → Maybe (Equal a)
-constructEqual a b = 
+constructEqual a b =
   if a == b then
     (λ ⦃ h ⦄ → Just (MkEqual (a , b) (equality a b h)))
   else Nothing
@@ -475,10 +475,10 @@ record Class2 (a : Type) : Type where
 Haskell:
 ```hs
 class Class1 a where
-    field1 :: a 
+    field1 :: a
 
 class Class1 a => Class2 a where
-    field2 :: a 
+    field2 :: a
 ```
 
 ### Default Typeclass Field Implementations
@@ -507,7 +507,7 @@ open Ord ⦃ ... ⦄
 
 {-# COMPILE AGDA2HS Ord class Ord₁ Ord₂ #-}
 
-instance 
+instance
     Ord₁-Bool : Ord₁ Bool
     Ord₁-Bool .Ord₁._<_ False b = b
     Ord₁-Bool .Ord₁._<_ True _ = False
@@ -701,7 +701,7 @@ add1 = 1 +_
 
 Haskell:
 ```hs
-add1 :: Nat -> Nat 
+add1 :: Nat -> Nat
 add1 = (1 +)
 ```
 
@@ -729,7 +729,7 @@ even (Suc n) = odd n
 
 odd :: Nat -> Bool
 odd Zero = False
-odd (Suc n) = even n 
+odd (Suc n) = even n
 ```
 
 ### Mutually Recursive Datatype and Function

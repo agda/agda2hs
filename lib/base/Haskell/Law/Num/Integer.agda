@@ -290,7 +290,7 @@ instance
   iLawfulNumInteger .IsLawfulNum.+-idˡ x = addInteger-idˡ x
   iLawfulNumInteger .IsLawfulNum.+-idʳ x = addInteger-idʳ x
   iLawfulNumInteger .IsLawfulNum.neg-inv x = n-n≡0-Integer x
-  iLawfulNumInteger .IsLawfulNum.*-assoc = mulInteger-assoc 
+  iLawfulNumInteger .IsLawfulNum.*-assoc = mulInteger-assoc
   iLawfulNumInteger .IsLawfulNum.*-idˡ x = mulInteger-idˡ x
   iLawfulNumInteger .IsLawfulNum.*-idʳ x = mulInteger-idʳ x
   iLawfulNumInteger .IsLawfulNum.distributeˡ = mulInteger-distributeˡ-addInteger

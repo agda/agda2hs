@@ -82,17 +82,17 @@ eq2ngt x y h
 
 lte2LtEq : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x <= y) ≡ (x < y || x == y)
-lte2LtEq x y 
+lte2LtEq x y
   rewrite lt2LteNeq x y
     | compareEq x y
   with (x <= y) in h₁ | (compare x y) in h₂
 ... | False | LT = refl
-... | False | EQ = magic $ exFalso (reflexivity x) $ begin 
-    (x <= x)  ≡⟨ (cong (x <=_) (equality x y (begin 
-      (x == y)            ≡⟨ compareEq x y ⟩ 
-      (compare x y == EQ) ≡⟨ equality' (compare x y) EQ h₂ ⟩ 
+... | False | EQ = magic $ exFalso (reflexivity x) $ begin
+    (x <= x)  ≡⟨ (cong (x <=_) (equality x y (begin
+      (x == y)            ≡⟨ compareEq x y ⟩
+      (compare x y == EQ) ≡⟨ equality' (compare x y) EQ h₂ ⟩
       True                ∎ ) ) ) ⟩
-    (x <= y)  ≡⟨ h₁ ⟩ 
+    (x <= y)  ≡⟨ h₁ ⟩
     False ∎
 ... | False | GT = refl
 ... | True  | LT = refl
@@ -116,9 +116,9 @@ gte2nlt x y
     | compareEq x y
     | compareLt x y
   with compare x y
-... | GT = refl 
-... | EQ = refl 
-... | LT = refl 
+... | GT = refl
+... | EQ = refl
+... | LT = refl
 
 gte2nLT : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x >= y) ≡ (compare x y /= LT)
@@ -135,9 +135,9 @@ lte2ngt x y
     | compareEq x y
     | compareGt x y
   with compare x y
-... | GT = refl 
-... | EQ = refl 
-... | LT = refl 
+... | GT = refl
+... | EQ = refl
+... | LT = refl
 
 lte2nGT : ⦃ iOrdA : Ord a ⦄ → ⦃ IsLawfulOrd a ⦄
   → ∀ (x y : a) → (x <= y) ≡ (compare x y /= GT)

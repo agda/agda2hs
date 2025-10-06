@@ -80,7 +80,7 @@ module _ {k a : Type} {{_ : Ord k}} where
       : ∀ (m : Map k a)
       → null m ≡ True
       → m ≡ empty
-  
+
     prop-equality
       : ∀ {m1 m2 : Map k a}
       → (∀ (key : k) → lookup key m1 ≡ lookup key m2)
@@ -180,7 +180,7 @@ instance
 module _ {k : Type} {{_ : Ord k}} where
   postulate
     instance
-      iMapFunctor : Functor (Map k)    
+      iMapFunctor : Functor (Map k)
 
 module _ {k a b : Type} {{_ : Ord k}} where
   postulate

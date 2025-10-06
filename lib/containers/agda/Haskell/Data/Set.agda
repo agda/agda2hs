@@ -76,17 +76,17 @@ module _ {a : Type} {{_ : Ord a}} where
       → member x (union s1 s2)
         ≡ (member x s1 || member x s2)
 
-    prop-member-intersection    
+    prop-member-intersection
       : ∀ (x : a) (s1 s2 : Set a)
       → member x (intersection s1 s2)
         ≡ (member x s1 && member x s2)
 
-    prop-member-difference    
+    prop-member-difference
       : ∀ (x : a) (s1 s2 : Set a)
       → member x (difference s1 s2)
         ≡ (member x s1 && not (member x s2))
-    
-    prop-member-filter    
+
+    prop-member-filter
       : ∀ (x : a) (p : a → Bool) (s : Set a)
       → member x (filter p s)
         ≡ (p x && member x s)

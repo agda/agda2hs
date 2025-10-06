@@ -110,7 +110,7 @@ instance
 postulate
   bindIO : IO a → (a → IO b) → IO b
 
-instance  
+instance
   iDefaultMonadIO : DefaultMonad IO
   iDefaultMonadIO .DefaultMonad._>>=_ = bindIO
 
