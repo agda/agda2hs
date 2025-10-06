@@ -14,6 +14,11 @@ record ∃ (a : Type ℓ) (@0 P : a → Type ℓ′) : Type (ℓ ⊔ ℓ′) whe
 open ∃ public
 {-# COMPILE AGDA2HS ∃ unboxed #-}
 
+_⟨⟩ : {@0 P : a → Type ℓ} (x : a) → @0 {{P x}} → ∃ a P
+(x ⟨⟩) {{p}} = x ⟨ p ⟩
+
+{-# COMPILE AGDA2HS _⟨⟩ inline #-}
+
 mapRefine : {@0 P Q : a → Type ℓ} (@0 f : ∀ {x} → P x → Q x) → ∃ a P → ∃ a Q
 mapRefine f (x ⟨ p ⟩) = x ⟨ f p ⟩
 
