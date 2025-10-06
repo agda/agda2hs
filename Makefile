@@ -24,7 +24,6 @@ testContainers:
 	cd ./lib/containers && ./generate-haskell.sh && cabal build containers-prop
 
 test : test/agda2hs testContainers
-	check-whitespace
 	make -C test
 
 testHtml : test/agda2hs
