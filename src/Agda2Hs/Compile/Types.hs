@@ -29,6 +29,8 @@ data GlobalEnv = GlobalEnv
   { globalOptions :: Options
   , compileToMap :: IORef (Map QName QName)
   -- ^ names with a compile-to pragma
+  , inlineSymbols :: IORef (Set QName)
+  -- ^ names of functions that should be inlined
   }
 
 type ModuleEnv   = TopLevelModuleName

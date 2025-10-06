@@ -394,31 +394,11 @@ checkTransparentPragma def = compileFun False def >>= \case
       "A transparent function must have exactly one non-erased argument and return it unchanged."
 
 
--- | Ensure a definition can be defined as inline.
+-- | Mark a definition as one that should be inlined.
 checkInlinePragma :: Definition -> C ()
-checkInlinePragma def@Defn{defName = f} = do
-  let Function{funClauses = cs} = theDef def
-  case filter (isJust . clauseBody) cs of
-    [c] ->
-      unlessM (allowedPats (namedClausePats c)) $ agda2hsErrorM $
-        "Cannot make function" <+> prettyTCM (defName def) <+> "inlinable." <+>
-        "Inline functions can only use variable patterns or transparent record constructor patterns."
-    _ ->
-      agda2hsErrorM $
-        "Cannot make function" <+> prettyTCM f <+> "inlinable." <+>
-        "An inline function must have exactly one clause."
-
-  where allowedPat :: DeBruijnPattern -> C Bool
-        allowedPat VarP{} = pure True
-        -- only allow matching on (unboxed) record constructors
-        allowedPat (ConP ch ci cargs) =
-          isUnboxConstructor (conName ch) >>= \case
-            Just _  -> allowedPats cargs
-            Nothing -> pure False
-        allowedPat _ = pure False
-
-        allowedPats :: NAPs -> C Bool
-        allowedPats pats = allM (allowedPat . dget . dget) pats
+checkInlinePragma def@(Defn { defName = q , theDef = df }) = do
+  let qs = fromMaybe [] $ getMutual_ df
+  addInlineSymbols $ q : qs
 
 checkCompileToFunctionPragma :: Definition -> String -> C ()
 checkCompileToFunctionPragma def s = noCheckNames $ do
