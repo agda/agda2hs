@@ -142,7 +142,7 @@ necessary) with the following snippet.</p>
 <p>Standard data type declarations have a simple equivalent in Agda.</p>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Nat<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
-<span class="w">    </span><span class="nf">Zero</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat<span class="w"> </span>
+<span class="w">    </span><span class="nf">Zero</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat
 <span class="w">    </span><span class="nf">Suc</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Nat
 
 <span class="cm">{-# COMPILE AGDA2HS Nat #-}</span>
@@ -158,7 +158,7 @@ necessary) with the following snippet.</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Tree<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="nf">Leaf</span><span class="w">   </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Tree<span class="w"> </span>a
 <span class="w">    </span><span class="nf">Branch</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Tree<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Tree<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Tree<span class="w"> </span>a
-<span class="w">    </span>
+
 <span class="cm">{-# COMPILE AGDA2HS Tree #-}</span>
 </pre></div>
 </div>
@@ -293,7 +293,7 @@ negate&#39;&#39;<span class="w"> </span><span class="ow">=</span><span class="w"
 <span class="nf">negate</span><span class="w"> </span><span class="kt">False</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">True</span>
 
 <span class="nf">negate&#39;</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
-<span class="nf">negate&#39;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">case</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="kr">of</span><span class="w"> </span>
+<span class="nf">negate&#39;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">case</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="kr">of</span>
 <span class="w">    </span><span class="kt">True</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">False</span>
 <span class="w">    </span><span class="kt">False</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">True</span>
 
@@ -352,7 +352,7 @@ createRange<span class="w"> </span>low<span class="w"> </span>high<span class="w
 <span class="cm">{-# COMPILE AGDA2HS createRange #-}</span>
 
 <span class="nf">createRangeCase</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Int<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Int<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Maybe<span class="w"> </span>Range
-createRangeCase<span class="w"> </span>low<span class="w"> </span>high<span class="w"> </span><span class="ow">=</span><span class="w"> </span>
+createRangeCase<span class="w"> </span>low<span class="w"> </span>high<span class="w"> </span><span class="ow">=</span>
 <span class="w">    </span>case<span class="w"> </span>low<span class="w"> </span>&lt;=<span class="w"> </span>high<span class="w"> </span>of<span class="w"> </span><span class="ow">λ</span><span class="w"> </span><span class="kr">where</span>
 <span class="w">        </span>True<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Just<span class="w"> </span><span class="o">(</span>MkRange<span class="w"> </span>low<span class="w"> </span>high<span class="o">)</span>
 <span class="w">        </span>False<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Nothing
@@ -475,7 +475,7 @@ In this case, you can also implement the <code class="docutils literal notransla
 <span class="cm">{-# COMPILE AGDA2HS Equal newtype #-}</span>
 
 <span class="nf">constructEqual</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>⦃<span class="w"> </span>iEqA<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Eq<span class="w"> </span>a<span class="w"> </span>⦄<span class="w"> </span><span class="ow">→</span><span class="w"> </span>@0<span class="w"> </span>⦃<span class="w"> </span>IsLawfulEq<span class="w"> </span>a<span class="w"> </span>⦄<span class="w"> </span><span class="ow">→</span><span class="w"> </span><span class="o">(</span>c<span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span><span class="o">(</span>d<span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span>Maybe<span class="w"> </span><span class="o">(</span>Equal<span class="w"> </span>a<span class="o">)</span>
-constructEqual<span class="w"> </span>a<span class="w"> </span>b<span class="w"> </span><span class="ow">=</span><span class="w"> </span>
+constructEqual<span class="w"> </span>a<span class="w"> </span>b<span class="w"> </span><span class="ow">=</span>
 <span class="w">  </span>if<span class="w"> </span>a<span class="w"> </span><span class="ow">==</span><span class="w"> </span>b<span class="w"> </span>then
 <span class="w">    </span><span class="o">(</span><span class="ow">λ</span><span class="w"> </span>⦃<span class="w"> </span>h<span class="w"> </span>⦄<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Just<span class="w"> </span><span class="o">(</span>MkEqual<span class="w"> </span><span class="o">(</span>a<span class="w"> </span>,<span class="w"> </span>b<span class="o">)</span><span class="w"> </span><span class="o">(</span>equality<span class="w"> </span>a<span class="w"> </span>b<span class="w"> </span>h<span class="o">)))</span>
 <span class="w">  </span>else<span class="w"> </span>Nothing
@@ -553,10 +553,10 @@ class1-implies-class2<span class="w"> </span>_<span class="w"> </span>class1<spa
 </div>
 <p>Haskell:</p>
 <div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">Class1</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kr">where</span>
-<span class="w">    </span><span class="n">field1</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span>
+<span class="w">    </span><span class="n">field1</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span>
 
 <span class="kr">class</span><span class="w"> </span><span class="kt">Class1</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Class2</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kr">where</span>
-<span class="w">    </span><span class="n">field2</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span>
+<span class="w">    </span><span class="n">field2</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span>
 </pre></div>
 </div>
 </section>
@@ -585,7 +585,7 @@ class1-implies-class2<span class="w"> </span>_<span class="w"> </span>class1<spa
 
 <span class="cm">{-# COMPILE AGDA2HS Ord class Ord₁ Ord₂ #-}</span>
 
-<span class="kr">instance</span><span class="w"> </span>
+<span class="kr">instance</span>
 <span class="w">    </span><span class="nf">Ord₁-Bool</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Ord₁<span class="w"> </span>Bool
 <span class="w">    </span>Ord₁-Bool<span class="w"> </span><span class="ow">.</span>Ord₁._&lt;_<span class="w"> </span>False<span class="w"> </span>b<span class="w"> </span><span class="ow">=</span><span class="w"> </span>b
 <span class="w">    </span>Ord₁-Bool<span class="w"> </span><span class="ow">.</span>Ord₁._&lt;_<span class="w"> </span>True<span class="w"> </span>_<span class="w"> </span><span class="ow">=</span><span class="w"> </span>False
@@ -767,7 +767,7 @@ add1<span class="w"> </span><span class="ow">=</span><span class="w"> </span><sp
 </pre></div>
 </div>
 <p>Haskell:</p>
-<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="nf">add1</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Nat</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Nat</span><span class="w"> </span>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="nf">add1</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Nat</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Nat</span>
 <span class="nf">add1</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -794,7 +794,7 @@ add1<span class="w"> </span><span class="ow">=</span><span class="w"> </span><sp
 
 <span class="nf">odd</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Nat</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
 <span class="nf">odd</span><span class="w"> </span><span class="kt">Zero</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">False</span>
-<span class="nf">odd</span><span class="w"> </span><span class="p">(</span><span class="kt">Suc</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">even</span><span class="w"> </span><span class="n">n</span><span class="w"> </span>
+<span class="nf">odd</span><span class="w"> </span><span class="p">(</span><span class="kt">Suc</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">even</span><span class="w"> </span><span class="n">n</span>
 </pre></div>
 </div>
 </section>
