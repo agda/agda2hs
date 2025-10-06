@@ -179,7 +179,7 @@ module _ {k a : Type} {{_ : Ord k}} where
           lookup key (union ma (union mb mc))
         ∎
 
-  -- 
+  --
   prop-lookup-filter
     : ∀ (key : k) (m : Map k a) (p : a → Bool)
     → lookup key (filter p m)
@@ -200,7 +200,7 @@ module _ {k a : Type} {{_ : Ord k}} where
       lookup key (filterWithKey p m)
     ≡⟨ prop-lookup-filterWithKey key m p ⟩
       Maybe.filter (p key) (lookup key m)
-    ≡⟨ cong (Maybe.filter (p key)) eq ⟩    
+    ≡⟨ cong (Maybe.filter (p key)) eq ⟩
       Maybe.filter (p key) (Just x)
     ≡⟨⟩
       (if p key x then Just x else Nothing)
@@ -238,7 +238,7 @@ module _ {k a : Type} {{_ : Ord k}} where
   ... | True | True = refl
   ... | True | False = trans (sym eqr) lem2 -- contradiction
     where
-      lem1 = λ key → 
+      lem1 = λ key →
         begin
           Set.member key (keysSet m)
         ≡⟨ prop-member-keysSet ⟩
@@ -252,7 +252,7 @@ module _ {k a : Type} {{_ : Ord k}} where
   ... | False | False = refl
   ... | False | True = sym (trans (sym eql) lem2) -- contradiction
     where
-      lem1 = λ key → 
+      lem1 = λ key →
         begin
           member key m
         ≡⟨ sym prop-member-keysSet ⟩
@@ -285,7 +285,7 @@ module _ {k a : Type} {{_ : Ord k}} where
       : ∀ {ma mb : Map k a}
       → keysSet (intersection ma mb)
         ≡ Set.intersection (keysSet ma) (keysSet mb)
-  -- 
+  --
   prop-keysSet-intersection {ma} {mb} = Set.prop-equality lem1
     where
       lem1
@@ -316,7 +316,7 @@ module _ {k a : Type} {{_ : Ord k}} where
     : ∀ {ma mb : Map k a}
     → keysSet (union ma mb)
       ≡ Set.union (keysSet ma) (keysSet mb)
-  -- 
+  --
   prop-keysSet-union {ma} {mb} = Set.prop-equality lem1
     where
       lem1
@@ -332,7 +332,7 @@ module _ {k a : Type} {{_ : Ord k}} where
         with lookup key ma | lookup key mb
       ... | Nothing | Nothing = refl
       ... | Just a  | Nothing = refl
-      ... | Nothing | Just b  = refl 
+      ... | Nothing | Just b  = refl
       ... | Just a  | Just b  = refl
 
   --

@@ -24,7 +24,7 @@ mapRefine f (x ⟨ p ⟩) = x ⟨ f p ⟩
 
 {-# COMPILE AGDA2HS mapRefine transparent #-}
 
-refineMaybe : {@0 P : a → Type ℓ} 
+refineMaybe : {@0 P : a → Type ℓ}
             → (mx : Maybe a) → @0 (∀ {x} → mx ≡ Just x → P x)
             → Maybe (∃ a P)
 refineMaybe Nothing f = Nothing
