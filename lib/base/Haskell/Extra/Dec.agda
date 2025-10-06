@@ -63,3 +63,20 @@ instance
       isFalseIsTrueNot {False} IsFalse.itsFalse = IsTrue.itsTrue
   {-# COMPILE AGDA2HS iDecIsFalse inline #-}
 
+  iDecPair : {{Dec a}} → {{Dec b}} → Dec (a × b)
+  iDecPair ⦃ b1 ⟨ r1 ⟩ ⦄ ⦃ b2 ⟨ r2 ⟩ ⦄ = (b1 && b2) ⟨ ×-reflects-&& r1 r2 ⟩
+    where
+      @0 ×-reflects-&& : ∀ {b1 b2 p q} → Reflects p b1 → Reflects q b2 → Reflects (p × q) (b1 && b2)
+      ×-reflects-&& {False} {_}     r1 r2 = r1 ∘ fst
+      ×-reflects-&& {True}  {False} r1 r2 = r2 ∘ snd
+      ×-reflects-&& {True}  {True}  r1 r2 = r1 , r2
+  {-# COMPILE AGDA2HS iDecPair inline #-}
+
+  iDecEither : {{Dec a}} → {{Dec b}} → Dec (Either a b)
+  iDecEither ⦃ b1 ⟨ r1 ⟩ ⦄ ⦃ b2 ⟨ r2 ⟩ ⦄ = (b1 || b2) ⟨ Either-reflects-|| r1 r2 ⟩
+    where
+      @0 Either-reflects-|| : ∀ {b1 b2 p q} → Reflects p b1 → Reflects q b2 → Reflects (Either p q) (b1 || b2)
+      Either-reflects-|| {False} {False} r1 r2 = either r1 r2
+      Either-reflects-|| {False} {True}  r1 r2 = Right r2
+      Either-reflects-|| {True}  {_}     r1 r2 = Left r1
+  {-# COMPILE AGDA2HS iDecEither inline #-}
