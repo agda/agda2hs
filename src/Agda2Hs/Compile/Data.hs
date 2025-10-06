@@ -18,7 +18,7 @@ import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda2Hs.AgdaUtils
 
 import Agda2Hs.Compile.Name
-import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds )
+import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds, compileDom, DomOutput(..) )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
@@ -116,7 +116,7 @@ checkCompileToDataPragma def s = noCheckNames $ do
   rpars <- compileTeleBinds True rtel
   unless (length rpars == length dpars) $ fail
     "they have a different number of parameters"
-  forM (zip dpars rpars) $ \(Hs.KindedVar _ a ak, Hs.KindedVar _ b bk) ->
+  forM_ (zip dpars rpars) $ \(Hs.KindedVar _ a ak, Hs.KindedVar _ b bk) ->
     unless (ak == bk) $ fail $
       "parameter" <+> text (Hs.pp a) <+> "of kind" <+> text (Hs.pp ak) <+>
       "does not match" <+> text (Hs.pp b) <+> "of kind" <+> text (Hs.pp bk)
@@ -132,16 +132,47 @@ checkCompileToDataPragma def s = noCheckNames $ do
   forM_ (zip dcons rcons) $ \(c1, c2) -> do
     Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC1 args1) <-
       addContext dtel $ compileConstructor (teleArgs dtel) c1
+    -- rename parameters of r to match those of d
+    rtel' <- renameParameters dtel rtel
     Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC2 args2) <-
-      addContext rtel $ compileConstructor (teleArgs rtel) c2
+      addContext rtel' $ compileConstructor (teleArgs rtel') c2
     unless (hsC1 == hsC2) $ fail $
       "name of constructor" <+> text (Hs.pp hsC1) <+>
       "does not match" <+> text (Hs.pp hsC2)
     unless (length args1 == length args2) $ fail $
       "number of arguments to" <+> text (Hs.pp hsC1) <+>
       "does not match with" <+> text (Hs.pp hsC2)
-    forM (zip args1 args2) $ \(b1, b2) ->
+    forM_ (zip args1 args2) $ \(b1, b2) ->
       unless (b1 == b2) $ fail $
         "constructor argument type" <+> text (Hs.pp b1) <+>
         "does not match with" <+> text (Hs.pp b2)
     addCompileToName c1 c2
+
+  where
+    -- Use the names of the non-erased variables in the first telescope
+    -- as the names of the non-erased variables in the second telescope.
+    renameParameters :: Telescope -> Telescope -> C Telescope
+    renameParameters tel1 tel2 = flip loop tel2 =<< nonErasedNames tel1
+      where
+        loop :: [ArgName] -> Telescope -> C Telescope
+        loop _ EmptyTel = pure EmptyTel
+        loop [] tel = pure tel
+        loop (x:xs) (ExtendTel dom tel) = compileDom dom >>= \case
+          DOType -> ExtendTel dom . Abs x <$>
+            underAbstraction dom tel (loop xs)
+          DODropped -> ExtendTel dom . Abs (absName tel) <$>
+            underAbstraction dom tel (loop (x:xs))
+          DOTerm -> __IMPOSSIBLE__
+          DOInstance -> __IMPOSSIBLE__
+
+    nonErasedNames :: Telescope -> C [ArgName]
+    nonErasedNames EmptyTel = pure []
+    nonErasedNames (ExtendTel dom tel) = do
+      cd <- compileDom dom
+      let mx = case cd of
+            DOType -> (absName tel :)
+            DODropped -> id
+            DOTerm -> __IMPOSSIBLE__
+            DOInstance -> __IMPOSSIBLE__
+      mx <$> underAbstraction dom tel nonErasedNames
+
