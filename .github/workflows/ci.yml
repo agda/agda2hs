@@ -54,12 +54,8 @@ jobs:
         key:          ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
         restore-keys: ${{ runner.os }}-${{ matrix.ghc }}-
 
-    - name: Get and run fix-whitespace
-      uses: andreasabel/fix-whitespace-action@v1
-
     - name: Run test suite
-      run: make test && git diff --exit-code \
-        FIX_WHITESPACE='~/.local/fix-whitespace/bin/fix-whitespace'
+      run: make test && git diff --exit-code
 
     - name: Generate Prelude HTML
       if: ${{ (matrix.ghc == matrix.deploy-ghc) && (github.ref == 'refs/heads/master') }}
