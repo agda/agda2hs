@@ -23,5 +23,6 @@ pkgs.haskellPackages.shellFor {
     pkgs.agda
     pkgs.nixfmt-rfc-style
     cabal2nix
+    pkgs.haskellPackages.fix-whitespace
   ];
 }
