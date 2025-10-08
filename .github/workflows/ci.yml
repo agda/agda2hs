@@ -43,6 +43,13 @@ jobs:
     - name: Freeze
       run: cabal freeze
 
+    # Install fix-whitespace since we need it for tests.
+    # This is done after the freeze to make sure we re-use the packages
+    - name: Install fix-whitespace
+      run: |
+        echo "import: cabal.project" > cabal.project.ci
+        cabal install fix-whitespace --project-file=cabal.project.ci
+
     # Cache the contents of ~/.cabal/store to avoid rebuilding dependencies for
     # every build. `restore-keys` makes it use the latest cache even if the
     # fingerprint doesn't match, so we don't need to start from scratch every
