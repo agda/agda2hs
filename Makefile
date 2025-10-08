@@ -23,7 +23,7 @@ test/agda2hs : $(FILES)
 testContainers:
 	cd ./lib/containers && ./generate-haskell.sh && cabal build containers-prop
 
-test : test/agda2hs testContainers
+test : check-whitespace test/agda2hs testContainers
 	make -C test
 
 testHtml : test/agda2hs
