@@ -23,7 +23,7 @@ test/agda2hs : $(FILES)
 testContainers:
 	cd ./lib/containers && ./generate-haskell.sh && cabal build containers-prop
 
-test : check-whitespace test/agda2hs testContainers
+test : checkWhitespace test/agda2hs testContainers
 	make -C test
 
 testHtml : test/agda2hs
@@ -40,12 +40,12 @@ docs :
 
 FIXW_BIN = fix-whitespace
 
-.PHONY : fix-whitespace ## Fix the whitespace issue.
-fix-whitespace : have-bin-$(FIXW_BIN) fix-whitespace.yaml
+.PHONY : fixWhitespace ## Fix the whitespace issue.
+fixWhitespace : have-bin-$(FIXW_BIN) fix-whitespace.yaml
 	$(FIXW_BIN)
 
-.PHONY : check-whitespace ## Check the whitespace issue without fixing it.
-check-whitespace : have-bin-$(FIXW_BIN) fix-whitespace.yaml
+.PHONY : checkWhitespace ## Check the whitespace issue without fixing it.
+checkWhitespace : have-bin-$(FIXW_BIN) fix-whitespace.yaml
 	$(FIXW_BIN) --check
 
 .PHONY : have-bin-% ## Installing binaries for developer services
