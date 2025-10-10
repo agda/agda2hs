@@ -112,9 +112,7 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
   whenM ((withSig &&) <$> inRecordMod defName) $
     agda2hsError "not supported: functions inside a record module"
 
-  x <- compileQName defName <&> \case
-    Hs.Qual _ _ x -> x
-    Hs.UnQual _ x -> x
+  x <- Hs.unQual <$> compileQName defName
 
   ifM (endsInSort defType)
     -- if the function type ends in Sort, it's a type alias!
