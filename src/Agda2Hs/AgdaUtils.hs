@@ -166,8 +166,7 @@ infoFlags =
 
 resolveStringName :: MonadTCM m => String -> m QName
 resolveStringName s = do
-  cqname <- liftTCM $ parseName noRange s
-  rname  <- liftTCM $ resolveName cqname
+  rname  <- liftTCM $ resolveName =<< parseName noRange s
   case rname of
     DefinedName _ aname _ -> return $ anameName aname
     _ -> liftTCM $ typeError $ CustomBackendError "agda2hs" $ fromString $ "Couldn't find " ++ s
