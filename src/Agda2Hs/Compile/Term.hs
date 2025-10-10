@@ -171,8 +171,8 @@ compileDef f ty args | Just sem <- isSpecialDef f = do
   sem ty args
 
 compileDef f ty args =
-  ifM (isTransparentFunction f) (compileErasedApp ty args) $
-  ifM (isInlinedFunction f) (compileInlineFunctionApp f ty args) $ do
+  ifM (isTransparentFunction f) (compileErasedApp ty args) $ do
+
     reportSDoc "agda2hs.compile.term" 12 $ text "Compiling application of regular function:" <+> prettyTCM f
 
     let defMod = qnameModule f
@@ -458,6 +458,9 @@ compileTerm ty v = do
 
   v <- instantiate v
 
+  toInline <- getInlineSymbols
+  v <- locallyReduceDefs (OnlyReduceDefs toInline) $ reduce v
+
   let bad s t = agda2hsErrorM $ vcat
         [ text "cannot compile" <+> text (s ++ ":")
         , nest 2 $ prettyTCM t
@@ -465,7 +468,8 @@ compileTerm ty v = do
 
   reduceProjectionLike v >>= \case
 
-    Def f es -> do
+    v@(Def f es) -> do
+      whenM (isInlinedFunction f) $ bad "inlined function" v
       ty <- defType <$> getConstInfo f
       compileSpined (compileDef f ty) (Def f) ty es
 

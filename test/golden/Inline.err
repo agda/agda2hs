@@ -1,3 +1,4 @@
-test/Fail/Inline.agda:5.1-6: error: [CustomBackendError]
+test/Fail/Inline.agda:10.1-5: error: [CustomBackendError]
 agda2hs:
-  Cannot make function tail' inlinable. An inline function must have exactly one clause.
+  cannot compile inlined function:
+    tail'

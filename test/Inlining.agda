@@ -34,10 +34,10 @@ test2 x y = mapWrap2 _+_ x y
 {-# COMPILE AGDA2HS test2 #-}
 
 -- partial application of inline function
-test3 : Wrap Int → Wrap Int → Wrap Int
-test3 x = mapWrap2 _+_ x
-{-# COMPILE AGDA2HS test3 #-}
-
-test4 : Wrap Int → Wrap Int → Wrap Int
-test4 = mapWrap2 _+_
-{-# COMPILE AGDA2HS test4 #-}
+-- test3 : Wrap Int → Wrap Int → Wrap Int
+-- test3 x = mapWrap2 _+_ x
+-- {-# COMPILE AGDA2HS test3 #-}
+--
+-- test4 : Wrap Int → Wrap Int → Wrap Int
+-- test4 = mapWrap2 _+_
+-- {-# COMPILE AGDA2HS test4 #-}

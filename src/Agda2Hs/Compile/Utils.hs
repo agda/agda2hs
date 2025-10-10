@@ -12,6 +12,8 @@ import Data.List ( isPrefixOf, stripPrefix )
 import Data.Maybe ( isJust )
 import qualified Data.Map as M
 import Data.String ( IsString(..) )
+import Data.Set ( Set )
+import qualified Data.Set as S
 
 import GHC.Stack (HasCallStack)
 
@@ -281,8 +283,28 @@ isTupleProjection q =
 isTransparentFunction :: QName -> C Bool
 isTransparentFunction q = (== TransparentPragma) <$> getPragma q
 
+getInlineSymbols :: C (Set QName)
+getInlineSymbols = do
+  ilSetRef <- asks $ inlineSymbols . globalEnv
+  liftIO $ readIORef ilSetRef
+
+debugInlineSymbols :: C ()
+debugInlineSymbols = do
+  ilSetRef <- asks $ inlineSymbols . globalEnv
+  ilSet <- liftIO $ readIORef ilSetRef
+  reportSDoc "agda2hs.compile.inline" 50 $ text $
+    show $ map prettyShow $ S.toList ilSet
+
 isInlinedFunction :: QName -> C Bool
-isInlinedFunction q = (== InlinePragma) <$> getPragma q
+isInlinedFunction q = S.member q <$> getInlineSymbols
+
+addInlineSymbols :: [QName] -> C ()
+addInlineSymbols qs = do
+  reportSDoc "agda2hs.compile.inline" 15 $
+    "Adding inline rules for" <+> pretty qs
+  ilSetRef <- asks $ inlineSymbols . globalEnv
+  liftIO $ modifyIORef ilSetRef $ \s -> foldr S.insert s qs
+
 
 debugCompileToMap :: C ()
 debugCompileToMap = do
