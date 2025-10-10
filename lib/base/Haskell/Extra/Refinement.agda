@@ -7,17 +7,14 @@ private variable
   ℓ ℓ′ : Level
 
 record ∃ (a : Type ℓ) (@0 P : a → Type ℓ′) : Type (ℓ ⊔ ℓ′) where
-  constructor _⟨_⟩
+  constructor _⟨⟩
   field
     value    : a
-    @0 proof : P value
+    @0 {{proof}} : P value
 open ∃ public
 {-# COMPILE AGDA2HS ∃ unboxed #-}
 
-_⟨⟩ : {@0 P : a → Type ℓ} (x : a) → @0 {{P x}} → ∃ a P
-(x ⟨⟩) {{p}} = x ⟨ p ⟩
-
-{-# COMPILE AGDA2HS _⟨⟩ inline #-}
+pattern _⟨_⟩ x p = (x ⟨⟩) {{p}}
 
 mapRefine : {@0 P Q : a → Type ℓ} (@0 f : ∀ {x} → P x → Q x) → ∃ a P → ∃ a Q
 mapRefine f (x ⟨ p ⟩) = x ⟨ f p ⟩
