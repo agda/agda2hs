@@ -11,6 +11,7 @@ import Data.IORef
 import Data.List ( isPrefixOf, group, sort )
 
 import qualified Data.Map as M
+import qualified Data.Set as S
 
 import Agda.Compiler.Backend
 import Agda.Compiler.Common ( curIF )
@@ -41,7 +42,8 @@ globalSetup :: Options -> TCM GlobalEnv
 globalSetup opts = do
   opts <- checkConfig opts
   ctMap <- liftIO $ newIORef M.empty
-  return $ GlobalEnv opts ctMap
+  ilMap <- liftIO $ newIORef S.empty
+  return $ GlobalEnv opts ctMap ilMap
 
 initCompileEnv :: GlobalEnv -> TopLevelModuleName -> SpecialRules -> CompileEnv
 initCompileEnv genv tlm rewrites = CompileEnv

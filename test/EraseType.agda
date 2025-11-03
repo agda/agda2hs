@@ -29,6 +29,6 @@ testCong = singCong (1 +_) testSingleton
 {-# COMPILE AGDA2HS testCong #-}
 
 rTail : ∀ {@0 x xs} → Singleton {a = List Int} (x ∷ xs) → Singleton xs
-rTail = singTail
+rTail ys = singTail ys
 
 {-# COMPILE AGDA2HS rTail #-}
