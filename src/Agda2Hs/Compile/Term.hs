@@ -80,11 +80,8 @@ lambdaCase q ty args = compileLocal $ setCurrentRangeQ q $ do
   npars <- size <$> lookupSection mname
 
   let (pars, rest) = splitAt npars args
-      cs           = applys cls pars
 
-  ty' <- piApplyM ty pars
-
-  cs <- mapMaybeM (compileClause' mname (Just q) (hsName "(lambdaCase)") ty') cs
+  cs <- mapMaybeM (compileClause' mname (map defaultArg pars) (Just q) (hsName "(lambdaCase)") ty) cls
 
   case cs of
     -- If there is a single clause and all proper patterns got erased,
@@ -93,6 +90,7 @@ lambdaCase q ty args = compileLocal $ setCurrentRangeQ q $ do
       | null ps -> return rhs
       | all isVarPat ps -> return $ Hs.Lambda () ps rhs
     _ -> do
+      ty'   <- piApplyM ty pars
       lcase <- hsLCase =<< mapM clauseToAlt cs -- Pattern lambdas cannot have where blocks
       eApp lcase <$> compileArgs ty' rest
       -- undefined -- compileApp lcase (undefined, undefined, rest)

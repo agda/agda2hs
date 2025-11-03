@@ -87,7 +87,6 @@ import Issue309
 import Issue317
 import Issue353
 import RankNTypes
-import ErasedPatternLambda
 import CustomTuples
 import ProjectionLike
 import FunCon
@@ -102,6 +101,7 @@ import Issue346
 import Issue408
 import CompileTo
 import RuntimeCast
+import Issue306
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -186,7 +186,6 @@ import Issue309
 import Issue317
 import Issue353
 import RankNTypes
-import ErasedPatternLambda
 import CustomTuples
 import ProjectionLike
 import FunCon
@@ -201,4 +200,5 @@ import Issue346
 import Issue408
 import CompileTo
 import RuntimeCast
+import Issue306
 #-}

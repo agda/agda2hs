@@ -41,3 +41,7 @@ import Fail.Issue125
 import Fail.Issue357a
 import Fail.Issue357b
 import Fail.DerivingParseFailure
+import Fail.ErasedPatternLambda
+import Fail.Issue306a
+import Fail.Issue306b
+import Fail.Issue306c

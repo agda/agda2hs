@@ -46,7 +46,7 @@ disableCopatterns :: C a -> C a
 disableCopatterns = local $ \e -> e { copatternsEnabled = False }
 
 
--- | Enable the approriate extensions for a given Haskell deriving strategy.
+-- | Enable the appropriate extensions for a given Haskell deriving strategy.
 enableStrategy :: Maybe (Hs.DerivStrategy ()) -> C ()
 enableStrategy Nothing = return ()
 enableStrategy (Just s) = do
@@ -66,14 +66,14 @@ compileInstance (ToDerivation strategy) def@Defn{..} =
       text "compiling instance" <+> prettyTCM defName <+> text "to standalone deriving"
     tellExtension Hs.StandaloneDeriving
     enableStrategy strategy
-    ir <- compileInstRule [] (unEl defType)
+    ir <- compileInstRule [] [] (unEl defType)
     return $ Hs.DerivDecl () strategy Nothing ir
 
 compileInstance ToDefinition def@Defn{..} =
   enableCopatterns $ setCurrentRangeQ defName $ do
     reportSDoc "agda2hs.compile.instance" 13 $
       text "compiling instance" <+> prettyTCM defName <+> text "to instance definition"
-    ir <- compileInstRule [] (unEl defType)
+    ir <- compileInstRule [] [] (unEl defType)
     withFunctionLocals defName $ do
       reportSDoc "agda2hs.compile.instance" 20 $ vcat $
         text "compileInstance clauses: " :
@@ -83,11 +83,11 @@ compileInstance ToDefinition def@Defn{..} =
       tel <- lookupSection mod
       addContext tel $ do
         liftTCM $ setModuleCheckpoint mod
-        pars <- getContextArgs
-        ty <- defType `piApplyM` pars
-        let clauses = funClauses `apply` pars
+        -- We intentionally do not apply getContextArgs eagerly here so dotted
+        -- patterns corresponding to module parameters are correctly detected
+        -- (https://github.com/agda/agda2hs/issues/306)
         (ds, rs) <- concatUnzip
-                <$> mapM (\c -> withClauseLocals mod c $ compileInstanceClause mod ty c) clauses
+                <$> mapM (\c -> withClauseLocals mod c $ compileInstanceClause mod defType c) funClauses
         reportSDoc "agda2hs.compile.instance" 20 $ vcat $
           text "compileInstance compiled clauses: " :
           map (nest 2 . text . pp) ds
@@ -97,8 +97,8 @@ compileInstance ToDefinition def@Defn{..} =
     where Function{..} = theDef
 
 
-compileInstRule :: [Hs.Asst ()] -> Term -> C (Hs.InstRule ())
-compileInstRule cs ty = do
+compileInstRule :: [Hs.TyVarBind ()] -> [Hs.Asst ()] -> Term -> C (Hs.InstRule ())
+compileInstRule xs cs ty = do
   reportSDoc "agda2hs.compile.instance" 20 $ text "compileInstRule" <+> prettyTCM ty
   case unSpine1 ty of
     Def f es | Just args <- allApplyElims es -> do
@@ -106,7 +106,7 @@ compileInstRule cs ty = do
       vs <- compileTypeArgs fty args
       f <- compileQName f
       return $
-        Hs.IRule () Nothing (ctx cs) $ foldl (Hs.IHApp ()) (Hs.IHCon () f) (map pars vs)
+        Hs.IRule () (Just xs) (ctx cs) $ foldl (Hs.IHApp ()) (Hs.IHCon () f) (map pars vs)
       where ctx [] = Nothing
             ctx cs = Just (Hs.CxTuple () cs)
             -- put parens around anything except a var or a constant
@@ -115,11 +115,12 @@ compileInstRule cs ty = do
             pars t@(Hs.TyCon () _) = t
             pars t = Hs.TyParen () t
     Pi a b -> compileDomType (absName b) a >>= \case
-      DomDropped -> underAbstr a b (compileInstRule cs . unEl)
+      DomDropped -> underAbstr a b (compileInstRule xs cs . unEl)
       DomConstraint hsA ->
-        underAbstraction a b (compileInstRule (cs ++ [hsA]) . unEl)
+        underAbstraction a b (compileInstRule xs (cs ++ [hsA]) . unEl)
       DomType _ t -> __IMPOSSIBLE__
-      DomForall _ -> __IMPOSSIBLE__
+      DomForall x ->
+        underAbstraction a b (compileInstRule (xs ++ [x]) cs . unEl)
     _ -> __IMPOSSIBLE__
 
 
@@ -170,7 +171,7 @@ compileInstanceClause curModule ty c = ifNotM (keepClause c) (return ([], [])) $
 -- abuse compileClause:
 -- 1. drop any patterns before record projection to suppress the instance arg
 -- 2. use record proj. as function name
--- 3. process remaing patterns as usual
+-- 3. process remaining patterns as usual
 compileInstanceClause' :: ModuleName -> Type -> NAPs -> Clause -> C ([Hs.InstDecl ()], [QName])
 compileInstanceClause' curModule ty [] c = __IMPOSSIBLE__
 compileInstanceClause' curModule ty (p:ps) c
@@ -289,7 +290,7 @@ compileInstanceClause' curModule ty (p:ps) c
       -- No minimal dictionary used, proceed with compiling as a regular clause.
       | otherwise -> do
         reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
-        ms <- disableCopatterns $ compileClause curModule Nothing uf ty' c'
+        ms <- disableCopatterns $ compileClause curModule [] Nothing uf ty' c'
         let cc = Hs.FunBind () (toList ms)
         reportSDoc "agda2hs.compile.instance" 20 $ vcat
           [ text "compileInstanceClause compiled clause"
@@ -302,6 +303,7 @@ compileInstanceClause' curModule ty (p:ps) c
 --              if there is something other than erased parameters
 compileInstanceClause' curModule ty (p:ps) c = do
   (a, b) <- mustBePi ty
+  checkForced a (namedArg p)
   compileInstanceClause' curModule (absApp b (patternToTerm $ namedArg p)) ps c
 
 fieldArgInfo :: QName -> C ArgInfo

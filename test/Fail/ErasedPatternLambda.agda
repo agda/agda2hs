@@ -1,3 +1,5 @@
+module Fail.ErasedPatternLambda where
+
 open import Haskell.Prelude
 
 Scope = List Bool
