@@ -332,6 +332,8 @@ compilePat ty (ConP ch i ps) = do
 -- literal patterns
 compilePat ty (LitP _ l) = compileLitPat l
 
+-- dot patterns are compiled to wildcard patterns
+compilePat _ (DotP _ _) = return $ Hs.PWildCard ()
 
 -- nothing else is supported
 compilePat _ p = agda2hsErrorM $ "bad pattern:" <?> prettyTCM p
