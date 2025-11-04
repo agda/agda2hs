@@ -102,6 +102,7 @@ import Issue346
 import Issue408
 import CompileTo
 import RuntimeCast
+import Issue306
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -201,4 +202,5 @@ import Issue346
 import Issue408
 import CompileTo
 import RuntimeCast
+import Issue306
 #-}

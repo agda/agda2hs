@@ -9,7 +9,7 @@ import Data.List
 import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text
 
-import Agda.Compiler.Backend
+import Agda.Compiler.Backend hiding (Args)
 import Agda.Compiler.Common
 
 import Agda.Syntax.Common
@@ -37,7 +37,7 @@ import Agda.Utils.Size ( Sized(size) )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
-import Agda2Hs.Compile.Term ( compileTerm, usableDom )
+import Agda2Hs.Compile.Term ( compileTerm, usableDom, dependentDom )
 import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileDomType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
@@ -152,9 +152,8 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
         reportSDoc "agda2hs.compile.type" 8 $ "Compiled function type: " <+> text (Hs.prettyPrint ty)
         return [Hs.TypeSig () [x] ty]
 
-      let clauses = funClauses `apply` pars
       cs  <- map (addPats paramPats) <$>
-        mapMaybeM (compileClause m (Just defName) x typ) clauses
+        mapMaybeM (compileClause m pars (Just defName) x defType) funClauses
 
       when (null cs) $ agda2hsErrorM $
             text "Functions defined with absurd patterns exclusively are not supported."
@@ -185,13 +184,22 @@ compileModuleParams (ExtendTel a tel) = do
       return (Hs.TyFun () a, [Hs.PVar () n])
   ((f .) *** (p++)) <$> underAbstraction a tel compileModuleParams
 
-compileClause :: ModuleName -> Maybe QName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
-compileClause curModule mproj x t c =
+compileClause :: ModuleName -> Args -> Maybe QName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
+compileClause curModule pars mproj x t c =
   withClauseLocals curModule c $ do
-    compileClause' curModule mproj x t c
+    compileClause' curModule pars mproj x t c
 
-compileClause' :: ModuleName -> Maybe QName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
-compileClause' curModule projName x ty c@Clause{..} = do
+compileClause' :: ModuleName -> Args -> Maybe QName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
+compileClause' curModule pars projName x ty c = do
+  -- Check whether any parameters (including module parameters) are forced
+  -- See https://github.com/agda/agda2hs/issues/306
+  annPats <- annPats ty (namedClausePats c)
+  traverse (uncurry checkIllegalForced) annPats
+  ty' <- piApplyM ty pars
+  compileClause'' curModule projName x ty' (c `apply` pars)
+
+compileClause'' :: ModuleName -> Maybe QName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
+compileClause'' curModule projName x ty c@Clause{..} = do
   reportSDoc "agda2hs.compile" 7  $ "compiling clause: " <+> prettyTCM c
 
   ifNotM (keepClause c) (pure Nothing) $ addContext (KeepNames clauseTel) $ do
@@ -251,6 +259,25 @@ keepClause c@Clause{..} = case (clauseBody, clauseType) of
     DOType     -> __IMPOSSIBLE__
     DOTerm     -> True
 
+checkIllegalForced :: Dom Type -> DeBruijnPattern -> C ()
+checkIllegalForced a pat = do
+  dep <- dependentDom a
+  when (dep && isForcedPat pat) $ agda2hsError
+    "not supported: forced (dot) patterns in non-erased positions"
+
+annPats :: Type -> NAPs -> C [(Dom Type, DeBruijnPattern)]
+annPats ty []       = pure []
+annPats ty (p : ps) = do
+  (a, b) <- recTy (namedArg p)
+  ps'    <- annPats b ps
+  pure $ (a, namedArg p) : ps'
+  where recTy (ProjP po pn) = do
+          ty' <- fromMaybe __IMPOSSIBLE__ <$> getDefType pn ty
+          (a, b) <- mustBePi ty'
+          pure (a, absBody b)
+        recTy pat = do
+          (a, b) <- mustBePi ty
+          pure (a, absApp b (patternToTerm pat))
 
 -- TODO(flupe): projection-like definitions are missing the first (variable) patterns
 --             (that are however present in the type)
@@ -271,7 +298,6 @@ compilePats ty ((namedArg -> pat):ps) = do
   (a, b) <- mustBePi ty
   reportSDoc "agda2hs.compile.pattern" 10 $ text "Compiling pattern:" <+> prettyTCM pat
   let rest = compilePats (absApp b (patternToTerm pat)) ps
-  when (usableDom a) checkForced
   compileDom a >>= \case
     DOInstance -> rest
     DODropped  -> rest
@@ -279,7 +305,6 @@ compilePats ty ((namedArg -> pat):ps) = do
     DOTerm     -> do
       checkNoAsPatterns pat
       (:) <$> compilePat (unDom a) pat <*> rest
-  where checkForced  = when (isForcedPat pat) $ agda2hsError "not supported: forced (dot) patterns in non-erased positions"
 
 
 compilePat :: Type -> DeBruijnPattern -> C (Hs.Pat ())

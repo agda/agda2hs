@@ -41,7 +41,7 @@ import Agda.Utils.Size
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName, importInstance )
 
-import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTelSize )
+import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTelSize, compileDomType )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
@@ -80,11 +80,8 @@ lambdaCase q ty args = compileLocal $ setCurrentRangeQ q $ do
   npars <- size <$> lookupSection mname
 
   let (pars, rest) = splitAt npars args
-      cs           = applys cls pars
 
-  ty' <- piApplyM ty pars
-
-  cs <- mapMaybeM (compileClause' mname (Just q) (hsName "(lambdaCase)") ty') cs
+  cs <- mapMaybeM (compileClause' mname (map defaultArg pars) (Just q) (hsName "(lambdaCase)") ty) cls
 
   case cs of
     -- If there is a single clause and all proper patterns got erased,
@@ -93,6 +90,7 @@ lambdaCase q ty args = compileLocal $ setCurrentRangeQ q $ do
       | null ps -> return rhs
       | all isVarPat ps -> return $ Hs.Lambda () ps rhs
     _ -> do
+      ty'   <- piApplyM ty pars
       lcase <- hsLCase =<< mapM clauseToAlt cs -- Pattern lambdas cannot have where blocks
       eApp lcase <$> compileArgs ty' rest
       -- undefined -- compileApp lcase (undefined, undefined, rest)
@@ -501,6 +499,16 @@ usableDom :: Dom Type -> Bool
 usableDom dom | Prop _ <- getSort dom = False
 usableDom dom = usableModality dom
 
+-- | Check whether a domain is dependent on the Haskell side (i.e. it is
+-- compiled to a forall)
+dependentDom :: Dom Type -> C Bool
+dependentDom dom = do
+  d' <- compileDom dom
+  pure $ case d' of
+    DOType     -> True
+    DOTerm     -> False
+    DOInstance -> False
+    DODropped  -> False
 
 compileLam :: Type -> ArgInfo -> Abs Term -> C (Hs.Exp ())
 compileLam ty argi abs = do

@@ -97,4 +97,5 @@ import Issue346
 import Issue408
 import CompileTo
 import RuntimeCast
+import Issue306
 
