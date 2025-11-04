@@ -297,7 +297,6 @@ compilePats ty ((namedArg -> pat):ps) = do
   (a, b) <- mustBePi ty
   reportSDoc "agda2hs.compile.pattern" 10 $ text "Compiling pattern:" <+> prettyTCM pat
   let rest = compilePats (absApp b (patternToTerm pat)) ps
-  checkNonErasedForced a pat
   compileDom a >>= \case
     DOInstance -> rest
     DODropped  -> rest
