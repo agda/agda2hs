@@ -88,8 +88,6 @@ import Issue317
 import Issue353
 import RankNTypes
 import ErasedPatternLambda
-import ErasedPatternLambda2
-import ErasedPatternLambda3
 import CustomTuples
 import ProjectionLike
 import FunCon
@@ -105,6 +103,8 @@ import Issue408
 import CompileTo
 import RuntimeCast
 import Issue306
+import RelevantDotPattern1
+import RelevantDotPattern2
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -190,8 +190,6 @@ import Issue317
 import Issue353
 import RankNTypes
 import ErasedPatternLambda
-import ErasedPatternLambda2
-import ErasedPatternLambda3
 import CustomTuples
 import ProjectionLike
 import FunCon
@@ -207,4 +205,6 @@ import Issue408
 import CompileTo
 import RuntimeCast
 import Issue306
+import RelevantDotPattern1
+import RelevantDotPattern2
 #-}

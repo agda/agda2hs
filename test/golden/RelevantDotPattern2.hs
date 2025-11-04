@@ -1,4 +1,4 @@
-module ErasedPatternLambda2 where
+module RelevantDotPattern2 where
 
 data Telescope = ExtendTel Bool Telescope
 
