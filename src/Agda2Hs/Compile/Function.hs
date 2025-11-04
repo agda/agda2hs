@@ -37,7 +37,7 @@ import Agda.Utils.Size ( Sized(size) )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
-import Agda2Hs.Compile.Term ( compileTerm, usableDom, dependentDom )
+import Agda2Hs.Compile.Term ( compileTerm, usableDom, dependentDom, extractMaybeName )
 import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileDomType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
@@ -294,7 +294,8 @@ compilePats ty ((namedArg -> ProjP po pn):ps) = do
 
   compilePats (absBody b) ps
 
-compilePats ty ((namedArg -> pat):ps) = do
+compilePats ty (p:ps) = do
+  let pat = namedArg p
   (a, b) <- mustBePi ty
   reportSDoc "agda2hs.compile.pattern" 10 $ text "Compiling pattern:" <+> prettyTCM pat
   let rest = compilePats (absApp b (patternToTerm pat)) ps
@@ -304,13 +305,13 @@ compilePats ty ((namedArg -> pat):ps) = do
     DOType     -> rest
     DOTerm     -> do
       checkNoAsPatterns pat
-      (:) <$> compilePat (unDom a) pat <*> rest
+      (:) <$> compilePat (unDom a) (extractMaybeName p) pat <*> rest
 
 
-compilePat :: Type -> DeBruijnPattern -> C (Hs.Pat ())
+compilePat :: Type -> Maybe ArgName -> DeBruijnPattern -> C (Hs.Pat ())
 
 -- variable pattern
-compilePat ty p@(VarP o x)
+compilePat ty _ p@(VarP o x)
   | PatOWild <- patOrigin o = return $ Hs.PWildCard ()
   | otherwise = do
       n <- hsName <$> compileDBVar (dbPatVarIndex x)
@@ -318,7 +319,7 @@ compilePat ty p@(VarP o x)
       return $ Hs.PVar () n
 
 -- special constructor pattern
-compilePat ty (ConP ch i ps) = do
+compilePat ty _ (ConP ch i ps) = do
   Just ((_, _, _), ty) <- getConType ch =<< reduce ty
   let c = conName ch
 
@@ -330,13 +331,18 @@ compilePat ty (ConP ch i ps) = do
     return $ pApp c ps
 
 -- literal patterns
-compilePat ty (LitP _ l) = compileLitPat l
+compilePat ty _ (LitP _ l) = compileLitPat l
 
--- dot patterns are compiled to wildcard patterns
-compilePat _ (DotP _ _) = return $ Hs.PWildCard ()
+-- dot patterns are compiled by prefixing with an '_' if it has been given
+-- an explicit name, or a wildcard otherwise
+compilePat _ (Just n) (DotP _ _) = do
+  let n' = hsName $ '_' : n
+  checkValidVarName n'
+  return $ Hs.PVar () n'
+compilePat _ Nothing  (DotP _ _) = return $ Hs.PWildCard ()
 
 -- nothing else is supported
-compilePat _ p = agda2hsErrorM $ "bad pattern:" <?> prettyTCM p
+compilePat _ _ p = agda2hsErrorM $ "bad pattern:" <?> prettyTCM p
 
 
 compileErasedConP :: Type -> Strictness -> NAPs -> C (Hs.Pat ())

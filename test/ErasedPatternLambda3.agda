@@ -13,10 +13,11 @@ caseTelBind (ExtendTel a tel) f = f a tel refl
 
 {-# COMPILE AGDA2HS caseTelBind #-}
 
-checkSubst' : ∀ {@0 x α β} (t : Telescope α (x ∷ β)) (ty : Bool) (rest : Telescope (x ∷ α) β) → @0 t ≡ ExtendTel ty rest → Bool
-checkSubst' t ty rest refl = True
-{-# COMPILE AGDA2HS checkSubst' #-}
+module _ {@0 x α β} (t : Telescope α (x ∷ β)) where
+  checkSubst' : ∀ (ty : Bool) (rest : Telescope (x ∷ α) β) → @0 t ≡ ExtendTel ty rest → Bool
+  checkSubst' ty rest refl = True
+  {-# COMPILE AGDA2HS checkSubst' #-}
 
-checkSubst : ∀ {@0 x α β} (t : Telescope α (x ∷ β)) → Bool
-checkSubst t = caseTelBind t (checkSubst' t)
-{-# COMPILE AGDA2HS checkSubst #-}
+  checkSubst : Bool
+  checkSubst = caseTelBind t checkSubst'
+  {-# COMPILE AGDA2HS checkSubst #-}
