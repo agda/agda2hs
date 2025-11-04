@@ -87,6 +87,7 @@ import Issue309
 import Issue317
 import Issue353
 import RankNTypes
+import ErasedPatternLambda
 import CustomTuples
 import ProjectionLike
 import FunCon
@@ -186,6 +187,7 @@ import Issue309
 import Issue317
 import Issue353
 import RankNTypes
+import ErasedPatternLambda
 import CustomTuples
 import ProjectionLike
 import FunCon

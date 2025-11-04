@@ -41,7 +41,7 @@ import Agda.Utils.Size
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName, importInstance )
 
-import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTelSize )
+import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTelSize, compileDomType )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
@@ -499,6 +499,16 @@ usableDom :: Dom Type -> Bool
 usableDom dom | Prop _ <- getSort dom = False
 usableDom dom = usableModality dom
 
+-- | Check whether a domain is dependent on the Haskell side (i.e. it is
+-- compiled to a forall)
+dependentDom :: Dom Type -> C Bool
+dependentDom dom = do
+  d' <- compileDom dom
+  pure $ case d' of
+    DOType     -> True
+    DOTerm     -> False
+    DOInstance -> False
+    DODropped  -> False
 
 compileLam :: Type -> ArgInfo -> Abs Term -> C (Hs.Exp ())
 compileLam ty argi abs = do

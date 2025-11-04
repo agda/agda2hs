@@ -37,7 +37,7 @@ import Agda.Utils.Size ( Sized(size) )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
-import Agda2Hs.Compile.Term ( compileTerm, usableDom )
+import Agda2Hs.Compile.Term ( compileTerm, usableDom, dependentDom )
 import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileDomType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
@@ -194,7 +194,7 @@ compileClause' curModule pars projName x ty c = do
   -- Check whether any parameters (including module parameters) are forced
   -- See https://github.com/agda/agda2hs/issues/306
   annPats <- annPats ty (namedClausePats c)
-  traverse (uncurry checkNonErasedForced) annPats
+  traverse (uncurry checkIllegalForced) annPats
   ty' <- piApplyM ty pars
   compileClause'' curModule projName x ty' (c `apply` pars)
 
@@ -259,10 +259,11 @@ keepClause c@Clause{..} = case (clauseBody, clauseType) of
     DOType     -> __IMPOSSIBLE__
     DOTerm     -> True
 
-checkNonErasedForced :: Dom Type -> DeBruijnPattern -> C ()
-checkNonErasedForced a pat
-  = when (usableDom a && isForcedPat pat)
-  $ agda2hsError "not supported: forced (dot) patterns in non-erased positions"
+checkIllegalForced :: Dom Type -> DeBruijnPattern -> C ()
+checkIllegalForced a pat = do
+  dep <- dependentDom a
+  when (dep && isForcedPat pat) $ agda2hsError
+    "not supported: forced (dot) patterns in non-erased positions"
 
 annPats :: Type -> NAPs -> C [(Dom Type, DeBruijnPattern)]
 annPats ty []       = pure []
