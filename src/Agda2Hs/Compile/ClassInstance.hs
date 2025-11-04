@@ -303,7 +303,7 @@ compileInstanceClause' curModule ty (p:ps) c
 --              if there is something other than erased parameters
 compileInstanceClause' curModule ty (p:ps) c = do
   (a, b) <- mustBePi ty
-  checkForced a (namedArg p)
+  checkNonErasedForced a (namedArg p)
   compileInstanceClause' curModule (absApp b (patternToTerm $ namedArg p)) ps c
 
 fieldArgInfo :: QName -> C ArgInfo

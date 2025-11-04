@@ -194,7 +194,7 @@ compileClause' curModule pars projName x ty c = do
   -- Check whether any parameters (including module parameters) are forced
   -- See https://github.com/agda/agda2hs/issues/306
   annPats <- annPats ty (namedClausePats c)
-  traverse (uncurry checkForced) annPats
+  traverse (uncurry checkNonErasedForced) annPats
   ty' <- piApplyM ty pars
   compileClause'' curModule projName x ty' (c `apply` pars)
 
@@ -259,9 +259,9 @@ keepClause c@Clause{..} = case (clauseBody, clauseType) of
     DOType     -> __IMPOSSIBLE__
     DOTerm     -> True
 
-checkForced :: Dom Type -> DeBruijnPattern -> C ()
-checkForced a pat
-  = when (usableDom a) $ when (isForcedPat pat)
+checkNonErasedForced :: Dom Type -> DeBruijnPattern -> C ()
+checkNonErasedForced a pat
+  = when (usableDom a && isForcedPat pat)
   $ agda2hsError "not supported: forced (dot) patterns in non-erased positions"
 
 annPats :: Type -> NAPs -> C [(Dom Type, DeBruijnPattern)]
@@ -297,7 +297,7 @@ compilePats ty ((namedArg -> pat):ps) = do
   (a, b) <- mustBePi ty
   reportSDoc "agda2hs.compile.pattern" 10 $ text "Compiling pattern:" <+> prettyTCM pat
   let rest = compilePats (absApp b (patternToTerm pat)) ps
-  checkForced a pat
+  checkNonErasedForced a pat
   compileDom a >>= \case
     DOInstance -> rest
     DODropped  -> rest
