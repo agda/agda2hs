@@ -333,10 +333,10 @@ compilePat ty _ (ConP ch i ps) = do
 -- literal patterns
 compilePat ty _ (LitP _ l) = compileLitPat l
 
--- dot patterns are compiled by prefixing with an '_' if it has been given
--- an explicit name, or a wildcard otherwise
+-- "Inferred" dot patterns that the programmer has explicitly named are
+-- compiled to variable patterns using that given name, wildcards otherwise
 compilePat _ (Just n) (DotP _ _) = do
-  let n' = hsName $ '_' : n
+  let n' = hsName n
   checkValidVarName n'
   return $ Hs.PVar () n'
 compilePat _ Nothing  (DotP _ _) = return $ Hs.PWildCard ()
