@@ -1,0 +1,3 @@
+test/Fail/ErasedPatternLambda.agda:19.42-61: error: [CustomBackendError]
+agda2hs:
+  not supported: forced (dot) patterns in non-erased positions
