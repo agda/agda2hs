@@ -91,6 +91,8 @@ compileName n = hsName . show <$> pretty (nameConcrete n)
 
 compileQName :: QName -> C (Hs.QName ())
 compileQName f = do
+  whenM (isInlinedFunction f) $
+    agda2hsErrorM $ "Failed to inline definition of" <+> prettyTCM f
   whenJustM (getCompileToName f) $ \g ->
     reportSDoc "agda2hs.compile.to" 20 $ text $
       "compiling name " <> prettyShow f <> " to " <> prettyShow g

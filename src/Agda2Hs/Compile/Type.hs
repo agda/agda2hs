@@ -87,9 +87,12 @@ compileType t = do
   reportSDoc "agda2hs.compile.type" 12 $ text "Compiling type" <+> prettyTCM t
   reportSDoc "agda2hs.compile.type" 22 $ text "Compiling type" <+> pretty t
 
+  toInline <- getInlineSymbols
+  t <- locallyReduceDefs (OnlyReduceDefs toInline) $ reduce t
+
   whenM (isErasedBaseType t) fail
 
-  instantiate t >>= \case
+  case t of
     Pi a b -> do
       reportSDoc "agda2hs.compile.type" 13 $ text "Compiling pi type (" <+> prettyTCM (absName b)
         <+> text ":" <+> prettyTCM a <+> text ") -> " <+> underAbstraction a b prettyTCM
@@ -110,10 +113,9 @@ compileType t = do
          | Just args <- allApplyElims es ->
              ifJustM (isUnboxRecord f) (\_ -> compileUnboxType f args) $
              ifJustM (isTupleRecord f) (\b -> compileTupleType f b args) $
-             ifM (isTransparentFunction f) (compileTransparentType (defType def) args) $
-             ifM (isInlinedFunction f) (compileInlineType f es) $ do
-               vs <- compileTypeArgs (defType def) args
+             ifM (isTransparentFunction f) (compileTransparentType (defType def) args) $ do
                f <- compileQName f
+               vs <- compileTypeArgs (defType def) args
                return $ tApp (Hs.TyCon () f) vs
          | otherwise -> fail
 
@@ -151,10 +153,11 @@ compileType t = do
 compileTypeArgs :: Type -> Args -> C [Hs.Type ()]
 compileTypeArgs ty [] = pure []
 compileTypeArgs ty (x:xs) = do
+  reportSDoc "agda2hs.compile.type" 16 $ text "compileTypeArgs ty =" <+> prettyTCM x
   (a, b) <- mustBePi ty
-  reportSDoc "agda2hs.compile.type" 16 $ text "compileTypeArgs x =" <+> prettyTCM x
-  reportSDoc "agda2hs.compile.type" 16 $ text "                a =" <+> prettyTCM a
-  reportSDoc "agda2hs.compile.type" 16 $ text "         modality =" <+> prettyTCM (getModality a)
+  reportSDoc "agda2hs.compile.type" 16 $ text "                 x =" <+> prettyTCM x
+  reportSDoc "agda2hs.compile.type" 16 $ text "                 a =" <+> prettyTCM a
+  reportSDoc "agda2hs.compile.type" 16 $ text "          modality =" <+> prettyTCM (getModality a)
   let rest = compileTypeArgs (absApp b $ unArg x) xs
   let fail msg = agda2hsErrorM $ (text msg <> text ":") <+> parens (prettyTCM (absName b) <+> text ":" <+> prettyTCM (unDom a))
   compileDom a >>= \case
@@ -202,23 +205,6 @@ compileTransparentType :: Type -> Args -> C (Hs.Type ())
 compileTransparentType ty args = compileTypeArgs ty args >>= \case
   (v:vs) -> return $ v `tApp` vs
   []     -> __IMPOSSIBLE__
-
-
-compileInlineType :: QName -> Elims -> C (Hs.Type ())
-compileInlineType f args = do
-  Function { funClauses = cs } <- theDef <$> getConstInfo f
-
-  let [ Clause { namedClausePats = pats } ] = filter (isJust . clauseBody) cs
-
-  when (length args < length pats) $ agda2hsErrorM $
-    text "Cannot compile inlinable type alias" <+> prettyTCM f <+> text "as it must be fully applied."
-
-  r <- liftReduce $ locallyReduceDefs (OnlyReduceDefs $ Set.singleton f)
-                  $ unfoldDefinitionStep (Def f args) f args
-
-  case r of
-    YesReduction _ t -> compileType t
-    _                -> agda2hsErrorM $ text "Could not reduce inline type alias " <+> prettyTCM f
 
 
 data DomOutput = DOInstance | DODropped | DOType | DOTerm

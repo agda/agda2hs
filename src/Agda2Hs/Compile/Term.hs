@@ -467,7 +467,6 @@ compileTerm ty v = do
   reduceProjectionLike v >>= \case
 
     v@(Def f es) -> do
-      whenM (isInlinedFunction f) $ bad "inlined function" v
       ty <- defType <$> getConstInfo f
       compileSpined (compileDef f ty) (Def f) ty es
 

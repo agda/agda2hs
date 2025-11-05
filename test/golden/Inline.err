@@ -1,4 +1,2 @@
 test/Fail/Inline.agda:10.1-5: error: [CustomBackendError]
-agda2hs:
-  cannot compile inlined function:
-    tail'
+agda2hs: Failed to inline definition of tail'
