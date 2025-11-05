@@ -100,4 +100,5 @@ import RuntimeCast
 import Issue306
 import RelevantDotPattern1
 import RelevantDotPattern2
+import RelevantDotPattern3
 
