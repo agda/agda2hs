@@ -332,6 +332,14 @@ compilePat ty (ConP ch i ps) = do
 -- literal patterns
 compilePat ty (LitP _ l) = compileLitPat l
 
+-- "Inferred" dot patterns that the programmer has explicitly named are
+-- compiled to variable patterns using that given name, wildcards otherwise
+compilePat _ (DotP (PatternInfo (PatOVar n) _) _) = do
+  let n' = hsName $ prettyShow n
+  checkValidVarName n'
+  return $ Hs.PVar () n'
+compilePat _ (DotP (PatternInfo PatODot _) _) =
+  return $ Hs.PWildCard ()
 
 -- nothing else is supported
 compilePat _ p = agda2hsErrorM $ "bad pattern:" <?> prettyTCM p

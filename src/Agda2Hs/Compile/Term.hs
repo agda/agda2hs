@@ -576,9 +576,7 @@ compileInlineFunctionApp f ty args = do
     extractPatName _ = __IMPOSSIBLE__
 
     extractName :: NamedArg DeBruijnPattern -> ArgName
-    extractName (unArg -> np)
-      | Just n <- nameOf np = rangedThing (woThing n)
-      | otherwise = extractPatName (namedThing np)
+    extractName p = fromMaybe (extractPatName $ namedArg p) (extractMaybeName p)
 
     etaExpand :: NAPs -> Type -> [Term] -> C Term
     etaExpand [] ty args = do
@@ -594,6 +592,8 @@ compileInlineFunctionApp f ty args = do
       let ai = domInfo dom
       Lam ai . mkAbs (extractName p) <$> etaExpand ps (absBody cod) (raise 1 args ++ [ var 0 ])
 
+extractMaybeName :: NamedArg a -> Maybe ArgName
+extractMaybeName p = rangedThing . woThing <$> nameOf (unArg p)
 
 compileApp :: Hs.Exp () -> Type -> [Term] -> C (Hs.Exp ())
 compileApp = compileApp' . eApp
