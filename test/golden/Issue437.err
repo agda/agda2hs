@@ -1,0 +1,2 @@
+test/Fail/Issue437.agda:3.6-13: error: [CustomBackendError]
+agda2hs: Not supported: indexed datatypes
