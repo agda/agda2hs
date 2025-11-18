@@ -28,6 +28,12 @@ postulate
     iEqIOException : Eq IOException
     iExceptionIOException : Exception IOException
 
+IOError = IOException
+
+postulate
+  userError : String → IOError
+
+postulate
   AssertionFailed : Set
   instance
     iExceptionAssertionFailed : Exception AssertionFailed
@@ -57,3 +63,9 @@ assert : @0 {{MayThrow AssertionFailed}} → (@0 b : Type ℓ) → {{Dec b}} →
 assert _ {{True  ⟨ p ⟩}} x = x {{p}}
 assert _ {{False ⟨ _ ⟩}} x = throw oops
   where postulate oops : AssertionFailed
+
+ioException : @0 {{MayThrow IOException}} → IOException → IO a
+ioException = throwIO
+
+ioError : @0 {{MayThrow IOError}} → IOError → IO a
+ioError = ioException
