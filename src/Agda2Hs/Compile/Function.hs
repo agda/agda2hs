@@ -177,7 +177,8 @@ compileModuleParams (ExtendTel a tel) = do
   (f , p) <- compileDomType (absName tel) a >>= \case
     DomDropped -> return (id, [])
     DomConstraint c -> return (constrainType c, [])
-    DomForall a -> return (qualifyType a, [])
+    DomForall Nothing -> return (id, [])
+    DomForall (Just a) -> return (qualifyType a, [])
     DomType s a -> do
       let n = hsName $ absName tel
       checkValidVarName n

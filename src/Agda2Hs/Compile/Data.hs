@@ -81,12 +81,14 @@ compileConstructor params c = do
 compileConstructorArgs :: Telescope -> C [Hs.Type ()]
 compileConstructorArgs EmptyTel = return []
 compileConstructorArgs (ExtendTel a tel) = compileDomType (absName tel) a >>= \case
-  DomType s hsA     -> do
+  DomType s hsA      -> do
     ty <- addTyBang s hsA
     (ty :) <$> underAbstraction a tel compileConstructorArgs
-  DomConstraint hsA -> agda2hsError "Not supported: constructors with class constraints"
-  DomDropped        -> underAbstraction a tel compileConstructorArgs
-  DomForall{}       -> __IMPOSSIBLE__
+  DomConstraint hsA  -> agda2hsError "Not supported: constructors with class constraints"
+  DomDropped         -> skip
+  DomForall Nothing  -> skip
+  DomForall (Just _) -> __IMPOSSIBLE__
+  where skip = underAbstraction a tel compileConstructorArgs
 
 checkCompileToDataPragma :: Definition -> String -> C ()
 checkCompileToDataPragma def s = noCheckNames $ do

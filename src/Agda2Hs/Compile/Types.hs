@@ -205,8 +205,8 @@ data CompiledDom
     -- ^ To a Haskell type (with perhaps a strictness annotation)
   | DomConstraint (Hs.Asst ())
     -- ^ To a typeclass constraint
-  | DomForall (Hs.TyVarBind ())
-    -- ^ To an explicit forall
+  | DomForall (Maybe (Hs.TyVarBind ()))
+    -- ^ To a forall, with an optional type variable declaration. If Nothing, this is an implicit forall; otherwise, explicit.
   | DomDropped
     -- ^ To nothing (e.g. erased proofs)
 
