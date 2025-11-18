@@ -18,6 +18,9 @@ record Exception (e : Set) : Set where
   field
     overlap {{iShow}} : Show e
     displayException : e → String
+open Exception {{...}} public
+
+{-# COMPILE AGDA2HS Exception existing-class #-}
 
 postulate
   IOException : Set
