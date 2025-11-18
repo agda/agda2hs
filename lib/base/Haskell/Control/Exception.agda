@@ -33,7 +33,7 @@ postulate
   @0 MayThrow : Set → Set
 
   throw : {{Exception e}} → @0 {{MayThrow e}} → e → a
-  throwIO : {{Exception e}} → e → IO a
+  throwIO : {{Exception e}} → @0 {{MayThrow e}} → e → IO a
 
   catch : {{Exception e}} → (@0 {{MayThrow e}} → IO a) → (e → IO a) → IO a
   catchJust : {{Exception e}} → (e → Maybe b) → (@0 {{MayThrow e}} → IO a) → (b → IO a) → IO a
@@ -44,10 +44,10 @@ handle = flip catch
 handleJust : {{Exception e}} → (e → Maybe b) → (b → IO a) → (@0 {{MayThrow e}} → IO a) → IO a
 handleJust f = flip (catchJust f)
 
-try : {{Exception e}} → IO a → IO (Either e a)
+try : {{Exception e}} → (@0 {{MayThrow e}} → IO a) → IO (Either e a)
 try a = catch (fmap Right a) (return ∘ Left)
 
-tryJust : {{Exception e}} → (e → Maybe b) → IO a → IO (Either b a)
+tryJust : {{Exception e}} → (e → Maybe b) → (@0 {{MayThrow e}} → IO a) → IO (Either b a)
 tryJust p a = catchJust p (fmap Right a) (return ∘ Left)
 
 assert : @0 {{MayThrow AssertionFailed}} → (@0 b : Type ℓ) → {{Dec b}} → (@0 {{b}} → a) → a
