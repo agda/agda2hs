@@ -50,7 +50,7 @@ try a = catch (fmap Right a) (return ∘ Left)
 tryJust : {{Exception e}} → (e → Maybe b) → IO a → IO (Either b a)
 tryJust p a = catchJust p (fmap Right a) (return ∘ Left)
 
-assert : @0{{MayThrow AssertionFailed}} → (@0 b : Type ℓ) → {{Dec b}} → (@0 {{b}} → a) → a
+assert : @0 {{MayThrow AssertionFailed}} → (@0 b : Type ℓ) → {{Dec b}} → (@0 {{b}} → a) → a
 assert _ {{True  ⟨ p ⟩}} x = x {{p}}
 assert _ {{False ⟨ _ ⟩}} x = throw oops
   where postulate oops : AssertionFailed
