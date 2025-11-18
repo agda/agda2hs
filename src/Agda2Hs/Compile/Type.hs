@@ -101,7 +101,8 @@ compileType t = do
         DomType _ hsA -> Hs.TyFun () hsA <$> compileB
         DomConstraint hsA -> constrainType hsA <$> compileB
         DomDropped -> compileB
-        DomForall hsA -> qualifyType hsA <$> compileB
+        DomForall Nothing -> compileB
+        DomForall (Just hsA) -> qualifyType hsA <$> compileB
 
     Def f es -> maybeUnfoldCopy f es compileType $ \f es -> do
       def <- getConstInfo f
@@ -243,11 +244,12 @@ compileDomType x a =
         | isNested -> do
           tellExtension Hs.RankNTypes
           -- tellExtension Hs.ExistentialQuantification
-          return $ DomForall $ Hs.UnkindedVar () $ Hs.Ident () x
+          return $ DomForall $ Just $ Hs.UnkindedVar () $ Hs.Ident () x
         | ctx < npars -> do
           tellExtension Hs.ScopedTypeVariables
-          return $ DomForall $ Hs.UnkindedVar () $ Hs.Ident () x
-        | otherwise -> return DomDropped
+          return $ DomForall $ Just $ Hs.UnkindedVar () $ Hs.Ident () x
+        -- Return an implicit forall.
+        | otherwise -> return $ DomForall Nothing
     DOTerm     -> fmap (uncurry DomType) . withNestedType . compileTypeWithStrictness . unEl $ unDom a
 
 compileTeleBinds :: Bool -> Telescope -> C [Hs.TyVarBind ()]

@@ -166,7 +166,8 @@ compileRecord target def = do
             ToRecord{} -> agda2hsError $
               "Not supported: record/class with constraint fields"
           DomDropped -> return (hsAssts , hsFields)
-          DomForall{} -> __IMPOSSIBLE__
+          DomForall Nothing -> return (hsAssts , hsFields)
+          DomForall (Just _) -> __IMPOSSIBLE__
       (_, _) -> __IMPOSSIBLE__
 
     compileDataRecord

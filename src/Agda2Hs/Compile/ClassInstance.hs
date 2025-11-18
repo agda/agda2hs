@@ -115,12 +115,14 @@ compileInstRule xs cs ty = do
             pars t@(Hs.TyCon () _) = t
             pars t = Hs.TyParen () t
     Pi a b -> compileDomType (absName b) a >>= \case
-      DomDropped -> underAbstr a b (compileInstRule xs cs . unEl)
+      DomDropped -> underAbstr a b skip
       DomConstraint hsA ->
         underAbstraction a b (compileInstRule xs (cs ++ [hsA]) . unEl)
       DomType _ t -> __IMPOSSIBLE__
-      DomForall x ->
+      DomForall Nothing -> underAbstr a b skip
+      DomForall (Just x) ->
         underAbstraction a b (compileInstRule (xs ++ [x]) cs . unEl)
+      where skip = compileInstRule xs cs . unEl
     _ -> __IMPOSSIBLE__
 
 
