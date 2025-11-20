@@ -56,6 +56,7 @@ initCompileEnv genv tlm rewrites = CompileEnv
   , writeImports      = True
   , writeExports      = True
   , checkNames        = True
+  , genSignature      = True
   }
 
 initCompileState :: CompileState
@@ -131,7 +132,7 @@ compile genv tlm _ def =
         (DefaultPragma _     , Axiom{}   ) | isInstance -> pure <$> compileInstance (ToDerivation Nothing) def
         (DefaultPragma _     , _         ) | isInstance -> pure <$> compileInstance ToDefinition def
         (DefaultPragma _     , Axiom{}   ) -> compilePostulate def
-        (DefaultPragma _     , Function{}) -> compileFun True def
+        (DefaultPragma _     , Function{}) -> compileFun def
         (DefaultPragma ds    , Record{}  ) -> pure <$> compileRecord (ToRecord False ds) def
 
         _ -> agda2hsErrorM $ text "Don't know how to compile" <+> prettyTCM (defName def)
