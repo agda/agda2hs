@@ -124,7 +124,7 @@ data IsFalse : Bool → Type where
 data NonEmpty {a : Type} : List a → Type where
   instance itsNonEmpty : ∀ {x xs} → NonEmpty (x ∷ xs)
 
-data TypeError (err : AgdaString) : Type where
+data UnsatisfiedConstraint (err : AgdaString) : Type where
 
 it : ∀ {@0 ℓ} {@0 a : Type ℓ} → ⦃ a ⦄ → a
 it ⦃ x ⦄ = x
