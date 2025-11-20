@@ -11,6 +11,9 @@ Changes to agda2hs
 - The constructor of a record without an explicitly named constructor is now
   imported together with the record type when used from another module
   (see issue #454).
+- Postulates in a `where` block are now compiled to a runtime error instead of
+  crashing the compiler. Declarations other than functions and postulates are
+  rejected with a proper error message (see issue #443).
 
 See https://github.com/agda/agda2hs/issues?q=milestone%3A1.5+is%3Apr for the full list of changes.
 
