@@ -29,6 +29,7 @@ import Agda.Utils.Size ( Sized(size) )
 import AgdaInternals ( inWhereBlockOf )
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
+import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Term ( compileTerm, dependentDom )
 import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileDomType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
@@ -228,7 +229,7 @@ compileClause'' curModule projName x ty c@Clause{..} = do
                      && Just (qnameModule q) == clauseWhereModule
     children <- filter isWhereDecl <$> asks locals
     let withWhereModule = maybe id addWhereModule clauseWhereModule
-    whereDecls <- withWhereModule $ compileLocal $ mapM (getConstInfo >=> compileFun' True) children
+    whereDecls <- withWhereModule $ compileLocal $ mapM compileWhereDef children
 
     let Just body            = clauseBody
         Just (unArg -> typ)  = clauseType
@@ -242,6 +243,14 @@ compileClause'' curModule projName x ty c@Clause{..} = do
           (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
           _                         -> Hs.Match () x ps rhs whereBinds
     return $ Just match
+  where
+    compileWhereDef f = do
+      def <- getConstInfo f
+      case theDef def of
+        Function{} -> compileFun' def
+        Axiom{}    -> compilePostulate def
+        _ -> agda2hsErrorM $
+          "Cannot compile" <+> prettyTCM f <+> "in a `where` block"
 
 keepClause :: Clause -> C Bool
 keepClause c@Clause{..} = case (clauseBody, clauseType) of
