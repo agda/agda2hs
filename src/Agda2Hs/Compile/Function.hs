@@ -236,7 +236,7 @@ compileClause'' curModule projName x ty c@Clause{..} = do
     let withWhereModule = case children of
           []    -> id
           (c:_) -> addWhereModule $ qnameModule c
-    whereDecls <- withWhereModule $ compileLocal $ mapM (getConstInfo >=> compileFun' True) children
+    whereDecls <- withWhereModule $ compileLocal $ mapM compileWhereDef children
 
     let Just body            = clauseBody
         Just (unArg -> typ)  = clauseType
@@ -250,6 +250,13 @@ compileClause'' curModule projName x ty c@Clause{..} = do
           (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
           _                         -> Hs.Match () x ps rhs whereBinds
     return $ Just match
+  where
+    compileWhereDef f = do
+      def <- getConstInfo f
+      case theDef def of
+        Function{} -> compileFun' def
+        def -> agda2hsErrorM $
+          "Cannot compile" <+> prettyTCM f <+> "in a `where` block"
 
 keepClause :: Clause -> C Bool
 keepClause c@Clause{..} = case (clauseBody, clauseType) of
