@@ -28,11 +28,6 @@ postulate
     iEqIOException : Eq IOException
     iExceptionIOException : Exception IOException
 
-IOError = IOException
-
-postulate
-  userError : String → IOError
-
 postulate
   AssertionFailed : Set
   instance
@@ -66,6 +61,3 @@ assert _ {{False ⟨ _ ⟩}} x = throw oops
 
 ioException : @0 {{MayThrow IOException}} → IOException → IO a
 ioException = throwIO
-
-ioError : @0 {{MayThrow IOError}} → IOError → IO a
-ioError = ioException
