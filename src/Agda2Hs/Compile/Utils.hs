@@ -487,3 +487,9 @@ shouldBeExported name = andM
   , not <$> isInlinedFunction name
   , isNothing <$> getCompileToName name
   ]
+
+withoutSignature :: C a -> C a
+withoutSignature = local $ \e -> e { genSignature = False }
+
+shouldGenerateSignature :: C Bool
+shouldGenerateSignature = reader genSignature
