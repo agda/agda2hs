@@ -103,4 +103,4 @@ isNegativeInteger (negsuc _) = True
 @0 IsNonNegativeInteger : Integer → Type
 IsNonNegativeInteger (pos _)      = ⊤
 IsNonNegativeInteger n@(negsuc _) =
-  TypeError (primStringAppend (primShowInteger n) (" is negative"))
+  UnsatisfiedConstraint (primStringAppend (primShowInteger n) (" is negative"))
