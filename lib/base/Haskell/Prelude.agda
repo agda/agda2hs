@@ -6,7 +6,7 @@ open Haskell.Prim public using
   ( Type;
     Bool; True; False; Char; Integer;
     List; []; _∷_; Nat; zero; suc; ⊤; tt;
-    TypeError; ⊥; iNumberNat; lengthNat;
+    UnsatisfiedConstraint; ⊥; iNumberNat; lengthNat;
     IsTrue; IsFalse; NonEmpty;
     All; allNil; allCons;
     Any; anyHere; anyThere;
