@@ -451,3 +451,9 @@ noCheckNames = local $ \e -> e { checkNames = False }
 
 doNameCheck :: C Bool
 doNameCheck = reader checkNames
+
+withoutSignature :: C a -> C a
+withoutSignature = local $ \e -> e { genSignature = False }
+
+shouldGenerateSignature :: C Bool
+shouldGenerateSignature = reader genSignature
