@@ -23,7 +23,7 @@ open import Agda.Builtin.Strict     public
 open import Agda.Builtin.List       public
 
 variable
-  @0 ℓ : Level
+  @0 ℓ ℓ′ : Level
   a b c d e : Type
   f m s t : Type → Type
 

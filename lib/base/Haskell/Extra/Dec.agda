@@ -1,11 +1,14 @@
 module Haskell.Extra.Dec where
 
-open import Haskell.Prelude
+open import Haskell.Prim
+open import Haskell.Prim.Bool
+open import Haskell.Prim.Either
+open import Haskell.Prim.Tuple
 open import Haskell.Extra.Refinement
+
 open import Agda.Primitive
 
 private variable
-  ℓ : Level
   P : Type
 
 @0 Reflects : Type ℓ → Bool → Type ℓ
