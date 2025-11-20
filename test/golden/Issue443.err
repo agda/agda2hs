@@ -1,0 +1,2 @@
+test/Fail/Issue443.agda:5.1-5: error: [CustomBackendError]
+agda2hs: Cannot compile Fail.Issue443.local in a `where` block
