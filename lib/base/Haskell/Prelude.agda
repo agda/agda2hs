@@ -43,6 +43,8 @@ open import Haskell.Prim.Traversable public
 open import Haskell.Prim.Tuple       public hiding (first; second; _***_)
 open import Haskell.Prim.Word        public
 
+open import Haskell.Control.Exception
+
 -- Problematic features
 --  - [Partial]:  Could pass implicit/instance arguments to prove totality.
 --  - [Float]:    Or Float (Agda floats are Doubles)
@@ -127,6 +129,16 @@ lookup : ⦃ Eq a ⦄ → a → List (a × b) → Maybe b
 lookup x []              = Nothing
 lookup x ((x₁ , y) ∷ xs) = if x == x₁ then Just y else lookup x xs
 
+-------------------------------------------------
+-- Exception handling in the I/O monad
+
+IOError = IOException
+
+ioError : @0 {{MayThrow IOError}} → IOError → IO a
+ioError = throwIO
+
+postulate
+  userError : String → IOError
 
 -------------------------------------------------
 -- Unsafe functions
