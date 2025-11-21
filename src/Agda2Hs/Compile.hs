@@ -117,7 +117,8 @@ compile genv tlm _ def =
 
       case (p , theDef def) of
         (NoPragma            , _         ) -> return []
-        (ExistingClassPragma , _         ) -> return []
+        (ExistingPragma      , _         ) -> return []
+        (ExistingClassPragma , Record{}  ) -> return []
         (UnboxPragma s       , Record{}  ) -> [] <$ checkUnboxPragma def
         (TransparentPragma   , Function{}) -> [] <$ checkTransparentPragma def
         (InlinePragma        , Function{}) -> [] <$ checkInlinePragma def
