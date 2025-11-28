@@ -6,18 +6,20 @@ module Main where
 import Control.Exception (catch, SomeException)
 import Control.Monad (forM, unless)
 import qualified Data.ByteString.Lazy as LBS
-import Data.List (intercalate, isPrefixOf, isSuffixOf, sort)
+import Data.List (isPrefixOf, isSuffixOf, isInfixOf, sort, tails)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import System.Directory
-  ( doesFileExist
+  ( createDirectoryIfMissing
+  , doesFileExist
   , getCurrentDirectory
+  , getTemporaryDirectory
   , listDirectory
   , removeFile
   , setCurrentDirectory
   )
 import System.Exit (ExitCode(..))
-import System.FilePath ((</>), dropExtension, makeRelative, takeDirectory, takeFileName)
+import System.FilePath ((</>), dropExtension, makeRelative, takeBaseName, takeDirectory, takeFileName)
 import System.Process (readProcessWithExitCode)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.Golden (goldenVsStringDiff)
@@ -35,9 +37,14 @@ main = do
   -- Change to the test directory so that agda2hs can find the agda-lib
   setCurrentDirectory testDir
 
+  -- Create a temporary build directory
+  tmpDir <- getTemporaryDirectory
+  let buildDir = tmpDir </> "agda2hs-test-build"
+  createDirectoryIfMissing True buildDir
+
   -- Discover test cases
-  succeedTests <- discoverSucceedTests testDir
-  failTests <- discoverFailTests testDir
+  succeedTests <- discoverSucceedTests testDir buildDir
+  failTests <- discoverFailTests testDir buildDir
 
   -- Run tests
   defaultMain $ testGroup "agda2hs"
@@ -46,24 +53,22 @@ main = do
     ]
 
 -- | Discover all .agda files under the Succeed directory recursively.
-discoverSucceedTests :: FilePath -> IO [TestTree]
-discoverSucceedTests testDir = do
+discoverSucceedTests :: FilePath -> FilePath -> IO [TestTree]
+discoverSucceedTests testDir buildDir = do
   agdaFiles <- findAgdaFilesRecursive (testDir </> "Succeed")
   forM (sort agdaFiles) $ \agdaFile -> do
-    let relPath = makeRelative testDir agdaFile
-        testName = dropExtension (makeRelative (testDir </> "Succeed") agdaFile)
+    let testName = dropExtension (makeRelative (testDir </> "Succeed") agdaFile)
         goldenFile = dropExtension agdaFile ++ ".hs"
-    return $ succeedTest testDir testName relPath goldenFile
+    return $ succeedTest testDir buildDir testName agdaFile goldenFile
 
 -- | Discover all .agda files under the Fail directory.
-discoverFailTests :: FilePath -> IO [TestTree]
-discoverFailTests testDir = do
+discoverFailTests :: FilePath -> FilePath -> IO [TestTree]
+discoverFailTests testDir buildDir = do
   agdaFiles <- findAgdaFilesRecursive (testDir </> "Fail")
   forM (sort agdaFiles) $ \agdaFile -> do
-    let relPath = makeRelative testDir agdaFile
-        testName = dropExtension (makeRelative (testDir </> "Fail") agdaFile)
+    let testName = dropExtension (makeRelative (testDir </> "Fail") agdaFile)
         goldenFile = dropExtension agdaFile ++ ".err"
-    return $ failTest testDir testName relPath goldenFile
+    return $ failTest testDir buildDir testName agdaFile goldenFile
 
 -- | Find all .agda files recursively in a directory.
 findAgdaFilesRecursive :: FilePath -> IO [FilePath]
@@ -91,12 +96,20 @@ doesDirectoryExist path = do
 -- | Create a test for a succeed case.
 -- Runs agda2hs on the .agda file, compares the output .hs to the golden file,
 -- then compiles the .hs file with ghc.
-succeedTest :: FilePath -> String -> FilePath -> FilePath -> TestTree
-succeedTest testDir testName agdaFile goldenFile =
+succeedTest :: FilePath -> FilePath -> String -> FilePath -> FilePath -> TestTree
+succeedTest testDir buildDir testName agdaFile goldenFile =
   goldenVsStringDiff testName diffCmd goldenFile $ do
-    -- Get the output directory (same as the agda file directory)
-    let outDir = takeDirectory agdaFile
-        succeedDir = testDir </> "Succeed"
+    let succeedDir = testDir </> "Succeed"
+        -- Output to build directory to avoid polluting source tree
+        outDir = buildDir </> "Succeed"
+        -- Get the relative path from Succeed to the agda file
+        relAgdaPath = makeRelative succeedDir agdaFile
+        -- Compute the expected output file path (same relative path, but .hs)
+        generatedFile = outDir </> dropExtension relAgdaPath ++ ".hs"
+        generatedDir = takeDirectory generatedFile
+
+    -- Ensure output directory exists (including subdirectories)
+    createDirectoryIfMissing True generatedDir
 
     -- Run agda2hs with include path for Succeed directory
     (exitCode, stdout, stderr) <- readProcessWithExitCode
@@ -106,15 +119,14 @@ succeedTest testDir testName agdaFile goldenFile =
 
     case exitCode of
       ExitSuccess -> do
-        -- Read the generated .hs file
-        let generatedFile = dropExtension agdaFile ++ ".hs"
+        -- Read the generated .hs file from build directory
         content <- LBS.readFile generatedFile
 
         -- Also run ghc to check the generated code compiles
         -- Add include path for finding imported modules
         (ghcExit, ghcOut, ghcErr) <- readProcessWithExitCode
           "ghc"
-          ["-fno-code", "-i" ++ succeedDir, generatedFile]
+          ["-fno-code", "-i" ++ outDir, generatedFile]
           ""
 
         case ghcExit of
@@ -128,17 +140,22 @@ succeedTest testDir testName agdaFile goldenFile =
 -- | Create a test for a fail case.
 -- Runs agda2hs on the .agda file, expects it to fail, and compares the error
 -- message to the golden file.
-failTest :: FilePath -> String -> FilePath -> FilePath -> TestTree
-failTest testDir testName agdaFile goldenFile =
+failTest :: FilePath -> FilePath -> String -> FilePath -> FilePath -> TestTree
+failTest testDir buildDir testName agdaFile goldenFile =
   goldenVsStringDiff testName diffCmd goldenFile $ do
     let failDir = testDir </> "Fail"
         succeedDir = testDir </> "Succeed"
+        -- Output to build directory to avoid polluting source tree
+        outDir = buildDir </> "Fail"
+
+    -- Ensure output directory exists
+    createDirectoryIfMissing True outDir
 
     -- Run agda2hs (expecting failure) with include paths for both directories
     -- Fail tests may depend on modules from Succeed
     (exitCode, stdout, stderr) <- readProcessWithExitCode
       "agda2hs"
-      [agdaFile, "-o", takeDirectory agdaFile, "-v0", "-i" ++ failDir, "-i" ++ succeedDir]
+      [agdaFile, "-o", outDir, "-v0", "-i" ++ failDir, "-i" ++ succeedDir]
       ""
 
     let output = stdout ++ stderr
