@@ -51,7 +51,10 @@ let
     runCommand "${pname}-${version}"
       {
         inherit pname version;
-        nativeBuildInputs = [ makeWrapper ];
+        nativeBuildInputs = [
+          pkgs.diffutils
+          makeWrapper
+        ];
         passthru = {
           unwrapped = agda2hs;
           inherit withPackages;
