@@ -2,8 +2,8 @@ module Main where
 
 import Control.Monad (forM)
 import qualified Data.ByteString.Lazy as LBS
-import Data.List (isPrefixOf, isSuffixOf, isInfixOf, sortBy)
-import Data.Ord (Down(..), comparing)
+import Data.List (isPrefixOf, isSuffixOf, isInfixOf, sort)
+import Data.Ord (Down(..))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import System.Directory
@@ -85,21 +85,9 @@ sortByModTime files goldenPath = do
     goldenTime <- if goldenExists
                     then Just <$> getModificationTime golden
                     else return Nothing
-    return (f, agdaTime, goldenTime)
-  return $ map (\(f,_,_) -> f) $ sortBy fileOrder filesWithTimes
-  where
-    fileOrder (f1, t1, g1) (f2, t2, g2) =
-      -- First by agda file modification time (newest first)
-      case comparing Down t1 t2 of
-        EQ -> case (g1, g2) of
-          -- Then by golden file modification time (newest first)
-          (Just gt1, Just gt2) -> case comparing Down gt1 gt2 of
-            EQ -> compare f1 f2  -- Finally alphabetically
-            x  -> x
-          (Just _, Nothing) -> LT
-          (Nothing, Just _) -> GT
-          (Nothing, Nothing) -> compare f1 f2
-        x -> x
+    -- Use Down to sort newest first; standard tuple ordering does the rest
+    return (Down agdaTime, Down goldenTime, f)
+  return $ map (\(_,_,f) -> f) $ sort filesWithTimes
 
 -- | Find all .agda files recursively in a directory.
 findAgdaFilesRecursive :: FilePath -> IO [FilePath]
