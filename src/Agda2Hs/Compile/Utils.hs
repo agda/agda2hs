@@ -94,6 +94,11 @@ infixr 0 /\, \/
 f /\ g = \x -> f x && g x
 f \/ g = \x -> f x || g x
 
+toDataTarget :: DataTarget -> Hs.DataOrNew ()
+toDataTarget ToNewType = Hs.NewType ()
+toDataTarget ToData    = Hs.DataType ()
+toDataTarget ToGadt    = Hs.DataType ()
+
 showTCM :: PrettyTCM a => a -> C String
 showTCM x = liftTCM $ show <$> prettyTCM x
 
