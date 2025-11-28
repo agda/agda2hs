@@ -6,6 +6,10 @@ on:
   push:
     branches: [master]
 
+  # Runs on PRs targeting the default branch
+  pull_request:
+    branches: [master]
+
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -19,7 +23,7 @@ jobs:
   deploy:
     strategy:
       matrix:
-        python-version: ["3.10.8"]
+        python-version: ["3.14"]
 
     env:
       DOCS_DIR: docs
@@ -28,21 +32,27 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
+
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
+
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Install dependencies
         run: |
           pip install -r ${{ env.DOCS_DIR }}/requirements.txt
+
       - name: Build User Manual in HTML
         run: |
           cd ${{ env.DOCS_DIR }}
           make html
+
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
+        if: github.ref == 'refs/heads/master'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ${{ env.DOCS_BUILD_HTML_DIR }}

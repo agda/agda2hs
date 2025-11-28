@@ -3,6 +3,16 @@ name: CI
 # Trigger the workflow on push or pull request, but only for the master branch
 on:
   pull_request:
+    paths:
+      - 'lib/**'
+      - 'src/**'
+      - 'test/**'
+      - 'lib/base/base.agda-lib'
+      - 'agda2hs.cabal'
+      - 'cabal.project'
+      - 'Makefile'
+      - '.github/workflows/**.yml'
+    branches: [master]
   push:
     paths:
       - 'lib/**'
@@ -22,12 +32,11 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]   # macOS-latest, windows-latest
-        cabal: [3.10.3]
-        deploy-ghc: [9.6.6]
-        ghc: [9.4.8, 9.6.6, 9.8.2, 9.10.1]
+        cabal: [3.14.2.0]
+        deploy-ghc: [9.6.7]
+        ghc: [9.6.7, 9.8.4, 9.10.3, 9.12.2]
     steps:
-    - uses: actions/checkout@v3
-      if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
+    - uses: actions/checkout@v6
 
     # Takes care of ghc and cabal. See https://github.com/haskell/actions.
     - uses: haskell-actions/setup@v2
@@ -37,32 +46,48 @@ jobs:
         ghc-version: ${{ matrix.ghc }}
         cabal-version: ${{ matrix.cabal }}
 
-    # Generate a cabal.project.freeze file with all dependencies. We use the
-    # hash of this as the cache key, so when a dependency changes we upload a
-    # new cache.
-    - name: Freeze
-      run: cabal freeze
+    # Andreas, 2025-11-28: Since the freeze file contains a timestamp of the Hackage index
+    # and the index changes several times a day,
+    # the freeze file is not very useful as a cache key.
+    # Instead, use the plan.json file (see below).
+    # # Generate a cabal.project.freeze file with all dependencies. We use the
+    # # hash of this as the cache key, so when a dependency changes we upload a
+    # # new cache.
+    # - name: Freeze
+    #   run: cabal freeze
 
-    # Install fix-whitespace since we need it for tests.
-    # This is done after the freeze to make sure we re-use the packages
-    - name: Install fix-whitespace
+    - name: Configure the build plan
       run: |
-        echo "import: cabal.project" > cabal.project.ci
-        cabal install fix-whitespace --project-file=cabal.project.ci
+        cabal build --dry-run
+      # cabal build --dry-run creates dist-newstyle/cache/plan.json
+
+    # Andreas, 2025-11-28, AIM XLI, use fix-whitespace-action
+    # # Install fix-whitespace since we need it for tests.
+    # # This is done after the freeze to make sure we re-use the packages
+    # - name: Install fix-whitespace
+    #   run: |
+    #     echo "import: cabal.project" > cabal.project.ci
+    #     cabal install fix-whitespace --project-file=cabal.project.ci
 
     # Cache the contents of ~/.cabal/store to avoid rebuilding dependencies for
     # every build. `restore-keys` makes it use the latest cache even if the
     # fingerprint doesn't match, so we don't need to start from scratch every
     # time a dependency changes.
-    - uses: actions/cache@v3
-      name: Cache ~/.cabal/store
+    - uses: actions/cache/restore@v4
+      name: Restore cached ~/.cabal/store
+      id: cache
       with:
         path:         ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
-        key:          ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+        # The freeze file is a bad key, use dist-newstyle/cache/plan.json instead.
+        # key:          ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+        key:          ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('**/plan.json') }}
         restore-keys: ${{ runner.os }}-${{ matrix.ghc }}-
 
+    - name: Run fix-whitespace
+      uses: andreasabel/fix-whitespace-action@v1
+
     - name: Run test suite
-      run: make test && git diff --exit-code
+      run: make test-on-CI && git diff --exit-code
 
     - name: Generate Prelude HTML
       if: ${{ (matrix.ghc == matrix.deploy-ghc) && (github.ref == 'refs/heads/master') }}
@@ -70,9 +95,15 @@ jobs:
 
     - name: Deploy Prelude HTML
       if: ${{ (matrix.ghc == matrix.deploy-ghc) && (github.ref == 'refs/heads/master') }}
-      uses: peaceiris/actions-gh-pages@v3
+      uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: html
         destination_dir: lib
 
+    - uses: actions/cache/save@v4
+      name: Cache ~/.cabal/store
+      if: always() && steps.cache.outputs.cache-hit != 'true'
+      with:
+        path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
+        key:  ${{ steps.cache.outputs.cache-primary-key }}

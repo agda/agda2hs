@@ -1,4 +1,4 @@
-.PHONY : install agda repl libHtml test testContainers testHtml golden docs
+.PHONY : install agda repl libHtml testContainers test test-on-CI testHtml golden clean docs
 FILES = $(shell find src -type f)
 
 build :
@@ -23,7 +23,9 @@ test/agda2hs : $(FILES)
 testContainers:
 	cd ./lib/containers && ./generate-haskell.sh && cabal build containers-prop
 
-test : checkWhitespace test/agda2hs testContainers
+test : checkWhitespace test-on-CI
+
+test-on-CI : test/agda2hs testContainers
 	make -C test
 
 testHtml : test/agda2hs
