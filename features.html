@@ -1,22 +1,21 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Features &mdash; agda2hs  documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -29,11 +28,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> agda2hs
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            agda2hs
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -103,7 +106,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a></li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">Features</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/features.md.txt" rel="nofollow"> View page source</a>
@@ -115,16 +118,16 @@
            <div itemprop="articleBody">
              
   <section id="features">
-<h1>Features<a class="headerlink" href="#features" title="Permalink to this heading"></a></h1>
+<h1>Features<a class="headerlink" href="#features" title="Link to this heading"></a></h1>
 <p>By default, all of the following Agda examples are implicitly prefixed (if
 necessary) with the following snippet.</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">open</span><span class="w"> </span><span class="kr">import</span><span class="w"> </span><span class="n">Haskell.Prelude</span>
 </pre></div>
 </div>
 <section id="data-type-declarations">
-<h2>Data &amp; Type Declarations<a class="headerlink" href="#data-type-declarations" title="Permalink to this heading"></a></h2>
+<h2>Data &amp; Type Declarations<a class="headerlink" href="#data-type-declarations" title="Link to this heading"></a></h2>
 <section id="types">
-<h3>Types<a class="headerlink" href="#types" title="Permalink to this heading"></a></h3>
+<h3>Types<a class="headerlink" href="#types" title="Link to this heading"></a></h3>
 <p>Creating a type synonym using the <code class="docutils literal notranslate"><span class="pre">type</span></code> keyword requires only a simple declaration in Agda.</p>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span>Entry<span class="w"> </span><span class="ow">=</span><span class="w"> </span>Int<span class="w"> </span>×<span class="w"> </span>List<span class="w"> </span>String
@@ -138,7 +141,7 @@ necessary) with the following snippet.</p>
 </div>
 </section>
 <section id="datatypes">
-<h3>Datatypes<a class="headerlink" href="#datatypes" title="Permalink to this heading"></a></h3>
+<h3>Datatypes<a class="headerlink" href="#datatypes" title="Link to this heading"></a></h3>
 <p>Standard data type declarations have a simple equivalent in Agda.</p>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Nat<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
@@ -171,7 +174,7 @@ necessary) with the following snippet.</p>
 <p>(For Agda users: We have renamed <code class="docutils literal notranslate"><span class="pre">Set</span></code> to <code class="docutils literal notranslate"><span class="pre">Type</span></code> in order to follow nomenclature in Haskell.)</p>
 </section>
 <section id="records">
-<h3>Records<a class="headerlink" href="#records" title="Permalink to this heading"></a></h3>
+<h3>Records<a class="headerlink" href="#records" title="Link to this heading"></a></h3>
 <p>Data definitions with fields are represented by records on the Agda side.</p>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Citation<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
@@ -193,7 +196,7 @@ necessary) with the following snippet.</p>
 </div>
 </section>
 <section id="newtypes">
-<h3>Newtypes<a class="headerlink" href="#newtypes" title="Permalink to this heading"></a></h3>
+<h3>Newtypes<a class="headerlink" href="#newtypes" title="Link to this heading"></a></h3>
 <p>Data declaration using the <code class="docutils literal notranslate"><span class="pre">newtype</span></code> keyword can be created by adding a <code class="docutils literal notranslate"><span class="pre">newtype</span></code> annotation to the compile pragma.</p>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="c1">-- data newtype</span>
@@ -267,7 +270,7 @@ createDuo<span class="w"> </span>a<span class="w"> </span>b<span class="w"> </sp
 </section>
 </section>
 <section id="pattern-matching-on-datatype-values">
-<h2>Pattern Matching on Datatype Values<a class="headerlink" href="#pattern-matching-on-datatype-values" title="Permalink to this heading"></a></h2>
+<h2>Pattern Matching on Datatype Values<a class="headerlink" href="#pattern-matching-on-datatype-values" title="Link to this heading"></a></h2>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="cm">{-# FOREIGN AGDA2HS {-# LANGUAGE LambdaCase #-} #-}</span>
 
@@ -305,7 +308,7 @@ negate&#39;&#39;<span class="w"> </span><span class="ow">=</span><span class="w"
 </div>
 </section>
 <section id="flow-control">
-<h2>Flow Control<a class="headerlink" href="#flow-control" title="Permalink to this heading"></a></h2>
+<h2>Flow Control<a class="headerlink" href="#flow-control" title="Link to this heading"></a></h2>
 <p>Agda2HS provides native support for the Haskell <code class="docutils literal notranslate"><span class="pre">if_then_else_</span></code> and <code class="docutils literal notranslate"><span class="pre">case_of_</span></code> constructs.</p>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="nf">ifThenElse</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Int<span class="w"> </span><span class="ow">→</span><span class="w"> </span>String
@@ -335,7 +338,7 @@ mhead<span class="w"> </span>xs<span class="w"> </span><span class="ow">=</span>
 This means that you must explicitly write <code class="docutils literal notranslate"><span class="pre">λ</span> <span class="pre">x</span> <span class="pre">→</span> <span class="pre">if</span> <span class="pre">x</span> <span class="pre">then</span> <span class="pre">2</span> <span class="pre">else</span> <span class="pre">3</span></code> instead of <code class="docutils literal notranslate"><span class="pre">if_then</span> <span class="pre">2</span> <span class="pre">else</span> <span class="pre">3</span></code>. (This copies the impossibility of the second implementation in Haskell.)</p>
 </div></blockquote>
 <section id="flow-witnesses">
-<h3>Flow Witnesses<a class="headerlink" href="#flow-witnesses" title="Permalink to this heading"></a></h3>
+<h3>Flow Witnesses<a class="headerlink" href="#flow-witnesses" title="Link to this heading"></a></h3>
 <p>While in Haskell such a thing is never necessary, in Agda there are cases when it is useful for a branch to contain a “witness” (proof) of the condition on which it split (i.e. the true branch of <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">x</span> <span class="pre">&lt;</span> <span class="pre">2</span> <span class="pre">then</span> <span class="pre">...</span> <span class="pre">else</span> <span class="pre">...</span></code> knows that <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">&lt;</span> <span class="pre">2</span> <span class="pre">=</span> <span class="pre">True</span></code>).</p>
 <p>The type signatures of both <code class="docutils literal notranslate"><span class="pre">if_then_else_</span></code> and <code class="docutils literal notranslate"><span class="pre">case_of_</span></code> on the Agda side contain instances of these proofs which can be used to work with e.g. intrinsic verification.</p>
 <p>This allows for the following Agda code to type check:</p>
@@ -377,7 +380,7 @@ createRangeCase<span class="w"> </span>low<span class="w"> </span>high<span clas
 </section>
 </section>
 <section id="explicit-type-singatures">
-<h2>Explicit type singatures<a class="headerlink" href="#explicit-type-singatures" title="Permalink to this heading"></a></h2>
+<h2>Explicit type singatures<a class="headerlink" href="#explicit-type-singatures" title="Link to this heading"></a></h2>
 <p>Haskell’s <code class="docutils literal notranslate"><span class="pre">::</span></code> syntax for explicit type signatures can be achieved using the <code class="docutils literal notranslate"><span class="pre">the</span></code> function in Haskell.Prim.</p>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="nf">five</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat
@@ -392,7 +395,7 @@ five<span class="w"> </span><span class="ow">=</span><span class="w"> </span>the
 </div>
 </section>
 <section id="quantity-parameters">
-<span id="quantity"></span><h2>0-Quantity Parameters<a class="headerlink" href="#quantity-parameters" title="Permalink to this heading"></a></h2>
+<span id="quantity"></span><h2>0-Quantity Parameters<a class="headerlink" href="#quantity-parameters" title="Link to this heading"></a></h2>
 <p>Parameters can be annotated with a <em>quantity</em> of either <code class="docutils literal notranslate"><span class="pre">0</span></code> or <code class="docutils literal notranslate"><span class="pre">ω</span></code> (the default quantity is <code class="docutils literal notranslate"><span class="pre">ω</span></code> if no quantity is explicitly annotated). Parameters annotated with <code class="docutils literal notranslate"><span class="pre">0</span></code> are irrelevant to evaluation, so they are irrelevant to the compiled Haskell program, and so agda2hs erases them.</p>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>GhostInt<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
@@ -416,7 +419,7 @@ addGhostInts<span class="w"> </span><span class="o">(</span>MakeGhostInt<span cl
 </div>
 </section>
 <section id="coinduction">
-<h2>Coinduction<a class="headerlink" href="#coinduction" title="Permalink to this heading"></a></h2>
+<h2>Coinduction<a class="headerlink" href="#coinduction" title="Link to this heading"></a></h2>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Stream<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="o">(</span>@0<span class="w"> </span>i<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Size<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="nf">Nil</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Stream<span class="w"> </span>a<span class="w"> </span>i
@@ -437,7 +440,7 @@ repeat<span class="w"> </span>x<span class="w"> </span><span class="ow">=</span>
 </div>
 </section>
 <section id="type-classes">
-<h2>Type Classes<a class="headerlink" href="#type-classes" title="Permalink to this heading"></a></h2>
+<h2>Type Classes<a class="headerlink" href="#type-classes" title="Link to this heading"></a></h2>
 <p>To construct an instance of a type class, you can simply do the following:</p>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Circle<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
@@ -507,7 +510,7 @@ constructEqualCircle<span class="w"> </span>c<span class="w"> </span>d<span clas
 </pre></div>
 </div>
 <section id="constrained-typeclass-instance">
-<h3>Constrained Typeclass Instance<a class="headerlink" href="#constrained-typeclass-instance" title="Permalink to this heading"></a></h3>
+<h3>Constrained Typeclass Instance<a class="headerlink" href="#constrained-typeclass-instance" title="Link to this heading"></a></h3>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Class1<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="kr">field</span>
@@ -537,7 +540,7 @@ class1-implies-class2<span class="w"> </span>_<span class="w"> </span>class1<spa
 </div>
 </section>
 <section id="constrained-typeclass">
-<h3>Constrained Typeclass<a class="headerlink" href="#constrained-typeclass" title="Permalink to this heading"></a></h3>
+<h3>Constrained Typeclass<a class="headerlink" href="#constrained-typeclass" title="Link to this heading"></a></h3>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Class1<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="kr">field</span>
@@ -561,7 +564,7 @@ class1-implies-class2<span class="w"> </span>_<span class="w"> </span>class1<spa
 </div>
 </section>
 <section id="default-typeclass-field-implementations">
-<h3>Default Typeclass Field Implementations<a class="headerlink" href="#default-typeclass-field-implementations" title="Permalink to this heading"></a></h3>
+<h3>Default Typeclass Field Implementations<a class="headerlink" href="#default-typeclass-field-implementations" title="Link to this heading"></a></h3>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>Ord<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">  </span><span class="kr">field</span>
@@ -606,7 +609,7 @@ class1-implies-class2<span class="w"> </span>_<span class="w"> </span>class1<spa
 </div>
 </section>
 <section id="copatterns-in-type-class-instances">
-<h3>Copatterns in Type Class Instances<a class="headerlink" href="#copatterns-in-type-class-instances" title="Permalink to this heading"></a></h3>
+<h3>Copatterns in Type Class Instances<a class="headerlink" href="#copatterns-in-type-class-instances" title="Link to this heading"></a></h3>
 <p>Agda copatterns are <em>not</em> supported by agda2hs in full generality. They <em>can</em> be
 used to define fields of typeclass instances, for example:</p>
 <p>Agda:</p>
@@ -629,7 +632,7 @@ used to define fields of typeclass instances, for example:</p>
 </div>
 </section>
 <section id="deriving-type-class-instances">
-<h3>Deriving Type Class Instances<a class="headerlink" href="#deriving-type-class-instances" title="Permalink to this heading"></a></h3>
+<h3>Deriving Type Class Instances<a class="headerlink" href="#deriving-type-class-instances" title="Link to this heading"></a></h3>
 <p>If the derived instance is not needed on the Agda side and needs to only be generated in Haskell, the deriving clause can simply be added to the compilation pragma (this also works with the <code class="docutils literal notranslate"><span class="pre">newtype</span></code> pragma):</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Planet<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">  </span><span class="nf">Mercury</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Planet
@@ -759,7 +762,7 @@ used to define fields of typeclass instances, for example:</p>
 </section>
 </section>
 <section id="partial-application">
-<h2>Partial Application<a class="headerlink" href="#partial-application" title="Permalink to this heading"></a></h2>
+<h2>Partial Application<a class="headerlink" href="#partial-application" title="Link to this heading"></a></h2>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="nf">add1</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Nat
 add1<span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span>+_
@@ -773,9 +776,9 @@ add1<span class="w"> </span><span class="ow">=</span><span class="w"> </span><sp
 </div>
 </section>
 <section id="mutual-recursion">
-<h2>Mutual Recursion<a class="headerlink" href="#mutual-recursion" title="Permalink to this heading"></a></h2>
+<h2>Mutual Recursion<a class="headerlink" href="#mutual-recursion" title="Link to this heading"></a></h2>
 <section id="mutually-recursive-functions">
-<h3>Mutually Recursive Functions<a class="headerlink" href="#mutually-recursive-functions" title="Permalink to this heading"></a></h3>
+<h3>Mutually Recursive Functions<a class="headerlink" href="#mutually-recursive-functions" title="Link to this heading"></a></h3>
 <p>Agda</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">mutual</span>
 <span class="w">    </span><span class="nf">even</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Nat<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
@@ -799,7 +802,7 @@ add1<span class="w"> </span><span class="ow">=</span><span class="w"> </span><sp
 </div>
 </section>
 <section id="mutually-recursive-datatype-and-function">
-<h3>Mutually Recursive Datatype and Function<a class="headerlink" href="#mutually-recursive-datatype-and-function" title="Permalink to this heading"></a></h3>
+<h3>Mutually Recursive Datatype and Function<a class="headerlink" href="#mutually-recursive-datatype-and-function" title="Link to this heading"></a></h3>
 <p>Agda</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">mutual</span>
 
@@ -829,7 +832,7 @@ add1<span class="w"> </span><span class="ow">=</span><span class="w"> </span><sp
 </section>
 </section>
 <section id="implicit-record-field">
-<h2>Implicit Record Field<a class="headerlink" href="#implicit-record-field" title="Permalink to this heading"></a></h2>
+<h2>Implicit Record Field<a class="headerlink" href="#implicit-record-field" title="Link to this heading"></a></h2>
 <p>Agda</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">record</span><span class="w"> </span>ImplicitField<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span><span class="kr">field</span>
@@ -846,7 +849,7 @@ add1<span class="w"> </span><span class="ow">=</span><span class="w"> </span><sp
 </div>
 </section>
 <section id="haskell-language-extensions">
-<h2>Haskell Language Extensions<a class="headerlink" href="#haskell-language-extensions" title="Permalink to this heading"></a></h2>
+<h2>Haskell Language Extensions<a class="headerlink" href="#haskell-language-extensions" title="Link to this heading"></a></h2>
 <p>Required haskell language extensions will be automatically inferred and enabled.</p>
 <p>A Haskell language extension can also be enabled manually as follows:</p>
 <p>Agda</p>
@@ -860,7 +863,7 @@ add1<span class="w"> </span><span class="ow">=</span><span class="w"> </span><sp
 </section>
 </section>
 <section id="imports">
-<h1>Imports<a class="headerlink" href="#imports" title="Permalink to this heading"></a></h1>
+<h1>Imports<a class="headerlink" href="#imports" title="Link to this heading"></a></h1>
 <p>Agda supports import statements anywhere in a file, but all generated Haskell imports
 will be placed at the top of the file.</p>
 <p>Agda</p>
@@ -967,9 +970,9 @@ testB<span class="w"> </span><span class="ow">=</span><span class="w"> </span>B.
 </div>
 </section>
 <section id="rewrite-rules-and-prelude-imports">
-<h1>Rewrite rules and Prelude imports<a class="headerlink" href="#rewrite-rules-and-prelude-imports" title="Permalink to this heading"></a></h1>
+<h1>Rewrite rules and Prelude imports<a class="headerlink" href="#rewrite-rules-and-prelude-imports" title="Link to this heading"></a></h1>
 <section id="rewrite-rules">
-<h2>Rewrite rules<a class="headerlink" href="#rewrite-rules" title="Permalink to this heading"></a></h2>
+<h2>Rewrite rules<a class="headerlink" href="#rewrite-rules" title="Link to this heading"></a></h2>
 <p>User-defined rewrite rules can be defined through a YAML configuration
 file. It is enabled with the <code class="docutils literal notranslate"><span class="pre">--config</span></code> option.</p>
 <p>This feature is particularly useful if you have a project depending on a large
@@ -1001,18 +1004,18 @@ twoDenoms<span class="w"> </span>p<span class="w"> </span><span class="ow">=</sp
 </pre></div>
 </div>
 <p>By default, the output would be this:</p>
-<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span>module Example where
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">module</span><span class="w"> </span><span class="nn">Example</span><span class="w"> </span><span class="kr">where</span>
 
-import Data.Rational.Unnormalised.Base (ℚᵘ(denominator-1), (/))
-import qualified Data.Rational.Unnormalised.Base as ℚ ((*))
-import Numeric.Natural (Natural)
-import qualified Prelude as ℕ ((*))
+<span class="kr">import</span><span class="w"> </span><span class="nn">Data.Rational.Unnormalised.Base</span><span class="w"> </span><span class="p">(</span><span class="kt">ℚᵘ</span><span class="p">(</span><span class="nf">denominator</span><span class="o">-</span><span class="err">1</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="o">/</span><span class="p">))</span>
+<span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">Data.Rational.Unnormalised.Base</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">ℚ</span><span class="w"> </span><span class="p">((</span><span class="o">*</span><span class="p">))</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Numeric.Natural</span><span class="w"> </span><span class="p">(</span><span class="kt">Natural</span><span class="p">)</span>
+<span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">Prelude</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">ℕ</span><span class="w"> </span><span class="p">((</span><span class="o">*</span><span class="p">))</span>
 
-double :: ℚᵘ -&gt; ℚᵘ
-double p = (ℚ.*) (pos 2 / 1) p
+<span class="nf">double</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">ℚᵘ</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">ℚᵘ</span>
+<span class="nf">double</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="kt">ℚ</span><span class="o">.*</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">pos</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="n">p</span>
 
-twoDenoms :: ℚᵘ -&gt; Natural
-twoDenoms p = (ℕ.*) 2 (suc (denominator-1 p))
+<span class="nf">twoDenoms</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">ℚᵘ</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Natural</span>
+<span class="nf">twoDenoms</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="kt">ℕ</span><span class="o">.*</span><span class="p">)</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="p">(</span><span class="n">suc</span><span class="w"> </span><span class="p">(</span><span class="n">denominator</span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="n">p</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>Here, agda2hs doesn’t know where to find these definitions; so it simply leaves them as they are.</p>
@@ -1073,7 +1076,7 @@ twoDenoms p = (ℕ.*) 2 (suc (denominator-1 p))
 <p>See also <code class="docutils literal notranslate"><span class="pre">rewrite-rules-example.yaml</span></code> in the root of the repository.</p>
 </section>
 <section id="handling-of-prelude">
-<h2>Handling of Prelude<a class="headerlink" href="#handling-of-prelude" title="Permalink to this heading"></a></h2>
+<h2>Handling of Prelude<a class="headerlink" href="#handling-of-prelude" title="Link to this heading"></a></h2>
 <p>By default, agda2hs handles Prelude like other modules: it collects all the
 identifiers it finds we use from Prelude, and adds them to Prelude’s import
 list.</p>
@@ -1104,7 +1107,7 @@ The format is the following:</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">implicit</span></code> is <code class="docutils literal notranslate"><span class="pre">false</span></code>, Prelude gets imported explicitly, and only those identifiers that are specified in the <code class="docutils literal notranslate"><span class="pre">using</span></code> list. If there is no such list, agda2hs reverts to the default behaviour (it tries to collect imports by itself).</p>
 </section>
 <section id="known-issues">
-<h2>Known issues<a class="headerlink" href="#known-issues" title="Permalink to this heading"></a></h2>
+<h2>Known issues<a class="headerlink" href="#known-issues" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p>Rewrite rules only work for things you do use, not for those that you only define. This causes a problem with class instances: if you choose the default behaviour, then write an instance of the Num class and define signum but do not use it, it will not get into Prelude’s import list, and so GHC will complain.</p></li>
 <li><p>You cannot change to a version with arguments of different modality without getting useless code. So if you rewrite a function to a version which has some of its parameters erased, the parameters remain there; probably because rewriting happens only after compiling the type signature.</p></li>
@@ -1112,7 +1115,7 @@ The format is the following:</p>
 </section>
 </section>
 <section id="emacs-mode">
-<h1>Emacs mode<a class="headerlink" href="#emacs-mode" title="Permalink to this heading"></a></h1>
+<h1>Emacs mode<a class="headerlink" href="#emacs-mode" title="Link to this heading"></a></h1>
 <p>Since there is a full Agda typechecker in the <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> binary,
 you can readily use the Emacs mode of a pre-existing Agda installation by changing the binary that <code class="docutils literal notranslate"><span class="pre">agda-mode</span></code> uses to the path to <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> binary.</p>
 <ul class="simple">
@@ -1123,7 +1126,7 @@ you can readily use the Emacs mode of a pre-existing Agda installation by changi
 <li><p>With <code class="docutils literal notranslate"><span class="pre">C-c</span> <span class="pre">C-x</span> <span class="pre">C-c</span></code>, you will now be able call the <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> backend from inside Emacs; all the other built-in backends still remain available.</p></li>
 </ul>
 <section id="id1">
-<h2>Known issues<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
+<h2>Known issues<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p>Now, the output can only be written next to the <code class="docutils literal notranslate"><span class="pre">.agda</span></code> files;
 there is no option to collect these under a separate directory.</p></li>

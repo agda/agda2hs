@@ -1,22 +1,21 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tutorials &mdash; agda2hs  documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -28,11 +27,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> agda2hs
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            agda2hs
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -76,7 +79,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a></li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">Tutorials</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/tutorials.md.txt" rel="nofollow"> View page source</a>
@@ -88,10 +91,10 @@
            <div itemprop="articleBody">
              
   <section id="tutorials">
-<h1>Tutorials<a class="headerlink" href="#tutorials" title="Permalink to this heading"></a></h1>
+<h1>Tutorials<a class="headerlink" href="#tutorials" title="Link to this heading"></a></h1>
 <p>The repositories relevant to the tutorials can be found <a class="reference external" href="https://github.com/wcqaguxa/agda2hs-examples">on github</a>.</p>
 <section id="how-to-build-a-small-library-in-agda2hs">
-<h2>How to build a small library in agda2hs<a class="headerlink" href="#how-to-build-a-small-library-in-agda2hs" title="Permalink to this heading"></a></h2>
+<h2>How to build a small library in agda2hs<a class="headerlink" href="#how-to-build-a-small-library-in-agda2hs" title="Link to this heading"></a></h2>
 <p><a class="reference external" href="https://github.com/agda/agda2hs/tree/master/tutorials/example-basics">Example source code</a></p>
 <p>After <a class="reference external" href="https://agda.github.io/agda2hs/introduction.html">installing agda2hs</a>, it’s time to write a small library. See the folder example-basics for the files described in this document.</p>
 <p>The minimum required to write a library in Agda2Hs is a top-level folder with at least one <code class="docutils literal notranslate"><span class="pre">.agda</span></code> file and an <code class="docutils literal notranslate"><span class="pre">.agda-lib</span></code> file. In the case of example-basics, it looks like this:</p>
@@ -142,12 +145,12 @@ Entry<span class="w"> </span><span class="ow">=</span><span class="w"> </span>In
 <p>Next comes the definition of a type synonym and a datatype. However, they are meaningless without the <code class="docutils literal notranslate"><span class="pre">COMPILE</span> <span class="pre">AGDA2HS</span></code> pragmas. For every new construct (Entry, Tree in this example), there should be one <code class="docutils literal notranslate"><span class="pre">{-#</span> <span class="pre">COMPILE</span> <span class="pre">AGDA2HS</span> <span class="pre">&lt;construct-name&gt;</span> <span class="pre">#-}</span></code> pragma. If the pragma is missing, the relevant agda code will be skipped during compilation.</p>
 <p>In general the pragmas can be placed anywhere in the code after the definition, but it is a good practice to place them just under the relevant definition. If the name is misspelled in the pragma, the compiler will issue a warning but continue proceeding.</p>
 <section id="compilation">
-<h3>Compilation<a class="headerlink" href="#compilation" title="Permalink to this heading"></a></h3>
+<h3>Compilation<a class="headerlink" href="#compilation" title="Link to this heading"></a></h3>
 <p>To verify our code is correct, you can load the Agda file using <code class="docutils literal notranslate"><span class="pre">C-c</span> <span class="pre">C-l</span></code>. In order to compile the file, run <code class="docutils literal notranslate"><span class="pre">agda2hs</span> <span class="pre">HelloWorld.agda</span></code> and verify that the haskell file <code class="docutils literal notranslate"><span class="pre">HelloWorld.hs</span></code> works as expected.</p>
 </section>
 </section>
 <section id="how-to-manage-structure-and-dependencies-of-a-bigger-repository">
-<h2>How to manage structure and dependencies of a bigger repository?<a class="headerlink" href="#how-to-manage-structure-and-dependencies-of-a-bigger-repository" title="Permalink to this heading"></a></h2>
+<h2>How to manage structure and dependencies of a bigger repository?<a class="headerlink" href="#how-to-manage-structure-and-dependencies-of-a-bigger-repository" title="Link to this heading"></a></h2>
 <p><a class="reference external" href="https://github.com/agda/agda2hs/tree/master/tutorials/example-structure">Example source code</a></p>
 <p>Ideally, a working repository should have more than one file. The repository <code class="docutils literal notranslate"><span class="pre">example-structure</span></code> contains an example of a minimally bigger project, with intuition on how to manage a bigger codebase.</p>
 <p>The source code of agda resides in <code class="docutils literal notranslate"><span class="pre">/src/agda</span></code>, which is reflected in the path included in <code class="docutils literal notranslate"><span class="pre">example-structure.agda-lib</span></code> file:</p>
@@ -165,7 +168,7 @@ Entry<span class="w"> </span><span class="ow">=</span><span class="w"> </span>In
 <p>It does not have to be specified for agda2hs to compile this import. If the import is used by any of the compiled code, the relevant Haskell module will be likewise imported in the target file; the irrelevant imports are automatically skipped.</p>
 <p>However, both files need to import <code class="docutils literal notranslate"><span class="pre">Haskell.Prelude</span></code> independently of each other to be able to use it.</p>
 <section id="id1">
-<h3>Compilation<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h3>
+<h3>Compilation<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
 <p>In principle, <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> has to be invoked on file-by-file basis and to define a compilation of a whole folder, additional scripting is necessary. However, since <code class="docutils literal notranslate"><span class="pre">Definition</span></code> is imported in <code class="docutils literal notranslate"><span class="pre">Usage</span></code>, when compiling the latter, the former also will be compiled as it is a dependency. Thus, in our example, it is only necessary to execute <code class="docutils literal notranslate"><span class="pre">agda2hs</span></code> once.</p>
 <p>Since the target repository is different than the source, it has to be specified as an argument. An example script, to be executed from the root of <code class="docutils literal notranslate"><span class="pre">example-structure</span></code> is placed in <code class="docutils literal notranslate"><span class="pre">script.sh</span></code>:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agda2hs<span class="w"> </span>./src/agda/Usage.agda<span class="w"> </span>-o<span class="w"> </span>./src/haskell/
@@ -174,11 +177,11 @@ Entry<span class="w"> </span><span class="ow">=</span><span class="w"> </span>In
 </section>
 </section>
 <section id="how-and-what-to-prove">
-<h2>How (and what) to prove?<a class="headerlink" href="#how-and-what-to-prove" title="Permalink to this heading"></a></h2>
+<h2>How (and what) to prove?<a class="headerlink" href="#how-and-what-to-prove" title="Link to this heading"></a></h2>
 <p><a class="reference external" href="https://github.com/agda/agda2hs/tree/master/tutorials/example-proofs">Example source code</a></p>
 <p>This tutorial aims to explain how to apply different formal verification techniques compliant with agda2hs and haskell.</p>
 <section id="constructor-constraints">
-<h3>Constructor constraints<a class="headerlink" href="#constructor-constraints" title="Permalink to this heading"></a></h3>
+<h3>Constructor constraints<a class="headerlink" href="#constructor-constraints" title="Link to this heading"></a></h3>
 <p>The code described in this section can be found in the file <code class="docutils literal notranslate"><span class="pre">Triangle.agda</span></code>.</p>
 <p>Let’s say we want to have a data type describing a triangle. A first attempt might look somewhat like this:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">open</span><span class="w"> </span><span class="kr">import</span><span class="w"> </span><span class="n">Haskell.Prelude</span>
@@ -247,7 +250,7 @@ createTriangle₁<span class="w"> </span>alpha<span class="w"> </span>beta<span 
 <p>Lastly, the two functions used to extract conditions from the compound condition: <code class="docutils literal notranslate"><span class="pre">&amp;&amp;-rightTrue</span></code> and <code class="docutils literal notranslate"><span class="pre">&amp;&amp;-leftTrue</span></code> were defined in <code class="docutils literal notranslate"><span class="pre">Haskell.Law.Bool</span></code>. The <code class="docutils literal notranslate"><span class="pre">Law</span></code> folder contains many theorems useful for designing your own proofs. This will be expanded on in following sections.</p>
 </section>
 <section id="function-or-predicate">
-<h3>Function or Predicate?<a class="headerlink" href="#function-or-predicate" title="Permalink to this heading"></a></h3>
+<h3>Function or Predicate?<a class="headerlink" href="#function-or-predicate" title="Link to this heading"></a></h3>
 <p>The code described in this section can be found in the file <code class="docutils literal notranslate"><span class="pre">Ascending.agda</span></code>.</p>
 <p>We will try to define ascending order on lists, which will allow us to use statements about the order in later proofs and programs.</p>
 <p>A first attempt at definition could be a function that can provide judgments on instances of lists:</p>
