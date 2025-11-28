@@ -114,14 +114,14 @@ compileRecord target def = do
               assts  -> Just (Hs.CxTuple () assts)
         defaultDecls <- compileMinRecords def ms
         return $ Hs.ClassDecl () context hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
-      ToRecord newtyp ds -> do
+      ToRecord dtarget ds -> do
         checkValidConName cName
         when (theEtaEquality recEtaEquality' == YesEta) $ agda2hsErrorM $
           "Agda records compiled to Haskell should have eta-equality disabled." <+>
           "Add no-eta-equality to the definition of" <+> (text (pp rName) <> ".")
         (constraints, fieldDecls) <- compileRecFields fieldDecl recFields fieldTel
-        when newtyp $ checkNewtypeCon cName fieldDecls
-        let target = if newtyp then Hs.NewType () else Hs.DataType ()
+        when (dtarget == ToNewType) $ checkNewtypeCon cName fieldDecls
+        let target = toDataTarget dtarget
         compileDataRecord constraints fieldDecls target hd ds
 
   where

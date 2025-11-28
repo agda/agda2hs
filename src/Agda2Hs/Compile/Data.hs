@@ -13,12 +13,13 @@ import Agda.TypeChecking.Telescope
 
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
+import Agda.Utils.Singleton
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils
 
 import Agda2Hs.Compile.Name
-import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds, compileDom, DomOutput(..) )
+import Agda2Hs.Compile.Type ( compileType, compileDomType, compileTeleBinds, compileDom, DomOutput(..) )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
@@ -34,8 +35,8 @@ checkNewtype name cs = do
     (Hs.QualConDecl () _ _ (Hs.ConDecl () cName types):_) -> checkNewtypeCon cName types
     _ -> __IMPOSSIBLE__
 
-compileData :: AsNewType -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
-compileData newtyp ds def = do
+compileData :: DataTarget -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
+compileData target ds def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
   checkValidTypeName d
   let Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} = theDef def
@@ -48,12 +49,22 @@ compileData newtyp ds def = do
     -- TODO: filter out erased constructors
     cs <- mapM (compileConstructor params) cs
     let hd = foldl (Hs.DHApp ()) (Hs.DHead () d) binds
+    let htarget = toDataTarget target
 
-    let target = if newtyp then Hs.NewType () else Hs.DataType ()
+    when (target == ToNewType) (checkNewtype d $ map fst cs)
 
-    when newtyp (checkNewtype d cs)
+    return . singleton $ case target of
+      ToGadt -> Hs.GDataDecl () htarget Nothing hd Nothing (map (uncurry conToGadtCon) cs) ds
+      _      -> Hs.DataDecl () htarget Nothing hd (map fst cs) ds
 
-    return [Hs.DataDecl () target Nothing hd cs ds]
+  where
+    conToGadtCon :: Hs.QualConDecl () -> Hs.Type () -> Hs.GadtDecl ()
+    conToGadtCon (Hs.QualConDecl _ tys ctx con) rt = case con of
+      Hs.ConDecl () c ts ->
+        Hs.GadtDecl () c tys ctx Nothing $
+          foldr (Hs.TyFun ()) rt ts
+      Hs.InfixConDecl{} -> __IMPOSSIBLE__
+      Hs.RecDecl{} -> __IMPOSSIBLE__
 
 allIndicesErased :: Type -> C ()
 allIndicesErased t = reduce (unEl t) >>= \case
@@ -64,7 +75,7 @@ allIndicesErased t = reduce (unEl t) >>= \case
     DomForall{}     -> agda2hsError "Not supported: indexed datatypes"
   _ -> return ()
 
-compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl ())
+compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl (), Hs.Type ())
 compileConstructor params c = do
   reportSDoc "agda2hs.data.con" 15 $ text "compileConstructor" <+> prettyTCM c
   reportSDoc "agda2hs.data.con" 20 $ text "  params = " <+> prettyTCM params
@@ -72,11 +83,12 @@ compileConstructor params c = do
   reportSDoc "agda2hs.data.con" 30 $ text "  ty (before piApply) = " <+> prettyTCM ty
   ty <- ty `piApplyM` params
   reportSDoc "agda2hs.data.con" 20 $ text "  ty = " <+> prettyTCM ty
-  TelV tel _ <- telView ty
+  TelV tel ret <- telView ty
   let conName = hsName $ prettyShow $ qnameName c
   checkValidConName conName
   args <- compileConstructorArgs tel
-  return $ Hs.QualConDecl () Nothing Nothing $ Hs.ConDecl () conName args
+  hret <- addContext tel $ compileType $ unEl ret
+  return (Hs.QualConDecl () Nothing Nothing $ Hs.ConDecl () conName args, hret)
 
 compileConstructorArgs :: Telescope -> C [Hs.Type ()]
 compileConstructorArgs EmptyTel = return []
@@ -132,12 +144,13 @@ checkCompileToDataPragma def s = noCheckNames $ do
   unless (length rcons == length dcons) $ fail
     "they have a different number of constructors"
   forM_ (zip dcons rcons) $ \(c1, c2) -> do
-    Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC1 args1) <-
+    (Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC1 args1) , rt1) <-
       addContext dtel $ compileConstructor (teleArgs dtel) c1
     -- rename parameters of r to match those of d
     rtel' <- renameParameters dtel rtel
-    Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC2 args2) <-
+    (Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC2 args2) , rt2) <-
       addContext rtel' $ compileConstructor (teleArgs rtel') c2
+    -- TODO: check that rt1 and rt2 are equal?
     unless (hsC1 == hsC2) $ fail $
       "name of constructor" <+> text (Hs.pp hsC1) <+>
       "does not match" <+> text (Hs.pp hsC2)

@@ -56,6 +56,7 @@ data ParsedPragma
   | TransparentPragma
   | NewTypePragma [Hs.Deriving ()]
   | TuplePragma Hs.Boxed
+  | GadtPragma [Hs.Deriving ()]
   | CompileToPragma String
   | DerivePragma (Maybe (Hs.DerivStrategy ()))
   deriving (Eq, Show)
@@ -71,6 +72,9 @@ parseStrategy _          = Nothing
 
 newtypePragma :: String
 newtypePragma = "newtype"
+
+gadtPragma :: String
+gadtPragma = "gadt"
 
 processDeriving :: Range -> String -> ([Hs.Deriving ()] -> ParsedPragma) -> C ParsedPragma
 processDeriving r d pragma = do
@@ -95,10 +99,12 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
     | s == "transparent"          -> return TransparentPragma
     | s == "tuple"                -> return $ TuplePragma Hs.Boxed
     | s == "unboxed-tuple"        -> return $ TuplePragma Hs.Unboxed
+    | s == "gadt"                 -> return $ GadtPragma []
     | "to" `isPrefixOf` s         -> return $ CompileToPragma (drop 3 s)
     | s == newtypePragma          -> return $ NewTypePragma []
     | s == derivePragma           -> return $ DerivePragma Nothing
     | derivePragma `isPrefixOf` s -> return $ DerivePragma (parseStrategy (drop (length derivePragma + 1) s))
     | "deriving"   `isPrefixOf` s -> processDeriving r s DefaultPragma
     | (newtypePragma ++ " deriving") `isPrefixOf` s -> processDeriving r (drop (length newtypePragma + 1) s) NewTypePragma
+    | (gadtPragma ++ " deriving") `isPrefixOf` s -> processDeriving r (drop (length gadtPragma + 1) s) GadtPragma
   _ -> return $ DefaultPragma []

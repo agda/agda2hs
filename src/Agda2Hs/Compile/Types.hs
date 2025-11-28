@@ -210,12 +210,17 @@ data CompiledDom
   | DomDropped
     -- ^ To nothing (e.g. erased proofs)
 
--- | Whether a datatype/record should be compiled as a @newtype@ haskell definition.
-type AsNewType = Bool
+-- | Whether a datatype/record should be compiled as a @newtype@ haskell definition,
+--   a gadt-style datatype, or a regular datatype.
+data DataTarget
+  = ToNewType
+  | ToGadt
+  | ToData
+  deriving (Eq)
 
 -- | Compilation target for an Agda record definition.
 data RecordTarget
-  = ToRecord AsNewType [Hs.Deriving ()]
+  = ToRecord DataTarget [Hs.Deriving ()]
   | ToClass [String]
 
 -- | Compilation target for an Agda instance declaration.

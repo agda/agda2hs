@@ -1,4 +1,4 @@
-{-# OPTIONS --prop #-}
+{-# OPTIONS --prop --polarity #-}
 module AllTests where
 
 import AllCubicalTests
@@ -106,6 +106,7 @@ import Issue306
 import RelevantDotPattern1
 import RelevantDotPattern2
 import RelevantDotPattern3
+import GadtSyntax
 
 {-# FOREIGN AGDA2HS
 import Issue14
@@ -209,4 +210,5 @@ import Issue306
 import RelevantDotPattern1
 import RelevantDotPattern2
 import RelevantDotPattern3
+import GadtSyntax
 #-}
