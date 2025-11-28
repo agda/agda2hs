@@ -6,7 +6,6 @@ import Data.List (isPrefixOf, isSuffixOf, isInfixOf, sortBy)
 import Data.Ord (Down(..), comparing)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import Data.Time.Clock (UTCTime)
 import System.Directory
   ( createDirectoryIfMissing
   , doesDirectoryExist
