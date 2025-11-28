@@ -6,8 +6,9 @@ module Main where
 import Control.Exception (catch, SomeException)
 import Control.Monad (forM, unless)
 import qualified Data.ByteString.Lazy as LBS
-import qualified Data.ByteString.Lazy.Char8 as LBS8
 import Data.List (intercalate, isPrefixOf, isSuffixOf, sort)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import System.Directory
   ( doesFileExist
   , getCurrentDirectory
@@ -20,6 +21,10 @@ import System.FilePath ((</>), dropExtension, makeRelative, takeDirectory, takeF
 import System.Process (readProcessWithExitCode)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.Golden (goldenVsStringDiff)
+
+-- | Convert a String to a lazy ByteString using UTF-8 encoding.
+stringToLBS :: String -> LBS.ByteString
+stringToLBS = LBS.fromStrict . TE.encodeUtf8 . T.pack
 
 main :: IO ()
 main = do
@@ -48,7 +53,7 @@ discoverSucceedTests testDir = do
     let relPath = makeRelative testDir agdaFile
         testName = dropExtension (makeRelative (testDir </> "Succeed") agdaFile)
         goldenFile = dropExtension agdaFile ++ ".hs"
-    return $ succeedTest testName relPath goldenFile
+    return $ succeedTest testDir testName relPath goldenFile
 
 -- | Discover all .agda files under the Fail directory.
 discoverFailTests :: FilePath -> IO [TestTree]
@@ -58,7 +63,7 @@ discoverFailTests testDir = do
     let relPath = makeRelative testDir agdaFile
         testName = dropExtension (makeRelative (testDir </> "Fail") agdaFile)
         goldenFile = dropExtension agdaFile ++ ".err"
-    return $ failTest testName relPath goldenFile
+    return $ failTest testDir testName relPath goldenFile
 
 -- | Find all .agda files recursively in a directory.
 findAgdaFilesRecursive :: FilePath -> IO [FilePath]
@@ -86,16 +91,17 @@ doesDirectoryExist path = do
 -- | Create a test for a succeed case.
 -- Runs agda2hs on the .agda file, compares the output .hs to the golden file,
 -- then compiles the .hs file with ghc.
-succeedTest :: String -> FilePath -> FilePath -> TestTree
-succeedTest testName agdaFile goldenFile =
+succeedTest :: FilePath -> String -> FilePath -> FilePath -> TestTree
+succeedTest testDir testName agdaFile goldenFile =
   goldenVsStringDiff testName diffCmd goldenFile $ do
     -- Get the output directory (same as the agda file directory)
     let outDir = takeDirectory agdaFile
+        succeedDir = testDir </> "Succeed"
 
-    -- Run agda2hs
+    -- Run agda2hs with include path for Succeed directory
     (exitCode, stdout, stderr) <- readProcessWithExitCode
       "agda2hs"
-      [agdaFile, "-o", outDir, "-v0"]
+      [agdaFile, "-o", outDir, "-v0", "-i" ++ succeedDir]
       ""
 
     case exitCode of
@@ -105,29 +111,34 @@ succeedTest testName agdaFile goldenFile =
         content <- LBS.readFile generatedFile
 
         -- Also run ghc to check the generated code compiles
+        -- Add include path for finding imported modules
         (ghcExit, ghcOut, ghcErr) <- readProcessWithExitCode
           "ghc"
-          ["-fno-code", generatedFile]
+          ["-fno-code", "-i" ++ succeedDir, generatedFile]
           ""
 
         case ghcExit of
           ExitSuccess -> return content
-          ExitFailure _ -> return $ LBS8.pack $
+          ExitFailure _ -> return $ stringToLBS $
             "GHC compilation failed:\n" ++ ghcOut ++ ghcErr
 
-      ExitFailure _ -> return $ LBS8.pack $
+      ExitFailure _ -> return $ stringToLBS $
         "agda2hs failed:\n" ++ stdout ++ stderr
 
 -- | Create a test for a fail case.
 -- Runs agda2hs on the .agda file, expects it to fail, and compares the error
 -- message to the golden file.
-failTest :: String -> FilePath -> FilePath -> TestTree
-failTest testName agdaFile goldenFile =
+failTest :: FilePath -> String -> FilePath -> FilePath -> TestTree
+failTest testDir testName agdaFile goldenFile =
   goldenVsStringDiff testName diffCmd goldenFile $ do
-    -- Run agda2hs (expecting failure)
+    let failDir = testDir </> "Fail"
+        succeedDir = testDir </> "Succeed"
+
+    -- Run agda2hs (expecting failure) with include paths for both directories
+    -- Fail tests may depend on modules from Succeed
     (exitCode, stdout, stderr) <- readProcessWithExitCode
       "agda2hs"
-      [agdaFile, "-o", takeDirectory agdaFile, "-v0"]
+      [agdaFile, "-o", takeDirectory agdaFile, "-v0", "-i" ++ failDir, "-i" ++ succeedDir]
       ""
 
     let output = stdout ++ stderr
@@ -136,9 +147,9 @@ failTest testName agdaFile goldenFile =
 
     case exitCode of
       ExitSuccess ->
-        return $ LBS8.pack "UNEXPECTED SUCCESS"
+        return $ stringToLBS "UNEXPECTED SUCCESS"
       ExitFailure _ ->
-        return $ LBS8.pack relativizedOutput
+        return $ stringToLBS relativizedOutput
 
 -- | Relativize absolute paths in error messages.
 -- This replaces absolute paths with relative paths to make tests portable.
