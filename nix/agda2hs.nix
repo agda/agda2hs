@@ -12,6 +12,7 @@
   makeWrapper,
   writeText,
   ghcWithPackages,
+  diffutils,
 }:
 
 let
@@ -52,7 +53,7 @@ let
       {
         inherit pname version;
         nativeBuildInputs = [
-          pkgs.diffutils
+          diffutils
           makeWrapper
         ];
         passthru = {
