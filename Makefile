@@ -22,7 +22,10 @@ testContainers:
 	cd ./lib/containers && ./generate-haskell.sh && cabal build containers-prop
 
 # Run all tests
-test : checkWhitespace succeed fail testContainers
+test : checkWhitespace test-on-CI
+
+# Run all tests except for fix-whitespace
+test-on-CI : succeed fail testContainers
 
 # Run only successful tests
 succeed :
