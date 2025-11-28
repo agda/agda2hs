@@ -129,8 +129,6 @@ compileType t = do
       x  <- hsName <$> compileDBVar x
       return $ tApp (Hs.TyVar () x) vs
 
-    Sort s -> return (Hs.TyStar ())
-
     Lam argInfo restAbs -> do
       (body , x0) <- underAbstraction_ restAbs $ \b ->
         (,) <$> compileType b <*> (hsName <$> compileDBVar 0)

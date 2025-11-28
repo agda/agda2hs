@@ -1,0 +1,2 @@
+test/Fail/Issue449.agda:13.1-5: error: [CustomBackendError]
+agda2hs: Bad Haskell type: Type
