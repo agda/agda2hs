@@ -1,55 +1,63 @@
-.PHONY : install agda repl libHtml testContainers test test-on-CI testHtml golden clean docs
+.PHONY : build install agda repl libHtml testContainers test succeed fail golden golden-succeed golden-fail clean docs fixWhitespace checkWhitespace
+
 FILES = $(shell find src -type f)
 
 build :
-	cabal build
+cabal build
 
 install :
-	cabal install --overwrite-policy=always
+cabal install --overwrite-policy=always
 
 agda :
-	cabal install Agda --program-suffix=-erased --overwrite-policy=always
+cabal install Agda --program-suffix=-erased --overwrite-policy=always
 
 repl :
-	cabal repl # e.g. `:set args -itest -otest/build test/AllTests.agda ... main ... :r ... main`
+cabal repl
 
 libHtml :
-	cabal run agda2hs -- --html --include-path lib/base lib/base/Haskell/Prelude.agda
-	cp html/Haskell.Prelude.html html/index.html
-
-test/agda2hs : $(FILES)
-	cabal install agda2hs --overwrite-policy=always --installdir=test --install-method=copy
+cabal run agda2hs -- --html --include-path lib/base lib/base/Haskell/Prelude.agda
+cp html/Haskell.Prelude.html html/index.html
 
 testContainers:
-	cd ./lib/containers && ./generate-haskell.sh && cabal build containers-prop
+cd ./lib/containers && ./generate-haskell.sh && cabal build containers-prop
 
-test : checkWhitespace test-on-CI
+# Run all tests
+test : checkWhitespace succeed fail testContainers
 
-test-on-CI : test/agda2hs testContainers
-	make -C test
+# Run only successful tests
+succeed :
+cabal test agda2hs-test --test-options='-p Succeed'
 
-testHtml : test/agda2hs
-	make -C test html
+# Run only failing tests
+fail :
+cabal test agda2hs-test --test-options='-p Fail'
 
-golden :
-	make -C test golden
+# Update all golden values
+golden : golden-succeed golden-fail
+
+# Update golden values for successful tests
+golden-succeed :
+cabal test agda2hs-test --test-options='-p Succeed --accept'
+
+# Update golden values for failing tests
+golden-fail :
+cabal test agda2hs-test --test-options='-p Fail --accept'
 
 clean :
-	make -C test clean
+cabal clean
+rm -rf test/_build/
 
 docs :
-	make -C docs html
+make -C docs html
 
 FIXW_BIN = fix-whitespace
 
-.PHONY : fixWhitespace ## Fix the whitespace issue.
 fixWhitespace : have-bin-$(FIXW_BIN) fix-whitespace.yaml
-	$(FIXW_BIN)
+$(FIXW_BIN)
 
-.PHONY : checkWhitespace ## Check the whitespace issue without fixing it.
 checkWhitespace : have-bin-$(FIXW_BIN) fix-whitespace.yaml
-	$(FIXW_BIN) --check
+$(FIXW_BIN) --check
 
-.PHONY : have-bin-% ## Installing binaries for developer services
+.PHONY : have-bin-%
 have-bin-% :
-	@($* --help > /dev/null) || $(CABAL) install --ignore-project $*
+@($* --help > /dev/null) || $(CABAL) install --ignore-project $*

@@ -1,25 +1,24 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module Main where
 
-import Control.Exception (catch, SomeException)
-import Control.Monad (forM, unless)
+import Control.Monad (forM)
 import qualified Data.ByteString.Lazy as LBS
-import Data.List (isPrefixOf, isSuffixOf, isInfixOf, sort, tails)
+import Data.List (isPrefixOf, isSuffixOf, isInfixOf, sortBy)
+import Data.Ord (Down(..), comparing)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
+import Data.Time.Clock (UTCTime)
 import System.Directory
   ( createDirectoryIfMissing
+  , doesDirectoryExist
   , doesFileExist
   , getCurrentDirectory
+  , getModificationTime
   , getTemporaryDirectory
   , listDirectory
-  , removeFile
   , setCurrentDirectory
   )
 import System.Exit (ExitCode(..))
-import System.FilePath ((</>), dropExtension, makeRelative, takeBaseName, takeDirectory, takeFileName)
+import System.FilePath ((</>), dropExtension, makeRelative, takeDirectory)
 import System.Process (readProcessWithExitCode)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.Golden (goldenVsStringDiff)
@@ -53,22 +52,55 @@ main = do
     ]
 
 -- | Discover all .agda files under the Succeed directory recursively.
+-- Files are ordered by: modification date (newest first), then golden value
+-- modification date (newest first), then alphabetically.
 discoverSucceedTests :: FilePath -> FilePath -> IO [TestTree]
 discoverSucceedTests testDir buildDir = do
   agdaFiles <- findAgdaFilesRecursive (testDir </> "Succeed")
-  forM (sort agdaFiles) $ \agdaFile -> do
+  sortedFiles <- sortByModTime agdaFiles (\f -> dropExtension f ++ ".hs")
+  forM sortedFiles $ \agdaFile -> do
     let testName = dropExtension (makeRelative (testDir </> "Succeed") agdaFile)
         goldenFile = dropExtension agdaFile ++ ".hs"
     return $ succeedTest testDir buildDir testName agdaFile goldenFile
 
 -- | Discover all .agda files under the Fail directory.
+-- Files are ordered by: modification date (newest first), then golden value
+-- modification date (newest first), then alphabetically.
 discoverFailTests :: FilePath -> FilePath -> IO [TestTree]
 discoverFailTests testDir buildDir = do
   agdaFiles <- findAgdaFilesRecursive (testDir </> "Fail")
-  forM (sort agdaFiles) $ \agdaFile -> do
+  sortedFiles <- sortByModTime agdaFiles (\f -> dropExtension f ++ ".err")
+  forM sortedFiles $ \agdaFile -> do
     let testName = dropExtension (makeRelative (testDir </> "Fail") agdaFile)
         goldenFile = dropExtension agdaFile ++ ".err"
     return $ failTest testDir buildDir testName agdaFile goldenFile
+
+-- | Sort files by modification time (newest first), then by golden value
+-- modification time (if it exists), then alphabetically.
+sortByModTime :: [FilePath] -> (FilePath -> FilePath) -> IO [FilePath]
+sortByModTime files goldenPath = do
+  filesWithTimes <- forM files $ \f -> do
+    agdaTime <- getModificationTime f
+    let golden = goldenPath f
+    goldenExists <- doesFileExist golden
+    goldenTime <- if goldenExists
+                    then Just <$> getModificationTime golden
+                    else return Nothing
+    return (f, agdaTime, goldenTime)
+  return $ map (\(f,_,_) -> f) $ sortBy fileOrder filesWithTimes
+  where
+    fileOrder (f1, t1, g1) (f2, t2, g2) =
+      -- First by agda file modification time (newest first)
+      case comparing Down t1 t2 of
+        EQ -> case (g1, g2) of
+          -- Then by golden file modification time (newest first)
+          (Just gt1, Just gt2) -> case comparing Down gt1 gt2 of
+            EQ -> compare f1 f2  -- Finally alphabetically
+            x  -> x
+          (Just _, Nothing) -> LT
+          (Nothing, Just _) -> GT
+          (Nothing, Nothing) -> compare f1 f2
+        x -> x
 
 -- | Find all .agda files recursively in a directory.
 findAgdaFilesRecursive :: FilePath -> IO [FilePath]
@@ -81,17 +113,6 @@ findAgdaFilesRecursive dir = do
       then findAgdaFilesRecursive path
       else return [path | ".agda" `isSuffixOf` name]
   return (concat paths)
-
--- | Check if path is a directory.
-doesDirectoryExist :: FilePath -> IO Bool
-doesDirectoryExist path = do
-  exists <- doesFileExist path
-  if exists
-    then return False
-    else do
-      -- If it's not a file, check if it's a directory
-      contents <- listDirectory path `catch` \(_ :: SomeException) -> return []
-      return (not (null contents) || path `elem` ["Succeed", "Fail", "Cubical"])
 
 -- | Create a test for a succeed case.
 -- Runs agda2hs on the .agda file, compares the output .hs to the golden file,
@@ -119,9 +140,6 @@ succeedTest testDir buildDir testName agdaFile goldenFile =
 
     case exitCode of
       ExitSuccess -> do
-        -- Read the generated .hs file from build directory
-        content <- LBS.readFile generatedFile
-
         -- Also run ghc to check the generated code compiles
         -- Add include path for finding imported modules
         (ghcExit, ghcOut, ghcErr) <- readProcessWithExitCode
@@ -130,7 +148,8 @@ succeedTest testDir buildDir testName agdaFile goldenFile =
           ""
 
         case ghcExit of
-          ExitSuccess -> return content
+          -- The generated .hs file is the golden value
+          ExitSuccess -> LBS.readFile generatedFile
           ExitFailure _ -> return $ stringToLBS $
             "GHC compilation failed:\n" ++ ghcOut ++ ghcErr
 
@@ -195,13 +214,6 @@ relativizePaths = unlines . map relativizeLine . lines
       | "test/" `isPrefixOf` s = Just s
       | null s = Nothing
       | otherwise = findTestPrefix (drop 1 s)
-
-    isInfixOf :: String -> String -> Bool
-    isInfixOf needle haystack = any (isPrefixOf needle) (tails haystack)
-
-    tails :: String -> [String]
-    tails [] = [[]]
-    tails s@(_:xs) = s : tails xs
 
 -- | Diff command for golden tests.
 diffCmd :: FilePath -> FilePath -> [String]
