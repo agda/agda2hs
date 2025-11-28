@@ -106,6 +106,11 @@ infixr 0 /\, \/
 f /\ g = \x -> f x && g x
 f \/ g = \x -> f x || g x
 
+toDataTarget :: DataTarget -> Hs.DataOrNew ()
+toDataTarget ToNewType = Hs.NewType ()
+toDataTarget ToData    = Hs.DataType ()
+toDataTarget ToGadt    = Hs.DataType ()
+
 showTCM :: PrettyTCM a => a -> C String
 showTCM x = liftTCM $ show <$> prettyTCM x
 
@@ -200,6 +205,7 @@ hasCompilePragma q = processPragma q <&> \case
   TransparentPragma{} -> True
   CompileToPragma{} -> True
   NewTypePragma{} -> True
+  GadtPragma{} -> True
   DerivePragma{} -> True
 
 -- Exploits the fact that the name of the record type and the name of the record module are the
