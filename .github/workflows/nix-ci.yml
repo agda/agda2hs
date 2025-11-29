@@ -61,6 +61,15 @@ jobs:
       with:
         primary-key: nix-devshell-${{ hashFiles('**/*.nix', '**/flake.lock') }}
     - name: drop into the devshell and run cabal
-      # for some reason this doesn't work without update
-      # even though it doesn't actually download anything
+      # we're using v1 command due to a lonstanding cabal-nix bug
+      #
+      # explainer: https://gist.github.com/ScottFreeCode/ef9f254e2dd91544bba4a068852fc81f
+      #
+      # bugs:
+      # https://github.com/haskell/cabal/issues/8434
+      # https://github.com/NixOS/nixpkgs/issues/130556
+      # https://github.com/NixOS/nixpkgs/issues/176887
+      #
+      # finally, v1-build doesn't work without update for some reason
+      # even though the update doesn't actually download anything
       run: nix develop -Lv -c bash -c "cabal update; cabal v1-build"

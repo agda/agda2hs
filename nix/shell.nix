@@ -24,7 +24,5 @@ pkgs.haskellPackages.shellFor {
     pkgs.nixfmt-rfc-style
     cabal2nix
     pkgs.haskellPackages.fix-whitespace
-    # The testsuite uses diff, so ensure `diff` is available in the shell/tests
-    pkgs.diffutils
   ];
 }
