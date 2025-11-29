@@ -12,14 +12,11 @@ let
     };
   hpkg = (pkgs.haskellPackages.callPackage (hsrc "") {}).overrideAttrs (
     finAttr: preAttr: {
-      # make executables executable and add ./dist/build to PATH
+      # add ./dist/build/agda2hs to $PATH because
       # cabal2nix doesn't pick up agda2hs from build-tool-depends of the test suite
       # my (@liesnikov) guess is that since the intermediate binary
       # is not a separate derivation it's hard to form a fixpoint on a derivation level
-      preCheck = ''
-        find dist/build -exec chmod u+X {} +
-        export PATH=$(pwd)/dist/build/:$PATH
-      '';
+      preCheck = "export PATH=$(pwd)/dist/build/agda2hs:$PATH";
     }
   );
   expr = import ./agda2hs.nix;
