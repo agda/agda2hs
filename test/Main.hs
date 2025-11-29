@@ -1,6 +1,6 @@
 module Main where
 
-import Control.Monad (forM)
+import Control.Monad (forM, filterM)
 import qualified Data.ByteString.Lazy as LBS
 import Data.List (isPrefixOf, isSuffixOf, isInfixOf, sort)
 import Data.Ord (Down(..))
@@ -54,25 +54,29 @@ main = do
 -- Files are ordered by: modification date (newest first), then golden value
 -- modification date (newest first), then alphabetically.
 discoverSucceedTests :: FilePath -> FilePath -> IO [TestTree]
-discoverSucceedTests testDir buildDir = do
-  agdaFiles <- findAgdaFilesRecursive (testDir </> "Succeed")
-  sortedFiles <- sortByModTime agdaFiles (\f -> dropExtension f ++ ".hs")
-  forM sortedFiles $ \agdaFile -> do
-    let testName = dropExtension (makeRelative (testDir </> "Succeed") agdaFile)
-        goldenFile = dropExtension agdaFile ++ ".hs"
-    return $ succeedTest testDir buildDir testName agdaFile goldenFile
+discoverSucceedTests testDir buildDir =
+  discoverTests testDir buildDir "Succeed" ".hs" succeedTest
 
 -- | Discover all .agda files under the Fail directory.
 -- Files are ordered by: modification date (newest first), then golden value
 -- modification date (newest first), then alphabetically.
 discoverFailTests :: FilePath -> FilePath -> IO [TestTree]
-discoverFailTests testDir buildDir = do
-  agdaFiles <- findAgdaFilesRecursive (testDir </> "Fail")
-  sortedFiles <- sortByModTime agdaFiles (\f -> dropExtension f ++ ".err")
+discoverFailTests testDir buildDir =
+  discoverTests testDir buildDir "Fail" ".err" failTest
+
+-- | Generic test discovery function.
+-- Takes the directory name, golden file extension, and test function.
+discoverTests :: FilePath -> FilePath -> String -> String
+              -> (FilePath -> FilePath -> String -> FilePath -> FilePath -> TestTree)
+              -> IO [TestTree]
+discoverTests testDir buildDir dirName goldenExt testFn = do
+  let dir = testDir </> dirName
+  agdaFiles <- findAgdaFiles dir
+  sortedFiles <- sortByModTime agdaFiles (\f -> dropExtension f ++ goldenExt)
   forM sortedFiles $ \agdaFile -> do
-    let testName = dropExtension (makeRelative (testDir </> "Fail") agdaFile)
-        goldenFile = dropExtension agdaFile ++ ".err"
-    return $ failTest testDir buildDir testName agdaFile goldenFile
+    let testName = dropExtension (makeRelative dir agdaFile)
+        goldenFile = dropExtension agdaFile ++ goldenExt
+    return $ testFn testDir buildDir testName agdaFile goldenFile
 
 -- | Sort files by modification time (newest first), then by golden value
 -- modification time (if it exists), then alphabetically.
@@ -90,16 +94,15 @@ sortByModTime files goldenPath = do
   return $ map (\(_,_,f) -> f) $ sort filesWithTimes
 
 -- | Find all .agda files recursively in a directory.
-findAgdaFilesRecursive :: FilePath -> IO [FilePath]
-findAgdaFilesRecursive dir = do
-  contents <- listDirectory dir
-  paths <- forM contents $ \name -> do
-    let path = dir </> name
-    isDir <- doesDirectoryExist path
-    if isDir
-      then findAgdaFilesRecursive path
-      else return [path | ".agda" `isSuffixOf` name]
-  return (concat paths)
+findAgdaFiles :: FilePath -> IO [FilePath]
+findAgdaFiles dir = do
+  entries <- listDirectory dir
+  let paths = map (dir </>) entries
+  files <- filterM doesFileExist paths
+  dirs <- filterM doesDirectoryExist paths
+  let agdaFiles = filter (".agda" `isSuffixOf`) files
+  subFiles <- concat <$> mapM findAgdaFiles dirs
+  return $ agdaFiles ++ subFiles
 
 -- | Create a test for a succeed case.
 -- Runs agda2hs on the .agda file, compares the output .hs to the golden file,
@@ -184,7 +187,7 @@ relativizePaths = unlines . map relativizeLine . lines
       -- and replace with test/Foo.agda:line:col or just Foo.agda:line:col
       case break (== '/') line of
         (prefix, '/':rest) ->
-          if "test/" `isInfixOf` rest || "Fail/" `isInfixOf` rest || "Succeed/" `isInfixOf` rest
+          if any (`isInfixOf` rest) ["test/", "Fail/", "Succeed/"]
             then prefix ++ extractRelativePath rest
             else line
         _ -> line
@@ -200,7 +203,9 @@ relativizePaths = unlines . map relativizeLine . lines
     findTestPrefix s
       | "test/" `isPrefixOf` s = Just s
       | null s = Nothing
-      | otherwise = findTestPrefix (drop 1 s)
+      | otherwise = case break (== '/') s of
+          (_, '/':rest) -> findTestPrefix rest
+          _ -> Nothing
 
 -- | Diff command for golden tests.
 diffCmd :: FilePath -> FilePath -> [String]

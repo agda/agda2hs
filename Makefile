@@ -1,4 +1,4 @@
-.PHONY : build install agda repl libHtml testContainers test succeed fail golden golden-succeed golden-fail clean docs fixWhitespace checkWhitespace
+.PHONY : build install agda repl libHtml testContainers test succeed fail golden golden-succeed golden-fail clean docs fixWhitespace checkWhitespace have-bin-%
 
 FILES = $(shell find src -type f)
 
@@ -55,12 +55,14 @@ docs :
 
 FIXW_BIN = fix-whitespace
 
+## Fix the whitespace issue.
 fixWhitespace : have-bin-$(FIXW_BIN) fix-whitespace.yaml
 	$(FIXW_BIN)
 
+## Check the whitespace issue without fixing it.
 checkWhitespace : have-bin-$(FIXW_BIN) fix-whitespace.yaml
 	$(FIXW_BIN) --check
 
-.PHONY : have-bin-%
+## Installing binaries for developer services
 have-bin-% :
 	@($* --help > /dev/null) || $(CABAL) install --ignore-project $*
