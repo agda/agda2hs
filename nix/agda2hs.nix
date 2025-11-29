@@ -12,6 +12,7 @@
   makeWrapper,
   writeText,
   ghcWithPackages,
+  diffutils,
 }:
 
 let
@@ -51,7 +52,10 @@ let
     runCommand "${pname}-${version}"
       {
         inherit pname version;
-        nativeBuildInputs = [ makeWrapper ];
+        nativeBuildInputs = [
+          diffutils
+          makeWrapper
+        ];
         passthru = {
           unwrapped = agda2hs;
           inherit withPackages;

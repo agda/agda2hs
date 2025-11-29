@@ -1,4 +1,5 @@
-.PHONY : install agda repl libHtml testContainers test test-on-CI testHtml golden clean docs
+.PHONY : build install agda repl libHtml testContainers test succeed fail golden golden-succeed golden-fail clean docs fixWhitespace checkWhitespace have-bin-%
+
 FILES = $(shell find src -type f)
 
 build :
@@ -11,45 +12,57 @@ agda :
 	cabal install Agda --program-suffix=-erased --overwrite-policy=always
 
 repl :
-	cabal repl # e.g. `:set args -itest -otest/build test/AllTests.agda ... main ... :r ... main`
+	cabal repl
 
 libHtml :
 	cabal run agda2hs -- --html --include-path lib/base lib/base/Haskell/Prelude.agda
 	cp html/Haskell.Prelude.html html/index.html
 
-test/agda2hs : $(FILES)
-	cabal install agda2hs --overwrite-policy=always --installdir=test --install-method=copy
-
 testContainers:
 	cd ./lib/containers && ./generate-haskell.sh && cabal build containers-prop
 
+# Run all tests
 test : checkWhitespace test-on-CI
 
-test-on-CI : test/agda2hs testContainers
-	make -C test
+# Run all tests except for fix-whitespace
+test-on-CI : succeed fail testContainers
 
-testHtml : test/agda2hs
-	make -C test html
+# Run only successful tests
+succeed :
+	cabal test agda2hs-test --test-options='-p Succeed'
 
-golden :
-	make -C test golden
+# Run only failing tests
+fail :
+	cabal test agda2hs-test --test-options='-p Fail'
+
+# Update all golden values
+golden : golden-succeed golden-fail
+
+# Update golden values for successful tests
+golden-succeed :
+	cabal test agda2hs-test --test-options='-p Succeed --accept'
+
+# Update golden values for failing tests
+golden-fail :
+	cabal test agda2hs-test --test-options='-p Fail --accept'
 
 clean :
-	make -C test clean
+	cabal clean
+	rm -rf test/_build/
 
 docs :
 	make -C docs html
 
 FIXW_BIN = fix-whitespace
 
-.PHONY : fixWhitespace ## Fix the whitespace issue.
+## Fix the whitespace issue.
 fixWhitespace : have-bin-$(FIXW_BIN) fix-whitespace.yaml
 	$(FIXW_BIN)
 
-.PHONY : checkWhitespace ## Check the whitespace issue without fixing it.
+## Check the whitespace issue without fixing it.
 checkWhitespace : have-bin-$(FIXW_BIN) fix-whitespace.yaml
 	$(FIXW_BIN) --check
 
-.PHONY : have-bin-% ## Installing binaries for developer services
+## Installing binaries for developer services
 have-bin-% :
 	@($* --help > /dev/null) || $(CABAL) install --ignore-project $*
