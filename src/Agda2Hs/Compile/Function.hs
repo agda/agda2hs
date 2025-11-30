@@ -95,19 +95,20 @@ compileLitNatPat = \case
 
 
 compileFun, compileFun'
-  :: Bool -- ^ Whether the type signature should also be generated
-  -> Definition -> C [Hs.Decl ()]
+  :: Definition -> C [Hs.Decl ()]
 
-compileFun withSig def@Defn{..} =
+compileFun def@Defn{..} =
   setCurrentRangeQ defName
     $ maybePrependFixity defName (defName ^. lensFixity)
     -- initialize locals when first stepping into a function
     $ withFunctionLocals defName
-    $ compileFun' withSig def
+    $ compileFun' def
 
 -- inherit existing (instantiated) locals
-compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
+compileFun' def@Defn{..} = inTopContext $ withCurrentModule m $ do
   reportSDoc "agda2hs.compile" 6 $ "Compiling function: " <+> prettyTCM defName
+
+  withSig <- shouldGenerateSignature
 
   whenM ((withSig &&) <$> inRecordMod defName) $
     agda2hsError "not supported: functions inside a record module"
@@ -235,7 +236,7 @@ compileClause'' curModule projName x ty c@Clause{..} = do
     let withWhereModule = case children of
           []    -> id
           (c:_) -> addWhereModule $ qnameModule c
-    whereDecls <- withWhereModule $ compileLocal $ mapM (getConstInfo >=> compileFun' True) children
+    whereDecls <- withWhereModule $ compileLocal $ mapM compileWhereDef children
 
     let Just body            = clauseBody
         Just (unArg -> typ)  = clauseType
@@ -249,6 +250,13 @@ compileClause'' curModule projName x ty c@Clause{..} = do
           (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
           _                         -> Hs.Match () x ps rhs whereBinds
     return $ Just match
+  where
+    compileWhereDef f = do
+      def <- getConstInfo f
+      case theDef def of
+        Function{} -> compileFun' def
+        def -> agda2hsErrorM $
+          "Cannot compile" <+> prettyTCM f <+> "in a `where` block"
 
 keepClause :: Clause -> C Bool
 keepClause c@Clause{..} = case (clauseBody, clauseType) of
@@ -407,7 +415,7 @@ withClauseLocals curModule c@Clause{..} k = do
 
 -- | Ensure a definition can be defined as transparent.
 checkTransparentPragma :: Definition -> C ()
-checkTransparentPragma def = compileFun False def >>= \case
+checkTransparentPragma def = withoutSignature (compileFun def) >>= \case
     [Hs.FunBind _ cls] ->
       mapM_ checkTransparentClause cls
     [Hs.TypeDecl _ hd b] ->
@@ -461,8 +469,8 @@ checkCompileToFunctionPragma def s = noCheckNames $ do
     "does not match the type" <+> text (Hs.pp rtype) <+> "of" <+> prettyTCM r
   -- Check that clauses match
   reportSDoc "agda2hs.compileto" 20 $ "Checking that clauses of" <+> ppd <+> "matches those of" <+> ppr
-  [Hs.FunBind _ dcls] <- compileFun False def
-  [Hs.FunBind _ rcls] <- compileFun False rdef
+  [Hs.FunBind _ dcls] <- withoutSignature $ compileFun def
+  [Hs.FunBind _ rcls] <- withoutSignature $ compileFun rdef
   unless (length dcls == length rcls) $ fail $
     "they have a different number of clauses"
   forM_ (zip dcls rcls) $ \(dcl , rcl) -> do
