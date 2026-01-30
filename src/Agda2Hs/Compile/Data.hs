@@ -18,7 +18,7 @@ import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda2Hs.AgdaUtils
 
 import Agda2Hs.Compile.Name
-import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds, compileDom, DomOutput(..) )
+import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds, compileDom )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 

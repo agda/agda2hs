@@ -14,7 +14,7 @@ import qualified Data.Set as Set ( singleton )
 import Agda.Compiler.Backend hiding ( Args )
 
 import Agda.Syntax.Common
-import Agda.Syntax.Internal
+import Agda.Syntax.Internal hiding (isEqualityType)
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
@@ -101,6 +101,7 @@ compileType t = do
         DomType _ hsA -> Hs.TyFun () hsA <$> compileB
         DomConstraint hsA -> constrainType hsA <$> compileB
         DomDropped -> compileB
+        DomEquality hsA -> constrainType hsA <$> compileB
         DomForall Nothing -> compileB
         DomForall (Just hsA) -> qualifyType hsA <$> compileB
 
@@ -122,7 +123,8 @@ compileType t = do
 
     Var x es | Just args <- allApplyElims es -> do
       CtxVar _ ti <- lookupBV x
-      unless (usableModality ti) $ agda2hsErrorM $
+      isType <- endsInSort (unDom ti)
+      unless (usableModality ti || isType) $ agda2hsErrorM $
             text "Cannot use erased variable" <+> prettyTCM (var x)
         <+> text "in Haskell type"
       vs <- compileTypeArgs (unDom ti) args
@@ -173,6 +175,7 @@ compileTel (ExtendTel a tel) = compileDom a >>= \case
   DOInstance -> __IMPOSSIBLE__
   DOType     -> __IMPOSSIBLE__
   DOTerm     -> (:) <$> compileType (unEl $ unDom a) <*> underAbstraction a tel compileTel
+  DOEquality -> __IMPOSSIBLE__
 
 -- Version of @compileTel@ that just computes the size,
 -- and avoids compiling the types themselves.
@@ -183,6 +186,7 @@ compileTelSize (ExtendTel a tel) = compileDom a >>= \case
   DOInstance -> __IMPOSSIBLE__
   DOType -> __IMPOSSIBLE__
   DOTerm -> (1+) <$> underAbstraction a tel compileTelSize
+  DOEquality -> __IMPOSSIBLE__
 
 compileUnboxType :: QName -> Args -> C (Hs.Type ())
 compileUnboxType r pars = do
@@ -206,18 +210,20 @@ compileTransparentType ty args = compileTypeArgs ty args >>= \case
   []     -> __IMPOSSIBLE__
 
 
-data DomOutput = DOInstance | DODropped | DOType | DOTerm
+
 
 compileDom :: Dom Type -> C DomOutput
 compileDom a = do
   isErasable <- pure (not $ usableModality a) `or2M` canErase (unDom a)
   isClassConstraint <- pure (isInstance a) `and2M` isClassType (unDom a)
+  isEqualityConstraint <- pure (isInstance a) `and2M` isEqualityType (unDom a)
   isType <- endsInSort (unDom a)
   return $ if
-    | isErasable        -> DODropped
-    | isClassConstraint -> DOInstance
-    | isType            -> DOType
-    | otherwise         -> DOTerm
+    | isEqualityConstraint -> DOEquality
+    | isClassConstraint  -> DOInstance
+    | isErasable         -> DODropped
+    | isType             -> DOType
+    | otherwise          -> DOTerm
 
 -- | Compile a function type domain.
 -- A domain can either be:
@@ -231,6 +237,7 @@ compileDomType x a =
   compileDom a >>= \case
     DODropped  -> pure DomDropped
     DOInstance -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
+    DOEquality -> compileEqualityConstraint (unEl $ unDom a)
     DOType     -> do
       -- We compile (non-erased) type parameters to an explicit forall if they
       -- come from a module parameter or if we are in a nested position inside the type.
@@ -250,6 +257,24 @@ compileDomType x a =
         | otherwise -> return $ DomForall Nothing
     DOTerm     -> fmap (uncurry DomType) . withNestedType . compileTypeWithStrictness . unEl $ unDom a
 
+compileEqualityConstraint :: Term -> C CompiledDom
+compileEqualityConstraint t = do
+  t' <- reduce t
+  case t' of
+    Def f es -> do
+      eq <- liftTCM $ getBuiltinName' builtinEquality
+      if Just f == eq then do
+        tellExtension Hs.TypeOperators
+        -- The arguments to equality are _a_ (level), _A_ (the type of elements), x, and y
+        -- We want to compile x and y
+        let Just (_:_:x:y:_) = allApplyElims es
+        hsX <- compileType (unArg x)
+        hsY <- compileType (unArg y)
+        return $ DomEquality $ Hs.TypeA () $ Hs.TyInfix () hsX (Hs.UnpromotedName () (Hs.UnQual () (Hs.Symbol () "~"))) hsY
+      else
+        agda2hsErrorM $ text "Not an equality type:" <?> prettyTCM t
+    _ -> agda2hsErrorM $ text "Not an equality type:" <?> prettyTCM t
+
 compileTeleBinds :: Bool -> Telescope -> C [Hs.TyVarBind ()]
 compileTeleBinds kinded = go
   where
@@ -264,6 +289,7 @@ compileTeleBinds kinded = go
         (ha:) <$> underAbstraction a tel go
       DOInstance -> agda2hsError "Constraint in type parameter not supported"
       DOTerm -> agda2hsError "Term variable in type parameter not supported"
+      DOEquality -> agda2hsError "Equality constraint in type parameter not supported"
 
 compileKeptTeleBind :: Bool -> Hs.Name () -> Type -> C (Hs.TyVarBind ())
 compileKeptTeleBind kinded x t = do
