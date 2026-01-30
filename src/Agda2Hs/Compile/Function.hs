@@ -31,7 +31,7 @@ import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Term ( compileTerm, dependentDom )
-import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileDomType )
+import Agda2Hs.Compile.Type ( compileType, compileDom, compileDomType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
@@ -259,6 +259,7 @@ keepClause c@Clause{..} = case (clauseBody, clauseType) of
   (Just body, Just cty) -> compileDom (domFromArg cty) <&> \case
     DODropped  -> False
     DOInstance -> True
+    DOEquality -> True
     DOType     -> __IMPOSSIBLE__
     DOTerm     -> True
 
@@ -303,6 +304,7 @@ compilePats ty ((namedArg -> pat):ps) = do
   let rest = compilePats (absApp b (patternToTerm pat)) ps
   compileDom a >>= \case
     DOInstance -> rest
+    DOEquality -> rest
     DODropped  -> rest
     DOType     -> rest
     DOTerm     -> do
