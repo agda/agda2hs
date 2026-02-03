@@ -140,6 +140,12 @@ compileType t = do
          , y == x0 -> return f
          | otherwise -> agda2hsErrorM $ text "Not supported: type-level lambda" <+> prettyTCM t
 
+    Con ch ci es | Just args <- allApplyElims es -> do
+      c <- compileQName (conName ch)
+      ty <- defType <$> getConstInfo (conName ch)
+      vs <- compileTypeArgs ty args
+      return $ tApp (Hs.TyCon () c) vs
+
     _ -> fail
   where
     fail = agda2hsErrorM $ text "Bad Haskell type:" <?> prettyTCM t
@@ -160,7 +166,8 @@ compileTypeArgs ty (x:xs) = do
     DOInstance -> fail "Type-level instance argument not supported"
     DOType -> do
       (:) <$> compileType (unArg x) <*> rest
-    DOTerm -> fail "Type-level term argument not supported"
+    DOTerm -> (:) <$> compileType (unArg x) <*> rest
+    --fail "Type-level term argument not supported"
 
 compileTel :: Telescope -> C [Hs.Type ()]
 compileTel EmptyTel = return []
@@ -275,7 +282,10 @@ compileTeleBinds kinded = go
         ha <- compileKeptTeleBind kinded (hsName $ absName tel) (unDom a)
         (ha:) <$> underAbstraction a tel go
       DOInstance -> agda2hsError "Constraint in type parameter not supported"
-      DOTerm -> agda2hsError "Term variable in type parameter not supported"
+      DOTerm -> do
+        ha <- compileKeptTeleBind kinded (hsName $ absName tel) (unDom a)
+        (ha:) <$> underAbstraction a tel go
+        --agda2hsError "Term variable in type parameter not supported"
 
 compileKeptTeleBind :: Bool -> Hs.Name () -> Type -> C (Hs.TyVarBind ())
 compileKeptTeleBind kinded x t = do
@@ -291,8 +301,8 @@ compileKind t = case unEl t of
   Pi a b -> compileDom a >>= \case
     DODropped -> underAbstraction a b compileKind
     DOType -> Hs.TyFun () <$> compileKind (unDom a) <*> underAbstraction a b compileKind
-    DOTerm -> err
+    DOTerm -> Hs.TyFun () <$> compileKind (unDom a) <*> underAbstraction a b compileKind
     DOInstance -> err
-  _ -> err
+  a -> compileType a
   where
     err = agda2hsErrorM $ text "Not a valid Haskell kind: " <+> prettyTCM t

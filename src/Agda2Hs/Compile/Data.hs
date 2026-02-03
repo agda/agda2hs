@@ -42,10 +42,10 @@ compileData target ds def = do
   tellDefinitionExport def
 
   let Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} = theDef def
-  TelV tel t <- telViewUpTo n (defType def)
+  TelV tel t <- telView {-UpTo n-} (defType def)
   reportSDoc "agda2hs.data" 10 $ text "Datatype telescope:" <+> prettyTCM tel
-  allIndicesErased t
-  let params = teleArgs tel
+  --allIndicesErased t
+  let params = take n $ teleArgs tel
   binds <- compileTeleBinds False tel -- TODO: add kind annotations?
   addContext tel $ do
     let hd = foldl (Hs.DHApp ()) (Hs.DHead () d) binds

@@ -1,6 +1,8 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE DataKinds #-}
+
 module GadtSyntax
-  (Bol(..), Free(..), Color(..))
+  (Bol(..), Free(..), Color(..), Na(..), Vec(..))
 where
 
 data Bol where
@@ -15,4 +17,11 @@ data Color where
     Red :: Color
     Green :: Color
     deriving (Show)
+
+data Na = Ze
+        | Su Na
+
+data Vec a n where
+    Nil :: Vec a Ze
+    Cons :: Na -> a -> Vec a n -> Vec a (Su n)
 
