@@ -197,9 +197,6 @@ instance Null a => Null (C a) where
   null = __IMPOSSIBLE__
 instance Semigroup a => Semigroup (C a) where (<>) = liftA2 (<>)
 
-
-
-
 -- | Determines how a 'Dom Type' is treated during compilation.
 data DomOutput = DODropped | DOInstance | DOType | DOTerm | DOEquality
 
