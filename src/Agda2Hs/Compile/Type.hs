@@ -123,8 +123,7 @@ compileType t = do
 
     Var x es | Just args <- allApplyElims es -> do
       CtxVar _ ti <- lookupBV x
-      isType <- endsInSort (unDom ti)
-      unless (usableModality ti || isType) $ agda2hsErrorM $
+      unless (usableModality ti) $ agda2hsErrorM $
             text "Cannot use erased variable" <+> prettyTCM (var x)
         <+> text "in Haskell type"
       vs <- compileTypeArgs (unDom ti) args
@@ -190,6 +189,7 @@ compileTelSize (ExtendTel a tel) = compileDom a >>= \case
 
 compileUnboxType :: QName -> Args -> C (Hs.Type ())
 compileUnboxType r pars = do
+  reportSDoc "agda2hs" 1 $ text "compileUnboxType r=" <+> prettyTCM r <+> text " pars=" <+> prettyTCM pars
   def <- getConstInfo r
   let tel = recTel (theDef def) `apply` pars
   compileTel tel >>= \case
@@ -213,7 +213,7 @@ compileDom :: Dom Type -> C DomOutput
 compileDom a = do
   isErasable <- pure (not $ usableModality a) `or2M` canErase (unDom a)
   isClassConstraint <- pure (isInstance a) `and2M` isClassType (unDom a)
-  isEqualityConstraint <- pure (isInstance a) `and2M` isBuiltinEqualityType (unDom a)
+  isEqualityConstraint <- pure (usableModality a) `and2M` pure (isInstance a) `and2M` isBuiltinEqualityType (unDom a)
   isType <- endsInSort (unDom a)
   return $ if
     | isEqualityConstraint -> DOEquality
