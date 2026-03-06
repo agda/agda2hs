@@ -189,7 +189,6 @@ compileTelSize (ExtendTel a tel) = compileDom a >>= \case
 
 compileUnboxType :: QName -> Args -> C (Hs.Type ())
 compileUnboxType r pars = do
-  reportSDoc "agda2hs" 1 $ text "compileUnboxType r=" <+> prettyTCM r <+> text " pars=" <+> prettyTCM pars
   def <- getConstInfo r
   let tel = recTel (theDef def) `apply` pars
   compileTel tel >>= \case
@@ -257,8 +256,7 @@ compileDomType x a =
 compileEqualityConstraint :: Term -> C CompiledDom
 compileEqualityConstraint t = do
   Def _ es <- reduce t
-  tellExtension Hs.TypeOperators
-  -- The arguments to equality are _a_ (level), _A_ (the type of elements), x, and y
+  -- The arguments to equality are _a_ (level), _A_ (the type of elements), x (: A), and y (: A)
   -- We want to compile x and y
   let Just (_:_:x:y:_) = allApplyElims es
   hsX <- compileType (unArg x)
