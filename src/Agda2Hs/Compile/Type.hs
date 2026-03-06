@@ -10,7 +10,7 @@ import Control.Monad.Reader ( asks )
 import Agda.Compiler.Backend hiding ( Args, Strictness )
 
 import Agda.Syntax.Common
-import Agda.Syntax.Internal hiding (isEqualityType)
+import Agda.Syntax.Internal
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
@@ -205,14 +205,11 @@ compileTransparentType ty args = compileTypeArgs ty args >>= \case
   (v:vs) -> return $ v `tApp` vs
   []     -> __IMPOSSIBLE__
 
-
-
-
 compileDom :: Dom Type -> C DomOutput
 compileDom a = do
   isErasable <- pure (not $ usableModality a) `or2M` canErase (unDom a)
   isClassConstraint <- pure (isInstance a) `and2M` isClassType (unDom a)
-  isEqualityConstraint <- pure (isInstance a) `and2M` isEqualityType (unDom a)
+  isEqualityConstraint <- pure (isInstance a) `and2M` isBuiltinEqualityType (unDom a)
   isType <- endsInSort (unDom a)
   return $ if
     | isEqualityConstraint -> DOEquality
@@ -256,21 +253,14 @@ compileDomType x a =
 
 compileEqualityConstraint :: Term -> C CompiledDom
 compileEqualityConstraint t = do
-  t' <- reduce t
-  case t' of
-    Def f es -> do
-      eq <- liftTCM $ getBuiltinName' builtinEquality
-      if Just f == eq then do
-        tellExtension Hs.TypeOperators
-        -- The arguments to equality are _a_ (level), _A_ (the type of elements), x, and y
-        -- We want to compile x and y
-        let Just (_:_:x:y:_) = allApplyElims es
-        hsX <- compileType (unArg x)
-        hsY <- compileType (unArg y)
-        return $ DomEquality $ Hs.TypeA () $ Hs.TyInfix () hsX (Hs.UnpromotedName () (Hs.UnQual () (Hs.Symbol () "~"))) hsY
-      else
-        agda2hsErrorM $ text "Not an equality type:" <?> prettyTCM t
-    _ -> agda2hsErrorM $ text "Not an equality type:" <?> prettyTCM t
+  Def _ es <- reduce t
+  tellExtension Hs.TypeOperators
+  -- The arguments to equality are _a_ (level), _A_ (the type of elements), x, and y
+  -- We want to compile x and y
+  let Just (_:_:x:y:_) = allApplyElims es
+  hsX <- compileType (unArg x)
+  hsY <- compileType (unArg y)
+  return $ DomEquality $ Hs.TypeA () $ Hs.TyInfix () hsX (Hs.UnpromotedName () (Hs.UnQual () (Hs.Symbol () "~"))) hsY
 
 compileTeleBinds :: Bool -> Telescope -> C [Hs.TyVarBind ()]
 compileTeleBinds kinded = go
