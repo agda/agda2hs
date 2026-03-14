@@ -1,4 +1,3 @@
-
 module Haskell.Prim.Monoid where
 
 open import Haskell.Prim
@@ -8,15 +7,20 @@ open import Haskell.Prim.Maybe
 open import Haskell.Prim.Either
 open import Haskell.Prim.Tuple
 
---------------------------------------------------
+
+--------------------------------------------------------------------------------
 -- Semigroup
 
+-- ** base
 record Semigroup (a : Type) : Type where
   infixr 6 _<>_
   field _<>_ : a → a → a
+
+-- ** export
 open Semigroup ⦃...⦄ public
 {-# COMPILE AGDA2HS Semigroup existing-class #-}
 
+-- ** instances
 instance
   iSemigroupList : Semigroup (List a)
   iSemigroupList ._<>_ = _++_
@@ -44,7 +48,7 @@ instance
   iSemigroupTuple₃ ._<>_ (x₁ , y₁ , z₁) (x₂ , y₂ , z₂) = x₁ <> x₂ , y₁ <> y₂ , z₁ <> z₂
 
 
---------------------------------------------------
+--------------------------------------------------------------------------------
 -- Monoid
 
 -- ** base
@@ -54,6 +58,7 @@ record Monoid (a : Type) : Type where
     overlap ⦃ super ⦄ : Semigroup a
     mappend : a → a → a
     mconcat : List a → a
+
 -- ** defaults
 record DefaultMonoid (a : Type) : Type where
   field
@@ -66,9 +71,11 @@ record DefaultMonoid (a : Type) : Type where
   mconcat : List a → a
   mconcat []       = mempty
   mconcat (x ∷ xs) = x <> mconcat xs
+
 -- ** export
 open Monoid ⦃...⦄ public
 {-# COMPILE AGDA2HS Monoid existing-class #-}
+
 -- ** instances
 instance
   iDefaultMonoidList : DefaultMonoid (List a)
@@ -111,8 +118,8 @@ open DefaultMonoid
 
 MonoidEndo : Monoid (a → a)
 MonoidEndo = record {DefaultMonoid (λ where
-      .mempty → id
-      .super ._<>_ → _∘_)}
+  .mempty      → id
+  .super ._<>_ → _∘_)}
 
 MonoidEndoᵒᵖ : Monoid (a → a)
 MonoidEndoᵒᵖ = record {DefaultMonoid (λ where
@@ -128,3 +135,17 @@ MonoidDisj : Monoid Bool
 MonoidDisj = record {DefaultMonoid (λ where
   .mempty      → False
   .super ._<>_ → _||_)}
+
+MonoidFirst : Monoid (Maybe a)
+MonoidFirst = record {DefaultMonoid (λ where
+  .mempty      → Nothing
+  .super ._<>_ → λ where
+    Nothing b → b
+    a       _ → a)}
+
+MonoidLast : Monoid (Maybe a)
+MonoidLast = record {DefaultMonoid (λ where
+  .mempty      → Nothing
+  .super ._<>_ → λ where
+    a Nothing → a
+    _       b → b)}

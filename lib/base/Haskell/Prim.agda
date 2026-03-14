@@ -22,6 +22,7 @@ open import Agda.Builtin.Word       public renaming (primWord64ToNat to w2n; pri
 open import Agda.Builtin.Strict     public
 open import Agda.Builtin.List       public
 
+
 variable
   @0 ℓ : Level
   a b c d e : Type
@@ -65,6 +66,7 @@ if True  then x else y = x
 the : (@0 a : Type ℓ) -> a -> a
 the _ x = x
 
+
 --------------------------------------------------
 -- Agda strings
 
@@ -84,14 +86,6 @@ instance
 
 
 --------------------------------------------------
--- Lists
-
-lengthNat : List a → Nat
-lengthNat []       = 0
-lengthNat (_ ∷ xs) = addNat 1 (lengthNat xs)
-
-
---------------------------------------------------
 -- Proof things
 
 data ⊥ : Type where
@@ -99,7 +93,7 @@ data ⊥ : Type where
 magic : {A : Type} → ⊥ → A
 magic ()
 
---principle of explosion
+-- Principle of explosion
 exFalso : {x : Bool} → (x ≡ True) → (x ≡ False) → ⊥
 exFalso {False} () b
 exFalso {True} a ()

@@ -1,12 +1,12 @@
-
 module Haskell.Prim.Absurd where
 
 open import Haskell.Prim
+open import Haskell.Prim.List using (lengthNat)
 
 open import Agda.Builtin.Reflection renaming (bindTC to _>>=_; absurd to absurdP)
 
-private
 
+private
   pattern vArg x = arg (arg-info visible (modality relevant quantity-ω)) x
 
   refute : Nat → Term
