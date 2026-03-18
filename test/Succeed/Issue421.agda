@@ -18,12 +18,12 @@ instance
   iFunctorIdentity : Functor Identity
   iFunctorIdentity = record {DefaultFunctor iDefaultFunctorIdentity}
 
-  iDefaultApplicativeIdentity : DefaultApplicative Identity
-  iDefaultApplicativeIdentity .DefaultApplicative.pure = MkIdentity
-  iDefaultApplicativeIdentity .DefaultApplicative._<*>_ (MkIdentity f) (MkIdentity x) = MkIdentity (f x)
+  iDefaultApplicativeIdentity : ApplicativeFrom<*> Identity
+  iDefaultApplicativeIdentity .ApplicativeFrom<*>.pure = MkIdentity
+  iDefaultApplicativeIdentity .ApplicativeFrom<*>._<*>_ (MkIdentity f) (MkIdentity x) = MkIdentity (f x)
 
   iApplicativeIdentity : Applicative Identity
-  iApplicativeIdentity = record {DefaultApplicative iDefaultApplicativeIdentity}
+  iApplicativeIdentity = record {ApplicativeFrom<*> iDefaultApplicativeIdentity}
 
 {-# COMPILE AGDA2HS iFunctorIdentity #-}
 {-# COMPILE AGDA2HS iApplicativeIdentity #-}      -- generates pure and (<*>) multiple times
