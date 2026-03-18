@@ -61,7 +61,7 @@ record DefaultFoldable (t : Type → Type) : Type₁ where
 
   toList : t a → List a
   toList = foldr _∷_ []
-  
+
   foldr1 : (a → a → a) → (s : t a) → @0 ⦃ NonEmpty (toList s) ⦄ → a
   foldr1 f s = let l = toList s
                    xs , x = init l , last l
@@ -80,13 +80,13 @@ record DefaultFoldable (t : Type → Type) : Type₁ where
       foldlList f z = λ where
         []       → z
         (x ∷ xs) → foldlList f (f z x) xs
-  
+
   null : t a → Bool
   null = foldMap ⦃ MonoidConj ⦄ (const False)
-  
+
   length : t a → Int
   length = foldMap ⦃ MonoidSum ⦄ (const 1)
-  
+
   elem : ⦃ Eq a ⦄ → a → t a → Bool
   elem x = foldMap ⦃ MonoidDisj ⦄ (x ==_)
 
@@ -95,10 +95,10 @@ record DefaultFoldable (t : Type → Type) : Type₁ where
 
   minimum : ⦃ Ord a ⦄ → (s : t a) → @0 ⦃ NonEmpty (toList s) ⦄ → a
   minimum = foldr1 min
-  
+
   sum : ⦃ Num a ⦄ → t a → a
   sum = fold ⦃ MonoidSum ⦄
-  
+
   product : ⦃ Num a ⦄ → t a → a
   product = fold ⦃ MonoidProduct ⦄
 

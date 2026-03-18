@@ -90,7 +90,7 @@ unless False f = f {refl}
 
 
 liftM : ⦃ Monad m ⦄ → (a1 → r) → m a1 → m r
-liftM f m1 = do 
+liftM f m1 = do
   x1 ← m1
   return (f x1)
 

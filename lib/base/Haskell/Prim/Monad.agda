@@ -24,7 +24,7 @@ module Do where
       overlap ⦃ super ⦄ : Applicative m
       return : a → m a
       _>>_ : m a → (@0 {{ a }} → m b) → m b
-  
+
   -- ** defaults
   record DefaultMonad (m : Type → Type) : Type₁ where
     field

@@ -24,7 +24,7 @@ record DefaultMonadPlus (m : Type → Type) : Type₁ where
   field
     overlap ⦃ super₁ ⦄ : Alternative m
     overlap ⦃ super₂ ⦄ : Monad m
-  
+
   mzero : m a
   mzero = empty
 
@@ -50,9 +50,9 @@ instance
 
   iMonadPlusMaybe : MonadPlus Maybe
   iMonadPlusMaybe = record {DefaultMonadPlus iDefaultMonadPlusMaybe}
-  
+
   iDefaultMonadPlusIO : DefaultMonadPlus IO
   iDefaultMonadPlusIO = record {}
-  
+
   iMonadPlusIO : MonadPlus IO
   iMonadPlusIO = record {DefaultMonadPlus iDefaultMonadPlusIO}

@@ -116,6 +116,6 @@ instance
   iDefaultApplicativeIO : ApplicativeFrom<*> IO
   iDefaultApplicativeIO .pure = returnIO
   iDefaultApplicativeIO ._<*>_ m1 m2 = bindIO m1 (λ f → bindIO m2 (λ x → returnIO (f x)))
-  
+
   iApplicativeIO : Applicative IO
   iApplicativeIO = record{ApplicativeFrom<*> iDefaultApplicativeIO}

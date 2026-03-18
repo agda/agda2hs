@@ -22,39 +22,39 @@ private
     constructor mkState
     pattern
     field run : s → s × a
-  
+
   record StateT (s : Type) (m : Type → Type) (a : Type) : Type where
     constructor mkStateT
     pattern
     field run : s → m (s × a)
-  
+
   instance
     open DefaultFunctor
     open ApplicativeFrom<*>
-    
+
     iDefaultFunctorState : DefaultFunctor (State s)
     iDefaultFunctorState .fmap f (mkState k) = mkState $ λ s → let s' , v = k s in s' , f v
 
     iFunctorState : Functor (State s)
     iFunctorState = record { DefaultFunctor iDefaultFunctorState }
-    
+
     iDefaultApplicativeStateL : ApplicativeFrom<*> (State s)
     iDefaultApplicativeStateL .pure x = mkState (λ s → s , x)
     iDefaultApplicativeStateL ._<*>_ (mkState kf) (mkState kx) = mkState $ λ s →
       let s' , f = kf s
           s'' , x = kx s'
       in s'' , f x
-    
+
     iApplicativeStateL : Applicative (State s)
     iApplicativeStateL = record { ApplicativeFrom<*> iDefaultApplicativeStateL }
-    
+
     iDefaultApplicativeStateR : ApplicativeFrom<*> (State s)
     iDefaultApplicativeStateR .pure x = mkState (λ s → s , x)
     iDefaultApplicativeStateR ._<*>_ (mkState kf) (mkState kx) = mkState $ λ s →
       let s' , x = kx s
           s'' , f = kf s'
       in s'' , f x
-    
+
     iApplicativeStateR : Applicative (State s)
     iApplicativeStateR = record { ApplicativeFrom<*> iDefaultApplicativeStateR }
 
@@ -72,7 +72,7 @@ private
       s' , f ← kf s
       s'' , x ← kx s'
       return (s'' , f x)
-    
+
     iApplicativeStateT : ⦃ Monad m ⦄ → Applicative (StateT s m)
     iApplicativeStateT = record { ApplicativeFrom<*> iDefaultApplicativeStateT}
 
@@ -80,7 +80,7 @@ private
     iDefaultMonadStateT .DefaultMonad._>>=_ m k = mkStateT $ λ s → do
       s' , x ← StateT.run m s
       StateT.run (k x) s'
-    
+
     iMonadStateT : ⦃ Monad m ⦄ → Monad (StateT s m)
     iMonadStateT = record { DefaultMonad iDefaultMonadStateT }
 
