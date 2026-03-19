@@ -22,7 +22,7 @@ open import Haskell.Data.Foldable public using (mapM₋; forM₋; sequence₋; m
 open import Haskell.Data.Functor public using (void)
 
 
-variable a1 a2 a3 a4 a5 r : Type
+private variable a1 a2 a3 a4 a5 r : Type
 
 infixr 1 _=<<_ _>=>_ _<=<_
 _=<<_ : ⦃ Monad m ⦄ → (a → m b) → m a → m b
@@ -43,16 +43,16 @@ mfilter p ma = do
   a ← ma
   if p a then return a else mzero
 
-filterM : ⦃ Applicative m ⦄ → (a → m Bool) → (List a) → m (List a)
+filterM : ⦃ Applicative m ⦄ → (a → m Bool) → List a → m (List a)
 filterM p = foldr (λ x → liftA2 (λ b → if b then (x ∷_) else id) (p x)) (pure [])
 
-mapAndUnzipM : ⦃ Applicative m ⦄ → (a → m (b × c)) → (List a) → m (List b × List c)
+mapAndUnzipM : ⦃ Applicative m ⦄ → (a → m (b × c)) → List a → m (List b × List c)
 mapAndUnzipM f xs = fmap unzip (traverse f xs)
 
-zipWithM : ⦃ Applicative m ⦄ → (a → b → m c) → (List a) → (List b) → m (List c)
+zipWithM : ⦃ Applicative m ⦄ → (a → b → m c) → List a → List b → m (List c)
 zipWithM f xs ys = sequenceA (zipWith f xs ys)
 
-zipWithM₋ : ⦃ Applicative m ⦄ → (a → b → m c) → (List a) → (List b) → m ⊤
+zipWithM₋ : ⦃ Applicative m ⦄ → (a → b → m c) → List a → List b → m ⊤
 zipWithM₋ f xs ys = sequenceA₋ (zipWith f xs ys)
 
 foldM : ⦃ Foldable t ⦄ → ⦃ Monad m ⦄ → (b → a → m b) → b → t a → m b

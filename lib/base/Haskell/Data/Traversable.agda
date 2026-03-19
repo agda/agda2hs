@@ -9,7 +9,7 @@ open import Haskell.Prim.Tuple
 open import Haskell.Prim.Traversable public
 
 
-variable s : Type
+private variable s : Type
 
 for : ⦃ Traversable t ⦄ → ⦃ Applicative f ⦄ → t a → (a → f b) → f (t b)
 for = flip traverse
