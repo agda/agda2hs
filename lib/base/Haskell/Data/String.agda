@@ -8,7 +8,7 @@ open import Haskell.Data.Foldable
 open import Haskell.Prim.String public
 
 
-private
+module Helpers where
   cons : Char → List String → List String
   cons c []       = (c ∷ []) ∷ []
   cons c (s ∷ ss) = (c ∷ s) ∷ ss
@@ -21,6 +21,8 @@ private
     word  : String → List String
     word []      = []
     word (c ∷ s) = if primIsSpace c then [] ∷ space s else cons c (word s)
+  
+open Helpers
 
 lines : String → List String
 lines []         = []

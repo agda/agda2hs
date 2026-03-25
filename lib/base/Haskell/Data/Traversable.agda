@@ -17,7 +17,7 @@ for = flip traverse
 forM :  ⦃ Traversable t ⦄ → ⦃ Monad m ⦄ → t a → (a → m b) → m (t b)
 forM = flip mapM
 
-private
+module Helpers where
   record State (s a : Type) : Type where
     constructor mkState
     pattern
@@ -83,6 +83,8 @@ private
 
     iMonadStateT : ⦃ Monad m ⦄ → Monad (StateT s m)
     iMonadStateT = record { DefaultMonad iDefaultMonadStateT }
+
+open Helpers
 
 mapAccumL : ⦃ Traversable t ⦄ → (s → a → s × b) → s → t a → s × t b
 mapAccumL ⦃ iTraversable ⦄ f s t = State.run (traverse ⦃ iTraversable ⦄ ⦃ iApplicativeStateL ⦄ (mkState ∘ flip f) t) s
