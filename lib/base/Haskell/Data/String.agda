@@ -21,7 +21,7 @@ module Helpers where
     word  : String → List String
     word []      = []
     word (c ∷ s) = if primIsSpace c then [] ∷ space s else cons c (word s)
-  
+
 open Helpers
 
 lines : String → List String
