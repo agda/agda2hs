@@ -2,7 +2,9 @@ module Haskell.Prim.MonadPlus where
 
 open import Haskell.Prim
 open import Haskell.Prim.Alternative
+  renaming (module Instances to AlternativeInstances)
 open import Haskell.Prim.Monad
+  renaming (module Instances to MonadInstances)
 open import Haskell.Prim.IO
 open import Haskell.Prim.List
 open import Haskell.Prim.Maybe
@@ -36,23 +38,25 @@ open MonadPlus ⦃...⦄ public
 {-# COMPILE AGDA2HS MonadPlus existing-class #-}
 
 -- ** instances
-instance
-  open DefaultMonadPlus
+module Instances where
+  instance
+    open DefaultMonadPlus
 
-  iDefaultMonadPlusList : DefaultMonadPlus List
-  iDefaultMonadPlusList = record {}
+    iDefaultMonadPlusList : DefaultMonadPlus List
+    iDefaultMonadPlusList = record {}
 
-  iMonadPlusList : MonadPlus List
-  iMonadPlusList = record {DefaultMonadPlus iDefaultMonadPlusList}
+    iMonadPlusList : MonadPlus List
+    iMonadPlusList = record {DefaultMonadPlus iDefaultMonadPlusList}
 
-  iDefaultMonadPlusMaybe : DefaultMonadPlus Maybe
-  iDefaultMonadPlusMaybe = record {}
+    iDefaultMonadPlusMaybe : DefaultMonadPlus Maybe
+    iDefaultMonadPlusMaybe = record {}
 
-  iMonadPlusMaybe : MonadPlus Maybe
-  iMonadPlusMaybe = record {DefaultMonadPlus iDefaultMonadPlusMaybe}
+    iMonadPlusMaybe : MonadPlus Maybe
+    iMonadPlusMaybe = record {DefaultMonadPlus iDefaultMonadPlusMaybe}
 
-  iDefaultMonadPlusIO : DefaultMonadPlus IO
-  iDefaultMonadPlusIO = record {}
+    iDefaultMonadPlusIO : DefaultMonadPlus IO
+    iDefaultMonadPlusIO = record {}
 
-  iMonadPlusIO : MonadPlus IO
-  iMonadPlusIO = record {DefaultMonadPlus iDefaultMonadPlusIO}
+    iMonadPlusIO : MonadPlus IO
+    iMonadPlusIO = record {DefaultMonadPlus iDefaultMonadPlusIO}
+open Instances public

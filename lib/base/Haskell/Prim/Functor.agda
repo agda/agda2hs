@@ -32,51 +32,53 @@ open Functor ⦃...⦄ public
 {-# COMPILE AGDA2HS Functor existing-class #-}
 
 -- ** instances
-instance
-  open DefaultFunctor
+module Instances where
+  instance
+    open DefaultFunctor
 
-  iDefaultFunctorList : DefaultFunctor List
-  iDefaultFunctorList .fmap = map
+    iDefaultFunctorList : DefaultFunctor List
+    iDefaultFunctorList .fmap = map
 
-  iFunctorList : Functor List
-  iFunctorList = record{DefaultFunctor iDefaultFunctorList}
+    iFunctorList : Functor List
+    iFunctorList = record{DefaultFunctor iDefaultFunctorList}
 
-  iDefaultFunctorMaybe : DefaultFunctor Maybe
-  iDefaultFunctorMaybe .fmap = λ where
-    f Nothing  → Nothing
-    f (Just x) → Just (f x)
+    iDefaultFunctorMaybe : DefaultFunctor Maybe
+    iDefaultFunctorMaybe .fmap = λ where
+      f Nothing  → Nothing
+      f (Just x) → Just (f x)
 
-  iFunctorMaybe : Functor Maybe
-  iFunctorMaybe = record{DefaultFunctor iDefaultFunctorMaybe}
+    iFunctorMaybe : Functor Maybe
+    iFunctorMaybe = record{DefaultFunctor iDefaultFunctorMaybe}
 
-  iDefaultFunctorEither : DefaultFunctor (Either a)
-  iDefaultFunctorEither .fmap = λ where
-    f (Left  x) → Left x
-    f (Right y) → Right (f y)
+    iDefaultFunctorEither : DefaultFunctor (Either a)
+    iDefaultFunctorEither .fmap = λ where
+      f (Left  x) → Left x
+      f (Right y) → Right (f y)
 
-  iFunctorEither : Functor (Either a)
-  iFunctorEither = record{DefaultFunctor iDefaultFunctorEither}
+    iFunctorEither : Functor (Either a)
+    iFunctorEither = record{DefaultFunctor iDefaultFunctorEither}
 
-  iDefaultFunctorFun : DefaultFunctor (λ b → a → b)
-  iDefaultFunctorFun .fmap = _∘_
+    iDefaultFunctorFun : DefaultFunctor (λ b → a → b)
+    iDefaultFunctorFun .fmap = _∘_
 
-  iFunctorFun : Functor (λ b → a → b)
-  iFunctorFun = record{DefaultFunctor iDefaultFunctorFun}
+    iFunctorFun : Functor (λ b → a → b)
+    iFunctorFun = record{DefaultFunctor iDefaultFunctorFun}
 
-  iDefaultFunctorTuple₂ : DefaultFunctor (a ×_)
-  iDefaultFunctorTuple₂ .fmap = λ f (x , y) → x , f y
+    iDefaultFunctorTuple₂ : DefaultFunctor (a ×_)
+    iDefaultFunctorTuple₂ .fmap = λ f (x , y) → x , f y
 
-  iFunctorTuple₂ : Functor (a ×_)
-  iFunctorTuple₂ = record{DefaultFunctor iDefaultFunctorTuple₂}
+    iFunctorTuple₂ : Functor (a ×_)
+    iFunctorTuple₂ = record{DefaultFunctor iDefaultFunctorTuple₂}
 
-  iDefaultFunctorTuple₃ : DefaultFunctor (a × b ×_)
-  iDefaultFunctorTuple₃ .fmap = λ where f (x , y , z) → x , y , f z
+    iDefaultFunctorTuple₃ : DefaultFunctor (a × b ×_)
+    iDefaultFunctorTuple₃ .fmap = λ where f (x , y , z) → x , y , f z
 
-  iFunctorTuple₃ : Functor (a × b ×_)
-  iFunctorTuple₃ = record{DefaultFunctor iDefaultFunctorTuple₃}
+    iFunctorTuple₃ : Functor (a × b ×_)
+    iFunctorTuple₃ = record{DefaultFunctor iDefaultFunctorTuple₃}
 
-  iDefaultFunctorIO : DefaultFunctor IO
-  iDefaultFunctorIO .fmap = λ f x → bindIO x (returnIO ∘ f)
+    iDefaultFunctorIO : DefaultFunctor IO
+    iDefaultFunctorIO .fmap = λ f x → bindIO x (returnIO ∘ f)
 
-  iFunctorIO : Functor IO
-  iFunctorIO = record{DefaultFunctor iDefaultFunctorIO}
+    iFunctorIO : Functor IO
+    iFunctorIO = record{DefaultFunctor iDefaultFunctorIO}
+open Instances public

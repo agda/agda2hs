@@ -1,12 +1,19 @@
 module Haskell.Data.Traversable where
 
 open import Haskell.Prim hiding (s)
-open import Haskell.Prim.Functor
-open import Haskell.Prim.Applicative
-open import Haskell.Prim.Monad
 open import Haskell.Prim.Tuple
+open import Haskell.Prim.Functor hiding (module Instances)
+open import Haskell.Prim.Applicative hiding (module Instances)
+open import Haskell.Prim.Monad hiding (module Instances)
 
+open import Haskell.Prim.Functor public
+  using () renaming (module Instances to FunctorInstances)
+open import Haskell.Prim.Applicative public
+  using () renaming (module Instances to ApplicativeInstances)
+open import Haskell.Prim.Monad public
+  using () renaming (module Instances to MonadInstances)
 open import Haskell.Prim.Traversable public
+  renaming (module Instances to TraversableInstances)
 
 
 private variable s : Type

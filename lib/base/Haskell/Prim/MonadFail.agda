@@ -1,8 +1,9 @@
 module Haskell.Prim.MonadFail where
 
 open import Haskell.Prim
-open import Haskell.Prim.String
 open import Haskell.Prim.Monad
+  renaming (module Instances to MonadInstances)
+open import Haskell.Prim.String
 open import Haskell.Prim.Maybe
 open import Haskell.Prim.IO
 
@@ -18,12 +19,14 @@ record MonadFail (m : Type → Type) : Type₁ where
 open MonadFail ⦃...⦄ public
 {-# COMPILE AGDA2HS MonadFail existing-class #-}
 
-instance
-  MonadFailList : MonadFail List
-  MonadFailList .fail _ = []
+module Instances where
+  instance
+    MonadFailList : MonadFail List
+    MonadFailList .fail _ = []
 
-  MonadFailMaybe : MonadFail Maybe
-  MonadFailMaybe .fail _ = Nothing
+    MonadFailMaybe : MonadFail Maybe
+    MonadFailMaybe .fail _ = Nothing
 
-  iMonadFailIO : MonadFail IO
-  iMonadFailIO .fail = failIO
+    iMonadFailIO : MonadFail IO
+    iMonadFailIO .fail = failIO
+open Instances public

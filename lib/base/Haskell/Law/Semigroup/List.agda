@@ -3,7 +3,7 @@ module Haskell.Law.Semigroup.List where
 open import Haskell.Prim
 open import Haskell.Prim.List
 
-open import Haskell.Prim.Monoid
+open import Haskell.Prim.Semigroup
 
 open import Haskell.Law.Equality
 open import Haskell.Law.List

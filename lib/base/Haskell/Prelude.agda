@@ -20,30 +20,45 @@ open import Haskell.Prim                public
 open import Haskell.Prim.Absurd         public
 open import Haskell.Prim.Bool           public
 open import Haskell.Prim.Bounded        public
+  renaming (module Instances to BoundedInstances)
 open import Haskell.Prim.Char           public
 open import Haskell.Prim.Double         public
 open import Haskell.Prim.Either         public
 open import Haskell.Prim.Enum           public
-open import Haskell.Prim.Eq             public
+  renaming (module Instances to EnumInstances)
 open import Haskell.Prim.Int            public
 open import Haskell.Prim.Integer        public
 open import Haskell.Prim.IO             public
   hiding (returnIO; bindIO; failIO; mplusIO)
 open import Haskell.Prim.Maybe          public
-open import Haskell.Prim.Monoid         public
-open import Haskell.Prim.MonadFail      public
-open import Haskell.Prim.Num            public
-open import Haskell.Prim.Ord            public
-open import Haskell.Prim.Show           public
 open import Haskell.Prim.Tuple          public hiding (first; second; _***_)
 open import Haskell.Prim.Word           public
 open import Haskell.Prim.String         public
+open import Haskell.Prim.Eq             public
+  renaming (module Instances to EqInstances)
+open import Haskell.Prim.Ord            public
+  renaming (module Instances to OrdInstances)
+open import Haskell.Prim.Num            public
+  renaming (module Instances to NumInstances)
+open import Haskell.Prim.Show           public
+  renaming (module Instances to ShowInstances)
+open import Haskell.Prim.Semigroup      public
+  renaming (module Instances to SemigroupInstances)
+open import Haskell.Prim.Monoid         public
+  renaming (module Instances to MonoidInstances)
 open import Haskell.Prim.Functor        public
+  renaming (module Instances to FunctorInstances)
 open import Haskell.Prim.Applicative    public
+  renaming (module Instances to ApplicativeInstances)
 open import Haskell.Prim.Monad          public
-open import Haskell.Prim.Traversable    public
+  renaming (module Instances to MonadInstances)
+open import Haskell.Prim.MonadFail      public
+  renaming (module Instances to MonadFailInstances)
 open import Haskell.Prim.Foldable       public
   hiding (fold; foldMap'; foldr'; toList; null; length)
+  renaming (module Instances to FoldableInstances)
+open import Haskell.Prim.Traversable    public
+  renaming (module Instances to TraversableInstances)
 
 open import Haskell.Data.String         public
   using (lines; words; unlines; unwords)

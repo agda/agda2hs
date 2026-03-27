@@ -5,14 +5,20 @@ open import Haskell.Prim.Bool
 open import Haskell.Prim.Tuple
 open import Haskell.Prim.Int
 open import Haskell.Prim.Maybe
-open import Haskell.Prim.Ord
-open import Haskell.Prim.Num
-open import Haskell.Prim.Eq
+open import Haskell.Prim.Eq hiding (module Instances)
+open import Haskell.Prim.Ord hiding (module Instances)
+open import Haskell.Prim.Num hiding (module Instances)
 
 open import Haskell.Prim.List public
-open import Haskell.Prim.Foldable public using (Foldable)
-open Foldable ⦃ ... ⦄ public
+open import Haskell.Prim.Eq public
+  using () renaming (module Instances to EqInstances)
+open import Haskell.Prim.Ord public
+  using () renaming (module Instances to OrdInstances)
+open import Haskell.Prim.Num public
+  using () renaming (module Instances to NumInstances)
+open import Haskell.Prim.Foldable public
   using (null; length; foldl; foldl'; foldl1; foldr; foldr1; sum; product; maximum; minimum; elem)
+  renaming (module Instances to FoldableInstances)
 open import Haskell.Data.Foldable public
   using (concat; concatMap; and; or; any; all; maximumBy; minimumBy; notElem; find)
 open import Haskell.Data.Traversable public using (mapAccumL; mapAccumR)

@@ -2,10 +2,12 @@ module Haskell.Data.String where
 
 open import Haskell.Prim
 open import Haskell.Prim.List
-open import Haskell.Prim.Foldable
+open import Haskell.Prim.Foldable hiding (module Instances)
 open import Haskell.Data.Foldable
 
 open import Haskell.Prim.String public
+open import Haskell.Prim.Foldable public
+  using () renaming (module Instances to FoldableInstances)
 
 
 module Helpers where

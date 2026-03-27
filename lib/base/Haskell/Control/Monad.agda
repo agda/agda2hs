@@ -4,19 +4,30 @@ open import Haskell.Prim
 open import Haskell.Prim.Bool
 open import Haskell.Prim.Int
 open import Haskell.Prim.Tuple
-open import Haskell.Prim.Applicative
-open import Haskell.Prim.Alternative
-open import Haskell.Prim.Traversable
-open import Haskell.Prim.Foldable
+open import Haskell.Prim.Applicative hiding (module Instances)
+open import Haskell.Prim.Alternative hiding (module Instances)
+open import Haskell.Prim.Traversable hiding (module Instances)
+open import Haskell.Prim.Foldable hiding (module Instances)
 open import Haskell.Data.Foldable using (sequenceA₋; foldlM)
 open import Haskell.Data.List using (unzip; zipWith)
 open import Haskell.Extra.Erase
 
 open import Haskell.Prim.Functor public
+  renaming (module Instances to FunctorInstances)
+open import Haskell.Prim.Applicative public
+  using () renaming (module Instances to ApplicativeInstances)
+open import Haskell.Prim.Alternative public
+  using () renaming (module Instances to AlternativeInstances)
 open import Haskell.Prim.Monad public
+  renaming (module Instances to MonadInstances)
 open import Haskell.Prim.MonadFail public
+  renaming (module Instances to MonadFailInstances)
 open import Haskell.Prim.MonadPlus public
-open import Haskell.Prim.Traversable public using (mapM; sequence)
+  renaming (module Instances to MonadPlusInstances)
+open import Haskell.Prim.Traversable public
+  using (mapM; sequence) renaming (module Instances to TraversableInstances)
+open import Haskell.Prim.Foldable public
+  using () renaming (module Instances to FoldableInstances)
 open import Haskell.Data.Traversable public using (forM)
 open import Haskell.Data.Foldable public using (mapM₋; forM₋; sequence₋; msum)
 open import Haskell.Data.Functor public using (void)

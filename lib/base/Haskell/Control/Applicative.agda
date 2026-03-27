@@ -4,7 +4,9 @@ open import Haskell.Prim
 open import Haskell.Prim.Maybe
 
 open import Haskell.Prim.Applicative public
+  renaming (module Instances to ApplicativeInstances)
 open import Haskell.Prim.Alternative public
+  renaming (module Instances to AlternativeInstances)
 open import Haskell.Data.Functor public using (_<$>_)
 open import Haskell.Data.Foldable public using (asum)
 

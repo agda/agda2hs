@@ -4,6 +4,7 @@ open import Haskell.Prim
 open import Haskell.Prim.Tuple
 
 open import Haskell.Prim.Functor public
+  renaming (module Instances to FunctorInstances)
 
 
 infixl 4 _$>_

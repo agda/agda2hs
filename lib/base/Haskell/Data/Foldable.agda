@@ -1,17 +1,32 @@
 module Haskell.Data.Foldable where
 
 open import Haskell.Prim
-open import Haskell.Prim.Monad
-open import Haskell.Prim.Applicative
-open import Haskell.Prim.Alternative
-open import Haskell.Prim.MonadPlus
-open import Haskell.Prim.Monoid
-open import Haskell.Prim.Eq
-open import Haskell.Prim.Ord
 open import Haskell.Prim.Bool
 open import Haskell.Prim.Maybe
+open import Haskell.Prim.Eq hiding (module Instances)
+open import Haskell.Prim.Ord hiding (module Instances)
+open import Haskell.Prim.Monoid hiding (module Instances)
+open import Haskell.Prim.Applicative hiding (module Instances)
+open import Haskell.Prim.Alternative hiding (module Instances)
+open import Haskell.Prim.Monad hiding (module Instances)
+open import Haskell.Prim.MonadPlus hiding (module Instances)
 
+open import Haskell.Prim.Eq public
+  using () renaming (module Instances to EqInstances)
+open import Haskell.Prim.Ord public
+  using () renaming (module Instances to OrdInstances)
+open import Haskell.Prim.Monoid public
+  using () renaming (module Instances to MonoidInstances)
+open import Haskell.Prim.Applicative public
+  using () renaming (module Instances to ApplicativeInstances)
+open import Haskell.Prim.Alternative public
+  using () renaming (module Instances to AlternativeInstances)
+open import Haskell.Prim.Monad public
+  using () renaming (module Instances to MonadInstances)
+open import Haskell.Prim.MonadPlus public
+  using () renaming (module Instances to MonadPlusInstances)
 open import Haskell.Prim.Foldable public
+  renaming (module Instances to FoldableInstances)
 
 
 foldrM : ⦃ Foldable t ⦄ → ⦃ Monad m ⦄ → (a → b → m b) → b → t a → m b

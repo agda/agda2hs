@@ -1,14 +1,20 @@
 module Haskell.Prim.Monad where
 
 open import Haskell.Prim
-open import Haskell.Prim.Applicative
-open import Haskell.Prim.Either
-open import Haskell.Prim.Foldable
+open import Haskell.Prim.Semigroup
+  renaming (module Instances to SemigroupInstances)
+open import Haskell.Prim.Monoid
+  renaming (module Instances to MonoidInstances)
 open import Haskell.Prim.Functor
+  renaming (module Instances to FunctorInstances)
+open import Haskell.Prim.Applicative
+  renaming (module Instances to ApplicativeInstances)
+open import Haskell.Prim.Foldable
+  renaming (module Instances to FoldableInstances)
+open import Haskell.Prim.Either
 open import Haskell.Prim.IO
 open import Haskell.Prim.List
 open import Haskell.Prim.Maybe
-open import Haskell.Prim.Monoid
 open import Haskell.Prim.Tuple
 
 
@@ -55,49 +61,51 @@ module Dont where
 open Do public
 
 -- ** instances
-instance
-  open DefaultMonad
+module Instances where
+  instance
+    open DefaultMonad
 
-  iDefaultMonadList : DefaultMonad List
-  iDefaultMonadList ._>>=_ = flip foldMap
+    iDefaultMonadList : DefaultMonad List
+    iDefaultMonadList ._>>=_ = flip foldMap
 
-  iMonadList : Monad List
-  iMonadList = record {DefaultMonad iDefaultMonadList}
+    iMonadList : Monad List
+    iMonadList = record {DefaultMonad iDefaultMonadList}
 
-  iDefaultMonadMaybe : DefaultMonad Maybe
-  iDefaultMonadMaybe ._>>=_ = flip (maybe Nothing)
+    iDefaultMonadMaybe : DefaultMonad Maybe
+    iDefaultMonadMaybe ._>>=_ = flip (maybe Nothing)
 
-  iMonadMaybe : Monad Maybe
-  iMonadMaybe = record {DefaultMonad iDefaultMonadMaybe}
+    iMonadMaybe : Monad Maybe
+    iMonadMaybe = record {DefaultMonad iDefaultMonadMaybe}
 
-  iDefaultMonadEither : DefaultMonad (Either a)
-  iDefaultMonadEither ._>>=_ = flip (either Left)
+    iDefaultMonadEither : DefaultMonad (Either a)
+    iDefaultMonadEither ._>>=_ = flip (either Left)
 
-  iMonadEither : Monad (Either a)
-  iMonadEither = record {DefaultMonad iDefaultMonadEither}
+    iMonadEither : Monad (Either a)
+    iMonadEither = record {DefaultMonad iDefaultMonadEither}
 
-  iDefaultMonadFun : DefaultMonad (λ b → a → b)
-  iDefaultMonadFun ._>>=_ = λ f k r → k (f r) r
+    iDefaultMonadFun : DefaultMonad (λ b → a → b)
+    iDefaultMonadFun ._>>=_ = λ f k r → k (f r) r
 
-  iMonadFun : Monad (λ b → a → b)
-  iMonadFun = record {DefaultMonad iDefaultMonadFun}
+    iMonadFun : Monad (λ b → a → b)
+    iMonadFun = record {DefaultMonad iDefaultMonadFun}
 
-  iDefaultMonadTuple₂ : ⦃ Monoid a ⦄ → DefaultMonad (a ×_)
-  iDefaultMonadTuple₂ ._>>=_ = λ (a , x) k → first (a <>_) (k x)
+    iDefaultMonadTuple₂ : ⦃ Monoid a ⦄ → DefaultMonad (a ×_)
+    iDefaultMonadTuple₂ ._>>=_ = λ (a , x) k → first (a <>_) (k x)
 
-  iMonadTuple₂ : ⦃ Monoid a ⦄ → Monad (a ×_)
-  iMonadTuple₂ = record {DefaultMonad iDefaultMonadTuple₂}
+    iMonadTuple₂ : ⦃ Monoid a ⦄ → Monad (a ×_)
+    iMonadTuple₂ = record {DefaultMonad iDefaultMonadTuple₂}
 
-  iDefaultMonadTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → DefaultMonad (a × b ×_)
-  iDefaultMonadTuple₃ ._>>=_ = λ where
-    (a , b , x) k → case k x of λ where
-      (a₁ , b₁ , y) → a <> a₁ , b <> b₁ , y
+    iDefaultMonadTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → DefaultMonad (a × b ×_)
+    iDefaultMonadTuple₃ ._>>=_ = λ where
+      (a , b , x) k → case k x of λ where
+        (a₁ , b₁ , y) → a <> a₁ , b <> b₁ , y
 
-  iMonadTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → Monad (a × b ×_)
-  iMonadTuple₃ = record {DefaultMonad iDefaultMonadTuple₃}
+    iMonadTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → Monad (a × b ×_)
+    iMonadTuple₃ = record {DefaultMonad iDefaultMonadTuple₃}
 
-  iDefaultMonadIO : DefaultMonad IO
-  iDefaultMonadIO ._>>=_ = bindIO
+    iDefaultMonadIO : DefaultMonad IO
+    iDefaultMonadIO ._>>=_ = bindIO
 
-  iMonadIO : Monad IO
-  iMonadIO = record {DefaultMonad iDefaultMonadIO}
+    iMonadIO : Monad IO
+    iMonadIO = record {DefaultMonad iDefaultMonadIO}
+open Instances public
