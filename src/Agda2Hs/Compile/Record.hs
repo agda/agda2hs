@@ -51,8 +51,8 @@ compileMinRecord fieldNames m = withMinRecord m $ do
   -- We can't simply compileFun here for two reasons:
   -- * it has an explicit dictionary argument
   -- * it's using the fields and definitions from the minimal record and not the parent record
-  compiled <- addContext (defaultDom rtype) $ compileLocal $
-    fmap concat $ traverse (compileFun False) defaults
+  compiled <- addContext (defaultDom rtype) $ compileLocal $ withoutSignature $
+    fmap concat $ traverse compileFun defaults
   let declMap = Map.fromList [ (definedName c, def) | def@(Hs.FunBind _ (c : _)) <- compiled ]
   reportSDoc "agda2hs.record.min" 20 $
     text "Done compiling minimal record" <+> pretty m <+>
