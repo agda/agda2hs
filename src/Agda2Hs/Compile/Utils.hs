@@ -195,6 +195,7 @@ hasCompilePragma q = processPragma q <&> \case
   InlinePragma{} -> True
   DefaultPragma{} -> True
   ClassPragma{} -> True
+  ExistingPragma{} -> True
   ExistingClassPragma{} -> True
   UnboxPragma{} -> True
   TransparentPragma{} -> True
