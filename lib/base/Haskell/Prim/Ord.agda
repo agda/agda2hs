@@ -3,18 +3,23 @@ module Haskell.Prim.Ord where
 
 open import Haskell.Prim
 open import Haskell.Prim.Eq
+  renaming (module Instances to EqInstances)
+open import Haskell.Prim.Semigroup
+  renaming (module Instances to SemigroupInstances)
+open import Haskell.Prim.Monoid
+  renaming (module Instances to MonoidInstances)
 open import Haskell.Prim.Bool
 open import Haskell.Prim.Int
 open import Haskell.Prim.Word
 open import Haskell.Prim.Integer
 open import Haskell.Prim.Double
 open import Haskell.Prim.Tuple
-open import Haskell.Prim.Monoid
 open import Haskell.Prim.List
 open import Haskell.Prim.Maybe
 open import Haskell.Prim.Either
 
---------------------------------------------------
+
+--------------------------------------------------------------------------------
 -- Ordering
 
 data Ordering : Type where
@@ -35,7 +40,8 @@ instance
   iMonoidOrdering : Monoid Ordering
   iMonoidOrdering = record {DefaultMonoid (record {mempty = EQ})}
 
---------------------------------------------------
+
+--------------------------------------------------------------------------------
 -- Ord
 
 record Ord (a : Type) : Type where
@@ -97,9 +103,7 @@ record OrdFromLessThan (a : Type) : Type where
   min  : a → a → a
   min x y = if y < x then y else x
 
-
 open Ord ⦃...⦄ public
-
 {-# COMPILE AGDA2HS Ord existing-class #-}
 
 private
@@ -117,118 +121,120 @@ private
   minNat (suc x) zero    = zero
   minNat (suc x) (suc y) = suc (minNat x y)
 
-instance
-  iOrdFromLessThanNat : OrdFromLessThan Nat
-  iOrdFromLessThanNat .OrdFromLessThan._<_ = ltNat
+private
+  compareList : ⦃ Ord a ⦄ → List a → List a → Ordering
+  compareList []       []       = EQ
+  compareList []       (_ ∷ _)  = LT
+  compareList (_ ∷ _)  []       = GT
+  compareList (x ∷ xs) (y ∷ ys) = compare x y <> compareList xs ys
 
-  iOrdNat : Ord Nat
-  iOrdNat = record
-    { OrdFromLessThan iOrdFromLessThanNat
-    ; max = maxNat
-    ; min = minNat
-    }
+module Instances where
+  instance
+    iOrdFromLessThanNat : OrdFromLessThan Nat
+    iOrdFromLessThanNat .OrdFromLessThan._<_ = ltNat
 
-  iOrdFromLessThanInteger : OrdFromLessThan Integer
-  iOrdFromLessThanInteger .OrdFromLessThan._<_ = ltInteger
+    iOrdNat : Ord Nat
+    iOrdNat = record
+      { OrdFromLessThan iOrdFromLessThanNat
+      ; max = maxNat
+      ; min = minNat
+      }
 
-  iOrdInteger : Ord Integer
-  iOrdInteger = record {OrdFromLessThan iOrdFromLessThanInteger}
+    iOrdFromLessThanInteger : OrdFromLessThan Integer
+    iOrdFromLessThanInteger .OrdFromLessThan._<_ = ltInteger
 
-  iOrdFromLessThanInt : OrdFromLessThan Int
-  iOrdFromLessThanInt .OrdFromLessThan._<_ = ltInt
+    iOrdInteger : Ord Integer
+    iOrdInteger = record {OrdFromLessThan iOrdFromLessThanInteger}
 
-  iOrdInt : Ord Int
-  iOrdInt = record {OrdFromLessThan iOrdFromLessThanInt}
+    iOrdFromLessThanInt : OrdFromLessThan Int
+    iOrdFromLessThanInt .OrdFromLessThan._<_ = ltInt
 
-  iOrdFromLessThanWord : OrdFromLessThan Word
-  iOrdFromLessThanWord .OrdFromLessThan._<_ = ltWord
+    iOrdInt : Ord Int
+    iOrdInt = record {OrdFromLessThan iOrdFromLessThanInt}
 
-  iOrdWord : Ord Word
-  iOrdWord = record {OrdFromLessThan iOrdFromLessThanWord}
+    iOrdFromLessThanWord : OrdFromLessThan Word
+    iOrdFromLessThanWord .OrdFromLessThan._<_ = ltWord
 
-  iOrdFromLessThanDouble : OrdFromLessThan Double
-  iOrdFromLessThanDouble .OrdFromLessThan._<_ = primFloatLess
+    iOrdWord : Ord Word
+    iOrdWord = record {OrdFromLessThan iOrdFromLessThanWord}
 
-  iOrdDouble : Ord Double
-  iOrdDouble = record {OrdFromLessThan iOrdFromLessThanDouble}
+    iOrdFromLessThanDouble : OrdFromLessThan Double
+    iOrdFromLessThanDouble .OrdFromLessThan._<_ = primFloatLess
 
-  iOrdFromLessThanChar : OrdFromLessThan Char
-  iOrdFromLessThanChar .OrdFromLessThan._<_ x y = c2n x < c2n y
+    iOrdDouble : Ord Double
+    iOrdDouble = record {OrdFromLessThan iOrdFromLessThanDouble}
 
-  iOrdChar : Ord Char
-  iOrdChar = record {OrdFromLessThan iOrdFromLessThanChar}
+    iOrdFromLessThanChar : OrdFromLessThan Char
+    iOrdFromLessThanChar .OrdFromLessThan._<_ x y = c2n x < c2n y
 
-  iOrdFromCompareBool : OrdFromCompare Bool
-  iOrdFromCompareBool .OrdFromCompare.compare = λ where
-    False True  → LT
-    True  False → GT
-    _     _     → EQ
+    iOrdChar : Ord Char
+    iOrdChar = record {OrdFromLessThan iOrdFromLessThanChar}
 
-  iOrdBool : Ord Bool
-  iOrdBool = record {OrdFromCompare iOrdFromCompareBool}
+    iOrdFromCompareBool : OrdFromCompare Bool
+    iOrdFromCompareBool .OrdFromCompare.compare = λ where
+      False True  → LT
+      True  False → GT
+      _     _     → EQ
 
-  iOrdFromCompareUnit : OrdFromCompare ⊤
-  iOrdFromCompareUnit .OrdFromCompare.compare = λ _ _ → EQ
+    iOrdBool : Ord Bool
+    iOrdBool = record {OrdFromCompare iOrdFromCompareBool}
 
-  iOrdUnit : Ord ⊤
-  iOrdUnit = record {OrdFromCompare iOrdFromCompareUnit}
+    iOrdFromCompareUnit : OrdFromCompare ⊤
+    iOrdFromCompareUnit .OrdFromCompare.compare = λ _ _ → EQ
 
-  iOrdFromCompareTuple₂ : ⦃ Ord a ⦄ → ⦃ Ord b ⦄ → OrdFromCompare (a × b)
-  iOrdFromCompareTuple₂ .OrdFromCompare.compare = λ where
-    (x₁ , y₁) (x₂ , y₂) → compare x₁ x₂ <> compare y₁ y₂
+    iOrdUnit : Ord ⊤
+    iOrdUnit = record {OrdFromCompare iOrdFromCompareUnit}
 
-  iOrdTuple₂ : ⦃ Ord a ⦄ → ⦃ Ord b ⦄ → Ord (a × b)
-  iOrdTuple₂ = record {OrdFromCompare iOrdFromCompareTuple₂}
+    iOrdFromCompareTuple₂ : ⦃ Ord a ⦄ → ⦃ Ord b ⦄ → OrdFromCompare (a × b)
+    iOrdFromCompareTuple₂ .OrdFromCompare.compare = λ where
+      (x₁ , y₁) (x₂ , y₂) → compare x₁ x₂ <> compare y₁ y₂
 
-  iOrdFromCompareTuple₃ : ⦃ Ord a ⦄ → ⦃ Ord b ⦄ → ⦃ Ord c ⦄ → OrdFromCompare (a × b × c)
-  iOrdFromCompareTuple₃ .OrdFromCompare.compare = λ where
-    (x₁ , y₁ , z₁) (x₂ , y₂ , z₂) → compare x₁ x₂ <> compare y₁ y₂ <> compare z₁ z₂
+    iOrdTuple₂ : ⦃ Ord a ⦄ → ⦃ Ord b ⦄ → Ord (a × b)
+    iOrdTuple₂ = record {OrdFromCompare iOrdFromCompareTuple₂}
 
-  iOrdTuple₃ : ⦃ Ord a ⦄ → ⦃ Ord b ⦄ → ⦃ Ord c ⦄ → Ord (a × b × c)
-  iOrdTuple₃ = record {OrdFromCompare iOrdFromCompareTuple₃}
+    iOrdFromCompareTuple₃ : ⦃ Ord a ⦄ → ⦃ Ord b ⦄ → ⦃ Ord c ⦄ → OrdFromCompare (a × b × c)
+    iOrdFromCompareTuple₃ .OrdFromCompare.compare = λ where
+      (x₁ , y₁ , z₁) (x₂ , y₂ , z₂) → compare x₁ x₂ <> compare y₁ y₂ <> compare z₁ z₂
 
-compareList : ⦃ Ord a ⦄ → List a → List a → Ordering
-compareList []       []       = EQ
-compareList []       (_ ∷ _)  = LT
-compareList (_ ∷ _)  []       = GT
-compareList (x ∷ xs) (y ∷ ys) = compare x y <> compareList xs ys
+    iOrdTuple₃ : ⦃ Ord a ⦄ → ⦃ Ord b ⦄ → ⦃ Ord c ⦄ → Ord (a × b × c)
+    iOrdTuple₃ = record {OrdFromCompare iOrdFromCompareTuple₃}
 
-instance
-  iOrdFromCompareList : ⦃ Ord a ⦄ → OrdFromCompare (List a)
-  iOrdFromCompareList .OrdFromCompare.compare = compareList
+    iOrdFromCompareList : ⦃ Ord a ⦄ → OrdFromCompare (List a)
+    iOrdFromCompareList .OrdFromCompare.compare = compareList
 
-  iOrdList : ⦃ Ord a ⦄ → Ord (List a)
-  iOrdList = record {OrdFromCompare iOrdFromCompareList}
+    iOrdList : ⦃ Ord a ⦄ → Ord (List a)
+    iOrdList = record {OrdFromCompare iOrdFromCompareList}
 
-  iOrdFromCompareMaybe : ⦃ Ord a ⦄ → OrdFromCompare (Maybe a)
-  iOrdFromCompareMaybe .OrdFromCompare.compare = λ where
-    Nothing  Nothing  → EQ
-    Nothing  (Just _) → LT
-    (Just _) Nothing  → GT
-    (Just x) (Just y) → compare x y
+    iOrdFromCompareMaybe : ⦃ Ord a ⦄ → OrdFromCompare (Maybe a)
+    iOrdFromCompareMaybe .OrdFromCompare.compare = λ where
+      Nothing  Nothing  → EQ
+      Nothing  (Just _) → LT
+      (Just _) Nothing  → GT
+      (Just x) (Just y) → compare x y
 
-  iOrdMaybe : ⦃ Ord a ⦄ → Ord (Maybe a)
-  iOrdMaybe = record {OrdFromCompare iOrdFromCompareMaybe}
+    iOrdMaybe : ⦃ Ord a ⦄ → Ord (Maybe a)
+    iOrdMaybe = record {OrdFromCompare iOrdFromCompareMaybe}
 
-  iOrdFromCompareEither : ⦃ Ord a ⦄ → ⦃ Ord b ⦄ → OrdFromCompare (Either a b)
-  iOrdFromCompareEither .OrdFromCompare.compare = λ where
-    (Left  x) (Left  y) → compare x y
-    (Left  _) (Right _) → LT
-    (Right _) (Left  _) → GT
-    (Right x) (Right y) → compare x y
+    iOrdFromCompareEither : ⦃ Ord a ⦄ → ⦃ Ord b ⦄ → OrdFromCompare (Either a b)
+    iOrdFromCompareEither .OrdFromCompare.compare = λ where
+      (Left  x) (Left  y) → compare x y
+      (Left  _) (Right _) → LT
+      (Right _) (Left  _) → GT
+      (Right x) (Right y) → compare x y
 
-  iOrdEither : ⦃ Ord a ⦄ → ⦃ Ord b ⦄ → Ord (Either a b)
-  iOrdEither = record {OrdFromCompare iOrdFromCompareEither}
+    iOrdEither : ⦃ Ord a ⦄ → ⦃ Ord b ⦄ → Ord (Either a b)
+    iOrdEither = record {OrdFromCompare iOrdFromCompareEither}
 
-  iOrdFromCompareOrdering : OrdFromCompare Ordering
-  iOrdFromCompareOrdering .OrdFromCompare.compare = λ where
-    LT LT → EQ
-    LT _  → LT
-    _  LT → GT
-    EQ EQ → EQ
-    EQ GT → LT
-    GT EQ → GT
-    GT GT → EQ
+    iOrdFromCompareOrdering : OrdFromCompare Ordering
+    iOrdFromCompareOrdering .OrdFromCompare.compare = λ where
+      LT LT → EQ
+      LT _  → LT
+      _  LT → GT
+      EQ EQ → EQ
+      EQ GT → LT
+      GT EQ → GT
+      GT GT → EQ
 
-  iOrdOrdering : Ord Ordering
-  iOrdOrdering = record {OrdFromCompare iOrdFromCompareOrdering}
+    iOrdOrdering : Ord Ordering
+    iOrdOrdering = record {OrdFromCompare iOrdFromCompareOrdering}
+open Instances public
