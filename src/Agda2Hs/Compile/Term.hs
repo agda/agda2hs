@@ -66,6 +66,7 @@ isSpecialDef q = case prettyShow q of
   "Haskell.Prim.the"             -> Just expTypeSig
   "Haskell.Extra.Delay.runDelay" -> Just compileErasedApp
   "Agda.Builtin.Word.primWord64FromNat" -> Just primWord64FromNat
+  "Haskell.Extra.Nat.predNat"            -> Just predNat
   _                              -> Nothing
 
 
@@ -136,6 +137,14 @@ primWord64FromNat ty args = compileArgs ty args >>= \case
   n@Hs.Lit{} : _ -> return n
   -- anything else
   _ -> agda2hsError "primWord64FromNat must be applied to a literal"
+
+-- | Compile 'predNat' to Haskell's 'pred'. The erased proof argument is
+-- dropped by 'compileArgs', so the single remaining argument is the
+-- natural number whose predecessor we want.
+predNat :: DefCompileRule
+predNat ty args = compileArgs ty args >>= \case
+  n : es' -> return $ eApp (hsVar "pred") [n] `eApp` es'
+  _       -> agda2hsError "predNat must be applied to a natural number"
 
 
 compileVar :: Int -> Type -> [Term] -> C (Hs.Exp ())
