@@ -41,7 +41,7 @@ import Agda.Utils.Size
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName, importInstance )
 
-import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTelSize, compileDomType )
+import Agda2Hs.Compile.Type ( compileType, compileDom, compileTelSize, compileDomType )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
@@ -517,6 +517,7 @@ dependentDom dom = do
     DOTerm     -> False
     DOInstance -> False
     DODropped  -> False
+    DOEquality -> False
 
 compileLam :: Type -> ArgInfo -> Abs Term -> C (Hs.Exp ())
 compileLam ty argi abs = do
@@ -621,6 +622,7 @@ compileArgs' ty (x:xs) = do
   compileDom a >>= \case
     DODropped  -> rest
     DOInstance -> checkInstance x *> rest
+    DOEquality -> checkInstance x *> rest
     DOType     -> checkValidType x *> rest
     DOTerm     -> second . (:) <$> compileTerm (unDom a) x <*> rest
 
@@ -662,7 +664,8 @@ checkInstance u = do
     Con c _ _
       | prettyShow (conName c) == "Agda.Builtin.Unit.tt" ||
         prettyShow (conName c) == "Haskell.Prim.IsTrue.itsTrue" ||
-        prettyShow (conName c) == "Haskell.Prim.IsFalse.itsFalse" -> return ()
+        prettyShow (conName c) == "Haskell.Prim.IsFalse.itsFalse" ||
+        prettyShow (conName c) == "Agda.Builtin.Equality.refl" -> return ()
     _ -> illegalInstance
 
   where
