@@ -278,13 +278,13 @@ createDuo<span class="w"> </span>a<span class="w"> </span>b<span class="w"> </sp
 negate<span class="w"> </span>True<span class="w"> </span><span class="ow">=</span><span class="w"> </span>False
 negate<span class="w"> </span>False<span class="w"> </span><span class="ow">=</span><span class="w"> </span>True
 
-<span class="nf">negate&#39;</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Bool<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
-negate&#39;<span class="w"> </span>x<span class="w"> </span><span class="ow">=</span><span class="w"> </span>case<span class="w"> </span>x<span class="w"> </span>of<span class="w"> </span><span class="ow">λ</span><span class="w"> </span><span class="kr">where</span>
+<span class="nf">negate'</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Bool<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
+negate'<span class="w"> </span>x<span class="w"> </span><span class="ow">=</span><span class="w"> </span>case<span class="w"> </span>x<span class="w"> </span>of<span class="w"> </span><span class="ow">λ</span><span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span>True<span class="w"> </span><span class="ow">→</span><span class="w"> </span>False
 <span class="w">    </span>False<span class="w"> </span><span class="ow">→</span><span class="w"> </span>True
 
-<span class="nf">negate&#39;&#39;</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Bool<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
-negate&#39;&#39;<span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="ow">λ</span><span class="w"> </span><span class="kr">where</span>
+<span class="nf">negate''</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Bool<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Bool
+negate''<span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="ow">λ</span><span class="w"> </span><span class="kr">where</span>
 <span class="w">    </span>True<span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span>False
 <span class="w">    </span>False<span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span>True
 </pre></div>
@@ -295,13 +295,13 @@ negate&#39;&#39;<span class="w"> </span><span class="ow">=</span><span class="w"
 <span class="nf">negate</span><span class="w"> </span><span class="kt">True</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">False</span>
 <span class="nf">negate</span><span class="w"> </span><span class="kt">False</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">True</span>
 
-<span class="nf">negate&#39;</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
-<span class="nf">negate&#39;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">case</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="kr">of</span>
+<span class="nf">negate'</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
+<span class="nf">negate'</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">case</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="kr">of</span>
 <span class="w">    </span><span class="kt">True</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">False</span>
 <span class="w">    </span><span class="kt">False</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">True</span>
 
-<span class="nf">negate&#39;&#39;</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
-<span class="nf">negate&#39;&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="nf">\</span><span class="kr">case</span>
+<span class="nf">negate''</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
+<span class="nf">negate''</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="nf">\</span><span class="kr">case</span>
 <span class="w">    </span><span class="kt">True</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">False</span>
 <span class="w">    </span><span class="kt">False</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">True</span>
 </pre></div>
@@ -312,7 +312,7 @@ negate&#39;&#39;<span class="w"> </span><span class="ow">=</span><span class="w"
 <p>Agda2HS provides native support for the Haskell <code class="docutils literal notranslate"><span class="pre">if_then_else_</span></code> and <code class="docutils literal notranslate"><span class="pre">case_of_</span></code> constructs.</p>
 <p>Agda:</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="nf">ifThenElse</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Int<span class="w"> </span><span class="ow">→</span><span class="w"> </span>String
-ifThenElse<span class="w"> </span>n<span class="w"> </span><span class="ow">=</span><span class="w"> </span>if<span class="w"> </span>n<span class="w"> </span>&gt;=<span class="w"> </span><span class="mi">10</span><span class="w"> </span>then<span class="w"> </span><span class="s">&quot;big&quot;</span><span class="w"> </span>else<span class="w"> </span><span class="s">&quot;small&quot;</span>
+ifThenElse<span class="w"> </span>n<span class="w"> </span><span class="ow">=</span><span class="w"> </span>if<span class="w"> </span>n<span class="w"> </span>&gt;=<span class="w"> </span><span class="mi">10</span><span class="w"> </span>then<span class="w"> </span><span class="s">"big"</span><span class="w"> </span>else<span class="w"> </span><span class="s">"small"</span>
 <span class="cm">{-# COMPILE AGDA2HS ifThenElse #-}</span>
 
 <span class="nf">mhead</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>List<span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Maybe<span class="w"> </span>a
@@ -324,7 +324,7 @@ mhead<span class="w"> </span>xs<span class="w"> </span><span class="ow">=</span>
 </div>
 <p>Haskell:</p>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">ifThenElse</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">String</span>
-<span class="nf">ifThenElse</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">if</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="s">&quot;big&quot;</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="s">&quot;small&quot;</span>
+<span class="nf">ifThenElse</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">if</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="s">"big"</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="s">"small"</span>
 
 <span class="nf">mhead</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">[</span><span class="n">a</span><span class="p">]</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Maybe</span><span class="w"> </span><span class="n">a</span>
 <span class="nf">mhead</span><span class="w"> </span><span class="n">xs</span>
@@ -1021,27 +1021,27 @@ twoDenoms<span class="w"> </span>p<span class="w"> </span><span class="ow">=</sp
 <p>Here, agda2hs doesn’t know where to find these definitions; so it simply leaves them as they are.</p>
 <p>Run this again with the following config file:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">rewrites</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Agda.Builtin.Nat.Nat.suc&quot;</span>
-<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;suc&quot;</span>
-<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;BaseExample&quot;</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Agda.Builtin.Nat._*_&quot;</span>
-<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;_*_&quot;</span>
-<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Prelude&quot;</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Agda.Builtin.Int.Int.pos&quot;</span>
-<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;toInteger&quot;</span>
-<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Prelude&quot;</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Rational.Unnormalised.Base.ℚᵘ&quot;</span>
-<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Rational&quot;</span>
-<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Ratio&quot;</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Rational.Unnormalised.Base._*_&quot;</span>
-<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;_*_&quot;</span>
-<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Prelude&quot;</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Rational.Unnormalised.Base._/_&quot;</span>
-<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;_%_&quot;</span>
-<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Ratio&quot;</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Rational.Unnormalised.Base.ℚᵘ.denominator-1&quot;</span>
-<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;denominatorMinus1&quot;</span>
-<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;BaseExample&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">"Agda.Builtin.Nat.Nat.suc"</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">"suc"</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">"BaseExample"</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">"Agda.Builtin.Nat._*_"</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">"_*_"</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">"Prelude"</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">"Agda.Builtin.Int.Int.pos"</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">"toInteger"</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">"Prelude"</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">"Data.Rational.Unnormalised.Base.ℚᵘ"</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">"Rational"</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">"Data.Ratio"</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">"Data.Rational.Unnormalised.Base._*_"</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">"_*_"</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">"Prelude"</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">"Data.Rational.Unnormalised.Base._/_"</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">"_%_"</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">"Data.Ratio"</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">"Data.Rational.Unnormalised.Base.ℚᵘ.denominator-1"</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">"denominatorMinus1"</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">"BaseExample"</span>
 </pre></div>
 </div>
 <p>The names are a bit difficult to find. It helps if you run agda2hs with a verbosity level of 26 and check the logs (specifically the parts beginning with <code class="docutils literal notranslate"><span class="pre">compiling</span> <span class="pre">name</span></code>).</p>
@@ -1096,9 +1096,9 @@ The format is the following:</p>
 <span class="nt">rewrites</span><span class="p">:</span>
 
 <span class="w">  </span><span class="c1"># The rational type.</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Rational.Unnormalised.Base.ℚᵘ&quot;</span>
-<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Rational&quot;</span>
-<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data.Ratio&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="s">"Data.Rational.Unnormalised.Base.ℚᵘ"</span>
+<span class="w">    </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="s">"Rational"</span>
+<span class="w">    </span><span class="nt">importing</span><span class="p">:</span><span class="w"> </span><span class="s">"Data.Ratio"</span>
 
 <span class="w">  </span><span class="c1"># ...</span>
 </pre></div>
