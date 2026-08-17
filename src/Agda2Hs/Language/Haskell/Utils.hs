@@ -223,7 +223,8 @@ uses ty = not . null . usedTypesOf ty
 
 -- Ideally, our pretty-printing library should insert parenthesis where needed.
 -- However, hs-src-exts does not insert adequate parenthesis for infix
--- operators so we need to insert some by hand (see issues #54 and #273 and #317).
+-- operators so we need to insert some by hand
+-- (see issues #54 and #273 and #317 and #460).
 
 -- | Properly parenthesize an expression with regards to the default fixities.
 insertParens :: Data a => a -> a
@@ -254,6 +255,7 @@ insertPars fixs = \case
 
     needParenExpr (InfixApp _ _ _ e2) = needParenExpr e2
     needParenExpr Lambda{} = True
+    needParenExpr If{} = True
     needParenExpr _ = False
 
     parL topOp e =
