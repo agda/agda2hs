@@ -65,6 +65,8 @@ toNameImport x (Just mod) =
 defaultSpecialRules :: SpecialRules
 defaultSpecialRules = Map.fromList
   [ "Agda.Builtin.Nat.Nat"          `to` "Natural"      `importing` Just "Numeric.Natural"
+  , "Agda.Builtin.Nat.Nat.zero"     `to` "0"            `importing` Nothing
+  , "Agda.Builtin.Nat.Nat.suc"      `to` "succ"         `importing` Nothing
   , "Haskell.Prelude.coerce"        `to` "unsafeCoerce" `importing` Just "Unsafe.Coerce"
   , "Agda.Builtin.Int.Int"          `to` "Integer"      `importing` Nothing
   , "Agda.Builtin.Word.Word64"      `to` "Word"         `importing` Nothing
