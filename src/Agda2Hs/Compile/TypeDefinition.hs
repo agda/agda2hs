@@ -15,7 +15,7 @@ import Agda.TypeChecking.Telescope ( mustBePi )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Monad
 
-import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTypeArgs )
+import Agda2Hs.Compile.Type ( compileType, compileDom, compileTypeArgs )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )

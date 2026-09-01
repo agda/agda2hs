@@ -233,6 +233,16 @@ isClassType a = do
     Def cl _ -> isClassName cl
     _        -> return False
 
+-- | Check if the given type corresponds to the Agda built-in equality.
+isBuiltinEqualityType :: Type -> C Bool
+isBuiltinEqualityType a = do
+  TelV _ t <- telView a
+  case unEl t of
+    Def f _ -> do
+      name <- getBuiltinName' builtinEquality
+      return $ Just f == name
+    _ -> return False
+
 -- Drops the last (record) module for typeclass methods
 dropClassModule :: ModuleName -> C ModuleName
 dropClassModule m@(MName ns) = isClassModule m >>= \case
