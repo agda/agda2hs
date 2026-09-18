@@ -1,19 +1,24 @@
-
 module Haskell.Prim.Monad where
 
 open import Haskell.Prim
-open import Haskell.Prim.Applicative
-open import Haskell.Prim.Either
-open import Haskell.Prim.Foldable
+open import Haskell.Prim.Semigroup
+  renaming (module Instances to SemigroupInstances)
+open import Haskell.Prim.Monoid
+  renaming (module Instances to MonoidInstances)
 open import Haskell.Prim.Functor
+  renaming (module Instances to FunctorInstances)
+open import Haskell.Prim.Applicative
+  renaming (module Instances to ApplicativeInstances)
+open import Haskell.Prim.Foldable
+  renaming (module Instances to FoldableInstances)
+open import Haskell.Prim.Either
 open import Haskell.Prim.IO
 open import Haskell.Prim.List
 open import Haskell.Prim.Maybe
-open import Haskell.Prim.Monoid
-open import Haskell.Prim.String
 open import Haskell.Prim.Tuple
 
--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
 -- Monad
 
 module Do where
@@ -25,6 +30,7 @@ module Do where
       overlap ⦃ super ⦄ : Applicative m
       return : a → m a
       _>>_ : m a → (@0 {{ a }} → m b) → m b
+
   -- ** defaults
   record DefaultMonad (m : Type → Type) : Type₁ where
     field
@@ -54,84 +60,52 @@ module Dont where
 
 open Do public
 
-_=<<_ : {{Monad m}} → (a → m b) → m a → m b
-_=<<_ = flip _>>=_
-
-mapM₋ : ⦃ Monad m ⦄ → ⦃ Foldable t ⦄ → (a → m b) → t a → m ⊤
-mapM₋ f = foldr (λ x k → f x >> k) (pure tt)
-
-sequence₋ : ⦃ Monad m ⦄ → ⦃ Foldable t ⦄ → t (m a) → m ⊤
-sequence₋ = foldr (λ mx my → mx >> my) (pure tt)
-
 -- ** instances
-instance
-  iDefaultMonadList : DefaultMonad List
-  iDefaultMonadList .DefaultMonad._>>=_ = flip concatMap
+module Instances where
+  instance
+    open DefaultMonad
 
-  iMonadList : Monad List
-  iMonadList = record {DefaultMonad iDefaultMonadList}
+    iDefaultMonadList : DefaultMonad List
+    iDefaultMonadList ._>>=_ = flip foldMap
 
-  iDefaultMonadMaybe : DefaultMonad Maybe
-  iDefaultMonadMaybe .DefaultMonad._>>=_ = flip (maybe Nothing)
+    iMonadList : Monad List
+    iMonadList = record {DefaultMonad iDefaultMonadList}
 
-  iMonadMaybe : Monad Maybe
-  iMonadMaybe = record {DefaultMonad iDefaultMonadMaybe}
+    iDefaultMonadMaybe : DefaultMonad Maybe
+    iDefaultMonadMaybe ._>>=_ = flip (maybe Nothing)
 
-  iDefaultMonadEither : DefaultMonad (Either a)
-  iDefaultMonadEither .DefaultMonad._>>=_ = flip (either Left)
+    iMonadMaybe : Monad Maybe
+    iMonadMaybe = record {DefaultMonad iDefaultMonadMaybe}
 
-  iMonadEither : Monad (Either a)
-  iMonadEither = record {DefaultMonad iDefaultMonadEither}
+    iDefaultMonadEither : DefaultMonad (Either a)
+    iDefaultMonadEither ._>>=_ = flip (either Left)
 
-  iDefaultMonadFun : DefaultMonad (λ b → a → b)
-  iDefaultMonadFun .DefaultMonad._>>=_ = λ f k r → k (f r) r
+    iMonadEither : Monad (Either a)
+    iMonadEither = record {DefaultMonad iDefaultMonadEither}
 
-  iMonadFun : Monad (λ b → a → b)
-  iMonadFun = record {DefaultMonad iDefaultMonadFun}
+    iDefaultMonadFun : DefaultMonad (λ b → a → b)
+    iDefaultMonadFun ._>>=_ = λ f k r → k (f r) r
 
-  iDefaultMonadTuple₂ : ⦃ Monoid a ⦄ → DefaultMonad (a ×_)
-  iDefaultMonadTuple₂ .DefaultMonad._>>=_ = λ (a , x) k → first (a <>_) (k x)
+    iMonadFun : Monad (λ b → a → b)
+    iMonadFun = record {DefaultMonad iDefaultMonadFun}
 
-  iMonadTuple₂ : ⦃ Monoid a ⦄ → Monad (a ×_)
-  iMonadTuple₂ = record {DefaultMonad iDefaultMonadTuple₂}
+    iDefaultMonadTuple₂ : ⦃ Monoid a ⦄ → DefaultMonad (a ×_)
+    iDefaultMonadTuple₂ ._>>=_ = λ (a , x) k → first (a <>_) (k x)
 
-  iDefaultMonadTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → DefaultMonad (a × b ×_)
-  iDefaultMonadTuple₃ .DefaultMonad._>>=_ = λ where
-    (a , b , x) k → case k x of λ where
-      (a₁ , b₁ , y) → a <> a₁ , b <> b₁ , y
+    iMonadTuple₂ : ⦃ Monoid a ⦄ → Monad (a ×_)
+    iMonadTuple₂ = record {DefaultMonad iDefaultMonadTuple₂}
 
-  iMonadTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → Monad (a × b ×_)
-  iMonadTuple₃ = record {DefaultMonad iDefaultMonadTuple₃}
+    iDefaultMonadTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → DefaultMonad (a × b ×_)
+    iDefaultMonadTuple₃ ._>>=_ = λ where
+      (a , b , x) k → case k x of λ where
+        (a₁ , b₁ , y) → a <> a₁ , b <> b₁ , y
 
--- For 'Monad IO', we only postulate the '_>>=_' operation,
--- and construct the instance via 'DefaultMonad' as usual.
--- This is necessary to ensure that the existing 'Applicative IO'
--- instance is picked for the 'super' instance field.
-postulate
-  bindIO : IO a → (a → IO b) → IO b
+    iMonadTuple₃ : ⦃ Monoid a ⦄ → ⦃ Monoid b ⦄ → Monad (a × b ×_)
+    iMonadTuple₃ = record {DefaultMonad iDefaultMonadTuple₃}
 
-instance
-  iDefaultMonadIO : DefaultMonad IO
-  iDefaultMonadIO .DefaultMonad._>>=_ = bindIO
+    iDefaultMonadIO : DefaultMonad IO
+    iDefaultMonadIO ._>>=_ = bindIO
 
-  iMonadIO : Monad IO
-  iMonadIO = record {DefaultMonad iDefaultMonadIO}
-
--------------------------------------------------------------------------------
--- MonadFail class
-
-record MonadFail (m : Type → Type) : Type₁ where
-  field
-    fail : String → m a
-    overlap ⦃ super ⦄ : Monad m
-
-open MonadFail ⦃...⦄ public
-
-{-# COMPILE AGDA2HS MonadFail existing-class #-}
-
-instance
-  MonadFailList : MonadFail List
-  MonadFailList .fail _ = []
-
-  MonadFailMaybe : MonadFail Maybe
-  MonadFailMaybe .fail _ = Nothing
+    iMonadIO : Monad IO
+    iMonadIO = record {DefaultMonad iDefaultMonadIO}
+open Instances public

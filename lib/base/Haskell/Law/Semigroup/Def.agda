@@ -3,7 +3,7 @@ module Haskell.Law.Semigroup.Def where
 open import Haskell.Prim
 open import Haskell.Prim.Tuple
 
-open import Haskell.Prim.Monoid
+open import Haskell.Prim.Semigroup
 
 record IsLawfulSemigroup (a : Type) ⦃ iSemigroupA : Semigroup a ⦄ : Type₁ where
   field

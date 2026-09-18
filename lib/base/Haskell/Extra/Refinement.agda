@@ -1,10 +1,12 @@
 module Haskell.Extra.Refinement where
 
-open import Haskell.Prelude
+open import Haskell.Prim
+open import Haskell.Prim.Maybe
 open import Agda.Primitive
 
+
 private variable
-  ℓ ℓ′ : Level
+  ℓ′ : Level
 
 record ∃ (a : Type ℓ) (@0 P : a → Type ℓ′) : Type (ℓ ⊔ ℓ′) where
   constructor _⟨⟩
