@@ -1,5 +1,4 @@
 {-# LANGUAGE TypeSynonymInstances #-}
-
 module DefaultMethods where
 
 

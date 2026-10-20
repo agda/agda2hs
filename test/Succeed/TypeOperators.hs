@@ -1,5 +1,4 @@
 {-# LANGUAGE TypeOperators #-}
-
 module TypeOperators where
 
 import Numeric.Natural (Natural)
