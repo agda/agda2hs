@@ -23,5 +23,14 @@ instance
 instance
   iProjectedBool : Projected Bool
   iProjectedBool =
-    record {ProjectedMin (λ where .ProjectedMin.projected → True)}
+    record { ProjectedMin (λ where .ProjectedMin.projected → True) }
   {-# COMPILE AGDA2HS iProjectedBool #-}
+
+-- Module-based construction without an anonymous lambda
+instance
+  iProjectedNamed : Projected Int
+  iProjectedNamed = record { ProjectedMin impl }
+    where
+      impl : ProjectedMin Int
+      impl .ProjectedMin.projected = 42
+  {-# COMPILE AGDA2HS iProjectedNamed #-}

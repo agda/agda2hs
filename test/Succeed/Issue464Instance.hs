@@ -14,3 +14,6 @@ instance TwoMethods Unit where
 instance Projected Bool where
     projected = True
 
+instance Projected Int where
+    projected = 42
+

@@ -89,16 +89,6 @@ compileInstance ToDefinition def@Defn{..} =
         -- (https://github.com/agda/agda2hs/issues/306)
         (ds, rs) <- concatUnzip
                 <$> mapM (\c -> withClauseLocals mod c $ compileInstanceClause mod defType c) funClauses
-        let methods = [ definedName match | Hs.InsDecl _ (Hs.FunBind _ (match : _)) <- ds ]
-        forM_ defInstance $ \inst -> do
-          let cls = instanceClass inst
-          whenM (isClassName cls) $ do
-            Defn{theDef = Record{recFields = fields}} <- getConstInfo cls
-            forM_ fields $ \field -> do
-              let q = unDom field
-              name <- compileName (qnameName q)
-              when (name `elem` methods) $
-                void (compileQName q)
         reportSDoc "agda2hs.compile.instance" 20 $ vcat $
           text "compileInstance compiled clauses: " :
           map (nest 2 . text . pp) ds
@@ -266,6 +256,10 @@ compileInstanceClause' curModule ty (p:ps) c
             $ funClauses theDef
         let hd = hsName $ prettyShow $ nameConcrete $ qnameName defName
         let fc' = {- dropPatterns 1 $ -} replaceName hd uf fc
+        -- compileQName - register the method in the import list (e.g. Default(def))
+        -- when it is in record compiled to Haskell typeclass
+        when (not (null fc')) $
+          whenM (isClassFunction q) $ void (compileQName q)
         reportSDoc "agda2hs.compile.instance" 6 $ vcat $
           text "compileInstanceClause compiled clause: " :
           map (nest 2 . text . pp) fc'
@@ -302,6 +296,9 @@ compileInstanceClause' curModule ty (p:ps) c
 
       -- No minimal dictionary used, proceed with compiling as a regular clause.
       | otherwise -> do
+        -- compileQName - register the method in the import list (e.g. Default(def))
+        -- when it is in record compiled to Haskell typeclass
+        whenM (isClassFunction q) $ void (compileQName q)
         reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
         ms <- disableCopatterns $ compileClause curModule [] Nothing uf ty' c'
         let cc = Hs.FunBind () (toList ms)
