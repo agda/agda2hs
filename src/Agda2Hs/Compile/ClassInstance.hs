@@ -1,6 +1,7 @@
 module Agda2Hs.Compile.ClassInstance where
 
-import Control.Monad ( when, filterM, unless )
+import Agda.Utils.Monad ( ifNotM, whenM )
+import Control.Monad ( filterM, unless, void, when )
 import Control.Monad.Reader ( asks, local )
 
 import Data.Foldable ( toList )
@@ -292,7 +293,7 @@ compileInstanceClause' curModule ty (p:ps) c
       -- No minimal dictionary used, proceed with compiling as a regular clause.
       | otherwise -> do
         -- Register the method in the import list (e.g. Default(def))
-        _ <- compileQName q
+        whenM (isClassFunction q) $ void (compileQName q)
         reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
         ms <- disableCopatterns $ compileClause curModule [] Nothing uf ty' c'
         let cc = Hs.FunBind () (toList ms)
