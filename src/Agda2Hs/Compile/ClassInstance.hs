@@ -291,6 +291,8 @@ compileInstanceClause' curModule ty (p:ps) c
 
       -- No minimal dictionary used, proceed with compiling as a regular clause.
       | otherwise -> do
+        -- Register the method in the import list (e.g. Default(def))
+        _ <- compileQName q
         reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
         ms <- disableCopatterns $ compileClause curModule [] Nothing uf ty' c'
         let cc = Hs.FunBind () (toList ms)
