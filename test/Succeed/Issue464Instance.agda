@@ -19,3 +19,9 @@ instance
   iTwoMethodsUnit .methodOne = MkUnit
   iTwoMethodsUnit .methodTwo = MkUnit
   {-# COMPILE AGDA2HS iTwoMethodsUnit #-}
+
+instance
+  iProjectedBool : Projected Bool
+  iProjectedBool =
+    record {ProjectedMin (λ where .ProjectedMin.projected → True)}
+  {-# COMPILE AGDA2HS iProjectedBool #-}

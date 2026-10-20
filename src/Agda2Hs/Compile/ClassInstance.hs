@@ -1,7 +1,6 @@
 module Agda2Hs.Compile.ClassInstance where
 
-import Agda.Utils.Monad ( ifNotM, whenM )
-import Control.Monad ( filterM, unless, void, when )
+import Control.Monad ( filterM, forM_, unless, void, when )
 import Control.Monad.Reader ( asks, local )
 
 import Data.Foldable ( toList )
@@ -26,7 +25,7 @@ import Agda.TypeChecking.Telescope ( mustBePi, piApplyM )
 
 import Agda.Utils.Lens
 import Agda.Utils.List ( headWithDefault )
-import Agda.Utils.Monad ( ifNotM )
+import Agda.Utils.Monad ( ifNotM, whenM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils
@@ -38,7 +37,8 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( hsName, pp, replaceName, unQual )
+import Agda2Hs.Language.Haskell.Utils
+  ( hsName, pp, replaceName, unQual, definedName )
 
 enableCopatterns :: C a -> C a
 enableCopatterns = local $ \e -> e { copatternsEnabled = True }
@@ -89,6 +89,16 @@ compileInstance ToDefinition def@Defn{..} =
         -- (https://github.com/agda/agda2hs/issues/306)
         (ds, rs) <- concatUnzip
                 <$> mapM (\c -> withClauseLocals mod c $ compileInstanceClause mod defType c) funClauses
+        let methods = [ definedName match | Hs.InsDecl _ (Hs.FunBind _ (match : _)) <- ds ]
+        forM_ defInstance $ \inst -> do
+          let cls = instanceClass inst
+          whenM (isClassName cls) $ do
+            Defn{theDef = Record{recFields = fields}} <- getConstInfo cls
+            forM_ fields $ \field -> do
+              let q = unDom field
+              name <- compileName (qnameName q)
+              when (name `elem` methods) $
+                void (compileQName q)
         reportSDoc "agda2hs.compile.instance" 20 $ vcat $
           text "compileInstance compiled clauses: " :
           map (nest 2 . text . pp) ds
@@ -292,8 +302,6 @@ compileInstanceClause' curModule ty (p:ps) c
 
       -- No minimal dictionary used, proceed with compiling as a regular clause.
       | otherwise -> do
-        -- Register the method in the import list (e.g. Default(def))
-        whenM (isClassFunction q) $ void (compileQName q)
         reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
         ms <- disableCopatterns $ compileClause curModule [] Nothing uf ty' c'
         let cc = Hs.FunBind () (toList ms)
