@@ -1,6 +1,6 @@
 module Agda2Hs.Render where
 
-import Control.Monad ( unless )
+import Control.Monad ( unless, void )
 import Control.Monad.IO.Class ( MonadIO(liftIO) )
 
 import Data.Function ( on )
@@ -26,6 +26,7 @@ import Agda2Hs.Compile
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Imports
 import Agda2Hs.Compile.Utils ( primModules, moduleFileName )
+import Agda2Hs.Compile.Name ( hsTopLevelModuleName )
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
   ( extToName, pp, moveToTop, insertParens )
@@ -52,8 +53,8 @@ renderLangExts exts
   | null exts = ""
   | otherwise = pp (Hs.LanguagePragma () $ nub $ map extToName exts) ++ "\n"
 
-codePragmas :: [Ranged Code] -> [Block]
-codePragmas code = [ (r, map pp ps) | (r, (Hs.Module _ _ ps _ _, _)) <- code ]
+codePragmas :: [Ranged Code] -> [(Range, [Hs.ModulePragma Hs.SrcSpanInfo])]
+codePragmas code = [ (r, ps) | (r, (Hs.Module _ _ ps _ _, _)) <- code ]
 
 codeBlocks :: [Ranged Code] -> [Block]
 codeBlocks code = [(r, [uncurry Hs.exactPrint $ moveToTop $ noPragmas mcs]) | (r, mcs) <- code, nonempty mcs]
@@ -110,10 +111,15 @@ writeModule genv _ isMain m outs = do
     -- The comments make it hard to generate and pretty print a full module
     hsFile <- moduleFileName opts m
 
+    let moduleName = hsTopLevelModuleName m
+        moduleHead = Hs.ModuleHead () moduleName Nothing Nothing
+        exts' = nub $ map extToName exts
+        extPragmas = [Hs.LanguagePragma () exts' | not $ null exts']
+        foreignPragmas = concatMap (fmap void . snd) $ codePragmas code
+        module_ = Hs.Module () (Just moduleHead) (extPragmas ++ foreignPragmas) [] []
+
     let output = concat
-          [ renderLangExts exts
-          , renderBlocks $ codePragmas code
-          , "module " ++ mod ++ " where\n\n"
+          [ pp module_ ++ "\n\n"
           , autoImports
           , renderBlocks defs
           ]

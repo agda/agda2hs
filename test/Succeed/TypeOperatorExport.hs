@@ -1,5 +1,4 @@
 {-# LANGUAGE TypeOperators #-}
-
 module TypeOperatorExport where
 
 type (<) a b = a
