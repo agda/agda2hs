@@ -1,4 +1,6 @@
-module Test.Agda2Hs.Data.Set where
+module Test.Agda2Hs.Data.Set
+  (test0, test1, test2, test3, test4, testBool0)
+where
 
 import Data.Set (Set)
 import qualified Data.Set as Set (filter, fromList, intersection, isSubsetOf, singleton, union)
