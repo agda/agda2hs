@@ -1,5 +1,4 @@
 {-# LANGUAGE TypeOperators #-}
-
 module TypeOperatorImport
   (test1, test2)
 where
