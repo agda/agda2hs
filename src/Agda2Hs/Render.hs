@@ -3,6 +3,7 @@ module Agda2Hs.Render where
 import Control.Monad ( unless )
 import Control.Monad.IO.Class ( MonadIO(liftIO) )
 
+import Data.Bifunctor ( first )
 import Data.Function ( on )
 import Data.List ( sortBy, nub, unzip4 )
 import Data.Maybe ( fromMaybe, isNothing )
@@ -70,7 +71,7 @@ ensureDirectory = createDirectoryIfMissing True . takeDirectory
 -- | Compile the full import list,
 -- with special handling for the @Prelude@ as prescribed by 'Options'.
 compileImportsWithPrelude
-  :: Options -> String -> Imports -> TCM [Hs.ImportDecl ()]
+  :: Options -> String -> Imports -> TCM ([Hs.ImportDecl ()], Bool)
 compileImportsWithPrelude opts mod imps = do
     -- if the prelude is supposed to be implicit,
     -- or the prelude imports have been fixed in the config file,
@@ -83,7 +84,7 @@ compileImportsWithPrelude opts mod imps = do
     -- then we try to add it back
     if (not preludeImplicit && isNothing preludeImports) || null preludeHiding
       then compileImports mod filteredImps
-      else (preludeImportDecl preOpts:) <$> compileImports mod filteredImps
+      else first (preludeImportDecl preOpts:) <$> compileImports mod filteredImps
   where
     preOpts@PreludeOpts{..} = optPrelude opts
 
@@ -105,7 +106,7 @@ writeModule genv _ isMain m outs = do
     let unlines' [] = []
         unlines' ss = unlines ss ++ "\n"
 
-    autoImports <- unlines' . map Hs.prettyShowImportDecl
+    (autoImports, enableTyOp) <- first (unlines' . map Hs.prettyShowImportDecl)
       <$> compileImportsWithPrelude opts mod imps
 
     -- The comments make it hard to generate and pretty print a full module
@@ -114,7 +115,7 @@ writeModule genv _ isMain m outs = do
     exportList <- compileExports exps
 
     let output = concat
-          [ renderLangExts exts
+          [ renderLangExts $ if enableTyOp then Hs.TypeOperators : exts else exts
           , renderBlocks $ codePragmas code
           , "module " ++ mod ++ "\n  "
           , Hs.prettyShowExportSpecList exportList

@@ -5,7 +5,6 @@ import Data.List ( isPrefixOf )
 import qualified Data.List as L
 import Data.Map ( Map )
 import qualified Data.Map as Map
-import Data.Monoid ( Any(..) )
 import Data.Set ( Set )
 import qualified Data.Set as Set
 
@@ -25,15 +24,21 @@ import Agda2Hs.Compile.Utils
 type ImportSpecMap = Map NamespacedName (Set NamespacedName)
 type ImportDeclMap = Map (Hs.ModuleName (), Qualifier) ImportSpecMap
 
-compileImports :: String -> Imports -> TCM [Hs.ImportDecl ()]
+-- | The returned 'Bool' indicates if the 'TypeOperator' extension should be enabled
+compileImports :: String -> Imports -> TCM ([Hs.ImportDecl ()], Bool)
 compileImports top is0 = do
   let is = filter ((top /=) . Hs.prettyPrint . importModule) is0
   checkClashingImports is
   let imps = Map.toList $ groupModules is
   reportSLn "agda2hs.import" 10 $ "All imported modules: " ++ show (map (pp . fst . fst) imps)
   let decls = map (uncurry $ uncurry makeImportDecl) imps
-  return decls
+  return (decls, enableTypeOperators is)
   where
+    enableTypeOperators :: [Import] -> Bool
+    enableTypeOperators = any $ \case
+      Import _ _ (Just (Hs.Symbol {})) _ _ -> True
+      _ -> False
+
     mergeChildren :: ImportSpecMap -> ImportSpecMap -> ImportSpecMap
     mergeChildren = Map.unionWith Set.union
 
