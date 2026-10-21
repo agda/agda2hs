@@ -5,6 +5,7 @@ import Data.Monoid ( Any(..) )
 import qualified Data.Map as Map
 import Data.Maybe ( fromMaybe, isJust )
 import Data.String ( fromString )
+import qualified Data.Set as Set
 
 import Agda.Compiler.Backend hiding ( Args )
 
@@ -170,3 +171,10 @@ resolveStringName s = do
   case rname of
     DefinedName _ aname _ -> return $ anameName aname
     _ -> liftTCM $ typeError $ CustomBackendError "agda2hs" $ fromString $ "Couldn't find " ++ s
+
+isPublicName :: (MonadTCM m) => QName -> m Bool
+isPublicName qname = liftTCM $ do
+  scopeInfo <- getScope
+  let pubNames = Set.mapMonotonic anameName $ publicNames scopeInfo
+  reportSDoc "agda2hs.public" 40 $ pretty pubNames
+  pure $! Set.member qname pubNames

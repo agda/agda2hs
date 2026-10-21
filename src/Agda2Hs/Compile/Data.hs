@@ -1,5 +1,7 @@
 module Agda2Hs.Compile.Data where
 
+import Control.Monad.Reader ( asks )
+
 import Agda.Compiler.Backend
 import Agda.Syntax.Common
 import Agda.Syntax.Internal
@@ -38,6 +40,11 @@ compileData :: AsNewType -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
 compileData newtyp ds def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
   checkValidTypeName d
+
+  whenM (andM [shouldBeExported $ defName def, asks writeExports]) $ do
+    tellExport (ExportData d)
+    tellExtension Hs.ExplicitNamespaces
+
   let Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} = theDef def
   TelV tel t <- telViewUpTo n (defType def)
   reportSDoc "agda2hs.data" 10 $ text "Datatype telescope:" <+> prettyTCM tel
@@ -91,7 +98,7 @@ compileConstructorArgs (ExtendTel a tel) = compileDomType (absName tel) a >>= \c
   where skip = underAbstraction a tel compileConstructorArgs
 
 checkCompileToDataPragma :: Definition -> String -> C ()
-checkCompileToDataPragma def s = noCheckNames $ do
+checkCompileToDataPragma def s = noCheckNames $ noWriteExports $ do
   r <- resolveStringName s
   let ppd = prettyTCM (defName def)
       ppr = prettyTCM r
