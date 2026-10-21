@@ -1,4 +1,6 @@
-module Issue218 where
+module Issue218
+  (foo, bar)
+where
 
 foo :: Int -> Int
 foo n = n

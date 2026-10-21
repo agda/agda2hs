@@ -1,4 +1,6 @@
-module Issue273 where
+module Issue273
+  (test, mySnd, test2, test3, test4, test5, test6, test7)
+where
 
 test :: (Int, Int) -> Int
 test = ((\ r -> snd r) $)

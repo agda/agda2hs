@@ -1,4 +1,6 @@
-module Issue324 where
+module Issue324
+  (test)
+where
 
 import Issue324instance ()
 

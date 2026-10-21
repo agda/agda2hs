@@ -1,4 +1,6 @@
-module CanonicalInstance where
+module CanonicalInstance
+  (ClassA(..), ClassB(..), myB)
+where
 
 class ClassA a where
     myA :: a

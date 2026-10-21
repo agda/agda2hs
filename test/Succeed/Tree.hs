@@ -1,4 +1,6 @@
-module Tree where
+module Tree
+  (Tree(..))
+where
 
 import Numeric.Natural (Natural)
 

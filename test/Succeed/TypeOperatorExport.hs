@@ -1,6 +1,9 @@
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators #-}
 
-module TypeOperatorExport where
+module TypeOperatorExport
+  (type (<), type (***)(..), (&&&))
+where
 
 type (<) a b = a
 

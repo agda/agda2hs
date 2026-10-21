@@ -1,4 +1,6 @@
-module Tuples where
+module Tuples
+  (swap, TuplePos(..), t1, t2, t3, pair, test, test2, t4, t5)
+where
 
 import Numeric.Natural (Natural)
 

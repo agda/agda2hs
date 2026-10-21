@@ -1,4 +1,6 @@
-module Cubical.StreamFusion where
+module Cubical.StreamFusion
+  (Stream(..), smap)
+where
 
 data Stream a = (:>){shead :: a, stail :: Stream a}
 

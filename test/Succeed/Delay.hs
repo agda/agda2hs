@@ -1,4 +1,6 @@
-module Delay where
+module Delay
+  (div', mod', even', collatz)
+where
 
 div' :: Int -> Int -> Int
 div' = error "postulate: Int -> Int -> Int"

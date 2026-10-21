@@ -1,4 +1,6 @@
-module Issue305 where
+module Issue305
+  (Class(..), test, anotherTest, yetAnotherTest, andOneMoreTest, Subclass(..))
+where
 
 class Class a where
     foo :: a -> a

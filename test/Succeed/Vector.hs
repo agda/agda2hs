@@ -1,4 +1,6 @@
-module Vector where
+module Vector
+  (Vec(..), mapV, tailV)
+where
 
 data Vec a = Nil
            | Cons a (Vec a)

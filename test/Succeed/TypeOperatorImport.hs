@@ -1,6 +1,8 @@
 {-# LANGUAGE TypeOperators #-}
 
-module TypeOperatorImport where
+module TypeOperatorImport
+  (test1, test2)
+where
 
 import TypeOperatorExport ((&&&), type (***)((:*:)), type (<))
 

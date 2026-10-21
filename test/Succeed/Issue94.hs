@@ -1,4 +1,6 @@
-module Issue94 where
+module Issue94
+  (thing)
+where
 
 thing :: [a] -> [a]
 thing xs = aux xs

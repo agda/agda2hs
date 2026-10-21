@@ -1,4 +1,6 @@
-module ZeroSuc where
+module ZeroSuc
+  (test1, test2, MyNat(..), test3)
+where
 
 import Numeric.Natural (Natural)
 

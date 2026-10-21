@@ -1,4 +1,6 @@
-module ErasedTypeArguments where
+module ErasedTypeArguments
+  (Σ'(..), test, Id(..))
+where
 
 import Numeric.Natural (Natural)
 

@@ -1,4 +1,6 @@
-module Issue308 where
+module Issue308
+  (Class(..), tester)
+where
 
 class Class a where
     foo :: a -> a

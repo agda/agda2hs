@@ -1,4 +1,6 @@
-module Inlining where
+module Inlining
+  (aliased, test1, test2)
+where
 
 aliased :: Bool
 aliased = True

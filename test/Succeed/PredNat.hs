@@ -1,4 +1,6 @@
-module PredNat where
+module PredNat
+  (predNat', recNat)
+where
 
 import Numeric.Natural (Natural)
 

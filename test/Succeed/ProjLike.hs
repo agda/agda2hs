@@ -1,4 +1,6 @@
-module ProjLike where
+module ProjLike
+  (Scope(..), test)
+where
 
 import Numeric.Natural (Natural)
 
