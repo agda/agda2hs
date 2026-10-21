@@ -100,6 +100,8 @@ data CompileEnv = CompileEnv
   -- ^ Special compilation rules.
   , writeImports :: Bool
   -- ^ whether we should add imports of compiled names
+  , writeExports :: Bool
+  -- ^ whether we should add exports of compiled names
   , checkNames :: Bool
   -- ^ whether we should check validity of compiled names
   }
@@ -134,20 +136,31 @@ importModule (ImportInstances mod) = mod
 
 type Imports = [Import]
 
+-- | Encoding of a Haskell module export list.
+data Export
+  = ExportFun (Hs.Name ())
+  | ExportType (Hs.Name ())
+  | ExportData (Hs.Name ())
+  | ExportClass (Hs.Name ())
+
+type Exports = [Export]
+
 -- | Output produced during the compilation of a module
 data CompileOutput = CompileOutput
   { imports :: Imports
   -- ^ Haskell import statements.
+  , exports :: Exports
+  -- ^ Haskell export list.
   , haskellExtensions :: [Hs.KnownExtension]
   -- ^ Required language extensions.
   }
 
 instance Semigroup CompileOutput where
-  CompileOutput imps exts <> CompileOutput imps' exts' =
-    CompileOutput (imps <> imps') (exts <> exts')
+  CompileOutput imps exps exts <> CompileOutput imps' exps' exts' =
+    CompileOutput (imps <> imps') (exps <> exps') (exts <> exts')
 
 instance Monoid CompileOutput where
-  mempty = CompileOutput mempty mempty
+  mempty = CompileOutput mempty mempty mempty
 
 -- | State used while compiling a single module.
 newtype CompileState = CompileState

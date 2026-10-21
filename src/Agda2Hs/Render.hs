@@ -4,7 +4,7 @@ import Control.Monad ( unless )
 import Control.Monad.IO.Class ( MonadIO(liftIO) )
 
 import Data.Function ( on )
-import Data.List ( sortBy, nub )
+import Data.List ( sortBy, nub, unzip4 )
 import Data.Maybe ( fromMaybe, isNothing )
 import Data.Set ( Set )
 import qualified Data.Set as Set
@@ -94,10 +94,11 @@ writeModule genv _ isMain m outs = do
   let opts = globalOptions genv
   code <- getForeignPragmas (optExtensions opts)
   let mod  = prettyShow m
-      (cdefs, impss, extss) = unzip3 $ flip map outs $
-        \(cdef, CompileOutput imps exts) -> (cdef, imps, exts)
+      (cdefs, impss, expss, extss) = unzip4 $ flip map outs $
+        \(cdef, CompileOutput imps exps exts) -> (cdef, imps, exps, exts)
       defs = concatMap defBlock cdefs ++ codeBlocks code
       imps = concat impss
+      exps = concat expss
       exts = concat extss
   unless (null code && null defs && isMain == NotMain) $ do
 
