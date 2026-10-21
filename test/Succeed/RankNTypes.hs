@@ -1,5 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE Haskell98 #-}
+
 module RankNTypes where
 
 data MyBool = MyTrue
