@@ -40,6 +40,7 @@ compileData :: AsNewType -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
 compileData newtyp ds def = do
   let d = hsName $ prettyShow $ qnameName $ defName def
   checkValidTypeName d
+  tellTypeOperators d
 
   whenM (andM [shouldBeExported $ defName def, asks writeExports]) $ do
     tellExport (ExportData d)

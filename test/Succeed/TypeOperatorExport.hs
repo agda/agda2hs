@@ -1,6 +1,4 @@
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeOperators #-}
-
 module TypeOperatorExport
   (type (<), type (***)(..), (&&&))
 where

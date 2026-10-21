@@ -1,6 +1,5 @@
 module Agda2Hs.Compile.Imports ( compileImports, preludeImportDecl, compileExports ) where
 
-import Control.Monad.Trans.Writer.CPS
 import Data.Char ( isUpper )
 import Data.List ( isPrefixOf )
 import qualified Data.List as L
@@ -120,24 +119,17 @@ preludeImportDecl (PreludeOpts{..}) =
     , importSpecs     = Just spec
     }
 
--- | Return 'True' if we need to enable the 'TypeOperators' extension
-compileExports :: Exports -> TCM (Hs.ExportSpecList (), Bool)
-compileExports exps = fmap (fmap getAny) $ runWriterT $
-  Hs.ExportSpecList () <$> traverse compileExport exps
+compileExports :: Exports -> TCM (Hs.ExportSpecList ())
+compileExports exps = Hs.ExportSpecList () <$> traverse compileExport exps
 
-compileExport :: Export -> WriterT Any TCM (Hs.ExportSpec ())
+compileExport :: Export -> TCM (Hs.ExportSpec ())
 compileExport = \case
   ExportFun name -> pure (Hs.EVar () (Hs.UnQual () name))
-  ExportType name | Hs.isOpName name -> do
-    tell (Any True)
+  ExportType name | Hs.isOpName name ->
     pure $! Hs.EAbs () (Hs.TypeNamespace ()) (Hs.UnQual () name)
-  ExportType name -> do
+  ExportType name ->
     pure $! Hs.EAbs () (Hs.NoNamespace ()) (Hs.UnQual () name)
-  ExportData name -> do
-    when (Hs.isOpName name) $ do
-      tell (Any True)
+  ExportData name ->
     pure $! Hs.EThingWith () (Hs.EWildcard () 0) (Hs.UnQual () name) []
-  ExportClass name -> do
-    when (Hs.isOpName name) $ do
-      tell (Any True)
+  ExportClass name ->
     pure $! Hs.EThingWith () (Hs.EWildcard () 0) (Hs.UnQual () name) []

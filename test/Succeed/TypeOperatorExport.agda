@@ -1,7 +1,5 @@
 module TypeOperatorExport where
 
-{-# FOREIGN AGDA2HS {-# LANGUAGE TypeOperators #-} #-}
-
 open import Haskell.Prim
 
 _<_ : Type -> Type -> Type

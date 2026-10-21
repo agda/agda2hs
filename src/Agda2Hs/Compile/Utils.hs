@@ -390,6 +390,10 @@ tellUnboxedTuples :: Hs.Boxed -> C ()
 tellUnboxedTuples Hs.Boxed = return ()
 tellUnboxedTuples Hs.Unboxed = tellExtension $ Hs.UnboxedTuples
 
+tellTypeOperators :: Hs.Name () -> C ()
+tellTypeOperators (Hs.Symbol {}) = tellExtension Hs.TypeOperators
+tellTypeOperators _ = pure ()
+
 addPatBang :: Strictness -> Hs.Pat () -> C (Hs.Pat ())
 addPatBang Strict p = tellExtension Hs.BangPatterns >>
   return (Hs.PBangPat () p)

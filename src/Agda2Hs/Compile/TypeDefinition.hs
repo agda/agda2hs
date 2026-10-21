@@ -28,7 +28,9 @@ import Agda2Hs.Language.Haskell.Utils ( hsName )
 
 compileTypeDef :: Hs.Name () -> Definition -> C [Hs.Decl ()]
 compileTypeDef name (Defn {..}) = do
-  unlessM (isTransparentFunction defName) $ checkValidTypeName name
+  unlessM (isTransparentFunction defName) $ do
+    checkValidTypeName name
+    tellTypeOperators name
   whenM (andM [shouldBeExported defName, asks writeExports]) $ do
     tellExport (ExportType name)
   Clause{..} <- singleClause funClauses

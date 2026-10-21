@@ -1,6 +1,4 @@
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeOperators #-}
-
 module TypeOperators
   (type (:++:), mx, type (++++), mx', type (****)(..), cross)
 where

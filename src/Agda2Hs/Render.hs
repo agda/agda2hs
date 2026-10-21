@@ -111,10 +111,10 @@ writeModule genv _ isMain m outs = do
     -- The comments make it hard to generate and pretty print a full module
     hsFile <- moduleFileName opts m
 
-    (exportList, enableTyOp) <- compileExports exps
+    exportList <- compileExports exps
 
     let output = concat
-          [ renderLangExts $ if enableTyOp then Hs.TypeOperators : exts else exts
+          [ renderLangExts exts
           , renderBlocks $ codePragmas code
           , "module " ++ mod ++ "\n  "
           , Hs.prettyShowExportSpecList exportList
