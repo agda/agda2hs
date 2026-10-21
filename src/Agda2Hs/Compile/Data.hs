@@ -43,7 +43,6 @@ compileData newtyp ds def = do
 
   whenM (andM [shouldBeExported $ defName def, asks writeExports]) $ do
     tellExport (ExportData d)
-    tellExtension Hs.ExplicitNamespaces
 
   let Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} = theDef def
   TelV tel t <- telViewUpTo n (defType def)
