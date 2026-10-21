@@ -1,4 +1,6 @@
-module Issue346 where
+module Issue346
+  (Dummy(..))
+where
 
 data Dummy = Dum
 

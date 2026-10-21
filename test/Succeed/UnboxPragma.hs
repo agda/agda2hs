@@ -1,4 +1,6 @@
-module UnboxPragma where
+module UnboxPragma
+  (sort1, sort2, sort3, sortAll, Scope, emptyScope)
+where
 
 sort1 :: [Int] -> [Int]
 sort1 xs = xs

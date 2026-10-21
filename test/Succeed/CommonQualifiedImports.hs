@@ -1,4 +1,6 @@
-module CommonQualifiedImports where
+module CommonQualifiedImports
+  (foos)
+where
 
 import qualified Importee as Common (foo)
 import qualified Prelude as Common (Int, Num((+)))

@@ -1,4 +1,6 @@
-module EraseType where
+module EraseType
+  (testErase, testMatch, testSingleton, testSingletonErase, testCong, rTail)
+where
 
 testErase :: ()
 testErase = ()

@@ -1,4 +1,6 @@
-module HeightMirror where
+module HeightMirror
+  (Tree(..), mirror)
+where
 
 data Tree a = Tip
             | Bin a (Tree a) (Tree a)

@@ -1,4 +1,6 @@
-module Numbers where
+module Numbers
+  (posNatural, posInteger, negInteger, natToPos, natToNeg)
+where
 
 import Numeric.Natural (Natural)
 

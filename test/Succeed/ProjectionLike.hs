@@ -1,4 +1,6 @@
-module ProjectionLike where
+module ProjectionLike
+  (R(..), foo)
+where
 
 data R = R{fld :: Int}
 

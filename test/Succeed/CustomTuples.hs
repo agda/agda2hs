@@ -1,5 +1,7 @@
 {-# LANGUAGE UnboxedTuples, TupleSections #-}
-module CustomTuples where
+module CustomTuples
+  (test, foo, bare, section, bar, baz)
+where
 
 test :: (Int, Int) -> Int
 test xy = fst xy + snd xy

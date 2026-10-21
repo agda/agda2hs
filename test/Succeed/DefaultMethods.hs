@@ -1,6 +1,8 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module DefaultMethods where
+module DefaultMethods
+  (Ord(..), Bool1(..), Bool2(..), Bool3(..), Bool4(..), lift4, Bool5(..), Bool6(..), defaultShowList, Show(..))
+where
 
 
 import Prelude hiding (Show, show, showsPrec, showList, Ord, (<), (>))

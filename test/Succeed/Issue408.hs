@@ -1,5 +1,7 @@
 {-# LANGUAGE RankNTypes, QuantifiedConstraints #-}
-module Issue408 where
+module Issue408
+  (SUL(..), Automaton(..))
+where
 
 class SUL sul where
     step :: forall i o . sul i o -> i -> (sul i o, o)
