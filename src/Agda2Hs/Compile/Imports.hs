@@ -1,4 +1,4 @@
-module Agda2Hs.Compile.Imports ( compileImports, preludeImportDecl ) where
+module Agda2Hs.Compile.Imports ( compileImports, preludeImportDecl, compileExports ) where
 
 import Data.Char ( isUpper )
 import Data.List ( isPrefixOf )
@@ -116,3 +116,13 @@ preludeImportDecl (PreludeOpts{..}) =
     , importAs        = Nothing
     , importSpecs     = Just spec
     }
+
+compileExports :: Exports -> Hs.ExportSpecList ()
+compileExports exps = Hs.ExportSpecList () (map compileExport exps)
+
+compileExport :: Export -> Hs.ExportSpec ()
+compileExport = \case
+  ExportFun name -> Hs.EVar () (Hs.UnQual () name)
+  ExportType name -> Hs.EAbs () (Hs.TypeNamespace ()) (Hs.UnQual () name)
+  ExportData name -> Hs.EThingWith () (Hs.EWildcard () 0) (Hs.UnQual () name) []
+  ExportClass name -> Hs.EThingWith () (Hs.EWildcard () 0) (Hs.UnQual () name) []

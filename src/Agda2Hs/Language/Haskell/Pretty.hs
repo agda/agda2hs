@@ -1,12 +1,21 @@
 -- | Pretty printing tweaks for @haskell-src-exts@.
 module Agda2Hs.Language.Haskell.Pretty
   ( prettyShowImportDecl
+  , prettyShowExportSpecList
   ) where
 
 import Language.Haskell.Exts.Pretty as Hs
 import Language.Haskell.Exts.Syntax as Hs
 
 import Agda2Hs.Language.Haskell.Utils ( pp )
+
+parenList :: [String] -> String
+parenList [] = "()"
+parenList (x:xs) = '(' : (x ++ go xs)
+  where
+    go :: [String] -> String
+    go [] = ")"
+    go (x:xs) = ", " ++ x ++ go xs
 
 -- | Custom implementation of 'prettyShow' for 'Hs.ImportDecl'
 -- that supports type operators.
@@ -36,14 +45,6 @@ prettyShowImportDecl (Hs.ImportDecl _ m qual src safe mbPkg mbName mbSpecs) =
             (if b then "hiding " else "")
                 ++ parenList (map prettyShowSpec ispecs)
 
-      parenList :: [String] -> String
-      parenList [] = "()"
-      parenList (x:xs) = '(' : (x ++ go xs)
-        where
-          go :: [String] -> String
-          go [] = ")"
-          go (x:xs) = ", " ++ x ++ go xs
-
       -- this is why we have rewritten it
       prettyShowSpec :: Hs.ImportSpec () -> String
       prettyShowSpec (Hs.IVar _ name  )        = pp name
@@ -59,3 +60,16 @@ prettyShowImportDecl (Hs.ImportDecl _ m qual src safe mbPkg mbName mbSpecs) =
         case name of
           (Hs.Symbol _ _)                     -> pp (Hs.TypeNamespace ()) ++ (' ' : rest)
           (Hs.Ident  _ _)                     -> rest
+
+prettyShowExportSpecList :: Hs.ExportSpecList () -> String
+prettyShowExportSpecList (Hs.ExportSpecList _ exps) =
+  parenList $ map prettyShowSpec exps
+  where
+    prettyShowSpec :: Hs.ExportSpec () -> String
+    prettyShowSpec spec@(Hs.EThingWith _ _ name _) =
+      let rest = pp spec in
+      case name of
+        Hs.UnQual _ (Hs.Symbol {}) -> pp (Hs.TypeNamespace ()) ++ (' ' : rest)
+        Hs.Qual _ _ (Hs.Symbol {}) -> pp (Hs.TypeNamespace ()) ++ (' ' : rest)
+        _ -> rest
+    prettyShowSpec spec = pp spec

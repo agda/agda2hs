@@ -111,10 +111,14 @@ writeModule genv _ isMain m outs = do
     -- The comments make it hard to generate and pretty print a full module
     hsFile <- moduleFileName opts m
 
+    let exportList = compileExports exps
+
     let output = concat
           [ renderLangExts exts
           , renderBlocks $ codePragmas code
-          , "module " ++ mod ++ " where\n\n"
+          , "module " ++ mod ++ "\n  "
+          , Hs.prettyShowExportSpecList exportList
+          , "\nwhere\n\n"
           , autoImports
           , renderBlocks defs
           ]
