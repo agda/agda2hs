@@ -57,6 +57,7 @@ initCompileEnv genv tlm rewrites = CompileEnv
   , copatternsEnabled = False
   , rewrites          = rewrites
   , writeImports      = True
+  , writeExports      = True
   , checkNames        = True
   }
 

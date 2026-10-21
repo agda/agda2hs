@@ -378,10 +378,13 @@ checkValidConName x = whenM doNameCheck $ unless (validConName x) $ agda2hsError
   text "Invalid name for Haskell constructor: " <+> text (Hs.prettyPrint x)
 
 tellImport :: Import -> C ()
-tellImport imp = tell $ CompileOutput [imp] []
+tellImport imp = tell $ CompileOutput [imp] [] []
+
+tellExport :: Export -> C ()
+tellExport exp = tell $ CompileOutput [] [exp] []
 
 tellExtension :: Hs.KnownExtension -> C ()
-tellExtension pr = tell $ CompileOutput [] [pr]
+tellExtension pr = tell $ CompileOutput [] [] [pr]
 
 tellUnboxedTuples :: Hs.Boxed -> C ()
 tellUnboxedTuples Hs.Boxed = return ()
@@ -445,6 +448,10 @@ checkNoAsPatterns = \case
 
 noWriteImports :: C a -> C a
 noWriteImports = local $ \e -> e { writeImports = False }
+
+-- | There are places we want to suppress adding exports e.g.) 'checkCompileToFunctionPragma'
+noWriteExports :: C a -> C a
+noWriteExports = local $ \e -> e { writeExports = False }
 
 noCheckNames :: C a -> C a
 noCheckNames = local $ \e -> e { checkNames = False }
