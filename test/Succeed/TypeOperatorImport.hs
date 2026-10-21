@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
+
 module TypeOperatorImport where
 
 import TypeOperatorExport ((&&&), type (***)((:*:)), type (<))
