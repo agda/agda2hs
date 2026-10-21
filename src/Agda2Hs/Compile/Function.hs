@@ -119,6 +119,9 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
     (ensureNoLocals err >> compileTypeDef x def)
     -- otherwise, we have to compile clauses.
     $ do
+    whenM (andM [shouldBeExported defName, asks writeExports]) $ do
+      tellExport (ExportFun x)
+
     tel <- lookupSection m
 
     -- If this is a top-level function, we compile the module parameters so
@@ -435,7 +438,7 @@ checkInlinePragma def@(Defn { defName = q , theDef = df }) = do
   addInlineSymbols $ q : qs
 
 checkCompileToFunctionPragma :: Definition -> String -> C ()
-checkCompileToFunctionPragma def s = noCheckNames $ do
+checkCompileToFunctionPragma def s = noCheckNames $ noWriteExports $ do
   r <- resolveStringName s
   let ppd = prettyTCM (defName def)
       ppr = prettyTCM r

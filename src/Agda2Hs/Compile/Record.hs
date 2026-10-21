@@ -1,7 +1,7 @@
 module Agda2Hs.Compile.Record where
 
 import Control.Monad ( unless, when )
-import Control.Monad.Reader ( MonadReader(local) )
+import Control.Monad.Reader ( MonadReader(local), asks )
 
 import Data.List ( (\\), nub )
 import Data.List.NonEmpty ( NonEmpty(..) )
@@ -18,6 +18,7 @@ import Agda.TypeChecking.Pretty ( ($$), (<+>), text, vcat, prettyTCM, pretty, pr
 import Agda.TypeChecking.Substitute ( TelV(TelV), Apply(apply) )
 import Agda.TypeChecking.Telescope
 
+import Agda.Utils.Monad ( whenM, andM )
 import Agda.Utils.Singleton
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
@@ -106,6 +107,10 @@ compileRecord target def = do
     let fieldTel = snd $ splitTelescopeAt recPars recTel
     case target of
       ToClass ms -> do
+        whenM (andM [shouldBeExported $ defName def, asks writeExports]) $ do
+          tellExport (ExportClass rName)
+          tellExtension Hs.ExplicitNamespaces
+
         when (length binds > 1) $ tellExtension Hs.MultiParamTypeClasses
         (classConstraints, classDecls) <- compileRecFields classDecl recFields fieldTel
         let context = case classConstraints of
@@ -116,6 +121,10 @@ compileRecord target def = do
         return $ Hs.ClassDecl () context hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
       ToRecord newtyp ds -> do
         checkValidConName cName
+        whenM (andM [shouldBeExported $ defName def, asks writeExports]) $ do
+          tellExport (ExportData rName)
+          tellExtension Hs.ExplicitNamespaces
+
         when (theEtaEquality recEtaEquality' == YesEta) $ agda2hsErrorM $
           "Agda records compiled to Haskell should have eta-equality disabled." <+>
           "Add no-eta-equality to the definition of" <+> (text (pp rName) <> ".")

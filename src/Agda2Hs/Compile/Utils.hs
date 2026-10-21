@@ -53,7 +53,7 @@ import Agda.Utils.Monad
 import Agda.Utils.Singleton
 
 import AgdaInternals
-import Agda2Hs.AgdaUtils ( (~~), resolveStringName )
+import Agda2Hs.AgdaUtils ( (~~), resolveStringName, isPublicName )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Pragma
 import qualified Data.List as L
@@ -458,3 +458,18 @@ noCheckNames = local $ \e -> e { checkNames = False }
 
 doNameCheck :: C Bool
 doNameCheck = reader checkNames
+
+shouldBeExported :: QName -> C Bool
+shouldBeExported name = andM
+  [ isPublicName name
+  , asks (not . compilingLocal)
+  , isNothing <$> isUnboxRecord name
+  , isNothing <$> isUnboxConstructor name
+  , isNothing <$> isUnboxProjection name
+  , isNothing <$> isTupleRecord name
+  , isNothing <$> isTupleConstructor name
+  , isNothing <$> isTupleProjection name
+  , not <$> isTransparentFunction name
+  , not <$> isInlinedFunction name
+  , isNothing <$> getCompileToName name
+  ]
