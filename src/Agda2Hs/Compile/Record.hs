@@ -109,7 +109,6 @@ compileRecord target def = do
       ToClass ms -> do
         whenM (andM [shouldBeExported $ defName def, asks writeExports]) $ do
           tellExport (ExportClass rName)
-          tellExtension Hs.ExplicitNamespaces
 
         when (length binds > 1) $ tellExtension Hs.MultiParamTypeClasses
         (classConstraints, classDecls) <- compileRecFields classDecl recFields fieldTel
@@ -123,7 +122,6 @@ compileRecord target def = do
         checkValidConName cName
         whenM (andM [shouldBeExported $ defName def, asks writeExports]) $ do
           tellExport (ExportData rName)
-          tellExtension Hs.ExplicitNamespaces
 
         when (theEtaEquality recEtaEquality' == YesEta) $ agda2hsErrorM $
           "Agda records compiled to Haskell should have eta-equality disabled." <+>

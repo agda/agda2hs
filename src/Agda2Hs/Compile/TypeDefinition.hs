@@ -31,7 +31,6 @@ compileTypeDef name (Defn {..}) = do
   unlessM (isTransparentFunction defName) $ checkValidTypeName name
   whenM (andM [shouldBeExported defName, asks writeExports]) $ do
     tellExport (ExportType name)
-    tellExtension Hs.ExplicitNamespaces
   Clause{..} <- singleClause funClauses
   addContext (KeepNames clauseTel) $ do
     as <- compileTypePatternArgs defType namedClausePats

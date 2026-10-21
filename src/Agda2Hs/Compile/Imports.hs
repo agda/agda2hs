@@ -1,10 +1,12 @@
 module Agda2Hs.Compile.Imports ( compileImports, preludeImportDecl, compileExports ) where
 
+import Control.Monad.Trans.Writer.CPS
 import Data.Char ( isUpper )
 import Data.List ( isPrefixOf )
 import qualified Data.List as L
 import Data.Map ( Map )
 import qualified Data.Map as Map
+import Data.Monoid ( Any(..) )
 import Data.Set ( Set )
 import qualified Data.Set as Set
 
@@ -14,6 +16,7 @@ import Agda2Hs.Language.Haskell.Utils ( validVarId, validConId, pp )
 import Agda.Compiler.Backend
 import Agda.TypeChecking.Pretty ( text )
 import Agda.Syntax.Common.Pretty ( prettyShow )
+import Agda.Utils.Monad ( when )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name
@@ -117,12 +120,24 @@ preludeImportDecl (PreludeOpts{..}) =
     , importSpecs     = Just spec
     }
 
-compileExports :: Exports -> Hs.ExportSpecList ()
-compileExports exps = Hs.ExportSpecList () (map compileExport exps)
+-- | Return 'True' if we need to enable the 'TypeOperators' extension
+compileExports :: Exports -> TCM (Hs.ExportSpecList (), Bool)
+compileExports exps = fmap (fmap getAny) $ runWriterT $
+  Hs.ExportSpecList () <$> traverse compileExport exps
 
-compileExport :: Export -> Hs.ExportSpec ()
+compileExport :: Export -> WriterT Any TCM (Hs.ExportSpec ())
 compileExport = \case
-  ExportFun name -> Hs.EVar () (Hs.UnQual () name)
-  ExportType name -> Hs.EAbs () (Hs.TypeNamespace ()) (Hs.UnQual () name)
-  ExportData name -> Hs.EThingWith () (Hs.EWildcard () 0) (Hs.UnQual () name) []
-  ExportClass name -> Hs.EThingWith () (Hs.EWildcard () 0) (Hs.UnQual () name) []
+  ExportFun name -> pure (Hs.EVar () (Hs.UnQual () name))
+  ExportType name | Hs.isOpName name -> do
+    tell (Any True)
+    pure $! Hs.EAbs () (Hs.TypeNamespace ()) (Hs.UnQual () name)
+  ExportType name -> do
+    pure $! Hs.EAbs () (Hs.NoNamespace ()) (Hs.UnQual () name)
+  ExportData name -> do
+    when (Hs.isOpName name) $ do
+      tell (Any True)
+    pure $! Hs.EThingWith () (Hs.EWildcard () 0) (Hs.UnQual () name) []
+  ExportClass name -> do
+    when (Hs.isOpName name) $ do
+      tell (Any True)
+    pure $! Hs.EThingWith () (Hs.EWildcard () 0) (Hs.UnQual () name) []
