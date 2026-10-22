@@ -115,6 +115,8 @@ writeModule genv _ isMain m outs = do
 
     exportList <- Hs.prettyShowExportSpecList <$> compileExports exps
 
+    -- We do pretty-printing manually because haskell-src-exts has an issue that produces invalid Haskell code.
+    -- Wait until the following PR gets merged https://github.com/haskell-suite/haskell-src-exts/pull/485
     let output = concat
           [ renderLangExts exts
           , renderBlocks $ codePragmas code
