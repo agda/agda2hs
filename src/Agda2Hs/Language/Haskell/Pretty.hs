@@ -61,6 +61,8 @@ prettyShowImportDecl (Hs.ImportDecl _ m qual src safe mbPkg mbName mbSpecs) =
           (Hs.Symbol _ _)                     -> pp (Hs.TypeNamespace ()) ++ (' ' : rest)
           (Hs.Ident  _ _)                     -> rest
 
+-- | Custom implementation of 'prettyShow' for 'Hs.ExportSpecList'
+-- that supports type operators.
 prettyShowExportSpecList :: Hs.ExportSpecList () -> String
 prettyShowExportSpecList (Hs.ExportSpecList _ exps) =
   parenList $ map prettyShowSpec exps
