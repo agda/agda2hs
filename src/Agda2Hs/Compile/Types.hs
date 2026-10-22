@@ -15,15 +15,16 @@ import Data.Set ( Set )
 import Data.Map ( Map )
 import Data.String ( IsString(..) )
 
-import Agda.Compiler.Backend
+import Agda.Compiler.Backend hiding ( Strictness )
 import Agda.Syntax.Position ( Range )
 import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
 import Agda.TypeChecking.Warnings ( MonadWarning )
+import Agda.Utils.Haskell.Syntax ( Strictness )
+import Agda.Utils.FileId ( MonadFileId )
 import Agda.Utils.Null
 import Agda.Utils.Impossible
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( Strictness )
 
 data GlobalEnv = GlobalEnv
   { globalOptions :: Options
@@ -176,6 +177,7 @@ type C = RWST CompileEnv CompileOutput CompileState TCM
 -- some missing instances from the Agda side
 instance HasFresh i => MonadFresh i C
 instance MonadTCState C
+instance MonadFileId C
 instance Monoid w => MonadTransControl (RWST r w s) where
   type StT (RWST r w s) a = (a, s, w)
   liftWith f = rwsT $ \r s -> fmap (, s, mempty) (f $ \t -> runRWST t r s)

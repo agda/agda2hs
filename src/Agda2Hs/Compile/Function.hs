@@ -9,7 +9,7 @@ import Data.List
 import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text
 
-import Agda.Compiler.Backend hiding (Args)
+import Agda.Compiler.Backend hiding (Args, Strictness)
 import Agda.Compiler.Common
 
 import Agda.Syntax.Common
@@ -28,6 +28,7 @@ import Agda.TypeChecking.Records ( getDefType )
 import Agda.TypeChecking.Reduce ( reduce )
 
 import Agda.Utils.Functor ( (<&>), dget)
+import Agda.Utils.Haskell.Syntax ( Strictness(..) )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Lens ((^.))
 import Agda.Utils.List
@@ -46,7 +47,7 @@ import Agda2Hs.Compile.Var ( compileDBVar )
 
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
-  ( Strictness, hsName, pApp, patToExp, constrainType, qualifyType )
+  ( hsName, pApp, patToExp, constrainType, qualifyType )
 
 -- | Compilation rules for specific constructors in patterns.
 isSpecialCon :: QName -> Maybe (Type -> NAPs -> C (Hs.Pat ()))
@@ -133,7 +134,7 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
       -- Jesper: we need to set the checkpoint for the current module so that
       -- the canonicity check for typeclass instances picks up the
       -- module parameters (see https://github.com/agda/agda2hs/issues/305).
-      liftTCM $ setModuleCheckpoint m
+      liftTCM $ setModuleCheckpointAtCurrent m
 
       -- We apply the function clause to the module parameters from the context.
       -- In case of a projection-like function, the clause is already

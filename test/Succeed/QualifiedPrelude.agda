@@ -1,6 +1,7 @@
 {-# FOREIGN AGDA2HS
 -- ** qualifying the Prelude
 #-}
+
 import Haskell.Prelude as Pre
 
 _+_ : Pre.Nat → Pre.Nat → Pre.Nat

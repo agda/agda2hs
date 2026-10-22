@@ -22,7 +22,7 @@ import qualified Language.Haskell.Exts as Hs
 
 import System.FilePath ( (</>) )
 
-import Agda.Compiler.Backend hiding ( Args )
+import Agda.Compiler.Backend hiding ( Args, Strict, Strictness )
 import Agda.Compiler.Common ( compileDir )
 
 import Agda.Syntax.Common
@@ -50,6 +50,7 @@ import Agda.TypeChecking.Substitute ( Subst, TelV(TelV), Apply(..) )
 import Agda.TypeChecking.Telescope ( telView )
 
 import Agda.Utils.Lens ( (<&>), (^.) )
+import Agda.Utils.Haskell.Syntax ( Strictness(..) )
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Singleton
@@ -63,7 +64,7 @@ import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
-  ( Strictness(..), validVarName, validTypeName, validConName, hsName, pp )
+  ( validVarName, validTypeName, validConName, hsName, pp )
 
 agda2hsError :: (HasCallStack, MonadTCError m) => Doc -> m a
 agda2hsError msg = typeError $ CustomBackendError "agda2hs" msg
@@ -137,7 +138,7 @@ isInScopeUnqualified x = lift $ do
     "inverse entry:" <+> prettyTCM (qnameConcrete <$> inverseEntry) <+>
     "rebuilt inverse entry present:" <+> text (show $ isJust rebuiltEntry) <+>
     "rebuilt inverse entry:" <+> prettyTCM (qnameConcrete <$> rebuiltEntry)
-  return $ any (not . C.isQualified) ys
+  return $ any (not . C.isQualified) rebuiltYs
 
 -- | Diagnostic inverse-scope lookup used by the name-qualification debug log.
 debugInverseScopeLookup :: QName -> ScopeInfo -> [C.QName] -> [C.QName] -> C ()
@@ -475,7 +476,7 @@ checkNoAsPatterns = \case
     ConP _ cpi ps -> do
       checkPatternInfo $ conPInfo cpi
       forM_ ps $ checkNoAsPatterns . namedArg
-    LitP i _ -> checkPatternInfo i
+    LitP i _ -> checkPatternInfo $ litPInfo i
     ProjP{} -> return ()
     IApplyP i _ _ _ -> checkPatternInfo i
     DefP i _ ps -> do

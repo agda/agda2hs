@@ -5,19 +5,20 @@ import Data.Maybe ( fromMaybe )
 import qualified Data.Map as Map
 import qualified Data.Text as Text
 
-import Agda.Compiler.Backend
+import Agda.Compiler.Backend hiding ( Strictness )
 import Agda.Compiler.Common ( curIF )
 
 import Agda.Syntax.Position
 import Agda.TypeChecking.Pretty (text)
 
 import Agda.Utils.FileName ( filePath )
+import Agda.Utils.Haskell.Syntax ( Strictness(..) )
 import Agda.Utils.Maybe.Strict ( toLazy )
 
 import Agda2Hs.Compile.Types
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( Strictness(..), srcLocToRange )
+import Agda2Hs.Language.Haskell.Utils ( srcLocToRange )
 
 pragmaName :: Text.Text
 pragmaName = "AGDA2HS"

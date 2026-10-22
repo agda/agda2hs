@@ -14,6 +14,7 @@ import System.Directory
   , getModificationTime
   , getTemporaryDirectory
   , listDirectory
+  , removePathForcibly
   , setCurrentDirectory
   )
 import System.Exit (ExitCode(..))
@@ -38,6 +39,7 @@ main = do
   -- Create a temporary build directory
   tmpDir <- getTemporaryDirectory
   let buildDir = tmpDir </> "agda2hs-test-build"
+  removePathForcibly buildDir
   createDirectoryIfMissing True buildDir
 
   -- Discover test cases

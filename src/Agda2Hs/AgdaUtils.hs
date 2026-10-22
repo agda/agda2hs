@@ -23,6 +23,8 @@ import Agda.Syntax.Scope.Monad
 import Agda.Syntax.TopLevelModuleName
 
 import Agda.TypeChecking.Monad ( topLevelModuleName )
+import Agda.TypeChecking.Monad.Base ( asksTC, envCurrentCheckpoint, envTCContext )
+import Agda.TypeChecking.Monad.Context ( setModuleCheckpoint )
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Sort
 import Agda.TypeChecking.Substitute
@@ -108,6 +110,11 @@ getTopLevelModuleForModuleName = loop . mnameToList
 -- | Get the toplevel module parent to a given a name.
 getTopLevelModuleForQName :: QName -> TCM TopLevelModuleName
 getTopLevelModuleForQName = getTopLevelModuleForModuleName . qnameModule
+
+-- | Set a module checkpoint at the currently active checkpoint.
+setModuleCheckpointAtCurrent :: ModuleName -> TCM ()
+setModuleCheckpointAtCurrent m =
+  asksTC (envCurrentCheckpoint . envTCContext) >>= setModuleCheckpoint m
 
 lookupModuleInCurrentModule :: C.Name -> TCM [AbstractModule]
 lookupModuleInCurrentModule x =

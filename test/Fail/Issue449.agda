@@ -2,7 +2,7 @@ module Issue449 where
 
 open import Haskell.Prelude
 
-foo : Set → Int
+foo : (a : Set) → Int
 foo _ = 42
 {-# COMPILE AGDA2HS foo #-}
 

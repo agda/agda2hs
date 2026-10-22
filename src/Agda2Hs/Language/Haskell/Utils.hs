@@ -304,10 +304,6 @@ patToExp = \case
   _                   -> Nothing
 
 
-data Strictness = Lazy | Strict
-  deriving (Eq, Show)
-
-
 -- | Add a class constraint to a Haskell type.
 constrainType
   :: Asst () -- ^ The class assertion.
