@@ -52,12 +52,15 @@ data ParsedPragma
   | DefaultPragma [Hs.Deriving ()]
   | ClassPragma [String]
   | ExistingClassPragma
-  | UnboxPragma Strictness
+  | UnboxPragma UnboxMode
   | TransparentPragma
   | NewTypePragma [Hs.Deriving ()]
   | TuplePragma Hs.Boxed
   | CompileToPragma String
   | DerivePragma (Maybe (Hs.DerivStrategy ()))
+  deriving (Eq, Show)
+
+data UnboxMode = UnboxLazy | UnboxStrict
   deriving (Eq, Show)
 
 derivePragma :: String
@@ -90,8 +93,8 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
     | "class" `isPrefixOf` s      -> return $ ClassPragma (words $ drop 5 s)
     | s == "inline"               -> return InlinePragma
     | s == "existing-class"       -> return ExistingClassPragma
-    | s == "unboxed"              -> return $ UnboxPragma Lazy
-    | s == "unboxed-strict"       -> return $ UnboxPragma Strict
+    | s == "unboxed"              -> return $ UnboxPragma UnboxLazy
+    | s == "unboxed-strict"       -> return $ UnboxPragma UnboxStrict
     | s == "transparent"          -> return TransparentPragma
     | s == "tuple"                -> return $ TuplePragma Hs.Boxed
     | s == "unboxed-tuple"        -> return $ TuplePragma Hs.Unboxed

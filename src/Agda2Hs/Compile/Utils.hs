@@ -285,7 +285,8 @@ getPragma q = snd <$> getDefAndPragma q
 
 isUnboxRecord :: QName -> C (Maybe Strictness)
 isUnboxRecord q = getPragma q <&> \case
-  UnboxPragma s -> Just s
+  UnboxPragma UnboxLazy   -> Just Lazy
+  UnboxPragma UnboxStrict -> Just Strict
   _ -> Nothing
 
 isUnboxConstructor :: QName -> C (Maybe Strictness)
