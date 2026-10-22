@@ -21,8 +21,9 @@ extra-doc-files:    CHANGELOG.md
 data-files:
     lib/base/base.agda-lib
     lib/base/**/*.agda
-    test/agda2hs-test.agda-lib
-    test/Haskell/**/*.agda
+    test/Deprecated/deprecated.agda-lib
+    test/Fail/fail.agda-lib
+    test/Succeed/succeed.agda-lib
     test/Succeed/*.agda
     test/Succeed/*.hs
     test/Succeed/**/*.agda

@@ -1,4 +1,4 @@
-module Fail.PartialCase where
+module PartialCase where
 
 open import Haskell.Prelude
 

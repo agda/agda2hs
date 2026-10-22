@@ -1,5 +1,5 @@
 
-module Fail.MatchOnDelay where
+module MatchOnDelay where
 
 open import Haskell.Prelude
 open import Haskell.Extra.Delay

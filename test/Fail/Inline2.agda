@@ -1,4 +1,4 @@
-module Fail.Inline2 where
+module Inline2 where
 
 open import Haskell.Prelude
 

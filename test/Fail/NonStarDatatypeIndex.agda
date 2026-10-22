@@ -1,4 +1,4 @@
-module Fail.NonStarDatatypeIndex where
+module NonStarDatatypeIndex where
 
 open import Haskell.Prelude
 

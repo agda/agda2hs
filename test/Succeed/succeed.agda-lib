@@ -1,4 +1,4 @@
-name: agda2hs-test
+name: agda2hs-test-succeed
 depend:
-include: . ../lib/base/
+include: . ../../lib/base/
 flags: --sized-types --erasure --no-projection-like

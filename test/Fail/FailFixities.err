@@ -1,0 +1,2 @@
+test/Fail/FailFixities.agda:6.1-6: error: [CustomBackendError]
+agda2hs: Invalid fixity 8.5 for operator _<+>_
