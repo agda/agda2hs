@@ -238,6 +238,7 @@ compileDomType x a =
       isNested <- asks isNestedInType
       ctx <- getContextSize
       npars <- size <$> (lookupSection =<< currentModule)
+      checkValidTyVarName (Hs.Ident () x)
       if
         | isNested -> do
           tellExtension Hs.RankNTypes
