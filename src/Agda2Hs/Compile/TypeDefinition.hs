@@ -31,7 +31,7 @@ compileTypeDef name (Defn {..}) = do
   unlessM (isTransparentFunction defName) $ do
     checkValidTypeName name
     tellTypeOperators name
-  whenM (andM [shouldBeExported defName, asks writeExports]) $ do
+  whenM (shouldBeExported defName `and2M` asks writeExports) $ do
     tellExport (ExportType name)
   Clause{..} <- singleClause funClauses
   addContext (KeepNames clauseTel) $ do

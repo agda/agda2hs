@@ -42,7 +42,7 @@ compileData newtyp ds def = do
   checkValidTypeName d
   tellTypeOperators d
 
-  whenM (andM [shouldBeExported $ defName def, asks writeExports]) $ do
+  whenM (shouldBeExported (defName def) `and2M` asks writeExports) $ do
     tellExport (ExportData d)
 
   let Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} = theDef def

@@ -18,7 +18,7 @@ import Agda.TypeChecking.Pretty ( ($$), (<+>), text, vcat, prettyTCM, pretty, pr
 import Agda.TypeChecking.Substitute ( TelV(TelV), Apply(apply) )
 import Agda.TypeChecking.Telescope
 
-import Agda.Utils.Monad ( whenM, andM )
+import Agda.Utils.Monad ( whenM, and2M )
 import Agda.Utils.Singleton
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
@@ -108,7 +108,7 @@ compileRecord target def = do
     let fieldTel = snd $ splitTelescopeAt recPars recTel
     case target of
       ToClass ms -> do
-        whenM (andM [shouldBeExported $ defName def, asks writeExports]) $ do
+        whenM (shouldBeExported (defName def) `and2M` asks writeExports) $ do
           tellExport (ExportClass rName)
         when (length binds > 1) $ tellExtension Hs.MultiParamTypeClasses
         (classConstraints, classDecls) <- compileRecFields classDecl recFields fieldTel
@@ -120,7 +120,7 @@ compileRecord target def = do
         return $ Hs.ClassDecl () context hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
       ToRecord newtyp ds -> do
         checkValidConName cName
-        whenM (andM [shouldBeExported $ defName def, asks writeExports]) $ do
+        whenM (shouldBeExported (defName def) `and2M` asks writeExports) $ do
           tellExport (ExportData rName)
         when (theEtaEquality recEtaEquality' == YesEta) $ agda2hsErrorM $
           "Agda records compiled to Haskell should have eta-equality disabled." <+>
