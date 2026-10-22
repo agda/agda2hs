@@ -24,21 +24,15 @@ import Agda2Hs.Compile.Utils
 type ImportSpecMap = Map NamespacedName (Set NamespacedName)
 type ImportDeclMap = Map (Hs.ModuleName (), Qualifier) ImportSpecMap
 
--- | The returned 'Bool' indicates if the 'TypeOperator' extension should be enabled
-compileImports :: String -> Imports -> TCM ([Hs.ImportDecl ()], Bool)
+compileImports :: String -> Imports -> TCM [Hs.ImportDecl ()]
 compileImports top is0 = do
   let is = filter ((top /=) . Hs.prettyPrint . importModule) is0
   checkClashingImports is
   let imps = Map.toList $ groupModules is
   reportSLn "agda2hs.import" 10 $ "All imported modules: " ++ show (map (pp . fst . fst) imps)
   let decls = map (uncurry $ uncurry makeImportDecl) imps
-  return (decls, enableTypeOperators is)
+  return decls
   where
-    enableTypeOperators :: [Import] -> Bool
-    enableTypeOperators = any $ \case
-      Import _ _ (Just (Hs.Symbol {})) _ _ -> True
-      _ -> False
-
     mergeChildren :: ImportSpecMap -> ImportSpecMap -> ImportSpecMap
     mergeChildren = Map.unionWith Set.union
 
@@ -48,19 +42,10 @@ compileImports top is0 = do
 
     groupModules :: [Import] -> ImportDeclMap
     groupModules = flip foldr Map.empty $ \case
-        (Import mod as p q ns) ->
-          Map.insertWith mergeChildren (mod,as)
-                         (makeSingle (parentNN p) (NamespacedName ns q))
+        (Import mod as parent name) ->
+          Map.insertWith mergeChildren (mod,as) (makeSingle parent name)
         (ImportInstances mod) ->
           Map.insertWith mergeChildren (mod,Unqualified) Map.empty
-      where
-        parentNN :: Maybe (Hs.Name ()) -> Maybe NamespacedName
-        parentNN (Just name@(Hs.Symbol _ _)) = Just $ NamespacedName (Hs.TypeNamespace ()) name
-                                                                      -- ^ for parents, if they are operators, we assume they are type operators
-                                                                      -- but actually, this will get lost anyway because of the structure of ImportSpec
-                                                                      -- the point is that there should not be two tuples with the same name and diffenrent namespaces
-        parentNN (Just name)                 = Just $ NamespacedName (Hs.NoNamespace ())   name
-        parentNN Nothing                     = Nothing
 
     -- TODO: avoid having to do this by having a CName instead of a
     -- Name in the Import datatype
@@ -86,17 +71,17 @@ compileImports top is0 = do
 
     checkClashingImports :: Imports -> TCM ()
     checkClashingImports [] = return ()
-    checkClashingImports (Import mod as p q _ : is) =
+    checkClashingImports (Import mod as p (NamespacedName _ q) : is) =
       case filter isClashing is of
         (i : _) -> agda2hsStringError $ mkErrorMsg i
         []      -> checkClashingImports is
      where
-        isClashing (Import _ as' p' q' _) = (as' == as) && (p' /= p) && (q' == q)
+        isClashing (Import _ as' p' (NamespacedName _ q')) = (as' == as) && (p' /= p) && (q' == q)
         isClashing ImportInstances{} = False
-        mkErrorMsg (Import _ _ p' q' _) =
+        mkErrorMsg (Import _ _ p' (NamespacedName _ q')) =
              "Clashing import: " ++ pp q ++ " (both from "
-          ++ prettyShow (pp <$> p) ++ " and "
-          ++ prettyShow (pp <$> p') ++ ")"
+          ++ prettyShow (pp . nnName <$> p) ++ " and "
+          ++ prettyShow (pp . nnName <$> p') ++ ")"
         -- TODO: no range information as we only have Haskell names at this point
     checkClashingImports (ImportInstances mod : is) = checkClashingImports is
 

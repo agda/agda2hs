@@ -394,6 +394,12 @@ tellTypeOperators :: Hs.Name () -> C ()
 tellTypeOperators (Hs.Symbol {}) = tellExtension Hs.TypeOperators
 tellTypeOperators _ = pure ()
 
+tellTypeOperatorsImport :: Import -> C ()
+tellTypeOperatorsImport (Import _ _ parent name)
+  | Just (Hs.TypeNamespace {}) <- nnNamespace <$> parent = tellExtension Hs.TypeOperators
+  | Hs.TypeNamespace {} <- nnNamespace name = tellExtension Hs.TypeOperators
+tellTypeOperatorsImport _ = pure ()
+
 addPatBang :: Strictness -> Hs.Pat () -> C (Hs.Pat ())
 addPatBang Strict p = tellExtension Hs.BangPatterns >>
   return (Hs.PBangPat () p)

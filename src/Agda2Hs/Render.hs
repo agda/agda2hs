@@ -72,7 +72,7 @@ ensureDirectory = createDirectoryIfMissing True . takeDirectory
 -- | Compile the full import list,
 -- with special handling for the @Prelude@ as prescribed by 'Options'.
 compileImportsWithPrelude
-  :: Options -> String -> Imports -> TCM ([Hs.ImportDecl ()], Bool)
+  :: Options -> String -> Imports -> TCM [Hs.ImportDecl ()]
 compileImportsWithPrelude opts mod imps = do
     -- if the prelude is supposed to be implicit,
     -- or the prelude imports have been fixed in the config file,
@@ -85,7 +85,7 @@ compileImportsWithPrelude opts mod imps = do
     -- then we try to add it back
     if (not preludeImplicit && isNothing preludeImports) || null preludeHiding
       then compileImports mod filteredImps
-      else first (preludeImportDecl preOpts:) <$> compileImports mod filteredImps
+      else (preludeImportDecl preOpts:) <$> compileImports mod filteredImps
   where
     preOpts@PreludeOpts{..} = optPrelude opts
 
@@ -107,19 +107,19 @@ writeModule genv _ isMain m outs = do
     let unlines' [] = []
         unlines' ss = unlines ss ++ "\n"
 
-    (autoImports, enableTyOp) <- first (unlines' . map Hs.prettyShowImportDecl)
+    autoImports <- unlines' . map Hs.prettyShowImportDecl
       <$> compileImportsWithPrelude opts mod imps
 
     -- The comments make it hard to generate and pretty print a full module
     hsFile <- moduleFileName opts m
 
-    exportList <- compileExports exps
+    exportList <- Hs.prettyShowExportSpecList <$> compileExports exps
 
     let output = concat
-          [ renderLangExts $ if enableTyOp then Hs.TypeOperators : exts else exts
+          [ renderLangExts exts
           , renderBlocks $ codePragmas code
           , "module " ++ mod ++ "\n  "
-          , Hs.prettyShowExportSpecList exportList
+          , exportList
           , "\nwhere\n\n"
           , autoImports
           , renderBlocks defs

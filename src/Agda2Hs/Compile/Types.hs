@@ -121,12 +121,9 @@ qualifiedAs = join
 data Import = Import
   { _importModule    :: Hs.ModuleName ()
   , _importQualified :: Qualifier
-  , _importParent    :: Maybe (Hs.Name ())
-  , _importName      :: Hs.Name ()
-  , _importNamespace :: Hs.Namespace ()
-                    -- ^^ if this is a type or something like that, we can add a namespace qualifier to the import spec
-                    -- now it's only useful for differentiating type operators; so for others we always put Hs.NoNamespace () here
-                    -- (we don't calculate it if it's not necessary)
+  , _importParent    :: Maybe NamespacedName
+  , _importName      :: NamespacedName
+                    -- ^^ the namespace part is 'Hs.TypeNamespace' when the name is type operator
   }
   | ImportInstances (Hs.ModuleName ())
 

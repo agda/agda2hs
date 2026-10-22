@@ -54,11 +54,14 @@ isSpecialCon = prettyShow >>> \case
   where special c = Just (Hs.Special () $ c ())
 
 -- | Convert identifier and import module strings into the Haskell equivalent syntax.
+
+-- FIXME(wasabi315): support constructors in rewrite rules. currently we assume there the identifier is not constructor by 'Nothing'
+-- FIXME(wasabi315): support type operators in rewrite rules. currently we assume the identifier is not a type operator by 'Hs.NoNamespace'
 toNameImport :: String -> Maybe String -> (Hs.Name (), Maybe Import)
 toNameImport x Nothing = (hsName x, Nothing)
 toNameImport x (Just mod) =
   ( hsName x
-  , Just $ Import (hsModuleName mod) Unqualified Nothing (hsName x) (Hs.NoNamespace ())
+  , Just $ Import (hsModuleName mod) Unqualified Nothing (NamespacedName (Hs.NoNamespace ()) (hsName x))
   )
 
 -- | Default rewrite rules.
@@ -110,10 +113,13 @@ compileQName f = do
       _                                      -> f
     hf0 <- compileName (qnameName f)
     special <- isSpecialName f
-    let (hf, mimpBuiltin) = fromMaybe (hf0, Nothing) special
+    let (hf, mimpSpecial) = fromMaybe (hf0, Nothing) special
+    hf <- computeNamespacedName f hf
 
     parent <- parentName f
-    par <- traverse (compileName . qnameName) parent
+    par <- forM parent $ \parent ->
+      compileName (qnameName parent) >>= computeNamespacedName parent
+
     let mod0 = qnameModule $ fromMaybe f parent
     (mkind, mod) <- compileModuleName mod0
 
@@ -130,34 +136,32 @@ compileQName f = do
     unless existsInHaskell $ do
       reportSDoc "agda2hs.name" 20 $ text "DOES NOT EXIST IN HASKELL"
       typeError $ CustomBackendError "agda2hs" $ P.text $
-        "Symbol " ++ Hs.prettyPrint hf ++ " is missing a COMPILE pragma or rewrite rule"
+        "Symbol " ++ Hs.prettyPrint (nnName hf) ++ " is missing a COMPILE pragma or rewrite rule"
 
     currMod <- asks $ hsTopLevelModuleName . currModule
     let skipModule = mod == currMod
-                  || isJust mimpBuiltin
+                  || isJust mimpSpecial
                   || prettyShow mod0 `elem` primMonadModules
     qual <- if skipModule then return Unqualified
               else getQualifier (fromMaybe f parent) mod
-    -- we only calculate this when dealing with type operators; usually that's where 'type' prefixes are needed in imports
-    namespace <- case hf of
-          Hs.Symbol _ _ -> getNamespace f
-          Hs.Ident  _ _ -> return (Hs.NoNamespace ())
     let
       -- We generate import statements for everything except
       -- unqualified prim modules (Prelude)
       mimp = if mkind == PrimModule && not (isQualified qual)
              then Nothing
-             else Just (Import mod qual par hf namespace)
-      qf = qualify mod hf qual
+             else Just (Import mod qual par hf)
+      qf = qualify mod (nnName hf) qual
 
     -- add (possibly qualified) import
     whenM (asks writeImports) $
-      whenJust (mimpBuiltin <|> mimp) tellImport
+      whenJust (mimpSpecial <|> mimp) $ \imp -> do
+        tellImport imp
+        tellTypeOperatorsImport imp
 
     reportSDoc "agda2hs.name" 25 $ text
        $ "-------------------------------------------------"
       ++ "\ncompiling name: " ++ prettyShow f
-      ++ "\nhaskell name: " ++ Hs.prettyPrint hf
+      ++ "\nhaskell name: " ++ Hs.prettyPrint (nnName hf)
       ++ "\nparent name: " ++ prettyShow parent
       ++ "\nmod0: " ++ prettyShow mod0
       ++ "\nmodule name: " ++ Hs.prettyPrint mod
@@ -195,10 +199,17 @@ compileQName f = do
 
     primMonadModules = ["Haskell.Prim.Monad.Dont", "Haskell.Prim.Monad.Do"]
 
+    computeNamespacedName :: QName -> Hs.Name () -> C NamespacedName
+    computeNamespacedName name compiledName =
+      -- we only calculate namespace when dealing with type operators; usually that's where 'type' prefixes are needed in imports
+      flip NamespacedName compiledName <$> case compiledName of
+        Hs.Symbol {} -> computeNamespace name
+        Hs.Ident {} -> pure $ Hs.NoNamespace ()
+
     -- Determine whether it is a type operator or an "ordinary" operator.
     -- _getSort is not for that; e. g. a data has the same sort as its constructor.
-    getNamespace :: QName -> C (Hs.Namespace ())
-    getNamespace qName = do
+    computeNamespace :: QName -> C (Hs.Namespace ())
+    computeNamespace qName = do
       qType <- unEl . getResultType . defType <$> getConstInfo qName
       if isJust $ isSort qType then do
         let fname = nameCanonical $ qnameName f
