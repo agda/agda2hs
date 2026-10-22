@@ -7,7 +7,7 @@ import Agda.Compiler.Backend
 import Agda.Syntax.Internal
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
-import Agda.Utils.Monad ( whenM, andM )
+import Agda.Utils.Monad ( whenM, and2M )
 
 import Agda2Hs.Compile.Type ( compileType )
 import Agda2Hs.Compile.Types
@@ -21,7 +21,7 @@ compilePostulate def = do
   let n = qnameName (defName def)
       x = hsName $ prettyShow n
   checkValidFunName x
-  whenM (andM [shouldBeExported $ defName def, asks writeExports]) $ do
+  whenM (shouldBeExported (defName def) `and2M` asks writeExports) $ do
     tellExport (ExportFun x)
   setCurrentRange (nameBindingSite n) $ do
     ty <- compileType (unEl $ defType def)
