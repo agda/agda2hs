@@ -33,8 +33,8 @@ jobs:
       matrix:
         os: [ubuntu-latest]   # macOS-latest, windows-latest
         cabal: [3.14.2.0]
-        deploy-ghc: [9.6.7]
-        ghc: [9.6.7, 9.8.4, 9.10.3, 9.12.2]
+        deploy-ghc: [9.8.4]
+        ghc: [9.8.4, 9.10.3, 9.12.2, 9.14.1]
     steps:
     - uses: actions/checkout@v6
 
