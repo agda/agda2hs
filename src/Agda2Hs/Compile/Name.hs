@@ -20,7 +20,8 @@ import Agda.Syntax.Common hiding (Rewrite)
 import Agda.Syntax.Internal
 import Agda.Syntax.Position
 import qualified Agda.Syntax.Concrete as C
-import Agda.Syntax.Scope.Base ( inverseScopeLookupName, recomputeInverseScope', amodName )
+import Agda.Syntax.Abstract.Name ( amodName )
+import Agda.Syntax.Scope.Base ( inverseScopeLookupName, recomputeInverseScope' )
 import Agda.Syntax.Scope.Monad ( resolveName, isDatatypeModule )
 import Agda.Syntax.TopLevelModuleName
 import Agda.Syntax.Common.Pretty ( prettyShow )
@@ -40,7 +41,19 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( hsName, hsModuleName, pp )
+import Agda2Hs.Language.Haskell.Utils ( hsName, hsModuleName, pp, validModuleName )
+
+
+-- | Check the module-prefix part of a concrete qualified name.
+validModuleQualifier :: C.QName -> Bool
+validModuleQualifier C.QName{} = True
+validModuleQualifier q@C.Qual{} =
+  validModuleName $ intercalate "." $ map prettyShow $ moduleQualifierParts q
+
+moduleQualifierParts :: C.QName -> [C.Name]
+moduleQualifierParts = \case
+  C.QName{}        -> []
+  C.Qual name rest -> name : moduleQualifierParts rest
 
 
 isSpecialCon :: QName -> Maybe (Hs.QName ())
@@ -183,8 +196,12 @@ compileQName f = do
       scope <- getScope
       let names = inverseScopeLookupName f scope
           rebuiltNames = inverseScopeLookupName f $ recomputeInverseScope' scope
+          validNames = filter validModuleQualifier rebuiltNames
+          noValidQualifier = agda2hsErrorM $
+            "No valid Haskell module qualifier for" <+> prettyTCM f <+>
+            "among" <+> prettyTCM rebuiltNames
       debugInverseScopeLookup f scope names rebuiltNames
-      case names of
+      case validNames of
         C.QName{} : _ -> return Unqualified
         C.Qual as C.QName{} : _ -> liftTCM $ do
           let qual = hsModuleName $ prettyShow as
@@ -194,7 +211,14 @@ compileQName f = do
               return $ QualifiedAs (if isDataMod then Nothing else Just qual)
             _ -> return $ QualifiedAs Nothing
           `catchError` \_ -> return $ QualifiedAs Nothing
-        _ -> return $ QualifiedAs Nothing
+        -- Preserve the fallback for deeper qualified names after validating
+        -- their complete module prefix above.
+        C.Qual{} : _ -> return $ QualifiedAs Nothing
+        [] | null rebuiltNames -> case mod of
+          Hs.ModuleName _ targetModule | validModuleName targetModule ->
+            return $ QualifiedAs Nothing
+          _ -> noValidQualifier
+        _ -> noValidQualifier
 
     qualify :: Hs.ModuleName () -> Hs.Name () -> Qualifier -> Hs.QName ()
     qualify mod n = \case
