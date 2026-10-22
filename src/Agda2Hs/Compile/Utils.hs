@@ -11,6 +11,7 @@ import Data.IORef
 import Data.List ( isPrefixOf, stripPrefix )
 import Data.Maybe ( isJust )
 import qualified Data.Map as M
+import qualified Data.HashMap.Strict as HM
 import Data.String ( IsString(..) )
 import Data.Set ( Set )
 import qualified Data.Set as S
@@ -25,6 +26,7 @@ import Agda.Compiler.Backend hiding ( Args )
 import Agda.Compiler.Common ( compileDir )
 
 import Agda.Syntax.Common
+import Agda.Syntax.Abstract.Name ( nameId )
 import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Internal
 import Agda.Syntax.Position ( noRange )
@@ -47,7 +49,7 @@ import Agda.TypeChecking.Reduce ( instantiate, reduce )
 import Agda.TypeChecking.Substitute ( Subst, TelV(TelV), Apply(..) )
 import Agda.TypeChecking.Telescope ( telView )
 
-import Agda.Utils.Lens ( (<&>) )
+import Agda.Utils.Lens ( (<&>), (^.) )
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Singleton
@@ -114,8 +116,35 @@ setCurrentRangeQ = setCurrentRange . nameBindingSite . qnameName
 
 isInScopeUnqualified :: QName -> C Bool
 isInScopeUnqualified x = lift $ do
-  ys <- inverseScopeLookupName' AmbiguousAnything x <$> getScope
+  scope <- getScope
+  let ys = inverseScopeLookupName' AmbiguousAnything x scope
+      rebuiltScope = recomputeInverseScope' scope
+      rebuiltYs = inverseScopeLookupName' AmbiguousAnything x rebuiltScope
+      inScopeNames = filter ((== prettyShow (nameConcrete (qnameName x))) . prettyShow)
+                   $ M.keys $ nsNames $ everythingInScope scope
+      lookedUp = scopeLookup (C.QName $ nameConcrete $ qnameName x) scope :: [AbstractName]
+      inverseEntry = HM.lookup (nameId $ qnameName x) (scope ^. scopeInverseName)
+      rebuiltEntry = HM.lookup (nameId $ qnameName x) (rebuiltScope ^. scopeInverseName)
+  reportSDoc "agda2hs.scope-check" 40 $
+    "scope current:" <+> prettyTCM (scope ^. scopeCurrent) <+>
+    "scope check" <+> prettyTCM x <+> "=>" <+> prettyTCM ys <+>
+    "(rebuilt =>" <+> prettyTCM rebuiltYs <+> ")" <+>
+    "(Agda says" <+> text (show $ isNameInScopeUnqualified x scope) <+> ")" <+>
+    "concrete spellings:" <+> prettyTCM inScopeNames <+>
+    "direct lookup:" <+> prettyTCM lookedUp <+>
+    "name ids:" <+> text (show (nameId (qnameName x), map (nameId . qnameName . anameName) lookedUp)) <+>
+    "inverse entry present:" <+> text (show $ isJust inverseEntry) <+>
+    "inverse entry:" <+> prettyTCM (qnameConcrete <$> inverseEntry) <+>
+    "rebuilt inverse entry present:" <+> text (show $ isJust rebuiltEntry) <+>
+    "rebuilt inverse entry:" <+> prettyTCM (qnameConcrete <$> rebuiltEntry)
   return $ any (not . C.isQualified) ys
+
+-- | Diagnostic inverse-scope lookup used by the name-qualification debug log.
+debugInverseScopeLookup :: QName -> ScopeInfo -> [C.QName] -> [C.QName] -> C ()
+debugInverseScopeLookup x scope names rebuiltNames = lift $
+  reportSDoc "agda2hs.name.scope" 40 $
+    "qualifier scope" <+> prettyTCM x <+> "=>" <+> prettyTCM names <+>
+    "(rebuilt =>" <+> prettyTCM rebuiltNames <+> ")"
 
 freshString :: String -> C String
 freshString s = liftTCM $ do

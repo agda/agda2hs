@@ -20,7 +20,7 @@ import Agda.Syntax.Common hiding (Rewrite)
 import Agda.Syntax.Internal
 import Agda.Syntax.Position
 import qualified Agda.Syntax.Concrete as C
-import Agda.Syntax.Scope.Base ( inverseScopeLookupName, amodName )
+import Agda.Syntax.Scope.Base ( inverseScopeLookupName, recomputeInverseScope', amodName )
 import Agda.Syntax.Scope.Monad ( resolveName, isDatatypeModule )
 import Agda.Syntax.TopLevelModuleName
 import Agda.Syntax.Common.Pretty ( prettyShow )
@@ -179,10 +179,14 @@ compileQName f = do
       _ -> Nothing
 
     getQualifier :: QName -> Hs.ModuleName () -> C Qualifier
-    getQualifier f mod =
-      (inverseScopeLookupName f <$> getScope) >>= \case
-        (C.QName{} : _) -> return Unqualified
-        (C.Qual as C.QName{} : _) -> liftTCM $ do
+    getQualifier f mod = do
+      scope <- getScope
+      let names = inverseScopeLookupName f scope
+          rebuiltNames = inverseScopeLookupName f $ recomputeInverseScope' scope
+      debugInverseScopeLookup f scope names rebuiltNames
+      case names of
+        C.QName{} : _ -> return Unqualified
+        C.Qual as C.QName{} : _ -> liftTCM $ do
           let qual = hsModuleName $ prettyShow as
           lookupModuleInCurrentModule as >>= \case
             (x:_) | qual /= mod -> do
