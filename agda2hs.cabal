@@ -22,6 +22,8 @@ data-files:
     lib/base/base.agda-lib
     lib/base/**/*.agda
     test/Deprecated/deprecated.agda-lib
+    test/Deprecated/**/*.agda
+    test/Deprecated/**/*.hs
     test/Fail/fail.agda-lib
     test/Succeed/succeed.agda-lib
     test/Succeed/*.agda
