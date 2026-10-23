@@ -8,6 +8,7 @@ module AgdaInternals where
 import Control.Monad.Writer
 import Control.Monad.State
 
+import Data.Maybe ( mapMaybe )
 import Data.String
 
 import Agda.Syntax.Internal
@@ -42,3 +43,13 @@ instance (Monoid r, MonadBlock m) => MonadBlock (WriterT r m) where
   catchPatternErr h m = WriterT $ catchPatternErr (runWriterT . h) (runWriterT m)
 instance MonadBlock m => MonadBlock (StateT s m) where
   catchPatternErr h m = StateT $ \s -> catchPatternErr (flip runStateT s . h) (runStateT m s)
+
+-- ** Provenance of local where-definitions.
+
+-- | The where-modules attached to a function's clauses.
+defWhereModules :: Definition -> [ModuleName]
+defWhereModules = mapMaybe clauseWhereModule . defClauses
+
+-- | Check whether a name is declared inside a where-block of a given function.
+inWhereBlockOf :: QName -> Definition -> Bool
+inWhereBlockOf q = any (qnameModule q `isLeChildModuleOf`) . defWhereModules

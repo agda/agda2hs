@@ -93,7 +93,7 @@ data CompileEnv = CompileEnv
   , compilingLocal :: Bool
   -- ^ whether we are currently compiling a where clause or pattern-matching lambda
   , whereModules :: [ModuleName]
-  -- ^ the where-blocks currently in scope. Hack until Agda adds where-prominence
+  -- ^ the where-blocks currently in scope
   , copatternsEnabled :: Bool
   -- ^ whether copatterns should be allowed when compiling patterns
   , rewrites :: SpecialRules

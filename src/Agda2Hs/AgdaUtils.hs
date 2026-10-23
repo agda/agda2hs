@@ -1,7 +1,6 @@
 module Agda2Hs.AgdaUtils where
 
 import Data.Data
-import Data.Monoid ( Any(..) )
 import qualified Data.Map as Map
 import Data.Maybe ( fromMaybe, isJust )
 import Data.String ( fromString )
@@ -16,7 +15,6 @@ import Agda.Syntax.Common ( Arg, defaultArg )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import qualified Agda.Syntax.Concrete as C
 import Agda.Syntax.Internal
-import Agda.Syntax.Internal.Names
 import Agda.Syntax.Position ( noRange )
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad
@@ -31,7 +29,6 @@ import Agda.TypeChecking.Reduce ( reduceDefCopy )
 
 import Agda.Utils.Either ( isRight )
 import Agda.Utils.GetOpt ( OptDescr(..) , ArgDescr(..) )
-import Agda.Utils.List ( initMaybe )
 import qualified Agda.Utils.List1 as List1
 import Agda.Utils.Monad ( ifM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
@@ -44,23 +41,10 @@ multilineText s = vcat $ map text $ lines s
 (~~) :: QName -> String -> Bool
 q ~~ s = prettyShow q == s
 
--- | Check whether a module is an *immediate* parent of another.
-isFatherModuleOf :: ModuleName -> ModuleName -> Bool
-isFatherModuleOf m = maybe False (mnameToList m ==) . initMaybe . mnameToList
-
 -- | Apply a clause's telescope arguments to a local where definition.
 -- i.e. reverse Agda's λ-lifting
 applyUnderTele :: Definition -> Args -> Definition
 applyUnderTele d as = raise (length as) d `apply` as
-
--- | Check whether the given name (1) is the name of an extended
---   lambda and (2) is used anywhere inside the second argument.
-extLamUsedIn :: NamesIn a => QName -> a -> Bool
-extLamUsedIn n x = isExtendedLambdaName n && getAny (namesIn' (Any . (n ==)) x)
-
--- | All mentions of local definitions that occur anywhere inside the argument.
-getLocalUses :: NamesIn a => [QName] -> a -> [QName]
-getLocalUses ls = namesIn' $ \q -> [ q | q `elem` ls ]
 
 -- | Convert the final 'Proj' projection elimination into a
 --   'Def' projection application.

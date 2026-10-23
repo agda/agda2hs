@@ -35,6 +35,7 @@ import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Size ( Sized(size) )
 
+import AgdaInternals ( inWhereBlockOf )
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Term ( compileTerm, usableDom, dependentDom )
@@ -189,9 +190,8 @@ compileModuleParams (ExtendTel a tel) = do
   ((f .) *** (p++)) <$> underAbstraction a tel compileModuleParams
 
 compileClause :: ModuleName -> Args -> Maybe QName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
-compileClause curModule pars mproj x t c =
-  withClauseLocals curModule c $ do
-    compileClause' curModule pars mproj x t c
+compileClause curModule pars mproj x t c = withClauseLocals c $ do
+  compileClause' curModule pars mproj x t c
 
 compileClause' :: ModuleName -> Args -> Maybe QName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
 compileClause' curModule pars projName x ty c = do
@@ -230,14 +230,11 @@ compileClause'' curModule projName x ty c@Clause{..} = do
 
     ps <- compilePats ty namedClausePats
 
-    let isWhereDecl = not . isExtendedLambdaName
-          /\ (curModule `isFatherModuleOf`) . qnameModule
-
-    children   <- filter isWhereDecl <$> asks locals
-    -- TODO: remove this when Agda exposes where-provenance in 'Internal' syntax
-    let withWhereModule = case children of
-          []    -> id
-          (c:_) -> addWhereModule $ qnameModule c
+    -- Only consider this clause's where-block, and ignore any pattern-lambdas.
+    let isWhereDecl q = not (isExtendedLambdaName q)
+                     && Just (qnameModule q) == clauseWhereModule
+    children <- filter isWhereDecl <$> asks locals
+    let withWhereModule = maybe id addWhereModule clauseWhereModule
     whereDecls <- withWhereModule $ compileLocal $ mapM (getConstInfo >=> compileFun' True) children
 
     let Just body            = clauseBody
@@ -364,49 +361,28 @@ compileTupleConP ty b ps = do
   ps <- compilePats ty ps
   return $ Hs.PTuple () b ps
 
--- Local (where) declarations ---------------------------------------------
+-- ** Local where-declarations
 
-
--- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
 -- | Run a computation with all the local declarations in the state.
 withFunctionLocals :: QName -> C a -> C a
 withFunctionLocals q k = do
-  ls <- takeWhile (isAnonymousModuleName . qnameModule)
-      . dropWhile (<= q)
-      . map fst
-      . filter (usableModality . getModality . snd) -- drop if it's an erased definition anyway
+  def <- getConstInfo q
+  ls <- map fst
+      . filter ((`inWhereBlockOf` def) . fst)
+      . filter (usableModality . getModality . snd)
       . sortDefs <$> liftTCM curDefs
   reportSDoc "agda2hs.compile.locals" 17 $ "Function locals: "<+> prettyTCM ls
   withLocals ls k
 
-
--- | Filter local declarations that belong to the given module.
-zoomLocals :: ModuleName -> LocalDecls -> LocalDecls
-zoomLocals mname = filter ((mname `isLeParentModuleOf`) . qnameModule)
-
-
--- | Before checking a clause, grab all of its local declarations.
--- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
-withClauseLocals :: ModuleName -> Clause -> C a -> C a
-withClauseLocals curModule c@Clause{..} k = do
+-- | Before checking a clause, restrict the local declarations to its where-blocks.
+withClauseLocals :: Clause -> C a -> C a
+withClauseLocals Clause{..} k = do
   ls <- asks locals
-  let
-    uses = filter
-      (  (curModule `isFatherModuleOf`) . qnameModule
-      \/ (`extLamUsedIn` c) )
-      (getLocalUses ls c)
-    nonExtLamUses = qnameModule <$> filter (not . isExtendedLambdaName) uses
-    whereModuleName
-      | null uses = Nothing
-      | otherwise = Just $ case nonExtLamUses ++ [curModule] of
-          (x:_) -> x
-          _ -> __IMPOSSIBLE__
-    ls' = case whereModuleName of
-      Nothing -> []
-      Just m  -> zoomLocals m ls
+  let ls' = case clauseWhereModule of
+              Nothing -> []
+              Just m  -> filter ((`isLeChildModuleOf` m) . qnameModule) ls
   reportSDoc "agda2hs.compile.locals" 18 $ "Clause locals: "<+> prettyTCM ls'
   withLocals ls' k
-
 
 -- | Ensure a definition can be defined as transparent.
 checkTransparentPragma :: Definition -> C ()
@@ -429,7 +405,6 @@ checkTransparentPragma def = compileFun False def >>= \case
     errNotTransparent = agda2hsErrorM $
       "Cannot make function" <+> prettyTCM (defName def) <+> "transparent." <+>
       "A transparent function must have exactly one non-erased argument and return it unchanged."
-
 
 -- | Mark a definition as one that should be inlined.
 checkInlinePragma :: Definition -> C ()

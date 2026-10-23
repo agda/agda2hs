@@ -185,7 +185,6 @@ compileDef f ty args =
     let defMod = qnameModule f
 
     minRecord <- asks minRecordName
-    -- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
     outerWhereModules <- asks whereModules
 
     (ty', args') <-
