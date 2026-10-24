@@ -48,6 +48,7 @@ import Agda2Hs.Compile.Var ( compileDBVar )
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
   ( hsName, pApp, patToExp, constrainType, qualifyType )
+import Agda2Hs.Pragma
 
 -- | Compilation rules for specific constructors in patterns.
 isSpecialCon :: QName -> Maybe (Type -> NAPs -> C (Hs.Pat ()))
@@ -350,7 +351,7 @@ compilePat _ (DotP (PatternInfo PatODot _) _) =
 compilePat _ p = agda2hsErrorM $ "bad pattern:" <?> prettyTCM p
 
 
-compileErasedConP :: Type -> Strictness -> NAPs -> C (Hs.Pat ())
+compileErasedConP :: Type -> UnboxMode -> NAPs -> C (Hs.Pat ())
 compileErasedConP ty s ps = compilePats ty ps >>= \case
   [p] -> addPatBang s p
   _   -> __IMPOSSIBLE__

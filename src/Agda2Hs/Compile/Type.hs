@@ -76,7 +76,7 @@ delayType [] = agda2hsError "Cannot compile unapplied Delay type"
 compileTypeWithStrictness :: Term -> C (Strictness, Hs.Type ())
 compileTypeWithStrictness t = do
   s <- case t of
-    Def f es -> fromMaybe Lazy <$> isUnboxRecord f
+    Def f es -> maybe Lazy unboxModeStrictness <$> isUnboxRecord f
     _        -> return Lazy
   ty <- compileType t
   pure (s, ty)

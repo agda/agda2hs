@@ -284,19 +284,22 @@ getDefAndPragma q = do
 getPragma :: QName -> C ParsedPragma
 getPragma q = snd <$> getDefAndPragma q
 
-isUnboxRecord :: QName -> C (Maybe Strictness)
+isUnboxRecord :: QName -> C (Maybe UnboxMode)
 isUnboxRecord q = getPragma q <&> \case
-  UnboxPragma UnboxLazy   -> Just Lazy
-  UnboxPragma UnboxStrict -> Just Strict
+  UnboxPragma mode -> Just mode
   _ -> Nothing
 
-isUnboxConstructor :: QName -> C (Maybe Strictness)
+isUnboxConstructor :: QName -> C (Maybe UnboxMode)
 isUnboxConstructor q =
   caseMaybeM (isRecordConstructor q) (return Nothing) $ isUnboxRecord . fst
 
-isUnboxProjection :: QName -> C (Maybe Strictness)
+isUnboxProjection :: QName -> C (Maybe UnboxMode)
 isUnboxProjection q =
   caseMaybeM (liftTCM $ getRecordOfField q) (return Nothing) isUnboxRecord
+
+unboxModeStrictness :: UnboxMode -> Strictness
+unboxModeStrictness UnboxLazy   = Lazy
+unboxModeStrictness UnboxStrict = Strict
 
 isTupleRecord :: QName -> C (Maybe Hs.Boxed)
 isTupleRecord q = getPragma q <&> \case
@@ -431,10 +434,10 @@ tellTypeOperatorsImport (Import _ _ parent name)
   | Hs.TypeNamespace {} <- nnNamespace name = tellExtension Hs.TypeOperators
 tellTypeOperatorsImport _ = pure ()
 
-addPatBang :: Strictness -> Hs.Pat () -> C (Hs.Pat ())
-addPatBang Strict p = tellExtension Hs.BangPatterns >>
+addPatBang :: UnboxMode -> Hs.Pat () -> C (Hs.Pat ())
+addPatBang UnboxStrict p = tellExtension Hs.BangPatterns >>
   return (Hs.PBangPat () p)
-addPatBang Lazy   p = return p
+addPatBang UnboxLazy   p = return p
 
 addTyBang :: Strictness -> Hs.Type () -> C (Hs.Type ())
 addTyBang Strict ty = tellExtension Hs.BangPatterns >>
