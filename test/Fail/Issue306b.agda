@@ -1,6 +1,6 @@
 open import Haskell.Prelude
 
-module Fail.Issue306b where
+module Issue306b where
 
 record Foo (a b : Set) : Set where
   no-eta-equality

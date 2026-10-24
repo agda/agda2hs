@@ -1,5 +1,5 @@
 
-module Fail.ExplicitInstance2 where
+module ExplicitInstance2 where
 
 open import Haskell.Prelude
 

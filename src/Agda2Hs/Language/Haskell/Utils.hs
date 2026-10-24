@@ -33,6 +33,15 @@ validConId s = case lexTokenStream s of
   ParseOk [Loc _ ConId{}] -> True
   _ -> False
 
+validModuleName :: ModuleName () -> Bool
+validModuleName (ModuleName _ name) = all validConId $ splitOnDot name
+  where
+    splitOnDot s =
+      let (part, rest) = break (== '.') s
+      in part : case rest of
+        []      -> []
+        _:parts -> splitOnDot parts
+
 validVarSym :: String -> Bool
 validVarSym s = case lexTokenStream s of
   ParseOk [Loc _ VarSym{}] -> True
@@ -293,10 +302,6 @@ patToExp = \case
   PatTypeSig _ p _    -> patToExp p
   PBangPat _ p        -> patToExp p
   _                   -> Nothing
-
-
-data Strictness = Lazy | Strict
-  deriving (Eq, Show)
 
 
 -- | Add a class constraint to a Haskell type.

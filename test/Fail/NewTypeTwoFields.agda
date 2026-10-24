@@ -1,4 +1,4 @@
-module Fail.NewTypeTwoFields where
+module NewTypeTwoFields where
 
 open import Haskell.Prelude
 

@@ -21,6 +21,7 @@ import Agda.Syntax.Scope.Monad
 import Agda.Syntax.TopLevelModuleName
 
 import Agda.TypeChecking.Monad ( topLevelModuleName )
+import Agda.TypeChecking.Monad.Signature ( setModuleCheckpoint )
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Sort
 import Agda.TypeChecking.Substitute
@@ -92,6 +93,13 @@ getTopLevelModuleForModuleName = loop . mnameToList
 -- | Get the toplevel module parent to a given a name.
 getTopLevelModuleForQName :: QName -> TCM TopLevelModuleName
 getTopLevelModuleForQName = getTopLevelModuleForModuleName . qnameModule
+
+-- | Make the active module parameters visible to Agda's instance canonicity
+-- checks. The checker reconstructs the module context from its checkpoint;
+-- in nested compilation contexts, the original checkpoint omits parameters
+-- currently in scope. Recording the active checkpoint preserves them.
+setModuleCheckpointForInstanceChecking :: ModuleName -> TCM ()
+setModuleCheckpointForInstanceChecking = setModuleCheckpoint
 
 lookupModuleInCurrentModule :: C.Name -> TCM [AbstractModule]
 lookupModuleInCurrentModule x =

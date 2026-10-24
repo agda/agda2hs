@@ -5,19 +5,20 @@ import Data.Maybe ( fromMaybe )
 import qualified Data.Map as Map
 import qualified Data.Text as Text
 
-import Agda.Compiler.Backend
+import Agda.Compiler.Backend hiding ( Strictness )
 import Agda.Compiler.Common ( curIF )
 
 import Agda.Syntax.Position
 import Agda.TypeChecking.Pretty (text)
 
 import Agda.Utils.FileName ( filePath )
+import Agda.Utils.Haskell.Syntax ( Strictness(..) )
 import Agda.Utils.Maybe.Strict ( toLazy )
 
 import Agda2Hs.Compile.Types
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( Strictness(..), srcLocToRange )
+import Agda2Hs.Language.Haskell.Utils ( srcLocToRange )
 
 pragmaName :: Text.Text
 pragmaName = "AGDA2HS"
@@ -52,12 +53,15 @@ data ParsedPragma
   | DefaultPragma [Hs.Deriving ()]
   | ClassPragma [String]
   | ExistingClassPragma
-  | UnboxPragma Strictness
+  | UnboxPragma UnboxMode
   | TransparentPragma
   | NewTypePragma [Hs.Deriving ()]
   | TuplePragma Hs.Boxed
   | CompileToPragma String
   | DerivePragma (Maybe (Hs.DerivStrategy ()))
+  deriving (Eq, Show)
+
+data UnboxMode = UnboxLazy | UnboxStrict
   deriving (Eq, Show)
 
 derivePragma :: String
@@ -90,8 +94,8 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
     | "class" `isPrefixOf` s      -> return $ ClassPragma (words $ drop 5 s)
     | s == "inline"               -> return InlinePragma
     | s == "existing-class"       -> return ExistingClassPragma
-    | s == "unboxed"              -> return $ UnboxPragma Lazy
-    | s == "unboxed-strict"       -> return $ UnboxPragma Strict
+    | s == "unboxed"              -> return $ UnboxPragma UnboxLazy
+    | s == "unboxed-strict"       -> return $ UnboxPragma UnboxStrict
     | s == "transparent"          -> return TransparentPragma
     | s == "tuple"                -> return $ TuplePragma Hs.Boxed
     | s == "unboxed-tuple"        -> return $ TuplePragma Hs.Unboxed

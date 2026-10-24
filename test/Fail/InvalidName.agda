@@ -1,5 +1,5 @@
 
-module Fail.InvalidName where
+module InvalidName where
 
 open import Haskell.Prelude
 

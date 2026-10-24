@@ -1,5 +1,5 @@
 
-module Fail.NonCopatternInstance where
+module NonCopatternInstance where
 
 open import Haskell.Prim using (Type)
 

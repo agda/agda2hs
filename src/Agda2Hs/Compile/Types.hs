@@ -15,15 +15,15 @@ import Data.Set ( Set )
 import Data.Map ( Map )
 import Data.String ( IsString(..) )
 
-import Agda.Compiler.Backend
+import Agda.Compiler.Backend hiding ( Strictness )
 import Agda.Syntax.Position ( Range )
 import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
 import Agda.TypeChecking.Warnings ( MonadWarning )
+import Agda.Utils.Haskell.Syntax ( Strictness )
 import Agda.Utils.Null
 import Agda.Utils.Impossible
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( Strictness )
 
 data GlobalEnv = GlobalEnv
   { globalOptions :: Options

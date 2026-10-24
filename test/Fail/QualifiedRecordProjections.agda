@@ -1,4 +1,4 @@
-module Fail.QualifiedRecordProjections where
+module QualifiedRecordProjections where
 
 open import Haskell.Prim using (Type)
 

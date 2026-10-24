@@ -21,7 +21,7 @@ import qualified Language.Haskell.Exts as Hs
 
 import System.FilePath ( (</>) )
 
-import Agda.Compiler.Backend hiding ( Args )
+import Agda.Compiler.Backend hiding ( Args, Strict, Strictness )
 import Agda.Compiler.Common ( compileDir )
 
 import Agda.Syntax.Common
@@ -48,6 +48,7 @@ import Agda.TypeChecking.Substitute ( Subst, TelV(TelV), Apply(..) )
 import Agda.TypeChecking.Telescope ( telView )
 
 import Agda.Utils.Lens ( (<&>) )
+import Agda.Utils.Haskell.Syntax ( Strictness(..) )
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Singleton
@@ -61,7 +62,7 @@ import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
-  ( Strictness(..), validVarName, validTypeName, validConName, hsName, pp )
+  ( validVarName, validTypeName, validConName, hsName, pp )
 
 agda2hsError :: (HasCallStack, MonadTCError m) => Doc -> m a
 agda2hsError msg = typeError $ CustomBackendError "agda2hs" msg
@@ -114,8 +115,10 @@ setCurrentRangeQ = setCurrentRange . nameBindingSite . qnameName
 
 isInScopeUnqualified :: QName -> C Bool
 isInScopeUnqualified x = lift $ do
-  ys <- inverseScopeLookupName' AmbiguousAnything x <$> getScope
-  return $ any (not . C.isQualified) ys
+  inScope <- isNameInScopeUnqualified x <$> getScope
+  reportSDoc "agda2hs.scope-check" 40 $
+    "unqualified scope check for" <+> prettyTCM x <+> "=>" <+> text (show inScope)
+  return inScope
 
 freshString :: String -> C String
 freshString s = liftTCM $ do
@@ -254,18 +257,22 @@ getDefAndPragma q = do
 getPragma :: QName -> C ParsedPragma
 getPragma q = snd <$> getDefAndPragma q
 
-isUnboxRecord :: QName -> C (Maybe Strictness)
+isUnboxRecord :: QName -> C (Maybe UnboxMode)
 isUnboxRecord q = getPragma q <&> \case
-  UnboxPragma s -> Just s
+  UnboxPragma mode -> Just mode
   _ -> Nothing
 
-isUnboxConstructor :: QName -> C (Maybe Strictness)
+isUnboxConstructor :: QName -> C (Maybe UnboxMode)
 isUnboxConstructor q =
   caseMaybeM (isRecordConstructor q) (return Nothing) $ isUnboxRecord . fst
 
-isUnboxProjection :: QName -> C (Maybe Strictness)
+isUnboxProjection :: QName -> C (Maybe UnboxMode)
 isUnboxProjection q =
   caseMaybeM (liftTCM $ getRecordOfField q) (return Nothing) isUnboxRecord
+
+unboxModeStrictness :: UnboxMode -> Strictness
+unboxModeStrictness UnboxLazy   = Lazy
+unboxModeStrictness UnboxStrict = Strict
 
 isTupleRecord :: QName -> C (Maybe Hs.Boxed)
 isTupleRecord q = getPragma q <&> \case
@@ -400,10 +407,10 @@ tellTypeOperatorsImport (Import _ _ parent name)
   | Hs.TypeNamespace {} <- nnNamespace name = tellExtension Hs.TypeOperators
 tellTypeOperatorsImport _ = pure ()
 
-addPatBang :: Strictness -> Hs.Pat () -> C (Hs.Pat ())
-addPatBang Strict p = tellExtension Hs.BangPatterns >>
+addPatBang :: UnboxMode -> Hs.Pat () -> C (Hs.Pat ())
+addPatBang UnboxStrict p = tellExtension Hs.BangPatterns >>
   return (Hs.PBangPat () p)
-addPatBang Lazy   p = return p
+addPatBang UnboxLazy   p = return p
 
 addTyBang :: Strictness -> Hs.Type () -> C (Hs.Type ())
 addTyBang Strict ty = tellExtension Hs.BangPatterns >>
