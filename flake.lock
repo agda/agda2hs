@@ -55,7 +55,8 @@
       "inputs": {
         "agda": "agda",
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "tastyGolden": "tastyGolden"
       }
     },
     "systems": {
@@ -71,6 +72,19 @@
         "owner": "nix-systems",
         "repo": "default",
         "type": "github"
+      }
+    },
+    "tastyGolden": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1000000000,
+        "narHash": "sha256-YcJm9ze1IP6o5g1htRnG6AIPVHrsXzxUIpV/LxN7d8Q=",
+        "type": "tarball",
+        "url": "https://hackage.haskell.org/package/tasty-golden-2.3.6/tasty-golden-2.3.6.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://hackage.haskell.org/package/tasty-golden-2.3.6/tasty-golden-2.3.6.tar.gz"
       }
     }
   },
