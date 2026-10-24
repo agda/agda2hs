@@ -359,6 +359,9 @@ withFunctionLocals q k = do
   def <- getConstInfo q
   ls <- map fst
       . filter ((`inWhereBlockOf` def) . fst)
+      -- Agda 2.9 includes module-application copies in curDefs. They are
+      -- references to existing definitions, not local declarations to compile.
+      . filter (not . defCopy . snd)
       . filter (usableModality . getModality . snd)
       . sortDefs <$> liftTCM curDefs
   reportSDoc "agda2hs.compile.locals" 17 $ "Function locals: "<+> prettyTCM ls
