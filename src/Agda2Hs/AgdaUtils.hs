@@ -21,7 +21,8 @@ import Agda.Syntax.Scope.Monad
 import Agda.Syntax.TopLevelModuleName
 
 import Agda.TypeChecking.Monad ( topLevelModuleName )
-import Agda.TypeChecking.Monad.Signature ( setModuleCheckpoint )
+import Agda.TypeChecking.Monad.Base ( asksTC, envCurrentCheckpoint, envTCContext )
+import Agda.TypeChecking.Monad.Context ( setModuleCheckpoint )
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Sort
 import Agda.TypeChecking.Substitute
@@ -99,7 +100,8 @@ getTopLevelModuleForQName = getTopLevelModuleForModuleName . qnameModule
 -- in nested compilation contexts, the original checkpoint omits parameters
 -- currently in scope. Recording the active checkpoint preserves them.
 setModuleCheckpointForInstanceChecking :: ModuleName -> TCM ()
-setModuleCheckpointForInstanceChecking = setModuleCheckpoint
+setModuleCheckpointForInstanceChecking m =
+  asksTC (envCurrentCheckpoint . envTCContext) >>= setModuleCheckpoint m
 
 lookupModuleInCurrentModule :: C.Name -> TCM [AbstractModule]
 lookupModuleInCurrentModule x =

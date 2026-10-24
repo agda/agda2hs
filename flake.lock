@@ -1,5 +1,22 @@
 {
   "nodes": {
+    "agda": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792313674,
+        "narHash": "sha256-glZW4h3O3wdG4qT99OC/2UBGgJLX+SOo5RoYNwn0fAw=",
+        "owner": "agda",
+        "repo": "agda",
+        "rev": "f26c433f6eaf0bb2345e87358a5dbaca347bc828",
+        "type": "github"
+      },
+      "original": {
+        "owner": "agda",
+        "repo": "agda",
+        "rev": "f26c433f6eaf0bb2345e87358a5dbaca347bc828",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -36,8 +53,10 @@
     },
     "root": {
       "inputs": {
+        "agda": "agda",
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "tastyGolden": "tastyGolden"
       }
     },
     "systems": {
@@ -53,6 +72,19 @@
         "owner": "nix-systems",
         "repo": "default",
         "type": "github"
+      }
+    },
+    "tastyGolden": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1000000000,
+        "narHash": "sha256-YcJm9ze1IP6o5g1htRnG6AIPVHrsXzxUIpV/LxN7d8Q=",
+        "type": "tarball",
+        "url": "https://hackage.haskell.org/package/tasty-golden-2.3.6/tasty-golden-2.3.6.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://hackage.haskell.org/package/tasty-golden-2.3.6/tasty-golden-2.3.6.tar.gz"
       }
     }
   },
