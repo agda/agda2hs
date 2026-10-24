@@ -19,7 +19,12 @@ import System.Directory
   )
 import System.Exit (ExitCode(..))
 import System.FilePath ((</>), dropExtension, makeRelative, takeDirectory)
-import System.Process (readProcessWithExitCode)
+import System.Process
+  ( CreateProcess(..)
+  , proc
+  , readCreateProcessWithExitCode
+  , readProcessWithExitCode
+  )
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.Golden (goldenVsStringDiff)
 
@@ -125,10 +130,8 @@ succeedTest testDir buildDir testName agdaFile goldenFile =
     createDirectoryIfMissing True generatedDir
 
     -- Run agda2hs with include path for Succeed directory
-    (exitCode, stdout, stderr) <- readProcessWithExitCode
-      "agda2hs"
+    (exitCode, stdout, stderr) <- runAgda2Hs succeedDir
       [agdaFile, "-o", outDir, "-v0", "-i" ++ succeedDir]
-      ""
 
     case exitCode of
       ExitSuccess -> do
@@ -164,10 +167,8 @@ failTest testDir buildDir testName agdaFile goldenFile =
 
     -- Run agda2hs (expecting failure) with include paths for both directories
     -- Fail tests may depend on modules from Succeed
-    (exitCode, stdout, stderr) <- readProcessWithExitCode
-      "agda2hs"
+    (exitCode, stdout, stderr) <- runAgda2Hs failDir
       [agdaFile, "-o", outDir, "-v0", "-i" ++ failDir, "-i" ++ succeedDir]
-      ""
 
     let output = stdout ++ stderr
         -- Relativize paths in the output
@@ -178,6 +179,13 @@ failTest testDir buildDir testName agdaFile goldenFile =
         return $ stringToLBS "UNEXPECTED SUCCESS"
       ExitFailure _ ->
         return $ stringToLBS relativizedOutput
+
+-- | Run agda2hs from the test project's directory so Agda picks up the
+-- corresponding per-directory .agda-lib file. Include paths alone do not
+-- select a project library.
+runAgda2Hs :: FilePath -> [String] -> IO (ExitCode, String, String)
+runAgda2Hs cwd args =
+  readCreateProcessWithExitCode ((proc "agda2hs" args) { cwd = Just cwd }) ""
 
 -- | Relativize absolute paths in error messages.
 -- This replaces absolute paths with relative paths to make tests portable.
