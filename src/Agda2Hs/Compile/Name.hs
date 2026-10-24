@@ -21,13 +21,14 @@ import Agda.Syntax.Internal
 import Agda.Syntax.Position
 import qualified Agda.Syntax.Concrete as C
 import Agda.Syntax.Abstract.Name ( amodName )
-import Agda.Syntax.Scope.Base ( inverseScopeLookupName, recomputeInverseScope' )
+import Agda.Syntax.Scope.Base ( inverseScopeLookupName )
 import Agda.Syntax.Scope.Monad ( resolveName, isDatatypeModule )
 import Agda.Syntax.TopLevelModuleName
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import qualified Agda.Syntax.Common.Pretty as P
 
 import Agda.TypeChecking.Datatypes ( isDataOrRecordType )
+import Agda.TypeChecking.Monad.State ( recomputeInverseScope )
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Records ( isRecordConstructor )
 import Agda.TypeChecking.Warnings ( warning )
@@ -193,14 +194,15 @@ compileQName f = do
 
     getQualifier :: QName -> Hs.ModuleName () -> C Qualifier
     getQualifier f mod = do
+      recomputeInverseScope
       scope <- getScope
       let names = inverseScopeLookupName f scope
-          rebuiltNames = inverseScopeLookupName f $ recomputeInverseScope' scope
-          validNames = filter validModuleQualifier rebuiltNames
+          validNames = filter validModuleQualifier names
           noValidQualifier = agda2hsErrorM $
             "No valid Haskell module qualifier for" <+> prettyTCM f <+>
-            "among" <+> prettyTCM rebuiltNames
-      debugInverseScopeLookup f scope names rebuiltNames
+            "among" <+> prettyTCM names
+      reportSDoc "agda2hs.name.scope" 40 $
+        "qualifier candidates for" <+> prettyTCM f <+> "=>" <+> prettyTCM names
       case validNames of
         C.QName{} : _ -> return Unqualified
         C.Qual as C.QName{} : _ -> liftTCM $ do
@@ -214,8 +216,8 @@ compileQName f = do
         -- Preserve the fallback for deeper qualified names after validating
         -- their complete module prefix above.
         C.Qual{} : _ -> return $ QualifiedAs Nothing
-        [] | null rebuiltNames -> case mod of
-          Hs.ModuleName _ targetModule | validModuleName targetModule ->
+        [] | null names -> case mod of
+          Hs.ModuleName _ _ | validModuleName mod ->
             return $ QualifiedAs Nothing
           _ -> noValidQualifier
         _ -> noValidQualifier

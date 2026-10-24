@@ -15,7 +15,6 @@ import Agda.Compiler.Backend hiding ( Args, Strictness )
 
 import Agda.Syntax.Common
 import Agda.Syntax.Internal
-import Agda.Syntax.Scope.Base ( inverseScopeLookupName, recomputeInverseScope' )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
@@ -149,15 +148,7 @@ compileType t = do
 
     _ -> fail
   where
-    fail = do
-      case t of
-        Def q _ -> do
-          scope <- liftTCM getScope
-          let names = inverseScopeLookupName q scope
-              rebuiltNames = inverseScopeLookupName q $ recomputeInverseScope' scope
-          debugInverseScopeLookup q scope names rebuiltNames
-        _ -> return ()
-      agda2hsErrorM $ text "Bad Haskell type:" <?> prettyTCM t
+    fail = agda2hsErrorM $ text "Bad Haskell type:" <?> prettyTCM t
 
 
 compileTypeArgs :: Type -> Args -> C [Hs.Type ()]
