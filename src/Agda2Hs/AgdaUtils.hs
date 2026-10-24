@@ -111,9 +111,12 @@ getTopLevelModuleForModuleName = loop . mnameToList
 getTopLevelModuleForQName :: QName -> TCM TopLevelModuleName
 getTopLevelModuleForQName = getTopLevelModuleForModuleName . qnameModule
 
--- | Set a module checkpoint at the currently active checkpoint.
-setModuleCheckpointAtCurrent :: ModuleName -> TCM ()
-setModuleCheckpointAtCurrent m =
+-- | Make the active module parameters visible to Agda's instance canonicity
+-- checks. The checker reconstructs the module context from its checkpoint;
+-- in nested compilation contexts, the original checkpoint omits parameters
+-- currently in scope. Recording the active checkpoint preserves them.
+setModuleCheckpointForInstanceChecking :: ModuleName -> TCM ()
+setModuleCheckpointForInstanceChecking m =
   asksTC (envCurrentCheckpoint . envTCContext) >>= setModuleCheckpoint m
 
 lookupModuleInCurrentModule :: C.Name -> TCM [AbstractModule]

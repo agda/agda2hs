@@ -82,7 +82,7 @@ compileInstance ToDefinition def@Defn{..} =
       reportSDoc "agda2hs.compile.instance" 25 $ text "compileInstance module: " <+> prettyTCM mod
       tel <- lookupSection mod
       addContext tel $ do
-        liftTCM $ setModuleCheckpointAtCurrent mod
+        liftTCM $ setModuleCheckpointForInstanceChecking mod
         -- We intentionally do not apply getContextArgs eagerly here so dotted
         -- patterns corresponding to module parameters are correctly detected
         -- (https://github.com/agda/agda2hs/issues/306)
@@ -227,7 +227,7 @@ compileInstanceClause' curModule ty (p:ps) c
             Nothing -> agda2hsError "not allowed: absurd clause for superclass"
             Just b  -> return b
           addContext (clauseTel c) $ do
-            liftTCM $ setModuleCheckpointAtCurrent curModule
+            liftTCM $ setModuleCheckpointForInstanceChecking curModule
             checkInstance body
           reportSDoc "agda2hs.compile.instance" 20 $ vcat
             [ text "compileInstanceClause dropping clause"

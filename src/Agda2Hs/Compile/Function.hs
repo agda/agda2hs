@@ -134,7 +134,7 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
       -- Jesper: we need to set the checkpoint for the current module so that
       -- the canonicity check for typeclass instances picks up the
       -- module parameters (see https://github.com/agda/agda2hs/issues/305).
-      liftTCM $ setModuleCheckpointAtCurrent m
+      liftTCM $ setModuleCheckpointForInstanceChecking m
 
       -- We apply the function clause to the module parameters from the context.
       -- In case of a projection-like function, the clause is already
