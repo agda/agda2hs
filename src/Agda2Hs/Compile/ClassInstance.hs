@@ -87,7 +87,7 @@ compileInstance ToDefinition def@Defn{..} =
         -- patterns corresponding to module parameters are correctly detected
         -- (https://github.com/agda/agda2hs/issues/306)
         (ds, rs) <- concatUnzip
-                <$> mapM (\c -> withClauseLocals mod c $ compileInstanceClause mod defType c) funClauses
+                <$> mapM (\c -> withClauseLocals c $ compileInstanceClause mod defType c) funClauses
         reportSDoc "agda2hs.compile.instance" 20 $ vcat $
           text "compileInstance compiled clauses: " :
           map (nest 2 . text . pp) ds
@@ -244,13 +244,19 @@ compileInstanceClause' curModule ty (p:ps) c
         reportSDoc "agda2hs.compile.instance" 40 $
           text $ "raw name: " ++ prettyShow (Def n [])
         d@Defn{..} <- getConstInfo n
-        let mod = if isExtendedLambdaName defName then curModule else qnameModule defName
+        let isExtLam = isExtendedLambdaName defName
+            mod = if isExtLam then curModule else qnameModule defName
+            -- The clauses of a pattern lambda in the right-hand side of the
+            -- instance clause see the where block of that clause.
+            inheritWhere cl
+              | isExtLam  = cl { clauseWhereModule = clauseWhereModule c }
+              | otherwise = cl
         let isMatchingProj [] = False
             isMatchingProj (p:ps) | ProjP _ g <- namedArg p = g .~ q
             isMatchingProj (p:ps) = isMatchingProj ps
         (fc, rs) <- withCurrentModule mod
             $ fmap concatUnzip
-            . mapM (compileInstanceClause mod defType)
+            . mapM (compileInstanceClause mod defType . inheritWhere)
             . filter (isMatchingProj . namedClausePats)
             $ funClauses theDef
         let hd = hsName $ prettyShow $ nameConcrete $ qnameName defName
