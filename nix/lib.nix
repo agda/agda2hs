@@ -1,9 +1,19 @@
 {
   pkgs ? import <nixpkgs> { },
+  agdaSrc ? null,
   ...
 }:
 let
-  hpkg = (pkgs.haskellPackages.callCabal2nix "agda2hs" ../. {}).overrideAttrs (
+  # cabal2nix ignores source-repository-package entries in cabal.project, so
+  # use the same pinned Agda source explicitly for the Nix build.
+  agdaPackage =
+    if agdaSrc == null then
+      pkgs.haskellPackages.Agda
+    else
+      pkgs.haskellPackages.callCabal2nix "Agda" agdaSrc { };
+  hpkg = (pkgs.haskellPackages.callCabal2nix "agda2hs" ../. {
+    Agda = agdaPackage;
+  }).overrideAttrs (
     finAttr: preAttr: {
       # add ./dist/build/agda2hs to $PATH
       # because cabal2nix doesn't pick up agda2hs from build-tool-depends of agda2hs-test

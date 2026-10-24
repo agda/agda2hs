@@ -1,9 +1,10 @@
 {
   pkgs ? import <nixpkgs> { },
+  agdaSrc ? null,
   ...
 }:
 let
-  lib = import ./lib.nix { inherit pkgs; };
+  lib = import ./lib.nix { inherit pkgs agdaSrc; };
   version = "1.3";
 
   base-lib = lib.mkDerivation {
