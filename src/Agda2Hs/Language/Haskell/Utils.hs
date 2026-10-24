@@ -33,8 +33,8 @@ validConId s = case lexTokenStream s of
   ParseOk [Loc _ ConId{}] -> True
   _ -> False
 
-validModuleName :: String -> Bool
-validModuleName = all validConId . splitOnDot
+validModuleName :: ModuleName () -> Bool
+validModuleName (ModuleName _ name) = all validConId $ splitOnDot name
   where
     splitOnDot s =
       let (part, rest) = break (== '.') s

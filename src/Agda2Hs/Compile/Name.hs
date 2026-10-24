@@ -49,7 +49,7 @@ import Agda2Hs.Language.Haskell.Utils ( hsName, hsModuleName, pp, validModuleNam
 validModuleQualifier :: C.QName -> Bool
 validModuleQualifier C.QName{} = True
 validModuleQualifier q@C.Qual{} =
-  validModuleName $ intercalate "." $ map prettyShow $ moduleQualifierParts q
+  validModuleName $ hsModuleName $ intercalate "." $ map prettyShow $ moduleQualifierParts q
 
 moduleQualifierParts :: C.QName -> [C.Name]
 moduleQualifierParts = \case
