@@ -7,6 +7,8 @@ Changes to agda2hs
 - Proper where-provenance so that subsequent anonymous modules with `module _`
   are no longer mistaken for local `where` definitions (see issue #463).
 
+See https://github.com/agda/agda2hs/issues?q=milestone%3A1.5+is%3Apr for the full list of changes.
+
 Additions to the agda2hs Prelude
 --------------------------------
 
@@ -15,8 +17,6 @@ Additions to the agda2hs Prelude
   the original number is its successor. It compiles to Haskell's `pred`
   and enables defining functions such as a `Nat` recursor on top of
   `ifDec` (see issue #385).
-
-See https://github.com/agda/agda2hs/issues?q=milestone%3A1.5+is%3Apr for the full list of changes.
 
 Fixed issues
 ------------
