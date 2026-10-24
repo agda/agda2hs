@@ -19,9 +19,7 @@ import Agda.TypeChecking.Datatypes ( getConType )
 import Agda.TypeChecking.Records ( getDefType )
 import Agda.TypeChecking.Reduce ( reduce )
 
-import Agda.Utils.Functor ( (<&>) )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
-import Agda.Utils.Lens ((^.))
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Size ( Sized(size) )

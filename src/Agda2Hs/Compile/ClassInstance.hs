@@ -20,7 +20,6 @@ import Agda.TypeChecking.Substitute ( Apply(applyE), absApp )
 import Agda.TypeChecking.Records
 import Agda.TypeChecking.Telescope ( mustBePi )
 
-import Agda.Utils.Lens
 import Agda.Utils.Monad ( ifNotM, whenM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 

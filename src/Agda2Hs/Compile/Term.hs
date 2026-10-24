@@ -22,7 +22,6 @@ import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope ( telView, mustBePi, piApplyM, flattenTel )
 import Agda.TypeChecking.ProjectionLike ( reduceProjectionLike )
 
-import Agda.Utils.Lens
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Maybe
 import Agda.Utils.Monad

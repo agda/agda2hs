@@ -6,7 +6,6 @@ import Control.Monad
 import Control.Monad.Except ( catchError )
 import Control.Monad.Reader
 
-import Data.Functor ( (<&>) )
 import Data.List ( intercalate )
 import qualified Data.Text as Text
 import qualified Data.Map.Strict as Map
@@ -16,7 +15,7 @@ import Agda.Compiler.Backend hiding ( topLevelModuleName )
 import Agda.Syntax.Common hiding (Rewrite)
 import Agda.Syntax.Internal
 import qualified Agda.Syntax.Concrete as C
-import Agda.Syntax.Scope.Base ( amodName, inverseScopeLookupName )
+import Agda.Syntax.Scope.Base ( inverseScopeLookupName )
 import Agda.Syntax.Scope.Monad ( isDatatypeModule )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import qualified Agda.Syntax.Common.Pretty as P
@@ -185,6 +184,7 @@ compileQName f = do
 
     getQualifier :: QName -> Hs.ModuleName () -> C Qualifier
     getQualifier f mod = do
+      recomputeInverseScope
       scope <- getScope
       let names = inverseScopeLookupName f scope
           validNames = filter validModuleQualifier names
