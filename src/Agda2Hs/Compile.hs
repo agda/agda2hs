@@ -19,6 +19,7 @@ import Agda.Utils.FileName ( isNewerThan )
 import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.TypeChecking.Pretty
+import Agda.TypeChecking.Monad.State ( recomputeInverseScope )
 import Agda.TypeChecking.Monad.Signature ( isInlineFun )
 import Agda.Utils.Impossible
 import Agda.Utils.List
@@ -84,6 +85,8 @@ moduleSetup genv _ m mifile = do
     else do
       reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
       setScope . iInsideScope =<< curIF
+      -- Agda 2.9 no longer recomputes inverse-scope maps in setScope.
+      recomputeInverseScope
       return $ Recompile m
 
 -- Main compile function
