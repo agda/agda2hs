@@ -23,7 +23,6 @@ import Agda.TypeChecking.Records
 import Agda.TypeChecking.Telescope ( mustBePi )
 import Agda.TypeChecking.Warnings ( warning )
 
-import Agda.Utils.Lens
 import Agda.Utils.Monad ( ifNotM, whenM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 

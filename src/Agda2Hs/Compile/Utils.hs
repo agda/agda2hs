@@ -37,11 +37,12 @@ import Agda.TypeChecking.Reduce ( reduce )
 import Agda.TypeChecking.Substitute ( Subst, TelV(TelV) )
 import Agda.TypeChecking.Telescope ( telView )
 
-import Agda.Utils.Lens ( (<&>) )
 import Agda.Utils.Haskell.Syntax ( Strictness(..) )
 import Agda.Utils.Maybe
+import qualified Agda.Utils.Maybe.Strict as Strict
 import Agda.Utils.Monad
 import Agda.Utils.Singleton
+import Agda.Utils.Tuple.Strict ( Pair(..) )
 
 import Agda2Hs.AgdaUtils ( (~~), isPublicName, isExportedFromDefiningModule, topLevelModuleNameForModuleName )
 import Agda2Hs.Compile.Types
@@ -410,7 +411,7 @@ withModuleOf q act = do
   liftTCM (getVisitedModule tlm) >>= \case
     Nothing -> act
     Just mi -> localCState $ do
-      liftTCM $ setTCLens stCurrentModule (Just (m, tlm))
+      liftTCM $ setTCLens stCurrentModule (Strict.Just (m :!: tlm))
       liftTCM $ setScope (iInsideScope $ miInterface mi)
       local (\e -> e { currModule = tlm }) act
 
@@ -535,7 +536,7 @@ checkNoAsPatterns = \case
     ConP _ cpi ps -> do
       checkPatternInfo $ conPInfo cpi
       forM_ ps $ checkNoAsPatterns . namedArg
-    LitP i _ -> checkPatternInfo i
+    LitP i _ -> checkPatternInfo $ litPInfo i
     ProjP{} -> return ()
     IApplyP i _ _ _ -> checkPatternInfo i
     DefP i _ ps -> do

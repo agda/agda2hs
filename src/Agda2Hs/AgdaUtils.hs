@@ -27,7 +27,6 @@ import Agda.TypeChecking.Reduce ( reduceDefCopy )
 
 import Agda.Utils.Either ( isRight )
 import Agda.Utils.GetOpt ( OptDescr(..) , ArgDescr(..) )
-import Agda.Utils.Lens ( (^.) )
 import qualified Agda.Utils.List1 as List1
 import Agda.Utils.Monad ( ifM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
@@ -97,7 +96,8 @@ getTopLevelModuleForQName = getTopLevelModuleForModuleName . qnameModule
 -- in nested compilation contexts, the original checkpoint omits parameters
 -- currently in scope. Recording the active checkpoint preserves them.
 setModuleCheckpointForInstanceChecking :: ModuleName -> TCM ()
-setModuleCheckpointForInstanceChecking = setModuleCheckpoint
+setModuleCheckpointForInstanceChecking m =
+  asksTC (envCurrentCheckpoint . envTCContext) >>= setModuleCheckpoint m
 
 lookupModuleInCurrentModule :: C.Name -> TCM [AbstractModule]
 lookupModuleInCurrentModule x =
