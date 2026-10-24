@@ -3,8 +3,3 @@ packages:
   ./lib/containers/containers-prop.cabal
 
 constraints: Agda +debug
-
-source-repository-package
-  type: git
-  location: https://github.com/agda/agda
-  tag: f26c433f6eaf0bb2345e87358a5dbaca347bc828

@@ -20,15 +20,13 @@ import Agda.Syntax.Common hiding (Rewrite)
 import Agda.Syntax.Internal
 import Agda.Syntax.Position
 import qualified Agda.Syntax.Concrete as C
-import Agda.Syntax.Abstract.Name ( amodName )
-import Agda.Syntax.Scope.Base ( inverseScopeLookupName )
+import Agda.Syntax.Scope.Base ( amodName, inverseScopeLookupName )
 import Agda.Syntax.Scope.Monad ( resolveName, isDatatypeModule )
 import Agda.Syntax.TopLevelModuleName
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import qualified Agda.Syntax.Common.Pretty as P
 
 import Agda.TypeChecking.Datatypes ( isDataOrRecordType )
-import Agda.TypeChecking.Monad.State ( recomputeInverseScope )
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Records ( isRecordConstructor )
 import Agda.TypeChecking.Warnings ( warning )
@@ -194,7 +192,6 @@ compileQName f = do
 
     getQualifier :: QName -> Hs.ModuleName () -> C Qualifier
     getQualifier f mod = do
-      recomputeInverseScope
       scope <- getScope
       let names = inverseScopeLookupName f scope
           validNames = filter validModuleQualifier names
