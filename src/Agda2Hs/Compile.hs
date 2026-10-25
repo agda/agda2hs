@@ -93,7 +93,9 @@ moduleSetup genv _ m mifile = do
       -- (see Issue #486).
       setScope . iInsideScope =<< curIF
       defs <- map snd . sortDefs <$> curDefs
-      mapM_ (runC genv m (optRewrites opts) . recordPragma) defs
+      -- recording pragmas does not need the abstract syntax of the module
+      let menv = ModuleEnv { moduleName = m, moduleAbstrSyn = __IMPOSSIBLE__ }
+      mapM_ (runC genv menv (optRewrites opts) . recordPragma) defs
       return $ Skip ()
     else do
       reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m

@@ -288,16 +288,22 @@ hsTopLevelModuleName = hsModuleName . Text.unpack . Text.intercalate "."
 -- | Given a module name (assumed to be a toplevel module),
 -- compute the associated Haskell module name, together with the top-level
 -- Agda module it belongs to.
-compileModuleName :: ModuleName -> C (HsModuleKind, Hs.ModuleName (), TopLevelModuleName)
-compileModuleName m = do
-  tlm <- liftTCM $ getTopLevelModuleForModuleName m
-  let hmod = hsTopLevelModuleName tlm
+compileModuleName :: (MonadTCM m) => ModuleName -> m (HsModuleKind, Hs.ModuleName (), TopLevelModuleName)
+compileModuleName m = liftTCM $ do
+  tlm <- getTopLevelModuleForModuleName m
   reportSDoc "agda2hs.name" 25 $
-    "Top-level module name for" <+> prettyTCM m <+> "is" <+> text (pp hmod)
-  case hsModuleKind hmod of
-    PrimModule -> return (PrimModule, Hs.ModuleName () "Prelude", tlm)
-    HsModule   -> return (HsModule, dropHaskellPrefix hmod, tlm)
-    AgdaModule -> return (AgdaModule, hmod, tlm)
+    "Top-level module name for" <+> prettyTCM m <+> "is" <+> pretty tlm
+  (kind, hmod) <- compileTopLevelModuleName tlm
+  return (kind, hmod, tlm)
+
+-- | Given a toplevel module name compute the associated Haskell module name.
+compileTopLevelModuleName :: (MonadTCM m) => TopLevelModuleName -> m (HsModuleKind, Hs.ModuleName ())
+compileTopLevelModuleName tlm0 = liftTCM $ do
+  let tlm = hsTopLevelModuleName tlm0
+  case hsModuleKind tlm of
+    PrimModule -> return (PrimModule, Hs.ModuleName () "Prelude")
+    HsModule   -> return (HsModule, dropHaskellPrefix tlm)
+    AgdaModule -> return (AgdaModule, tlm)
 
 importInstance :: QName -> C ()
 importInstance f = do

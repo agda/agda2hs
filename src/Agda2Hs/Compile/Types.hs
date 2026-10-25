@@ -36,6 +36,7 @@ data GlobalEnv = GlobalEnv
 data ModuleEnv = ModuleEnv
   { moduleName :: TopLevelModuleName
   , moduleAbstrSyn :: TCM TopLevelInfo
+  -- ^ recovers the abstract syntax of the current module on first use
   }
 
 type ModuleRes   = ()
@@ -114,6 +115,9 @@ data CompileEnv = CompileEnv
   -- ^ whether we should generate type signatures for functions
   }
 
+-- | @Nothing@       → no qualifier
+--   @Just Nothing@  → qualified
+--   @Just (Just m)@ → qualified as m
 type Qualifier = Maybe (Maybe (Hs.ModuleName ()))
 
 pattern Unqualified   = Nothing
@@ -136,10 +140,12 @@ data Import = Import
                     -- ^^ source range of the definition that triggered this import
   }
   | ImportInstances (Hs.ModuleName ())
+  | ImportModule (Hs.ModuleName ()) -- for reexport
 
 importModule :: Import -> Hs.ModuleName ()
 importModule (Import{ _importModule = mod }) = mod
 importModule (ImportInstances mod) = mod
+importModule (ImportModule mod) = mod
 
 type Imports = [Import]
 
@@ -150,6 +156,7 @@ data Export
   | ExportData (Hs.Name ())
   | ExportDataCons (Hs.Name ()) [Hs.Name ()]
   | ExportClass (Hs.Name ())
+  | ExportModule (Hs.ModuleName ())
 
 type Exports = [Export]
 

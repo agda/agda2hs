@@ -44,7 +44,7 @@ import Agda.Utils.Monad
 import Agda.Utils.Singleton
 import Agda.Utils.Tuple.Strict ( Pair(..) )
 
-import Agda2Hs.AgdaUtils ( (~~), isPublicName, isExportedFromDefiningModule, topLevelModuleNameForModuleName )
+import Agda2Hs.AgdaUtils ( (~~), isPublicName, isPatternSyn, isExportedFromDefiningModule, topLevelModuleNameForModuleName )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Pragma
 import qualified Data.List as L
@@ -212,8 +212,8 @@ isClassPragma = \case
   _                     -> False
 
 -- | Check if the given name corresponds to a type class in Haskell.
-isClassName :: QName -> C Bool
-isClassName q = getConstInfo' q >>= \case
+isClassName :: (MonadTCM m) => QName -> m Bool
+isClassName q = liftTCM (getConstInfo' q) >>= \case
   Right Defn{defName = r, theDef = Record{}} ->
     -- It would be nicer if we remembered this from when we looked at the record the first time.
     isClassPragma <$> processPragma r
@@ -560,23 +560,34 @@ noCheckNames = local $ \e -> e { checkNames = False }
 doNameCheck :: C Bool
 doNameCheck = reader checkNames
 
-shouldBeExported :: QName -> C Bool
-shouldBeExported name = andM
-  [ isPublicName name
-  , asks (not . compilingLocal)
-  , isNothing <$> isUnboxRecord name
-  , isNothing <$> isUnboxConstructor name
-  , isNothing <$> isUnboxProjection name
-  , isNothing <$> isTupleRecord name
-  , isNothing <$> isTupleConstructor name
-  , isNothing <$> isTupleProjection name
-  , not <$> isTransparentFunction name
-  , not <$> isInlinedFunction name
-  , isNothing <$> getCompileToName name
-  ]
-
 withoutSignature :: C a -> C a
 withoutSignature = local $ \e -> e { genSignature = False }
 
 shouldGenerateSignature :: C Bool
 shouldGenerateSignature = reader genSignature
+
+shouldBeExported :: (MonadTCM m) => QName -> m Bool
+shouldBeExported name =
+  andM
+    [ not <$> isPatternSyn name
+    , isPublicName name
+    , processPragma name >>= \case
+        InlinePragma -> pure False
+        -- NOTE: an instance has no name in Haskell, but it should still be exported
+        DefaultPragma {} -> pure True
+        ClassPragma {} -> pure True
+        ExistingPragma -> pure True
+        ExistingClassPragma -> pure True
+        UnboxPragma {} -> pure False
+        TransparentPragma -> pure False
+        NewTypePragma {} -> pure True
+        GadtPragma {} -> pure True
+        TuplePragma {} -> pure False
+        CompileToPragma {} -> pure False
+        -- an instance has no name in Haskell, but it should still be exported
+        DerivePragma {} -> pure True
+        NoPragma ->
+          ifJustM (liftTCM $ isRecordConstructor name) (shouldBeExported . fst) $ -- TODO(satoshi): take abstract into account
+          ifJustM (liftTCM $ getRecordOfField name) shouldBeExported $ -- TODO(satoshi): take abstract into account
+          pure False
+    ]
