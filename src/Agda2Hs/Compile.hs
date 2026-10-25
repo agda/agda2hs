@@ -23,6 +23,7 @@ import Agda.Syntax.Translation.ConcreteToAbstract
 import Agda.TypeChecking.Pretty
 import qualified Agda.Syntax.Concrete as C
 import Agda.Utils.Impossible
+import Agda.Utils.Maybe
 import Agda.Utils.List
 import Agda.Utils.Null
 import Agda.Utils.Monad ( whenM, anyM, when, unless )
@@ -49,19 +50,19 @@ globalSetup opts = do
 
 initCompileEnv :: GlobalEnv -> ModuleEnv -> SpecialRules -> CompileEnv
 initCompileEnv genv menv rewrites = CompileEnv
-  { globalEnv            = genv
-  , currModule           = moduleName menv
-  , currModuleAbstrDecls = moduleAbstrDecls menv
-  , minRecordName        = Nothing
-  , isNestedInType       = False
-  , locals               = []
-  , compilingLocal       = False
-  , whereModules         = []
-  , copatternsEnabled    = False
-  , rewrites             = rewrites
-  , writeImports         = True
-  , writeExports         = True
-  , checkNames           = True
+  { globalEnv          = genv
+  , currModule         = moduleName menv
+  , currModuleAbstrSyn = moduleAbstrSyn menv
+  , minRecordName      = Nothing
+  , isNestedInType     = False
+  , locals             = []
+  , compilingLocal     = False
+  , whereModules       = []
+  , copatternsEnabled  = False
+  , rewrites           = rewrites
+  , writeImports       = True
+  , writeExports       = True
+  , checkNames         = True
   }
 
 initCompileState :: CompileState
@@ -86,24 +87,30 @@ moduleSetup genv _ m mifile = do
       return $ Skip ()
     else do
       reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
-      decls <- topLevelDecls <$> recoverAbstractDecls m
+      recover <- recoverAbstrSynAction m
       setScope . iInsideScope =<< curIF
-      -- TODO(satoshi): preprocess decls so it's easier to use in later phases
-      return $ Recompile ModuleEnv {moduleName = m, moduleAbstrDecls = decls}
+      return $ Recompile ModuleEnv {moduleName = m, moduleAbstrSyn = recover}
 
--- | Re-parse and re-scope-check to get abstract syntax for a module
+-- | Returns an action that computes the abstract syntax for a module.
+-- The way this works is not great: re-parsing and re-scope-checking the module (in a suitable environment).
 
 -- FIXME(satoshi): better way?
--- Ref: Agda.Interaction.Imports.createInterface
-recoverAbstractDecls :: TopLevelModuleName -> TCM TopLevelInfo
-recoverAbstractDecls m = do
-  srcFile <- findFile m
-  src <- Imp.parseSource srcFile
-  let srcOrigin = Imp.srcOrigin src
-      topDecls = C.modDecls (Imp.srcModule src)
-  localTCState $ localTC (\e -> e { envCurrentPath = Just (srcFileId srcFile) }) $ do
-    setScope emptyScopeInfo
-    concreteToAbstract_ (TopLevel srcOrigin m topDecls)
+-- TODO(satoshi): preprocess syntax so it's easier to use in later phases
+recoverAbstrSynAction :: TopLevelModuleName -> TCM (TCM TopLevelInfo)
+recoverAbstrSynAction m = do
+  env <- askTC
+  ref <- liftIO $ newIORef Nothing
+  pure $
+    ifJustM (liftIO $ readIORef ref) pure $ localTC (const env) $ do
+      srcFile <- findFile m
+      src <- Imp.parseSource srcFile
+      let srcOrigin = Imp.srcOrigin src
+          topDecls = C.modDecls (Imp.srcModule src)
+      info <- localTCState $ localTC (\e -> e { envCurrentPath = Just (srcFileId srcFile) }) $ do
+        setScope emptyScopeInfo
+        concreteToAbstract_ (TopLevel srcOrigin m topDecls)
+      liftIO $ writeIORef ref (Just info)
+      return info
 
 -- Main compile function
 ------------------------
