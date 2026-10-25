@@ -17,6 +17,7 @@ import Data.String ( IsString(..) )
 import Agda.Compiler.Backend hiding ( Strictness )
 import Agda.Syntax.Position ( Range )
 import qualified Agda.Syntax.Abstract as A
+import Agda.Syntax.Translation.ConcreteToAbstract ( TopLevelInfo )
 import Agda.TypeChecking.Warnings ( MonadWarning )
 import Agda.Utils.Haskell.Syntax ( Strictness )
 import Agda.Utils.Null
@@ -34,7 +35,7 @@ data GlobalEnv = GlobalEnv
 
 data ModuleEnv = ModuleEnv
   { moduleName :: TopLevelModuleName
-  , moduleAbstrDecls :: [A.Declaration]
+  , moduleAbstrSyn :: TCM TopLevelInfo
   }
 
 type ModuleRes   = ()
@@ -87,8 +88,8 @@ data CompileEnv = CompileEnv
   -- ^ global environment
   , currModule :: TopLevelModuleName
   -- ^ the current module we are compiling
-  , currModuleAbstrDecls :: [A.Declaration]
-  -- ^ the abstract syntax of the current module
+  , currModuleAbstrSyn :: TCM TopLevelInfo
+  -- ^ recovers the abstract syntax of the current module on first use
   , minRecordName :: Maybe ModuleName
   -- ^ keeps track of the current minimal record we are compiling
   , isNestedInType :: Bool
