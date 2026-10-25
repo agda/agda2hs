@@ -1,4 +1,6 @@
-module Issue464Instance where
+module Issue464Instance
+  (Unit(..))
+where
 
 import Issue464Class (Default(def), Projected(projected), TwoMethods(methodOne, methodTwo))
 
