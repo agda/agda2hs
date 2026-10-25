@@ -256,8 +256,11 @@ hsTopLevelModuleName = hsModuleName . Text.unpack . Text.intercalate "."
 -- | Given a module name (assumed to be a toplevel module),
 -- compute the associated Haskell module name.
 compileModuleName :: ModuleName -> C (HsModuleKind, Hs.ModuleName ())
-compileModuleName m = do
-  tlm <- liftTCM $ hsTopLevelModuleName <$> getTopLevelModuleForModuleName m
+compileModuleName m = liftTCM $ compileModuleName' m
+
+compileModuleName' :: ModuleName -> TCM (HsModuleKind, Hs.ModuleName ())
+compileModuleName' m = do
+  tlm <- hsTopLevelModuleName <$> getTopLevelModuleForModuleName m
   reportSDoc "agda2hs.name" 25 $
     "Top-level module name for" <+> prettyTCM m <+> "is" <+> text (pp tlm)
   case hsModuleKind tlm of
