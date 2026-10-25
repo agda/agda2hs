@@ -1,6 +1,6 @@
 module Agda2Hs.Compile.ClassInstance where
 
-import Control.Monad ( when, filterM, unless )
+import Control.Monad ( filterM, forM_, unless, void, when )
 import Control.Monad.Reader ( asks, local )
 
 import Data.Foldable ( toList )
@@ -25,7 +25,7 @@ import Agda.TypeChecking.Telescope ( mustBePi, piApplyM )
 
 import Agda.Utils.Lens
 import Agda.Utils.List ( headWithDefault )
-import Agda.Utils.Monad ( ifNotM )
+import Agda.Utils.Monad ( ifNotM, whenM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils
@@ -37,7 +37,8 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( hsName, pp, replaceName, unQual )
+import Agda2Hs.Language.Haskell.Utils
+  ( hsName, pp, replaceName, unQual, definedName )
 
 enableCopatterns :: C a -> C a
 enableCopatterns = local $ \e -> e { copatternsEnabled = True }
@@ -261,6 +262,10 @@ compileInstanceClause' curModule ty (p:ps) c
             $ funClauses theDef
         let hd = hsName $ prettyShow $ nameConcrete $ qnameName defName
         let fc' = {- dropPatterns 1 $ -} replaceName hd uf fc
+        -- compileQName - register the method in the import list (e.g. Default(def))
+        -- when it is in record compiled to Haskell typeclass
+        when (not (null fc')) $
+          whenM (isClassFunction q) $ void (compileQName q)
         reportSDoc "agda2hs.compile.instance" 6 $ vcat $
           text "compileInstanceClause compiled clause: " :
           map (nest 2 . text . pp) fc'
@@ -297,6 +302,9 @@ compileInstanceClause' curModule ty (p:ps) c
 
       -- No minimal dictionary used, proceed with compiling as a regular clause.
       | otherwise -> do
+        -- compileQName - register the method in the import list (e.g. Default(def))
+        -- when it is in record compiled to Haskell typeclass
+        whenM (isClassFunction q) $ void (compileQName q)
         reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
         ms <- disableCopatterns $ compileClause curModule [] Nothing uf ty' c'
         let cc = Hs.FunBind () (toList ms)
