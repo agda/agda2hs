@@ -28,7 +28,8 @@ import Agda.TypeChecking.Reduce ( reduceDefCopy )
 import Agda.Utils.Either ( isRight )
 import Agda.Utils.GetOpt ( OptDescr(..) , ArgDescr(..) )
 import qualified Agda.Utils.List1 as List1
-import Agda.Utils.Monad ( ifM )
+import qualified Agda.Utils.Set1 as Set1
+import Agda.Utils.Monad ( ifM, foldM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import AgdaInternals ()
@@ -90,6 +91,12 @@ getTopLevelModuleForModuleName = loop . mnameToList
 -- | Get the toplevel module parent to a given a name.
 getTopLevelModuleForQName :: QName -> TCM TopLevelModuleName
 getTopLevelModuleForQName = getTopLevelModuleForModuleName . qnameModule
+
+-- | Group names by their defining toplevel module.
+groupByTopLevelModule :: (Foldable t) => t QName -> TCM (Map.Map TopLevelModuleName (Set1.Set1 QName))
+groupByTopLevelModule = flip foldM Map.empty $ \acc name -> do
+  mod <- getTopLevelModuleForQName name
+  pure $! Map.insertWith (<>) mod (Set1.singleton name) acc
 
 -- | Make the active module parameters visible to Agda's instance canonicity
 -- checks. The checker reconstructs the module context from its checkpoint;
@@ -167,3 +174,6 @@ isPublicName qname = liftTCM $ do
   let pubNames = Set.mapMonotonic anameName $ publicNames scopeInfo
   reportSDoc "agda2hs.public" 40 $ pretty pubNames
   pure $! Set.member qname pubNames
+
+isPatternSyn :: (MonadTCM m) => QName -> m Bool
+isPatternSyn qname = liftTCM $ Map.member qname <$> getAllPatternSyns

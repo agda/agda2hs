@@ -1,6 +1,8 @@
 module Importee
-  (foo, (!#), Foo(..), Fooable(..))
+  (module SecondImportee, foo, (!#), Foo(..), Fooable(..))
 where
+
+import SecondImportee
 
 foo :: Int
 foo = 42
