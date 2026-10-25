@@ -12,11 +12,16 @@ import Data.List ( isPrefixOf, group, sort )
 import qualified Data.Map as M
 import qualified Data.Set as S
 
+import qualified Agda.Interaction.Imports as Imp
+import Agda.Interaction.FindFile ( findFile )
 import Agda.Compiler.Backend
 import Agda.Compiler.Common ( curIF )
 import Agda.Utils.FileName ( isNewerThan )
+import Agda.Syntax.Scope.Base ( emptyScopeInfo )
 import Agda.Syntax.Common.Pretty ( prettyShow )
+import Agda.Syntax.Translation.ConcreteToAbstract
 import Agda.TypeChecking.Pretty
+import qualified Agda.Syntax.Concrete as C
 import Agda.Utils.Impossible
 import Agda.Utils.List
 import Agda.Utils.Null
@@ -42,27 +47,28 @@ globalSetup opts = do
   ilMap <- liftIO $ newIORef S.empty
   return $ GlobalEnv opts ctMap ilMap
 
-initCompileEnv :: GlobalEnv -> TopLevelModuleName -> SpecialRules -> CompileEnv
-initCompileEnv genv tlm rewrites = CompileEnv
-  { globalEnv         = genv
-  , currModule        = tlm
-  , minRecordName     = Nothing
-  , isNestedInType    = False
-  , locals            = []
-  , compilingLocal    = False
-  , whereModules      = []
-  , copatternsEnabled = False
-  , rewrites          = rewrites
-  , writeImports      = True
-  , writeExports      = True
-  , checkNames        = True
+initCompileEnv :: GlobalEnv -> ModuleEnv -> SpecialRules -> CompileEnv
+initCompileEnv genv menv rewrites = CompileEnv
+  { globalEnv            = genv
+  , currModule           = moduleName menv
+  , currModuleAbstrDecls = moduleAbstrDecls menv
+  , minRecordName        = Nothing
+  , isNestedInType       = False
+  , locals               = []
+  , compilingLocal       = False
+  , whereModules         = []
+  , copatternsEnabled    = False
+  , rewrites             = rewrites
+  , writeImports         = True
+  , writeExports         = True
+  , checkNames           = True
   }
 
 initCompileState :: CompileState
 initCompileState = CompileState { lcaseUsed = 0 }
 
-runC :: GlobalEnv -> TopLevelModuleName -> SpecialRules -> C a -> TCM (a, CompileOutput)
-runC genv tlm rewrites c = evalRWST c (initCompileEnv genv tlm rewrites) initCompileState
+runC :: GlobalEnv -> ModuleEnv -> SpecialRules -> C a -> TCM (a, CompileOutput)
+runC genv menv rewrites c = evalRWST c (initCompileEnv genv menv rewrites) initCompileState
 
 moduleSetup :: GlobalEnv -> IsMain -> TopLevelModuleName -> Maybe FilePath -> TCM (Recompile ModuleEnv ModuleRes)
 moduleSetup genv _ m mifile = do
@@ -80,8 +86,24 @@ moduleSetup genv _ m mifile = do
       return $ Skip ()
     else do
       reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
+      decls <- topLevelDecls <$> recoverAbstractDecls m
       setScope . iInsideScope =<< curIF
-      return $ Recompile m
+      -- TODO(satoshi): preprocess decls so it's easier to use in later phases
+      return $ Recompile ModuleEnv {moduleName = m, moduleAbstrDecls = decls}
+
+-- | Re-parse and re-scope-check to get abstract syntax for a module
+
+-- FIXME(satoshi): better way?
+-- Ref: Agda.Interaction.Imports.createInterface
+recoverAbstractDecls :: TopLevelModuleName -> TCM TopLevelInfo
+recoverAbstractDecls m = do
+  srcFile <- findFile m
+  src <- Imp.parseSource srcFile
+  let srcOrigin = Imp.srcOrigin src
+      topDecls = C.modDecls (Imp.srcModule src)
+  localTCState $ localTC (\e -> e { envCurrentPath = Just (srcFileId srcFile) }) $ do
+    setScope emptyScopeInfo
+    concreteToAbstract_ (TopLevel srcOrigin m topDecls)
 
 -- Main compile function
 ------------------------

@@ -16,6 +16,7 @@ import Data.String ( IsString(..) )
 
 import Agda.Compiler.Backend hiding ( Strictness )
 import Agda.Syntax.Position ( Range )
+import qualified Agda.Syntax.Abstract as A
 import Agda.TypeChecking.Warnings ( MonadWarning )
 import Agda.Utils.Haskell.Syntax ( Strictness )
 import Agda.Utils.Null
@@ -31,7 +32,11 @@ data GlobalEnv = GlobalEnv
   -- ^ names of functions that should be inlined
   }
 
-type ModuleEnv   = TopLevelModuleName
+data ModuleEnv = ModuleEnv
+  { moduleName :: TopLevelModuleName
+  , moduleAbstrDecls :: [A.Declaration]
+  }
+
 type ModuleRes   = ()
 type CompiledDef = [Ranged [Hs.Decl ()]]
 type Ranged a    = (Range, a)
@@ -82,6 +87,8 @@ data CompileEnv = CompileEnv
   -- ^ global environment
   , currModule :: TopLevelModuleName
   -- ^ the current module we are compiling
+  , currModuleAbstrDecls :: [A.Declaration]
+  -- ^ the abstract syntax of the current module
   , minRecordName :: Maybe ModuleName
   -- ^ keeps track of the current minimal record we are compiling
   , isNestedInType :: Bool
