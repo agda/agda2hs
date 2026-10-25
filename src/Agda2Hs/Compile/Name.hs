@@ -6,6 +6,7 @@ import Control.Monad
 import Control.Monad.Except ( catchError )
 import Control.Monad.Reader
 
+import Data.Foldable1
 import Data.List ( intercalate )
 import qualified Data.Text as Text
 import qualified Data.Map.Strict as Map
@@ -193,9 +194,9 @@ compileQName f = do
             "among" <+> prettyTCM names
       reportSDoc "agda2hs.name.scope" 40 $
         "qualifier candidates for" <+> prettyTCM f <+> "=>" <+> prettyTCM names
-      case validNames of
-        C.QName{} : _ -> return Unqualified
-        C.Qual as C.QName{} : _ -> liftTCM $ do
+      case foldl1' pickQName <$> (List1.nonEmpty validNames) of
+        Just (C.QName{}) -> return Unqualified
+        Just (C.Qual as C.QName{}) -> liftTCM $ do
           let qual = hsModuleName $ prettyShow as
           lookupModuleInCurrentModule as >>= \case
             (x:_) | qual /= mod -> do
@@ -205,12 +206,18 @@ compileQName f = do
           `catchError` \_ -> return $ QualifiedAs Nothing
         -- Preserve the fallback for deeper qualified names after validating
         -- their complete module prefix above.
-        C.Qual{} : _ -> return $ QualifiedAs Nothing
-        [] | null names -> case mod of
+        Just C.Qual{} -> return $ QualifiedAs Nothing
+        Nothing | null names -> case mod of
           Hs.ModuleName _ _ | validModuleName mod ->
             return $ QualifiedAs Nothing
           _ -> noValidQualifier
         _ -> noValidQualifier
+
+    pickQName :: C.QName -> C.QName -> C.QName
+    pickQName a@C.QName{} _ = a
+    pickQName a@(C.Qual as C.QName{}) b@(C.Qual bs C.QName{}) =
+      if as < bs then a else b
+    pickQName a b = a
 
     qualify :: Hs.ModuleName () -> Hs.Name () -> Qualifier -> Hs.QName ()
     qualify mod n = \case
