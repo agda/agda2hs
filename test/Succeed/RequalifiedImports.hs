@@ -4,7 +4,7 @@ where
 
 import OtherImportee (OtherFoo(MkFoo))
 import QualifiedImportee ()
-import qualified QualifiedImportee as C (Foo, Fooable(defaultFoo, doTheFoo), foo, (!#))
+import qualified QualifiedImportee as A (Foo, Fooable(defaultFoo, doTheFoo), foo, (!#))
 
 -- ** conflicting imports are all replaced with the "smallest" qualifier
 --   * the characters are ordered based on their ASCII value (i.e. capitals first)
@@ -12,16 +12,16 @@ import qualified QualifiedImportee as C (Foo, Fooable(defaultFoo, doTheFoo), foo
 --   * the scope-checker has already replaced previous definitions in the file
 
 requalBar :: Int
-requalBar = C.foo
+requalBar = A.foo
 
 requalBaz :: Int
-requalBaz = (C.!#) 2 2
+requalBaz = (A.!#) 2 2
 
-requalFooable :: C.Foo
-requalFooable = C.doTheFoo
+requalFooable :: A.Foo
+requalFooable = A.doTheFoo
 
-requalDefaultBar :: C.Foo
-requalDefaultBar = C.defaultFoo
+requalDefaultBar :: A.Foo
+requalDefaultBar = A.defaultFoo
 
 -- ** qualifying an open'ed module has no effect
 
