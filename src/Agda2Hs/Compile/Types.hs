@@ -16,7 +16,6 @@ import Data.String ( IsString(..) )
 
 import Agda.Compiler.Backend hiding ( Strictness )
 import Agda.Syntax.Position ( Range )
-import qualified Agda.Syntax.Abstract as A
 import Agda.Syntax.Translation.ConcreteToAbstract ( TopLevelInfo )
 import Agda.TypeChecking.Warnings ( MonadWarning )
 import Agda.Utils.Haskell.Syntax ( Strictness )
