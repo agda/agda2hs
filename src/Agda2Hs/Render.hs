@@ -93,7 +93,8 @@ writeModule genv menv isMain m outs = do
       imps = concat impss
       exps = concat expss
       exts = concat extss
-  unless (null code && null defs && isMain == NotMain) $ do
+  hasReexp <- hasHaskellReexports m
+  unless (null code && null defs && isMain == NotMain && not hasReexp) $ do
 
     let unlines' [] = []
         unlines' ss = unlines ss ++ "\n"
