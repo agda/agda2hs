@@ -1,9 +1,7 @@
 -- Compiling (im|ex)ports
 module Agda2Hs.Compile.Ports ( compilePorts, preludeImportDecl, hasHaskellReexports ) where
 
-import Data.Bifunctor ( bimap, first )
 import Data.Char ( isUpper )
-import Data.List ( isPrefixOf )
 import qualified Data.List as L
 import Data.Map ( Map )
 import qualified Data.Map as Map
@@ -14,13 +12,10 @@ import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils ( validVarId, validConId, pp )
 
 import Agda.Compiler.Backend
-import Agda.Compiler.Common
-import Agda.TypeChecking.Pretty ( pretty, text, vsep, prettyList_, (<+>), vcat )
+import Agda.TypeChecking.Pretty ( pretty, text, prettyList_, (<+>) )
 import qualified Agda.Syntax.Abstract as A
-import qualified Agda.Syntax.Abstract.Name as A
 import Agda.Syntax.Translation.ConcreteToAbstract
 import Agda.Syntax.Scope.Base
-import Agda.Syntax.Info as A
 import Agda.Syntax.Common
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.Utils.Monad ( liftM2, concatMapM, filterM, anyM )
