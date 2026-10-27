@@ -23,8 +23,9 @@ import Agda.Syntax.Scope.Base
 import Agda.Syntax.Info as A
 import Agda.Syntax.Common
 import Agda.Syntax.Common.Pretty ( prettyShow )
-import Agda.Utils.Monad ( when, liftM2, forMaybeM, concatMapM )
+import Agda.Utils.Monad ( liftM2, concatMapM, filterM )
 import Agda.Utils.Impossible
+import qualified Agda.Utils.List1 as List1
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name
@@ -91,35 +92,62 @@ toExport :: Reexport -> Export
 toExport = \case
   ReexportModule m -> ExportModule m
 
-pattern OpenImportDirective { using, hiding, impRenaming }
-  <- ImportDirective { publicOpen = Just _, using, hiding, impRenaming}
+pattern OpenImportDirective { using, hiding, impRenaming } <-
+  ImportDirective { publicOpen = Just _, using, hiding, impRenaming }
 
 extractReexports :: ModuleEnv -> TCM Reexports
 extractReexports menv = do
-  allImports <- getImports . topLevelDecls <$> moduleAbstrSyn menv
-  flip concatMapM allImports $ \(mod, directive) -> case directive of
-    OpenImportDirective { using = UseEverything , hiding = [] , impRenaming = [] } -> do
-      (kind, m) <- compileModuleName' mod
+  scopeInfo <- getScope
+  let reexps = reexportedNames scopeInfo
+  -- TODO(satoshi): use Set.filterA instead when we start using containers>=0.8.1
+  reexpsHs <- fmap Set.fromAscList $ filterM (shouldBeExported . anameName) $ Set.toAscList reexps
+  reexpOrigins <- fmap Set.fromList $ traverse (getTopLevelModuleForQName . anameName) $ Set.toList reexpsHs
+  allImps <- Map.unionsWith (++) . map allImportDecls . topLevelDecls <$> moduleAbstrSyn menv
+  impsToCompile <- flip filterM (Map.toAscList allImps) $ \(mod, _) ->
+    (`Set.member` reexpOrigins) <$> topLevelModuleNameForModuleName mod
+  reportSDoc "agda2hs.reexport" 50 $ "reexported names:" <+> pretty reexps
+  reportSDoc "agda2hs.reexport" 50 $ "reexported names exist in Haskell:" <+> pretty reexpsHs
+  reportSDoc "agda2hs.reexport" 50 $ "toplevel modules that exports names to reexport:" <+> pretty reexpOrigins
+  reportSDoc "agda2hs.reexport" 50 $ "all import declarations:" <+> pretty allImps
+  reportSDoc "agda2hs.reexport" 50 $ "import declarations to compile to reexport:" <+> pretty impsToCompile
+  flip concatMapM impsToCompile $ \(mod, directive) -> case directive of
+    [OpenImportDirective { using = UseEverything , hiding = [] , impRenaming = [] }] -> do
+      (kind, m) <- compileModuleName mod
       case kind of
-        PrimModule -> error "TODO"
+        PrimModule -> pure []
         HsModule -> error "TODO"
-        AgdaModule -> pure [ReexportModule m]
+        AgdaModule -> do
+          pure [ReexportModule m]
     _ -> pure []
-  where
-    -- FIXME(wasabi315): track imports in nested modules
-    -- an open-public-ed nested module may reexports other modules
-    getImports = \case
-      [A.Section _ _ _ _ decls] ->
-        let go = \case
-              A.Import _ modName impDir -> pure (modName, impDir)
-              A.ScopedDecl _ decls -> go =<< decls
-              _ -> []
-         in go =<< decls
-      -- discard imports before module header because they can't be open-public-ed.
-      (_ : decls) -> getImports decls
-      _ -> __IMPOSSIBLE__
+
+-- Ref: Agda.Syntax.Scope.Base.publicNames
+reexportedNames :: ScopeInfo -> Set AbstractName
+reexportedNames scope =
+  Set.fromList $ List1.concat $ Map.elems $
+  namesInScope [ImportedNS] $ mergeScopes $ Map.elems $ publicModules scope
+
+-- | Collect all import declarations. A module can be imported multiple times with different directives.
+allImportDecls :: A.Declaration -> Map ModuleName [A.ImportDirective]
+allImportDecls = \case
+  A.Import _ modName impDir -> Map.singleton modName [impDir]
+  A.ScopedDecl _ decls -> Map.unionsWith (++) $ map allImportDecls decls
+  A.Section _ _ _ _ decls -> Map.unionsWith (++) $ map allImportDecls decls
+  _ -> mempty
 
 {-
+
+- How to decide whether a module to reexport exists in Haskell side?
+  - for PrimModules we don't keep reexport.
+  - for HsModules we just assume their existence and thus always reexport?
+    - this doesn't work! There is no corresponding Haskell module for Haskell.Law.Equality, for example.
+    - Haskell.* modules don't produce any Haskell code, but this does not necessarily mean there's no Haskell module to reexport.
+  - we need whether the module is writeModule-ed
+    - `unless (null code && null defs && isMain == NotMain) $ do ...`
+  - store the condition in the global env (update in writeModule)
+  - problem: we skip compilation for up-to-date modules and thus the condition for such modules is not gonna be available
+  - can we do something in moduleSetup?
+    - traverse internal syntax, which we can get from curIF, and see whether the module contains some definition with suitable compile agda2hs pragmas or foreign codes
+  - later we wanna handle open import public using ( ... ).
 
 - Don't reexport modules that does not contain any AGDA2HS COMPILE (default|class|newtype|existing-class|compile-to) pragma
 - Unless the module name is prefixed by Haskell.

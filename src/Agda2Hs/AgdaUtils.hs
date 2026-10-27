@@ -167,3 +167,6 @@ isPublicName qname = liftTCM $ do
   let pubNames = Set.mapMonotonic anameName $ publicNames scopeInfo
   reportSDoc "agda2hs.public" 40 $ pretty pubNames
   pure $! Set.member qname pubNames
+
+isPatternSyn :: (MonadTCM m) => QName -> m Bool
+isPatternSyn qname = liftTCM $ Map.member qname <$> getAllPatternSyns

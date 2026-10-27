@@ -1,7 +1,9 @@
-open import Vector
-
 module Reexport where
 
-open import Test public
-open import Tuples public using ( swap ) renaming ( t1 to yeet )
+open import TransparentFun public
+open import Inlining public
 
+module M where
+  open import Importee public
+
+open M public
