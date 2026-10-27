@@ -186,7 +186,16 @@ checkClashingImports (Import mod as p (NamespacedName _ q) : is) =
     (i : _) -> agda2hsStringError $ mkErrorMsg i
     []      -> checkClashingImports is
   where
-    isClashing (Import _ as' p' (NamespacedName _ q')) = (as' == as) && (p' /= p) && (q' == q)
+    isClashing (Import _ as' p' (NamespacedName _ q')) =
+      (as' == as) && (p' /= p) && (q' == q) && not (bareWithSelfParent p p')
+      where
+        -- An unnamed record constructor is imported under the record
+        -- name, which is also the name of the constructor itself
+        -- (e.g. @Example(Example)@). Importing it together with the bare
+        -- record name is not a clash: both refer to the same entity.
+        bareWithSelfParent Nothing  (Just p) = nnName p == q
+        bareWithSelfParent (Just p) Nothing  = nnName p == q
+        bareWithSelfParent _        _        = False
     isClashing ImportInstances{} = False
     mkErrorMsg (Import _ _ p' (NamespacedName _ q')) =
           "Clashing import: " ++ pp q ++ " (both from "
