@@ -112,7 +112,7 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
     (ensureNoLocals err >> compileTypeDef x def)
     -- otherwise, we have to compile clauses.
     $ do
-    whenM (shouldBeExported defName `and2M` asks writeExports) $ do
+    whenM (andM [shouldBeExported defName, asks (not . compilingLocal), asks writeExports]) $
       tellExport (ExportFun x)
 
     tel <- lookupSection m
