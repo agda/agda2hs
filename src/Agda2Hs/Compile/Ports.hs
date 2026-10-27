@@ -1,5 +1,5 @@
 -- Compiling (im|ex)ports
-module Agda2Hs.Compile.Ports ( compilePorts, preludeImportDecl ) where
+module Agda2Hs.Compile.Ports ( compilePorts, preludeImportDecl, hasHaskellReexports ) where
 
 import Data.Bifunctor ( bimap, first )
 import Data.Char ( isUpper )
@@ -23,7 +23,7 @@ import Agda.Syntax.Scope.Base
 import Agda.Syntax.Info as A
 import Agda.Syntax.Common
 import Agda.Syntax.Common.Pretty ( prettyShow )
-import Agda.Utils.Monad ( liftM2, concatMapM, filterM )
+import Agda.Utils.Monad ( liftM2, concatMapM, filterM, anyM )
 import Agda.Utils.Impossible
 import qualified Agda.Utils.List1 as List1
 
@@ -119,6 +119,11 @@ extractReexports menv = do
         AgdaModule -> do
           pure [ReexportModule m]
     _ -> pure []
+
+hasHaskellReexports :: TopLevelModuleName -> TCM Bool
+hasHaskellReexports mname = do
+  iface <- maybe __IMPOSSIBLE__ miInterface <$> getVisitedModule mname
+  anyM (shouldBeExported . anameName) $ reexportedNames $ iInsideScope iface
 
 -- Ref: Agda.Syntax.Scope.Base.publicNames
 reexportedNames :: ScopeInfo -> Set AbstractName
