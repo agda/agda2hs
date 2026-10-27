@@ -10,7 +10,7 @@ import qualified Data.Map as Map
 
 import Agda.Compiler.Backend
 
-import Agda.Syntax.Common ( Arg(unArg), defaultArg, HasEta'(..) )
+import Agda.Syntax.Common ( HasEta'(..) )
 import Agda.Syntax.Internal
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
@@ -19,7 +19,6 @@ import Agda.TypeChecking.Substitute ( TelV(TelV), Apply(apply) )
 import Agda.TypeChecking.Telescope
 
 import Agda.Utils.Monad ( whenM, and2M )
-import Agda.Utils.Singleton
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils

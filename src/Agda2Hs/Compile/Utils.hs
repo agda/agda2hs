@@ -1,15 +1,11 @@
 module Agda2Hs.Compile.Utils where
 
-import Control.Monad ( forM_ )
-import Control.Arrow ( Arrow((***)), (&&&) )
-import Control.Monad.Except
+import Control.Arrow ( Arrow((***)) )
 import Control.Monad.Reader
 import Control.Monad.Writer ( tell )
-import Control.Monad.State ( put, modify )
-
+import Control.Monad.State ( modify )
 import Data.IORef
 import Data.List ( isPrefixOf, stripPrefix )
-import Data.Maybe ( isJust )
 import qualified Data.Map as M
 import Data.String ( IsString(..) )
 import Data.Set ( Set )
@@ -29,22 +25,15 @@ import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Internal
 import Agda.Syntax.Position ( noRange )
 import Agda.Syntax.Scope.Base
-import Agda.Syntax.Scope.Monad ( bindVariable, freshConcreteName, isDatatypeModule )
+import Agda.Syntax.Scope.Monad ( bindVariable )
 import Agda.Syntax.TopLevelModuleName
 import Agda.Syntax.Common.Pretty ( prettyShow )
-import qualified Agda.Syntax.Common.Pretty as P
 
-import Agda.TypeChecking.CheckInternal ( infer )
-import Agda.TypeChecking.Constraints ( noConstraints )
-import Agda.TypeChecking.Conversion ( equalTerm )
-import Agda.TypeChecking.InstanceArguments ( findInstance )
 import Agda.TypeChecking.Level ( isLevelType )
-import Agda.TypeChecking.MetaVars ( newInstanceMeta )
-import Agda.TypeChecking.Monad.SizedTypes ( isSizeType )
 import Agda.TypeChecking.Pretty ( Doc, (<+>), text, PrettyTCM(..), pretty )
 import Agda.TypeChecking.Records ( isRecordConstructor, getRecordOfField )
-import Agda.TypeChecking.Reduce ( instantiate, reduce )
-import Agda.TypeChecking.Substitute ( Subst, TelV(TelV), Apply(..) )
+import Agda.TypeChecking.Reduce ( reduce )
+import Agda.TypeChecking.Substitute ( Subst, TelV(TelV) )
 import Agda.TypeChecking.Telescope ( telView )
 
 import Agda.Utils.Lens ( (<&>) )
@@ -53,14 +42,12 @@ import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Singleton
 
-import AgdaInternals
-import Agda2Hs.AgdaUtils ( (~~), resolveStringName, isPublicName )
+import Agda2Hs.AgdaUtils ( (~~), isPublicName )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Pragma
 import qualified Data.List as L
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
-import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
   ( validVarName, validTypeName, validConName, hsName, pp )
 

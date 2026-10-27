@@ -1,27 +1,21 @@
 module Agda2Hs.Compile.TypeDefinition where
 
-import Control.Monad ( unless )
 import Control.Monad.Reader ( asks )
 
 import Data.Maybe ( fromMaybe )
 
 import Agda.Compiler.Backend
 
-import Agda.Syntax.Common ( namedArg )
 import Agda.Syntax.Internal
 import Agda.Syntax.Internal.Pattern
-
-import Agda.TypeChecking.Telescope ( mustBePi )
 
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Monad
 
-import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTypeArgs )
+import Agda2Hs.Compile.Type ( compileType, compileTypeArgs )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
-import Agda.Syntax.Common.Pretty (prettyShow)
-import Agda.TypeChecking.Substitute
 
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils ( hsName )

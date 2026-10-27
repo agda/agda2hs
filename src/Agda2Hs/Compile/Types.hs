@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
 module Agda2Hs.Compile.Types where
 
-import Control.Applicative ( liftA2 )
 import Control.Monad ( join )
 import Control.Monad.Trans ( MonadTrans(lift) )
 import Control.Monad.Trans.RWS.CPS (RWST(..), runRWST, rwsT )
@@ -17,7 +16,6 @@ import Data.String ( IsString(..) )
 
 import Agda.Compiler.Backend hiding ( Strictness )
 import Agda.Syntax.Position ( Range )
-import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
 import Agda.TypeChecking.Warnings ( MonadWarning )
 import Agda.Utils.Haskell.Syntax ( Strictness )
 import Agda.Utils.Null

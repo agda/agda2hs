@@ -4,9 +4,8 @@ import Prelude hiding (null)
 
 import Control.Monad.IO.Class
 import Control.Monad.Trans.RWS.CPS ( evalRWST )
-import Control.Monad.State ( gets, liftIO )
+import Control.Monad.State ( gets )
 import Control.Arrow ((>>>))
-import Data.Functor
 import Data.IORef
 import Data.List ( isPrefixOf, group, sort )
 
@@ -16,10 +15,8 @@ import qualified Data.Set as S
 import Agda.Compiler.Backend
 import Agda.Compiler.Common ( curIF )
 import Agda.Utils.FileName ( isNewerThan )
-import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Monad.Signature ( isInlineFun )
 import Agda.Utils.Impossible
 import Agda.Utils.List
 import Agda.Utils.Null

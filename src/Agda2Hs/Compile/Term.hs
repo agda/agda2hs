@@ -1,31 +1,21 @@
 module Agda2Hs.Compile.Term where
 
-import Control.Arrow ( (>>>), (&&&), second )
-import Control.Monad ( zipWithM )
-import Control.Monad.Except
+import Control.Arrow ( (>>>), second )
 import Control.Monad.Reader
 
-import Data.Foldable ( toList )
 import Data.Functor ( ($>) )
 import Data.List ( isPrefixOf )
-import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text ( unpack )
 import qualified Data.Set as Set ( singleton )
 
 import Agda.Syntax.Common.Pretty ( prettyShow )
-import qualified Agda.Syntax.Common.Pretty as P
 import Agda.Syntax.Common
 import Agda.Syntax.Literal
 import Agda.Syntax.Internal
 
-import Agda.TypeChecking.CheckInternal ( infer )
-import Agda.TypeChecking.Constraints ( noConstraints )
-import Agda.TypeChecking.Conversion ( equalTerm )
-import Agda.TypeChecking.InstanceArguments ( findInstance )
-import Agda.TypeChecking.MetaVars ( newInstanceMeta )
 import Agda.TypeChecking.Monad
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Records ( shouldBeProjectible, isRecordType, recordFieldNames )
+import Agda.TypeChecking.Records ( shouldBeProjectible, isRecordType )
 import Agda.TypeChecking.Datatypes ( getConType )
 import Agda.TypeChecking.Reduce ( unfoldDefinitionStep, instantiate, reduce )
 import Agda.TypeChecking.Substitute
@@ -38,10 +28,9 @@ import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Size
 
-import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName, importInstance )
 
-import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTelSize, compileDomType )
+import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTelSize )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )

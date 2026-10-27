@@ -4,12 +4,8 @@
 module Agda2Hs.Compile.Type where
 
 import Control.Arrow ( (>>>) )
-import Control.Monad ( forM, when, unless )
-import Control.Monad.Trans ( lift )
+import Control.Monad ( unless )
 import Control.Monad.Reader ( asks )
-import Data.List ( find )
-import Data.Maybe ( mapMaybe, isJust )
-import qualified Data.Set as Set ( singleton )
 
 import Agda.Compiler.Backend hiding ( Args, Strictness )
 
@@ -18,17 +14,15 @@ import Agda.Syntax.Internal
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Reduce ( reduce, unfoldDefinitionStep, instantiate )
+import Agda.TypeChecking.Reduce ( reduce )
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
 import Agda.Utils.Haskell.Syntax ( Strictness(..) )
 
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
-import Agda.Utils.List ( downFrom )
-import Agda.Utils.Maybe ( ifJustM, fromMaybe )
-import Agda.Utils.Monad ( ifM, whenM, unlessM, and2M, or2M )
+import Agda.Utils.Maybe ( ifJustM )
+import Agda.Utils.Monad ( ifM, whenM, and2M, or2M )
 import Agda.Utils.Size ( Sized(size) )
-import Agda.Utils.Functor ( ($>) )
 
 import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Types

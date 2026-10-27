@@ -1,13 +1,7 @@
 module Agda2Hs.Compile.Function where
 
 import Control.Arrow ( (***) )
-import Control.Monad ( (>=>), filterM, forM_ )
-import Control.Monad.Reader ( asks, local )
-
-import Data.Generics
-import Data.List
-import Data.Maybe ( fromMaybe, isJust )
-import qualified Data.Text as Text
+import Control.Monad.Reader ( asks )
 
 import Agda.Compiler.Backend hiding (Args, Strictness)
 import Agda.Compiler.Common
@@ -17,21 +11,17 @@ import Agda.Syntax.Internal
 import Agda.Syntax.Internal.Pattern ( patternToTerm )
 import Agda.Syntax.Literal
 import Agda.Syntax.Common.Pretty ( prettyShow )
-import Agda.Syntax.Scope.Monad ( isDatatypeModule )
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Substitute
-import Agda.TypeChecking.Telescope ( telView, mustBePi, piApplyM )
-import Agda.TypeChecking.Sort ( ifIsSort )
-import Agda.TypeChecking.Datatypes ( getConType, isDataOrRecord )
+import Agda.TypeChecking.Telescope ( mustBePi, piApplyM )
+import Agda.TypeChecking.Datatypes ( getConType )
 import Agda.TypeChecking.Records ( getDefType )
 import Agda.TypeChecking.Reduce ( reduce )
 
-import Agda.Utils.Functor ( (<&>), dget)
-import Agda.Utils.Haskell.Syntax ( Strictness(..) )
+import Agda.Utils.Functor ( (<&>) )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 import Agda.Utils.Lens ((^.))
-import Agda.Utils.List
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Size ( Sized(size) )
@@ -39,7 +29,7 @@ import Agda.Utils.Size ( Sized(size) )
 import AgdaInternals ( inWhereBlockOf )
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
-import Agda2Hs.Compile.Term ( compileTerm, usableDom, dependentDom )
+import Agda2Hs.Compile.Term ( compileTerm, dependentDom )
 import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileDomType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types

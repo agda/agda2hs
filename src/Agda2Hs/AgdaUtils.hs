@@ -1,6 +1,5 @@
 module Agda2Hs.AgdaUtils where
 
-import Data.Data
 import qualified Data.Map as Map
 import Data.Maybe ( fromMaybe, isJust )
 import Data.String ( fromString )
@@ -11,7 +10,7 @@ import Agda.Compiler.Backend hiding ( Args )
 import Agda.Interaction.BasicOps ( parseName )
 import Agda.Interaction.FindFile ( findFile' )
 
-import Agda.Syntax.Common ( Arg, defaultArg )
+import Agda.Syntax.Common ( defaultArg )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import qualified Agda.Syntax.Concrete as C
 import Agda.Syntax.Internal
@@ -20,8 +19,6 @@ import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad
 import Agda.Syntax.TopLevelModuleName
 
-import Agda.TypeChecking.Monad ( topLevelModuleName )
-import Agda.TypeChecking.Monad.Signature ( setModuleCheckpoint )
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Sort
 import Agda.TypeChecking.Substitute
@@ -34,7 +31,7 @@ import qualified Agda.Utils.List1 as List1
 import Agda.Utils.Monad ( ifM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
-import AgdaInternals
+import AgdaInternals ()
 
 multilineText :: Monad m => String -> m Doc
 multilineText s = vcat $ map text $ lines s

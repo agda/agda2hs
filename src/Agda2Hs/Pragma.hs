@@ -12,7 +12,6 @@ import Agda.Syntax.Position
 import Agda.TypeChecking.Pretty (text)
 
 import Agda.Utils.FileName ( filePath )
-import Agda.Utils.Haskell.Syntax ( Strictness(..) )
 import Agda.Utils.Maybe.Strict ( toLazy )
 
 import Agda2Hs.Compile.Types

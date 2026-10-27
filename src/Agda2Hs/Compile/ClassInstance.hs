@@ -1,6 +1,6 @@
 module Agda2Hs.Compile.ClassInstance where
 
-import Control.Monad ( filterM, forM_, unless, void, when )
+import Control.Monad ( filterM, unless, void, when )
 import Control.Monad.Reader ( asks, local )
 
 import Data.Foldable ( toList )
@@ -9,22 +9,18 @@ import Data.Maybe ( isNothing, mapMaybe )
 import qualified Data.HashMap.Strict as HMap
 
 import Agda.Compiler.Backend
-import Agda.Compiler.Common ( curDefs, sortDefs )
 
 import Agda.Syntax.Common hiding ( Ranged )
 import Agda.Syntax.Internal
 import Agda.Syntax.Internal.Pattern ( patternToTerm )
-import Agda.Syntax.Scope.Base
-import Agda.Syntax.Scope.Monad ( resolveName )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Substitute ( Apply(applyE), absBody, absApp, apply )
+import Agda.TypeChecking.Substitute ( Apply(applyE), absApp )
 import Agda.TypeChecking.Records
-import Agda.TypeChecking.Telescope ( mustBePi, piApplyM )
+import Agda.TypeChecking.Telescope ( mustBePi )
 
 import Agda.Utils.Lens
-import Agda.Utils.List ( headWithDefault )
 import Agda.Utils.Monad ( ifNotM, whenM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
@@ -38,7 +34,7 @@ import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
-  ( hsName, pp, replaceName, unQual, definedName )
+  ( hsName, pp, replaceName, unQual )
 
 enableCopatterns :: C a -> C a
 enableCopatterns = local $ \e -> e { copatternsEnabled = True }

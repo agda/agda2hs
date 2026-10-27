@@ -1,9 +1,7 @@
 module Main where
 
-import Data.Maybe ( fromMaybe )
 import qualified Data.Text as Text
 import Data.Version ( showVersion )
-import Control.Monad.IO.Class ( MonadIO(liftIO) )
 
 import System.Environment ( getArgs )
 
@@ -14,7 +12,6 @@ import Agda.Utils.GetOpt
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( defaultSpecialRules )
 import Agda2Hs.Compile
-import Agda2Hs.Config ( checkConfig )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Render
 

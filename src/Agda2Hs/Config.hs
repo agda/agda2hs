@@ -2,7 +2,6 @@
 module Agda2Hs.Config (checkConfig) where
 
 import Control.Monad.IO.Class ( MonadIO(liftIO) )
-import GHC.Generics
 
 import Data.Functor ( (<&>) )
 import Data.Foldable ( fold )

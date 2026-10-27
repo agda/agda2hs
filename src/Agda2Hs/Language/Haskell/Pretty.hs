@@ -4,7 +4,6 @@ module Agda2Hs.Language.Haskell.Pretty
   , prettyShowExportSpecList
   ) where
 
-import Language.Haskell.Exts.Pretty as Hs
 import Language.Haskell.Exts.Syntax as Hs
 
 import Agda2Hs.Language.Haskell.Utils ( pp )

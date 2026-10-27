@@ -1,6 +1,8 @@
 
 module Agda2Hs.Language.Haskell.Utils where
 
+import Prelude hiding ( foldl' )
+
 import Control.Monad ( guard )
 
 import Data.Data ( Data )

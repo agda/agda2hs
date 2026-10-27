@@ -9,7 +9,6 @@ import Control.Monad.Writer
 import Control.Monad.State
 
 import Data.Maybe ( mapMaybe )
-import Data.String
 
 import Agda.Syntax.Internal
 import Agda.TypeChecking.Monad

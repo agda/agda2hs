@@ -3,31 +3,22 @@ module Agda2Hs.Render where
 import Control.Monad ( unless )
 import Control.Monad.IO.Class ( MonadIO(liftIO) )
 
-import Data.Bifunctor ( first )
 import Data.Function ( on )
 import Data.List ( sortBy, nub, unzip4 )
 import Data.Maybe ( fromMaybe, isNothing )
-import Data.Set ( Set )
-import qualified Data.Set as Set
 
 import System.FilePath ( takeDirectory )
 import System.Directory ( createDirectoryIfMissing )
 
 import Agda.Compiler.Backend
 
-import Agda.TypeChecking.Pretty
-import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Position
-import Agda.Syntax.TopLevelModuleName
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
-import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
-
-import Agda2Hs.Compile
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Imports
 import Agda2Hs.Compile.Exports
-import Agda2Hs.Compile.Utils ( primModules, moduleFileName )
+import Agda2Hs.Compile.Utils ( moduleFileName )
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
   ( extToName, pp, moveToTop, insertParens )
