@@ -109,7 +109,18 @@ let
         else
           ''
             runHook preBuild
-            agda2hs --build-library
+
+            # Agda writes interface files beside its primitive library. The
+            # Nix store is read-only, so build against a writable data copy.
+            agdaDataDir=$(agda2hs --print-agda-data-dir)
+            writableAgdaDataDir="$TMPDIR/agda2hs-data"
+            mkdir -p "$writableAgdaDataDir"
+            cp -R "$agdaDataDir/." "$writableAgdaDataDir/"
+            chmod -R u+w "$writableAgdaDataDir"
+            export Agda_datadir="$writableAgdaDataDir"
+
+            # Agda 2.9's --build-library frontend does not support backends.
+            agda2hs --disable-backend --build-library
             runHook postBuild
           '';
 
