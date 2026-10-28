@@ -18,7 +18,7 @@ import Agda.Syntax.Translation.ConcreteToAbstract
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Common
 import Agda.Syntax.Common.Pretty ( prettyShow )
-import Agda.Utils.Monad ( liftM2, concatMapM, filterM, anyM )
+import Agda.Utils.Monad ( liftM2, filterM, anyM, foldM )
 import Agda.Utils.Impossible
 import qualified Agda.Utils.List1 as List1
 
@@ -74,6 +74,17 @@ preludeImportDecl (PreludeOpts{..}) =
 --------------------------------------------------------------------------------
 -- extract re-exports
 
+-- Ref: Agda.Syntax.Scope.Base.publicNames
+reexportedNames :: ScopeInfo -> Set QName
+reexportedNames scope =
+  Set.fromList $ map anameName $ List1.concat $ Map.elems $
+  namesInScope [ImportedNS] $ mergeScopes $ Map.elems $ publicModules scope
+
+hasHaskellReexports :: TopLevelModuleName -> TCM Bool
+hasHaskellReexports mname = do
+  iface <- maybe __IMPOSSIBLE__ miInterface <$> getVisitedModule mname
+  anyM shouldBeExported $ reexportedNames $ iInsideScope iface
+
 data Reexport
   = ReexportModule (Hs.ModuleName ())
 
@@ -87,52 +98,40 @@ toExport :: Reexport -> Export
 toExport = \case
   ReexportModule m -> ExportModule m
 
-pattern OpenImportDirective { using, hiding, impRenaming } <-
-  ImportDirective { publicOpen = Just _, using, hiding, impRenaming }
-
 extractReexports :: ModuleEnv -> TCM Reexports
 extractReexports menv = do
   scopeInfo <- getScope
-  let reexps = reexportedNames scopeInfo
-  -- TODO(satoshi): use Set.filterA instead when we start using containers>=0.8.1
-  reexpsHs <- fmap Set.fromAscList $ filterM (shouldBeExported . anameName) $ Set.toAscList reexps
-  reexpOrigins <- fmap Set.fromList $ traverse (getTopLevelModuleForQName . anameName) $ Set.toList reexpsHs
-  allImps <- Map.unionsWith (++) . map allImportDecls . topLevelDecls <$> moduleAbstrSyn menv
-  impsToCompile <- flip filterM (Map.toAscList allImps) $ \(mod, _) ->
-    (`Set.member` reexpOrigins) <$> topLevelModuleNameForModuleName mod
-  reportSDoc "agda2hs.reexport" 50 $ "reexported names:" <+> pretty reexps
-  reportSDoc "agda2hs.reexport" 50 $ "reexported names exist in Haskell:" <+> pretty reexpsHs
-  reportSDoc "agda2hs.reexport" 50 $ "toplevel modules that exports names to reexport:" <+> pretty reexpOrigins
-  reportSDoc "agda2hs.reexport" 50 $ "all import declarations:" <+> pretty allImps
-  reportSDoc "agda2hs.reexport" 50 $ "import declarations to compile to reexport:" <+> pretty impsToCompile
-  flip concatMapM impsToCompile $ \(mod, directive) -> case directive of
-    [OpenImportDirective { using = UseEverything , hiding = [] , impRenaming = [] }] -> do
-      (kind, m) <- compileModuleName mod
-      case kind of
-        PrimModule -> pure []
-        HsModule -> error "TODO"
-        AgdaModule -> do
-          pure [ReexportModule m]
-    _ -> pure []
+  reexps <- groupByTopLevelModule $ reexportedNames scopeInfo
+  reexpsHs <- traverse (filterSetA shouldBeExported) reexps
+  reexpDecls <- allReexportDecls . topLevelDecls =<< moduleAbstrSyn menv
+  let reexpDeclsHs = Map.intersectionWith (,) reexpsHs reexpDecls
+  reportSDoc "agda2hs.reexport" 40 $ "reexported names:" <+> pretty reexps
+  reportSDoc "agda2hs.reexport" 40 $ "reexported names exist in Haskell:" <+> pretty reexpsHs
+  reportSDoc "agda2hs.reexport" 40 $ "all reexport declarations:" <+> pretty reexpDecls
+  reportSDoc "agda2hs.reexport" 20 $ "reexport declarations to compile:" <+> pretty reexpDeclsHs
+  flip Map.foldMapWithKey reexpDeclsHs $ \mod (names, directives) -> do
+    (kind, m) <- compileTopLevelModuleName mod
+    case kind of
+      PrimModule -> pure []
+      HsModule -> error "TODO"
+      AgdaModule -> case directives of
+        [ImportDirective { using = UseEverything , hiding = [] }] -> pure [ReexportModule m]
+        _ -> pure []
+  where
+    -- TODO(satoshi): use Set.filterA instead when we start using containers>=0.8.1
+    filterSetA p = fmap Set.fromDistinctAscList . filterM p . Set.toAscList
 
-hasHaskellReexports :: TopLevelModuleName -> TCM Bool
-hasHaskellReexports mname = do
-  iface <- maybe __IMPOSSIBLE__ miInterface <$> getVisitedModule mname
-  anyM (shouldBeExported . anameName) $ reexportedNames $ iInsideScope iface
-
--- Ref: Agda.Syntax.Scope.Base.publicNames
-reexportedNames :: ScopeInfo -> Set AbstractName
-reexportedNames scope =
-  Set.fromList $ List1.concat $ Map.elems $
-  namesInScope [ImportedNS] $ mergeScopes $ Map.elems $ publicModules scope
-
--- | Collect all import declarations. A module can be imported multiple times with different directives.
-allImportDecls :: A.Declaration -> Map ModuleName [A.ImportDirective]
-allImportDecls = \case
-  A.Import _ modName impDir -> Map.singleton modName [impDir]
-  A.ScopedDecl _ decls -> Map.unionsWith (++) $ map allImportDecls decls
-  A.Section _ _ _ _ decls -> Map.unionsWith (++) $ map allImportDecls decls
-  _ -> mempty
+    -- A module can be reexported multiple times with different directives hence the list
+    allReexportDecls :: [A.Declaration] -> TCM (Map TopLevelModuleName [A.ImportDirective])
+    allReexportDecls = go Map.empty
+      where
+        go acc0 = flip foldM acc0 $ \acc decl -> case decl of
+          A.Import _ modName impDir@(ImportDirective{publicOpen = Just _}) -> do
+            modName <- getTopLevelModuleForModuleName modName
+            pure $! Map.insertWith (++) modName [impDir] acc
+          A.ScopedDecl _ decls -> go acc decls
+          A.Section _ _ _ _ decls -> go acc decls
+          _ -> pure acc
 
 {-
 
