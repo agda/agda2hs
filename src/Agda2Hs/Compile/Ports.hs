@@ -2,6 +2,7 @@
 module Agda2Hs.Compile.Ports ( compilePorts, preludeImportDecl, hasHaskellReexports ) where
 
 import Data.Char ( isUpper )
+import Data.Functor.Compose ( Compose(Compose) )
 import qualified Data.List as L
 import Data.Map ( Map )
 import qualified Data.Map as Map
@@ -21,11 +22,13 @@ import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.Utils.Monad ( liftM2, filterM, anyM, foldM )
 import Agda.Utils.Impossible
 import qualified Agda.Utils.List1 as List1
+import qualified Agda.Utils.Set1 as Set1
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
+import Agda.Utils.Maybe (fromMaybe)
 
 --------------------------------------------------------------------------------
 -- main
@@ -74,16 +77,16 @@ preludeImportDecl (PreludeOpts{..}) =
 --------------------------------------------------------------------------------
 -- extract re-exports
 
--- Ref: Agda.Syntax.Scope.Base.publicNames
-reexportedNames :: ScopeInfo -> Set QName
-reexportedNames scope =
-  Set.fromList $ map anameName $ List1.concat $ Map.elems $
-  namesInScope [ImportedNS] $ mergeScopes $ Map.elems $ publicModules scope
+reexportedNames :: Scope -> Set QName
+reexportedNames =
+  foldMap (Set.singleton . anameName) . Compose . namesInScope [ImportedNS]
 
 hasHaskellReexports :: TopLevelModuleName -> TCM Bool
 hasHaskellReexports mname = do
   iface <- maybe __IMPOSSIBLE__ miInterface <$> getVisitedModule mname
-  anyM shouldBeExported $ reexportedNames $ iInsideScope iface
+  let scopeInfo = iInsideScope iface
+      currScope = fromMaybe __IMPOSSIBLE__ $ Map.lookup (_scopeCurrent scopeInfo) (_scopeModules scopeInfo)
+  anyM shouldBeExported $ reexportedNames currScope
 
 data Reexport
   = ReexportModule (Hs.ModuleName ())
@@ -101,37 +104,42 @@ toExport = \case
 extractReexports :: ModuleEnv -> TCM Reexports
 extractReexports menv = do
   scopeInfo <- getScope
-  reexps <- groupByTopLevelModule $ reexportedNames scopeInfo
-  reexpsHs <- traverse (filterSetA shouldBeExported) reexps
-  reexpDecls <- allReexportDecls . topLevelDecls =<< moduleAbstrSyn menv
+  let currScope = fromMaybe __IMPOSSIBLE__ $ Map.lookup (_scopeCurrent scopeInfo) (_scopeModules scopeInfo)
+  reexps <- groupByTopLevelModule $ reexportedNames currScope
+  reexpsHs <- Map.traverseMaybeWithKey (\_ -> filterSet1A shouldBeExported) reexps
+  reexpDecls <- topLevelReexportDecls . topLevelDecls =<< moduleAbstrSyn menv
   let reexpDeclsHs = Map.intersectionWith (,) reexpsHs reexpDecls
   reportSDoc "agda2hs.reexport" 40 $ "reexported names:" <+> pretty reexps
   reportSDoc "agda2hs.reexport" 40 $ "reexported names exist in Haskell:" <+> pretty reexpsHs
   reportSDoc "agda2hs.reexport" 40 $ "all reexport declarations:" <+> pretty reexpDecls
   reportSDoc "agda2hs.reexport" 20 $ "reexport declarations to compile:" <+> pretty reexpDeclsHs
   flip Map.foldMapWithKey reexpDeclsHs $ \mod (names, directives) -> do
-    (kind, m) <- compileTopLevelModuleName mod
+    (kind, mod) <- compileTopLevelModuleName mod
     case kind of
-      PrimModule -> pure []
-      HsModule -> error "TODO"
+      PrimModule -> pure [] -- TODO
+      HsModule -> pure [] -- TODO
       AgdaModule -> case directives of
-        [ImportDirective { using = UseEverything , hiding = [] }] -> pure [ReexportModule m]
-        _ -> pure []
+        [ImportDirective { using = UseEverything, hiding = [] }] -> pure [ReexportModule mod]
+        _ -> pure [] -- TODO
   where
-    -- TODO(satoshi): use Set.filterA instead when we start using containers>=0.8.1
-    filterSetA p = fmap Set.fromDistinctAscList . filterM p . Set.toAscList
+    -- TODO(satoshi): move to util?
+    filterSet1A :: Applicative m => (a -> m Bool) -> Set1.Set1 a -> m (Maybe (Set1.Set1 a))
+    filterSet1A p =
+      fmap (Set1.nonEmptySet . Set.fromDistinctAscList) .
+      filterM p . List1.toList . Set1.toAscList
 
     -- A module can be reexported multiple times with different directives hence the list
-    allReexportDecls :: [A.Declaration] -> TCM (Map TopLevelModuleName [A.ImportDirective])
-    allReexportDecls = go Map.empty
-      where
-        go acc0 = flip foldM acc0 $ \acc decl -> case decl of
-          A.Import _ modName impDir@(ImportDirective{publicOpen = Just _}) -> do
-            modName <- getTopLevelModuleForModuleName modName
-            pure $! Map.insertWith (++) modName [impDir] acc
-          A.ScopedDecl _ decls -> go acc decls
-          A.Section _ _ _ _ decls -> go acc decls
-          _ -> pure acc
+    topLevelReexportDecls :: [A.Declaration] -> TCM (Map TopLevelModuleName [A.ImportDirective])
+    topLevelReexportDecls = \case
+      [A.Section _ _ _ _ decls] -> do
+        let go = foldM $ \acc decl -> case decl of
+              A.Import _ modName impDir@(ImportDirective{publicOpen = Just _}) -> do
+                modName <- getTopLevelModuleForModuleName modName
+                pure $! Map.insertWith (++) modName [impDir] acc
+              A.ScopedDecl _ decls -> go acc decls
+              _ -> pure acc
+        go Map.empty decls
+      (_ : decls) -> topLevelReexportDecls decls
 
 {-
 
