@@ -16,6 +16,7 @@ import Data.String ( IsString(..) )
 
 import Agda.Compiler.Backend hiding ( Strictness )
 import Agda.Syntax.Position ( Range )
+import Agda.Syntax.Translation.ConcreteToAbstract ( TopLevelInfo )
 import Agda.TypeChecking.Warnings ( MonadWarning )
 import Agda.Utils.Haskell.Syntax ( Strictness )
 import Agda.Utils.Null
@@ -31,7 +32,12 @@ data GlobalEnv = GlobalEnv
   -- ^ names of functions that should be inlined
   }
 
-type ModuleEnv   = TopLevelModuleName
+data ModuleEnv = ModuleEnv
+  { moduleName :: TopLevelModuleName
+  , moduleAbstrSyn :: TCM TopLevelInfo
+  -- ^ recovers the abstract syntax of the current module on first use
+  }
+
 type ModuleRes   = ()
 type CompiledDef = [Ranged [Hs.Decl ()]]
 type Ranged a    = (Range, a)
@@ -82,6 +88,8 @@ data CompileEnv = CompileEnv
   -- ^ global environment
   , currModule :: TopLevelModuleName
   -- ^ the current module we are compiling
+  , currModuleAbstrSyn :: TCM TopLevelInfo
+  -- ^ recovers the abstract syntax of the current module on first use
   , minRecordName :: Maybe ModuleName
   -- ^ keeps track of the current minimal record we are compiling
   , isNestedInType :: Bool
@@ -104,6 +112,9 @@ data CompileEnv = CompileEnv
   -- ^ whether we should check validity of compiled names
   }
 
+-- | @Nothing@       → no qualifier
+--   @Just Nothing@  → qualified
+--   @Just (Just m)@ → qualified as m
 type Qualifier = Maybe (Maybe (Hs.ModuleName ()))
 
 pattern Unqualified   = Nothing
@@ -124,10 +135,12 @@ data Import = Import
                     -- ^^ the namespace part is 'Hs.TypeNamespace' when the name is type operator
   }
   | ImportInstances (Hs.ModuleName ())
+  | ImportModule (Hs.ModuleName ()) -- for reexport
 
 importModule :: Import -> Hs.ModuleName ()
 importModule (Import{ _importModule = mod }) = mod
 importModule (ImportInstances mod) = mod
+importModule (ImportModule mod) = mod
 
 type Imports = [Import]
 
@@ -137,6 +150,7 @@ data Export
   | ExportType (Hs.Name ())
   | ExportData (Hs.Name ())
   | ExportClass (Hs.Name ())
+  | ExportModule (Hs.ModuleName ())
 
 type Exports = [Export]
 
