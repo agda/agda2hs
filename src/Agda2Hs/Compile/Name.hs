@@ -113,15 +113,18 @@ compileQName f = do
           " to special constructor: " ++ Hs.prettyPrint c
         return c
   ifJust (isSpecialCon f) compileSpecialCon $ do
-    f <- isRecordConstructor f <&> \case
-      Just (r, def) | not (_recNamedCon def) -> r -- use record name for unnamed constructors
-      _                                      -> f
+    -- For unnamed record constructors the constructor is named after the
+    -- record, but we still have to register it as a child of the record so
+    -- that importing modules also bring the constructor into scope.
+    (f, mparent) <- isRecordConstructor f <&> \case
+      Just (r, def) | not (_recNamedCon def) -> (r, Just r) -- use record name for unnamed constructors
+      _                                      -> (f, Nothing)
     hf0 <- compileName (qnameName f)
     special <- isSpecialName f
     let (hf, mimpSpecial) = fromMaybe (hf0, Nothing) special
     hf <- computeNamespacedName f hf
 
-    parent <- parentName f
+    parent <- maybe (parentName f) (return . Just) mparent
     par <- forM parent $ \parent ->
       compileName (qnameName parent) >>= computeNamespacedName parent
 

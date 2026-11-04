@@ -7,6 +7,10 @@ Changes to agda2hs
 - Proper where-provenance so that subsequent anonymous modules with `module _`
   are no longer mistaken for local `where` definitions (see issue #463).
 
+- The constructor of a record without an explicitly named constructor is now
+  imported together with the record type when used from another module
+  (see issue #454).
+
 See https://github.com/agda/agda2hs/issues?q=milestone%3A1.5+is%3Apr for the full list of changes.
 
 Additions to the agda2hs Prelude
