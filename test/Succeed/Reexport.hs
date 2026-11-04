@@ -1,7 +1,7 @@
 module Reexport
-  (module TransparentFun, module Inlining)
+  (module Data.List, module Inlining)
 where
 
+import Data.List
 import Inlining
-import TransparentFun
 
