@@ -1,0 +1,4 @@
+test/Fail/PreludeClashType.agda:5.6-11: error: [CustomBackendError]
+agda2hs:
+  The name `ReadS` clashes with a name from the Haskell Prelude.
+  Rename the Agda definition, or add `ReadS` to the `prelude.hiding` list in the agda2hs configuration file.

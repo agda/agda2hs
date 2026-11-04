@@ -1,0 +1,4 @@
+test/Fail/PreludeClash.agda:5.1-13: error: [CustomBackendError]
+agda2hs:
+  The name `fromIntegral` clashes with a name from the Haskell Prelude.
+  Rename the Agda definition, or add `fromIntegral` to the `prelude.hiding` list in the agda2hs configuration file.

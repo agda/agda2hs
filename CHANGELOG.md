@@ -4,6 +4,12 @@ Release notes for agda2hs v1.5
 Changes to agda2hs
 ------------------
 
+- Added a check that the compiled names of user-defined functions,
+  constructors, types, and classes do not clash with the names exported by
+  the Haskell Prelude. The check is based on the `Prelude` module as
+  reported by the `ghc` on the `PATH`; it is skipped if `ghc` is not
+  available (see issue #124).
+
 - Proper where-provenance so that subsequent anonymous modules with `module _`
   are no longer mistaken for local `where` definitions (see issue #463).
 

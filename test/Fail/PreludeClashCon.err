@@ -1,0 +1,4 @@
+test/Fail/PreludeClashCon.agda:5.6-7: error: [CustomBackendError]
+agda2hs:
+  The name `Just` clashes with a name from the Haskell Prelude.
+  Rename the Agda definition, or add `Just` to the `prelude.hiding` list in the agda2hs configuration file.

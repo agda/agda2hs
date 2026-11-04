@@ -3,6 +3,10 @@ module Records where
 open import Haskell.Prim using (Type)
 open import Haskell.Prelude using (String; Nat)
 
+{-# FOREIGN AGDA2HS
+import Prelude hiding (mempty, mappend)
+#-}
+
 variable a b : Type
 
 -- parametrized record type exported as an Haskell record

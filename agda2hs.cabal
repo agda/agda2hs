@@ -28,8 +28,10 @@ data-files:
     test/Succeed/succeed.agda-lib
     test/Succeed/*.agda
     test/Succeed/*.hs
+    test/Succeed/*.yaml
     test/Succeed/**/*.agda
     test/Succeed/**/*.hs
+    test/Succeed/**/*.yaml
     test/Fail/*.agda
     test/Fail/*.err
 
@@ -61,6 +63,7 @@ executable agda2hs
                        Agda2Hs.Language.Haskell.Pretty,
                        Agda2Hs.Language.Haskell.Utils,
                        Agda2Hs.Pragma,
+                       Agda2Hs.PreludeNames,
                        Agda2Hs.Render,
                        AgdaInternals,
                        Paths_agda2hs
@@ -80,6 +83,7 @@ executable agda2hs
                        syb                  >= 0.7.2   && < 0.8,
                        text                 >= 2.0.2   && < 2.2,
                        deepseq              >= 1.4.4   && < 1.6,
+                       process              >= 1.6     && < 1.7,
                        yaml                 >= 0.11    && < 0.12,
                        aeson                >= 2.0.3   && < 2.4,
   default-language:    Haskell2010

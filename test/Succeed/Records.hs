@@ -4,6 +4,8 @@ where
 
 import Numeric.Natural (Natural)
 
+import Prelude hiding (mempty, mappend)
+
 data Pair a b = MkPair{proj₁ :: a, proj₂ :: b}
 
 data Wrap a = Wrap{unwrap :: a}

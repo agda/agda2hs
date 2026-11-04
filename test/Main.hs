@@ -129,9 +129,11 @@ succeedTest testDir buildDir testName agdaFile goldenFile =
     -- Ensure output directory exists (including subdirectories)
     createDirectoryIfMissing True generatedDir
 
-    -- Run agda2hs with include path for Succeed directory
+    -- Run agda2hs with include path for Succeed directory.
+    -- If a sibling YAML config file exists, pass it along.
+    configArgs <- configArgsFor agdaFile
     (exitCode, stdout, stderr) <- runAgda2Hs succeedDir
-      [agdaFile, "-o", outDir, "-v0", "-i" ++ succeedDir]
+      ([agdaFile, "-o", outDir, "-v0", "-i" ++ succeedDir] ++ configArgs)
 
     case exitCode of
       ExitSuccess -> do
@@ -186,6 +188,14 @@ failTest testDir buildDir testName agdaFile goldenFile =
 runAgda2Hs :: FilePath -> [String] -> IO (ExitCode, String, String)
 runAgda2Hs cwd args =
   readCreateProcessWithExitCode ((proc "agda2hs" args) { cwd = Just cwd }) ""
+
+-- | If a sibling @.yaml@ config file exists for the given Agda file, return
+-- the arguments needed to pass it to agda2hs.
+configArgsFor :: FilePath -> IO [String]
+configArgsFor agdaFile = do
+  let configFile = dropExtension agdaFile ++ ".yaml"
+  exists <- doesFileExist configFile
+  return $ if exists then ["--config", configFile] else []
 
 -- | Relativize absolute paths in error messages.
 -- This replaces absolute paths with relative paths to make tests portable.
