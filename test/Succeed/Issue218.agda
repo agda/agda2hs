@@ -2,8 +2,8 @@
 module Issue218 where
 
 open import Haskell.Prelude
-open import Haskell.Extra.Erase
-open import Haskell.Extra.Refinement
+open import Agda2Hs.Extra.Erase
+open import Agda2Hs.Extra.Refinement
 
 module _ (@0 n : Int) where
 

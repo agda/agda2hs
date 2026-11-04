@@ -1,7 +1,7 @@
 
 open import Haskell.Prelude
-open import Haskell.Extra.Refinement
-open import Haskell.Law.Equality
+open import Agda2Hs.Extra.Refinement
+open import Agda2Hs.Law.Equality
 
 private variable
     @0 n : Nat

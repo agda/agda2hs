@@ -2,8 +2,8 @@
 -- | Proofs on 'Map'.
 module Data.Map.Prop where
 
-open import Haskell.Law.Bool
-open import Haskell.Law.Equality
+open import Agda2Hs.Law.Bool
+open import Agda2Hs.Law.Equality
 open import Haskell.Prelude hiding (lookup; null; map; filter)
 
 open import Haskell.Data.Map

@@ -2,9 +2,9 @@
 
 open import Haskell.Prelude
 open import Haskell.Control.Exception
-open import Haskell.Extra.Dec
-open import Haskell.Extra.Refinement
-open import Haskell.Law.Ord
+open import Agda2Hs.Extra.Dec
+open import Agda2Hs.Extra.Refinement
+open import Agda2Hs.Law.Ord
 
 variable
   A A' B B' C C' : Set

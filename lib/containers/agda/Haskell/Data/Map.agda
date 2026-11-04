@@ -2,7 +2,7 @@
 -- | Postulates and definitions of the operations supported by 'Map'.
 module Haskell.Data.Map where
 
-open import Haskell.Law.Equality
+open import Agda2Hs.Law.Equality
 open import Haskell.Prelude hiding (lookup; null; map; filter)
 import Haskell.Prelude as L using (map)
 

@@ -3,7 +3,7 @@ module Delay where
 
 open import Haskell.Prelude
 open import Haskell.Prim.Thunk
-open import Haskell.Extra.Delay
+open import Haskell.Prim.Delay
 
 open import Agda.Builtin.Size
 

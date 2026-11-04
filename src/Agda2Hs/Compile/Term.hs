@@ -49,14 +49,14 @@ type DefCompileRule = Type -> [Term] -> C (Hs.Exp ())
 
 isSpecialDef :: QName -> Maybe DefCompileRule
 isSpecialDef q = case prettyShow q of
-  _ | isExtendedLambdaName q     -> Just (lambdaCase q)
-  "Haskell.Prim.if_then_else_"   -> Just ifThenElse
-  "Haskell.Prim.case_of_"        -> Just caseOf
-  "Haskell.Prim.the"             -> Just expTypeSig
-  "Haskell.Extra.Delay.runDelay" -> Just compileErasedApp
+  _ | isExtendedLambdaName q            -> Just (lambdaCase q)
+  "Haskell.Prim.if_then_else_"          -> Just ifThenElse
+  "Haskell.Prim.case_of_"               -> Just caseOf
+  "Haskell.Prim.the"                    -> Just expTypeSig
+  "Haskell.Prim.Delay.runDelay"         -> Just compileErasedApp
   "Agda.Builtin.Word.primWord64FromNat" -> Just primWord64FromNat
-  "Haskell.Extra.Nat.predNat"            -> Just predNat
-  _                              -> Nothing
+  "Haskell.Prim.Nat.predNat"            -> Just predNat
+  _                                     -> Nothing
 
 
 -- | Compile a @\where@ to the equivalent @\case@ expression.
@@ -371,8 +371,8 @@ isSpecialCon = prettyShow >>> \case
   "Haskell.Prim.Int.Int.int64"      -> Just int64Term
   "Haskell.Extra.Sigma._,_"         -> Just tupleTerm
   "Haskell.Extra.Erase.Erased"      -> Just erasedTerm
-  "Haskell.Extra.Delay.Delay.now"   -> Just compileErasedApp
-  "Haskell.Extra.Delay.Delay.later" -> Just compileErasedApp
+  "Haskell.Prim.Delay.Delay.now"   -> Just compileErasedApp
+  "Haskell.Prim.Delay.Delay.later" -> Just compileErasedApp
   _                                 -> Nothing
 
 tupleTerm :: ConCompileRule

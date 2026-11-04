@@ -4,8 +4,8 @@ open import Haskell.Prelude
 
 open import Haskell.Data.Ord using (comparing)
 
-open import Haskell.Law.Eq
-open import Haskell.Law.Equality
+open import Agda2Hs.Law.Eq
+open import Agda2Hs.Law.Equality
 
 {-----------------------------------------------------------------------------
     Operations

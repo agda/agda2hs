@@ -2,8 +2,8 @@
 module ExportList where
 
 open import Haskell.Prelude using ( a; Nat; suc; zero; _+_; List; []; _∷_; _≡_; refl )
-open import Haskell.Extra.Refinement using ( ∃; _⟨_⟩ )
-open import Haskell.Law.Equality using ( cong )
+open import Agda2Hs.Extra.Refinement using ( ∃; _⟨_⟩ )
+open import Agda2Hs.Law.Equality using ( cong )
 
 private variable
   @0 n : Nat

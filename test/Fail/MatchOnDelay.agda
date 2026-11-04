@@ -2,7 +2,7 @@
 module MatchOnDelay where
 
 open import Haskell.Prelude
-open import Haskell.Extra.Delay
+open import Haskell.Prim.Delay
 
 bad : Delay a ∞ → Bool
 bad (now x) = True

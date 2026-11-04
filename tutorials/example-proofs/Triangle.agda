@@ -1,7 +1,7 @@
 module Triangle where
 
 open import Haskell.Prelude
-open import Haskell.Law.Bool using (&&-rightTrue; &&-leftTrue)
+open import Agda2Hs.Law.Bool using (&&-rightTrue; &&-leftTrue)
 
 -- helper function
 countBiggerThan : ⦃ Ord a ⦄ → List a → a → Int
