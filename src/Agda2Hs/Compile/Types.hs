@@ -205,7 +205,8 @@ instance Null a => Null (C a) where
   null = __IMPOSSIBLE__
 instance Semigroup a => Semigroup (C a) where (<>) = liftA2 (<>)
 
-
+-- | Determines how a 'Dom Type' is treated during compilation.
+data DomOutput = DODropped | DOInstance | DOType | DOTerm
 
 -- | Agda @Dom Type@ can get compiled in three ways.
 data CompiledDom
@@ -217,6 +218,7 @@ data CompiledDom
     -- ^ To a forall, with an optional type variable declaration. If Nothing, this is an implicit forall; otherwise, explicit.
   | DomDropped
     -- ^ To nothing (e.g. erased proofs)
+
 
 -- | Whether a datatype/record should be compiled as a @newtype@ haskell definition.
 type AsNewType = Bool

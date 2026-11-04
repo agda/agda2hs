@@ -30,7 +30,7 @@ import AgdaInternals ( inWhereBlockOf )
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Term ( compileTerm, dependentDom )
-import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileDomType )
+import Agda2Hs.Compile.Type ( compileType, compileDom, compileDomType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils

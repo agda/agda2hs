@@ -30,7 +30,7 @@ import Agda.Utils.Size
 
 import Agda2Hs.Compile.Name ( compileQName, importInstance )
 
-import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileTelSize )
+import Agda2Hs.Compile.Type ( compileType, compileDom, compileTelSize )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
@@ -650,7 +650,8 @@ checkInstance u = do
     Con c _ _
       | prettyShow (conName c) == "Agda.Builtin.Unit.tt" ||
         prettyShow (conName c) == "Haskell.Prim.IsTrue.itsTrue" ||
-        prettyShow (conName c) == "Haskell.Prim.IsFalse.itsFalse" -> return ()
+        prettyShow (conName c) == "Haskell.Prim.IsFalse.itsFalse" ||
+        prettyShow (conName c) == "Agda.Builtin.Equality.refl" -> return ()
     _ -> illegalInstance
 
   where
