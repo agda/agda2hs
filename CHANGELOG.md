@@ -6,7 +6,8 @@ Changes to agda2hs
 
 - Proper where-provenance so that subsequent anonymous modules with `module _`
   are no longer mistaken for local `where` definitions (see issue #463).
-
+- The error message for clashing imports now includes the source location of
+  the definition that triggered the import (see issue #157).
 - The constructor of a record without an explicitly named constructor is now
   imported together with the record type when used from another module
   (see issue #454).

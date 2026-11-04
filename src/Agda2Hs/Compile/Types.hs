@@ -122,6 +122,8 @@ data Import = Import
   , _importParent    :: Maybe NamespacedName
   , _importName      :: NamespacedName
                     -- ^^ the namespace part is 'Hs.TypeNamespace' when the name is type operator
+  , _importRange     :: Range
+                    -- ^^ source range of the definition that triggered this import
   }
   | ImportInstances (Hs.ModuleName ())
 
