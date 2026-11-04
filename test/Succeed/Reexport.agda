@@ -3,6 +3,9 @@ module Reexport where
 -- Reexport AgdaModule
 open import Inlining public
 
+-- Nothing is reexported on Haskell side -> dropped
+open import ExportTransparentOnly public
+
 -- Reexport HsModule
 open import Haskell.Data.List public
 
