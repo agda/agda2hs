@@ -37,7 +37,7 @@ compileImports top is0 = do
 
     groupModules :: [Import] -> ImportDeclMap
     groupModules = flip foldr Map.empty $ \case
-        (Import mod as parent name) ->
+        (Import mod as parent name _) ->
           Map.insertWith mergeChildren (mod,as) (makeSingle parent name)
         (ImportInstances mod) ->
           Map.insertWith mergeChildren (mod,Unqualified) Map.empty
@@ -66,14 +66,14 @@ compileImports top is0 = do
 
     checkClashingImports :: Imports -> TCM ()
     checkClashingImports [] = return ()
-    checkClashingImports (Import mod as p (NamespacedName _ q) : is) =
+    checkClashingImports (Import mod as p (NamespacedName _ q) r : is) =
       case filter isClashing is of
-        (i : _) -> agda2hsStringError $ mkErrorMsg i
+        (i : _) -> setCurrentRange r $ agda2hsStringError $ mkErrorMsg i
         []      -> checkClashingImports is
      where
-        isClashing (Import _ as' p' (NamespacedName _ q')) = (as' == as) && (p' /= p) && (q' == q)
+        isClashing (Import _ as' p' (NamespacedName _ q') _) = (as' == as) && (p' /= p) && (q' == q)
         isClashing ImportInstances{} = False
-        mkErrorMsg (Import _ _ p' (NamespacedName _ q')) =
+        mkErrorMsg (Import _ _ p' (NamespacedName _ q') _) =
              "Clashing import: " ++ pp q ++ " (both from "
           ++ prettyShow (pp . nnName <$> p) ++ " and "
           ++ prettyShow (pp . nnName <$> p') ++ ")"
