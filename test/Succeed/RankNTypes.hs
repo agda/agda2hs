@@ -1,7 +1,9 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE Haskell98 #-}
 
-module RankNTypes where
+module RankNTypes
+  (MyBool(..), rank2ForallUse, rank2Module)
+where
 
 data MyBool = MyTrue
             | MyFalse

@@ -1,4 +1,6 @@
-module LiteralPatterns where
+module LiteralPatterns
+  (testInt, testChar)
+where
 
 testInt :: Integer -> Bool
 testInt 10 = True

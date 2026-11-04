@@ -1,5 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
-module AutoLambdaCaseInCase where
+module AutoLambdaCaseInCase
+  (lcaseInsideCaseOf)
+where
 
 lcaseInsideCaseOf :: [a] -> Maybe a -> Maybe a
 lcaseInsideCaseOf xs

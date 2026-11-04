@@ -1,4 +1,6 @@
-module Importer where
+module Importer
+  (bar, anotherBar, baz, mkFoo, fooable, defaultBar, testFoldMap, testFoldr)
+where
 
 import Importee (Foo(MkFoo), Fooable(defaultFoo, doTheFoo), foo, (!#))
 import Numeric.Natural (Natural)

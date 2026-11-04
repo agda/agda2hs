@@ -1,4 +1,6 @@
-module ConstrainedInstance where
+module ConstrainedInstance
+  (D(..))
+where
 
 data D a = C a
 

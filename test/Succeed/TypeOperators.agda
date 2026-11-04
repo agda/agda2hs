@@ -1,7 +1,5 @@
 module TypeOperators where
 
-{-# FOREIGN AGDA2HS {-# LANGUAGE TypeOperators #-} #-}
-
 open import Haskell.Prim using (Type)
 open import Haskell.Prim.Either
 

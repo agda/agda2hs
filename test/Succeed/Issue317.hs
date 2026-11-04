@@ -1,4 +1,6 @@
-module Issue317 where
+module Issue317
+  (D(..), test)
+where
 
 data D = C{unC :: Int}
 

@@ -1,4 +1,4 @@
-module Fail.PartialCaseNoLambda where
+module PartialCaseNoLambda where
 
 open import Haskell.Prelude
 

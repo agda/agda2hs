@@ -1,15 +1,11 @@
 module Agda2Hs.Compile.Utils where
 
-import Control.Monad ( forM_ )
-import Control.Arrow ( Arrow((***)), (&&&) )
-import Control.Monad.Except
+import Control.Arrow ( Arrow((***)) )
 import Control.Monad.Reader
 import Control.Monad.Writer ( tell )
-import Control.Monad.State ( put, modify )
-
+import Control.Monad.State ( modify )
 import Data.IORef
 import Data.List ( isPrefixOf, stripPrefix )
-import Data.Maybe ( isJust )
 import qualified Data.Map as M
 import Data.String ( IsString(..) )
 import Data.Set ( Set )
@@ -21,7 +17,7 @@ import qualified Language.Haskell.Exts as Hs
 
 import System.FilePath ( (</>) )
 
-import Agda.Compiler.Backend hiding ( Args )
+import Agda.Compiler.Backend hiding ( Args, Strict, Strictness )
 import Agda.Compiler.Common ( compileDir )
 
 import Agda.Syntax.Common
@@ -29,39 +25,31 @@ import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Internal
 import Agda.Syntax.Position ( noRange )
 import Agda.Syntax.Scope.Base
-import Agda.Syntax.Scope.Monad ( bindVariable, freshConcreteName, isDatatypeModule )
+import Agda.Syntax.Scope.Monad ( bindVariable )
 import Agda.Syntax.TopLevelModuleName
 import Agda.Syntax.Common.Pretty ( prettyShow )
-import qualified Agda.Syntax.Common.Pretty as P
 
-import Agda.TypeChecking.CheckInternal ( infer )
-import Agda.TypeChecking.Constraints ( noConstraints )
-import Agda.TypeChecking.Conversion ( equalTerm )
-import Agda.TypeChecking.InstanceArguments ( findInstance )
 import Agda.TypeChecking.Level ( isLevelType )
-import Agda.TypeChecking.MetaVars ( newInstanceMeta )
-import Agda.TypeChecking.Monad.SizedTypes ( isSizeType )
 import Agda.TypeChecking.Pretty ( Doc, (<+>), text, PrettyTCM(..), pretty )
 import Agda.TypeChecking.Records ( isRecordConstructor, getRecordOfField )
-import Agda.TypeChecking.Reduce ( instantiate, reduce )
-import Agda.TypeChecking.Substitute ( Subst, TelV(TelV), Apply(..) )
+import Agda.TypeChecking.Reduce ( reduce )
+import Agda.TypeChecking.Substitute ( Subst, TelV(TelV) )
 import Agda.TypeChecking.Telescope ( telView )
 
 import Agda.Utils.Lens ( (<&>) )
+import Agda.Utils.Haskell.Syntax ( Strictness(..) )
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Singleton
 
-import AgdaInternals
-import Agda2Hs.AgdaUtils ( (~~), resolveStringName )
+import Agda2Hs.AgdaUtils ( (~~), isPublicName )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Pragma
 import qualified Data.List as L
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
-import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
-  ( Strictness(..), validVarName, validTypeName, validConName, hsName, pp )
+  ( validVarName, validTypeName, validConName, hsName, pp )
 
 agda2hsError :: (HasCallStack, MonadTCError m) => Doc -> m a
 agda2hsError msg = typeError $ CustomBackendError "agda2hs" msg
@@ -114,8 +102,10 @@ setCurrentRangeQ = setCurrentRange . nameBindingSite . qnameName
 
 isInScopeUnqualified :: QName -> C Bool
 isInScopeUnqualified x = lift $ do
-  ys <- inverseScopeLookupName' AmbiguousAnything x <$> getScope
-  return $ any (not . C.isQualified) ys
+  inScope <- isNameInScopeUnqualified x <$> getScope
+  reportSDoc "agda2hs.scope-check" 40 $
+    "unqualified scope check for" <+> prettyTCM x <+> "=>" <+> text (show inScope)
+  return inScope
 
 freshString :: String -> C String
 freshString s = liftTCM $ do
@@ -264,18 +254,22 @@ getDefAndPragma q = do
 getPragma :: QName -> C ParsedPragma
 getPragma q = snd <$> getDefAndPragma q
 
-isUnboxRecord :: QName -> C (Maybe Strictness)
+isUnboxRecord :: QName -> C (Maybe UnboxMode)
 isUnboxRecord q = getPragma q <&> \case
-  UnboxPragma s -> Just s
+  UnboxPragma mode -> Just mode
   _ -> Nothing
 
-isUnboxConstructor :: QName -> C (Maybe Strictness)
+isUnboxConstructor :: QName -> C (Maybe UnboxMode)
 isUnboxConstructor q =
   caseMaybeM (isRecordConstructor q) (return Nothing) $ isUnboxRecord . fst
 
-isUnboxProjection :: QName -> C (Maybe Strictness)
+isUnboxProjection :: QName -> C (Maybe UnboxMode)
 isUnboxProjection q =
   caseMaybeM (liftTCM $ getRecordOfField q) (return Nothing) isUnboxRecord
+
+unboxModeStrictness :: UnboxMode -> Strictness
+unboxModeStrictness UnboxLazy   = Lazy
+unboxModeStrictness UnboxStrict = Strict
 
 isTupleRecord :: QName -> C (Maybe Hs.Boxed)
 isTupleRecord q = getPragma q <&> \case
@@ -388,19 +382,32 @@ checkValidConName x = whenM doNameCheck $ unless (validConName x) $ agda2hsError
   text "Invalid name for Haskell constructor: " <+> text (Hs.prettyPrint x)
 
 tellImport :: Import -> C ()
-tellImport imp = tell $ CompileOutput [imp] []
+tellImport imp = tell $ CompileOutput [imp] [] []
+
+tellExport :: Export -> C ()
+tellExport exp = tell $ CompileOutput [] [exp] []
 
 tellExtension :: Hs.KnownExtension -> C ()
-tellExtension pr = tell $ CompileOutput [] [pr]
+tellExtension pr = tell $ CompileOutput [] [] [pr]
 
 tellUnboxedTuples :: Hs.Boxed -> C ()
 tellUnboxedTuples Hs.Boxed = return ()
 tellUnboxedTuples Hs.Unboxed = tellExtension $ Hs.UnboxedTuples
 
-addPatBang :: Strictness -> Hs.Pat () -> C (Hs.Pat ())
-addPatBang Strict p = tellExtension Hs.BangPatterns >>
+tellTypeOperators :: Hs.Name () -> C ()
+tellTypeOperators (Hs.Symbol {}) = tellExtension Hs.TypeOperators
+tellTypeOperators _ = pure ()
+
+tellTypeOperatorsImport :: Import -> C ()
+tellTypeOperatorsImport (Import _ _ parent name)
+  | Just (Hs.TypeNamespace {}) <- nnNamespace <$> parent = tellExtension Hs.TypeOperators
+  | Hs.TypeNamespace {} <- nnNamespace name = tellExtension Hs.TypeOperators
+tellTypeOperatorsImport _ = pure ()
+
+addPatBang :: UnboxMode -> Hs.Pat () -> C (Hs.Pat ())
+addPatBang UnboxStrict p = tellExtension Hs.BangPatterns >>
   return (Hs.PBangPat () p)
-addPatBang Lazy   p = return p
+addPatBang UnboxLazy   p = return p
 
 addTyBang :: Strictness -> Hs.Type () -> C (Hs.Type ())
 addTyBang Strict ty = tellExtension Hs.BangPatterns >>
@@ -456,8 +463,27 @@ checkNoAsPatterns = \case
 noWriteImports :: C a -> C a
 noWriteImports = local $ \e -> e { writeImports = False }
 
+-- | There are places we want to suppress adding exports e.g.) 'checkCompileToFunctionPragma'
+noWriteExports :: C a -> C a
+noWriteExports = local $ \e -> e { writeExports = False }
+
 noCheckNames :: C a -> C a
 noCheckNames = local $ \e -> e { checkNames = False }
 
 doNameCheck :: C Bool
 doNameCheck = reader checkNames
+
+shouldBeExported :: QName -> C Bool
+shouldBeExported name = andM
+  [ isPublicName name
+  , asks (not . compilingLocal)
+  , isNothing <$> isUnboxRecord name
+  , isNothing <$> isUnboxConstructor name
+  , isNothing <$> isUnboxProjection name
+  , isNothing <$> isTupleRecord name
+  , isNothing <$> isTupleConstructor name
+  , isNothing <$> isTupleProjection name
+  , not <$> isTransparentFunction name
+  , not <$> isInlinedFunction name
+  , isNothing <$> getCompileToName name
+  ]

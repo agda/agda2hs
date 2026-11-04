@@ -27,13 +27,13 @@ test : checkWhitespace test-on-CI
 # Run all tests except for fix-whitespace
 test-on-CI : succeed fail testContainers
 
-# Run only successful tests
+# Run only successful tests. --no-create makes missing goldens fail validation.
 succeed :
-	cabal test agda2hs-test --test-options='-p Succeed'
+	cabal test agda2hs-test --test-options='-p Succeed --no-create'
 
 # Run only failing tests
 fail :
-	cabal test agda2hs-test --test-options='-p Fail'
+	cabal test agda2hs-test --test-options='-p Fail --no-create'
 
 # Update all golden values
 golden : golden-succeed golden-fail

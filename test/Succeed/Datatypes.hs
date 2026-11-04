@@ -1,4 +1,6 @@
-module Datatypes where
+module Datatypes
+  (Test(..), getTest, putTest)
+where
 
 data Test = CTest Bool
 

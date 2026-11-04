@@ -1,4 +1,6 @@
-module TypeSignature where
+module TypeSignature
+  (five)
+where
 
 import Numeric.Natural (Natural)
 

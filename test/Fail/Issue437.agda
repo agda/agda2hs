@@ -1,4 +1,4 @@
-module Fail.Issue437 where
+module Issue437 where
 
 data Indexed : (a : Set) → Set₁ where
     MkIndexed : { a : Set } → Indexed a

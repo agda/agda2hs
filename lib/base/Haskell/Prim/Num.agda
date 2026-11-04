@@ -28,11 +28,18 @@ record Num (a : Type) : Type₁ where
     abs           : a → a
     signum        : a → a
     fromInteger   : (n : Integer) → @0 ⦃ FromIntegerOK n ⦄ → a
-    overlap ⦃ number ⦄  : Number a
-    overlap ⦃ numZero ⦄ : number .Number.Constraint 0
-    overlap ⦃ numOne ⦄  : number .Number.Constraint 1
+    overlap ⦃ zeroOK ⦄ : FromIntegerOK (pos 0)
+    overlap ⦃ oneOK ⦄  : FromIntegerOK (pos 1)
 
-open Num ⦃...⦄ public hiding (FromIntegerOK; number)
+  record FromIntegerOK' (i : Integer) : Type where
+    field
+      @0 force : FromIntegerOK i
+
+  numberFromNum : Number a
+  numberFromNum .Number.Constraint n = FromIntegerOK' (pos n)
+  numberFromNum .Number.fromNat n {{i}} = fromInteger (pos n) {{FromIntegerOK'.force i}}
+
+open Num ⦃...⦄ public hiding (FromIntegerOK)
 
 {-# COMPILE AGDA2HS Num existing-class #-}
 
@@ -109,12 +116,12 @@ open DefaultMonoid
 
 MonoidSum : ⦃ iNum : Num a ⦄ → Monoid a
 MonoidSum = record {DefaultMonoid (λ where
-  .mempty      → 0
+  .mempty      → fromInteger 0
   .super ._<>_ → _+_
  )}
 
 MonoidProduct : ⦃ iNum : Num a ⦄ → Monoid a
 MonoidProduct = record {DefaultMonoid (λ where
-  .mempty      → 1
+  .mempty      → fromInteger 1
   .super ._<>_ → _*_
  )}

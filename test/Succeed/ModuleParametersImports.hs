@@ -1,4 +1,6 @@
-module ModuleParametersImports where
+module ModuleParametersImports
+  (scope)
+where
 
 import qualified ModuleParameters (Scope(Bind, Empty), unbind)
 import Numeric.Natural (Natural)

@@ -1,7 +1,7 @@
 open import Haskell.Prelude
 open import Agda.Primitive
 
-module Fail.Issue357a where
+module Issue357a where
 
 k : a → b → a
 k x _ = x

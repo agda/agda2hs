@@ -1,4 +1,6 @@
-module Default where
+module Default
+  (HasDefault(..), test)
+where
 
 class HasDefault a where
     theDefault :: a

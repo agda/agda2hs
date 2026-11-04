@@ -1,4 +1,6 @@
-module Issue90 where
+module Issue90
+  (good, bad, good2, bad2, test)
+where
 
 import Numeric.Natural (Natural)
 

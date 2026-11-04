@@ -1,4 +1,6 @@
-module CompileTo where
+module CompileTo
+  (test1, test2, llength, test3, lfoldl, vreverse)
+where
 
 import Numeric.Natural (Natural)
 

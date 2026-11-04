@@ -1,4 +1,6 @@
-module TransparentFun where
+module TransparentFun
+  (testMyId, testTyId, Tree(..), testTreeId)
+where
 
 import Numeric.Natural (Natural)
 

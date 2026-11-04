@@ -1,4 +1,6 @@
-module RelevantDotPattern1 where
+module RelevantDotPattern1
+  (Telescope(..), caseTelBind, checkSubst', checkSubst)
+where
 
 data Telescope = ExtendTel Bool Telescope
 

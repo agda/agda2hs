@@ -1,6 +1,8 @@
 {-# LANGUAGE StandaloneDeriving, DerivingStrategies,
   DeriveAnyClass, GeneralizedNewtypeDeriving #-}
-module Deriving where
+module Deriving
+  (Planet(..), Clazz(..), Optional(..), Duo(..))
+where
 
 data Planet = Mercury
             | Venus

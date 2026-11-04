@@ -1,4 +1,6 @@
-module IOInput where
+module IOInput
+  (main)
+where
 
 main :: IO ()
 main

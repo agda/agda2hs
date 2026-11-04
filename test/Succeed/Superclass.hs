@@ -1,4 +1,6 @@
-module Superclass where
+module Superclass
+  (Super(..), Sub(..), foo, Sub2(..), Subber(..), bar, DiscreteOrd(..), baz, usebaz)
+where
 
 class Super a where
     myFun :: a -> a

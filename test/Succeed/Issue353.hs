@@ -1,4 +1,6 @@
-module Issue353 where
+module Issue353
+  (hello, world, world2, foo, bar, baz, callFromNested)
+where
 
 hello :: Bool -> Bool
 hello a = a

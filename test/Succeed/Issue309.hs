@@ -1,4 +1,6 @@
-module Issue309 where
+module Issue309
+  (Ap)
+where
 
 type Ap p = p
 

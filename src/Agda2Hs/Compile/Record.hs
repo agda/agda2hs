@@ -1,7 +1,7 @@
 module Agda2Hs.Compile.Record where
 
 import Control.Monad ( unless, when )
-import Control.Monad.Reader ( MonadReader(local) )
+import Control.Monad.Reader ( MonadReader(local), asks )
 
 import Data.List ( (\\), nub )
 import Data.List.NonEmpty ( NonEmpty(..) )
@@ -10,7 +10,7 @@ import qualified Data.Map as Map
 
 import Agda.Compiler.Backend
 
-import Agda.Syntax.Common ( Arg(unArg), defaultArg, HasEta'(..) )
+import Agda.Syntax.Common ( HasEta'(..) )
 import Agda.Syntax.Internal
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
@@ -18,7 +18,7 @@ import Agda.TypeChecking.Pretty ( ($$), (<+>), text, vcat, prettyTCM, pretty, pr
 import Agda.TypeChecking.Substitute ( TelV(TelV), Apply(apply) )
 import Agda.TypeChecking.Telescope
 
-import Agda.Utils.Singleton
+import Agda.Utils.Monad ( whenM, and2M )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils
@@ -101,11 +101,14 @@ compileRecord target def = do
   TelV tel _ <- telViewUpTo recPars (defType def)
   addContext tel $ do
     checkValidTypeName rName
+    tellTypeOperators rName
     binds <- compileTeleBinds False tel -- TODO: add kind annotations?
     let hd = foldl (Hs.DHApp ()) (Hs.DHead () rName) binds
     let fieldTel = snd $ splitTelescopeAt recPars recTel
     case target of
       ToClass ms -> do
+        whenM (shouldBeExported (defName def) `and2M` asks writeExports) $ do
+          tellExport (ExportClass rName)
         when (length binds > 1) $ tellExtension Hs.MultiParamTypeClasses
         (classConstraints, classDecls) <- compileRecFields classDecl recFields fieldTel
         let context = case classConstraints of
@@ -116,6 +119,8 @@ compileRecord target def = do
         return $ Hs.ClassDecl () context hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
       ToRecord newtyp ds -> do
         checkValidConName cName
+        whenM (shouldBeExported (defName def) `and2M` asks writeExports) $ do
+          tellExport (ExportData rName)
         when (theEtaEquality recEtaEquality' == YesEta) $ agda2hsErrorM $
           "Agda records compiled to Haskell should have eta-equality disabled." <+>
           "Add no-eta-equality to the definition of" <+> (text (pp rName) <> ".")

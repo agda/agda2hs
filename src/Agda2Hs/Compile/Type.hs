@@ -4,30 +4,25 @@
 module Agda2Hs.Compile.Type where
 
 import Control.Arrow ( (>>>) )
-import Control.Monad ( forM, when, unless, void )
-import Control.Monad.Trans ( lift )
+import Control.Monad ( unless, void )
 import Control.Monad.Reader ( asks )
-import Data.List ( find )
-import Data.Maybe ( mapMaybe, isJust )
-import qualified Data.Set as Set ( singleton )
 
-import Agda.Compiler.Backend hiding ( Args )
+import Agda.Compiler.Backend hiding ( Args, Strictness )
 
 import Agda.Syntax.Common
 import Agda.Syntax.Internal
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Reduce ( reduce, unfoldDefinitionStep, instantiate )
+import Agda.TypeChecking.Reduce ( reduce )
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
+import Agda.Utils.Haskell.Syntax ( Strictness(..) )
 
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
-import Agda.Utils.List ( downFrom )
-import Agda.Utils.Maybe ( ifJustM, fromMaybe )
-import Agda.Utils.Monad ( ifM, whenM, unlessM, and2M, or2M )
+import Agda.Utils.Maybe ( ifJustM )
+import Agda.Utils.Monad ( ifM, whenM, and2M, or2M )
 import Agda.Utils.Size ( Sized(size) )
-import Agda.Utils.Functor ( ($>) )
 
 import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Types
@@ -36,7 +31,7 @@ import Agda2Hs.Compile.Var
 import Agda2Hs.AgdaUtils
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
-  ( Strictness(Lazy), hsName, tApp, constrainType, qualifyType )
+  ( hsName, tApp, constrainType, qualifyType )
 
 
 -- | Type definitions from the prelude that get special translation rules.
@@ -74,7 +69,7 @@ delayType [] = agda2hsError "Cannot compile unapplied Delay type"
 compileTypeWithStrictness :: Term -> C (Strictness, Hs.Type ())
 compileTypeWithStrictness t = do
   s <- case t of
-    Def f es -> fromMaybe Lazy <$> isUnboxRecord f
+    Def f es -> maybe Lazy unboxModeStrictness <$> isUnboxRecord f
     _        -> return Lazy
   ty <- compileType t
   pure (s, ty)
@@ -146,7 +141,8 @@ compileType t = do
          | otherwise -> agda2hsErrorM $ text "Not supported: type-level lambda" <+> prettyTCM t
 
     _ -> fail
-  where fail = agda2hsErrorM $ text "Bad Haskell type:" <?> prettyTCM t
+  where
+    fail = agda2hsErrorM $ text "Bad Haskell type:" <?> prettyTCM t
 
 
 compileTypeArgs :: Type -> Args -> C [Hs.Type ()]
@@ -241,6 +237,7 @@ compileDomType x a =
       isNested <- asks isNestedInType
       ctx <- getContextSize
       npars <- size <$> (lookupSection =<< currentModule)
+      checkValidTyVarName (Hs.Ident () x)
       if
         | isNested -> do
           tellExtension Hs.RankNTypes

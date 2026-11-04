@@ -1,4 +1,6 @@
-module Issue377 where
+module Issue377
+  (test)
+where
 
 import Data.Maybe (fromMaybe)
 

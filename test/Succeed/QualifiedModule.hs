@@ -1,4 +1,6 @@
-module QualifiedModule where
+module QualifiedModule
+  (D(..), f, g)
+where
 
 data D = C
 

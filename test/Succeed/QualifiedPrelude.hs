@@ -1,4 +1,6 @@
-module QualifiedPrelude where
+module QualifiedPrelude
+  ((+), comp, test, testComp, testFoldr, retest)
+where
 
 import Numeric.Natural (Natural)
 import qualified Prelude as Pre (Foldable(foldr), Num((+)), (.))

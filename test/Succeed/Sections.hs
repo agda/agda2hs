@@ -1,4 +1,6 @@
-module Sections where
+module Sections
+  (test₁, test₂, test₃, test₄, test₅)
+where
 
 import Numeric.Natural (Natural)
 

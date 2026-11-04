@@ -1,4 +1,4 @@
-module Fail.ClashingImport where
+module ClashingImport where
 
 open import Importee
 open import OtherImportee

@@ -1,0 +1,4 @@
+name: agda2hs-test-fail
+depend:
+include: . ../Succeed ../../lib/base/
+flags: --sized-types --erasure --no-projection-like

@@ -1,4 +1,4 @@
-module Fail.DerivingParseFailure where
+module DerivingParseFailure where
 
 open import Haskell.Prim using (Type)
 

@@ -1,7 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Test where
+module Test
+  (Exp(..), eval, listSum, monoSum, polySum, ex_float, ex_word, ex_char, char_d, (+++), listMap, mapTest, plus3, doubleLambda, cnst, second, doubleTake, initLast, MonoidX(..), sumMonX, sumMon, NatSum(..), double, doubleSum, hd, five, ex_bool, ex_if, if_over)
+where
 
 import Numeric.Natural (Natural)
 

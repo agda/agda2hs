@@ -1,4 +1,6 @@
-module FunCon where
+module FunCon
+  (D1(..), f1, D2(..), f2)
+where
 
 data D1 t = C1 (t Bool)
 

@@ -1,4 +1,6 @@
-module NewTypePragma where
+module NewTypePragma
+  (Indexed(..), index, Pair(..), Identity(..), Equal(..), Duo(..), createDuo)
+where
 
 -- data newtype
 

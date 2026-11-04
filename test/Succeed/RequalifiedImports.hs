@@ -1,4 +1,6 @@
-module RequalifiedImports where
+module RequalifiedImports
+  (requalBar, requalBaz, requalFooable, requalDefaultBar, T, otherFoo)
+where
 
 import OtherImportee (OtherFoo(MkFoo))
 import QualifiedImportee ()

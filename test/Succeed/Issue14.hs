@@ -1,4 +1,6 @@
-module Issue14 where
+module Issue14
+  (constid, sectionTest₁, sectionTest₂)
+where
 
 import Numeric.Natural (Natural)
 

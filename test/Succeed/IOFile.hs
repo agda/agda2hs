@@ -1,4 +1,6 @@
-module IOFile where
+module IOFile
+  (main)
+where
 
 main :: IO ()
 main

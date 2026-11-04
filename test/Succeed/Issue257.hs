@@ -1,2 +1,4 @@
-module Issue257 where
+module Issue257
+  ()
+where
 

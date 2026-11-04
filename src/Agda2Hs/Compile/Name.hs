@@ -7,29 +7,22 @@ import Control.Monad.Except ( catchError )
 import Control.Monad.Reader
 
 import Data.Functor ( (<&>) )
-import Data.Bifunctor ( bimap )
-import Data.List ( intercalate, isPrefixOf, stripPrefix )
+import Data.List ( intercalate )
 import qualified Data.Text as Text
 import qualified Data.Map.Strict as Map
 
 import Agda.Compiler.Backend hiding ( topLevelModuleName )
-import Agda.Compiler.Common ( topLevelModuleName )
 
-import qualified Agda.Syntax.Abstract as A
 import Agda.Syntax.Common hiding (Rewrite)
 import Agda.Syntax.Internal
-import Agda.Syntax.Position
 import qualified Agda.Syntax.Concrete as C
-import Agda.Syntax.Scope.Base ( inverseScopeLookupName, amodName )
-import Agda.Syntax.Scope.Monad ( resolveName, isDatatypeModule )
-import Agda.Syntax.TopLevelModuleName
+import Agda.Syntax.Scope.Base ( amodName, inverseScopeLookupName )
+import Agda.Syntax.Scope.Monad ( isDatatypeModule )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import qualified Agda.Syntax.Common.Pretty as P
 
-import Agda.TypeChecking.Datatypes ( isDataOrRecordType )
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Records ( isRecordConstructor )
-import Agda.TypeChecking.Warnings ( warning )
 
 import qualified Agda.Utils.List1 as List1
 import Agda.Utils.Maybe
@@ -40,7 +33,19 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( hsName, hsModuleName, pp )
+import Agda2Hs.Language.Haskell.Utils ( hsName, hsModuleName, pp, validModuleName )
+
+
+-- | Check the module-prefix part of a concrete qualified name.
+validModuleQualifier :: C.QName -> Bool
+validModuleQualifier C.QName{} = True
+validModuleQualifier q@C.Qual{} =
+  validModuleName $ hsModuleName $ intercalate "." $ map prettyShow $ moduleQualifierParts q
+
+moduleQualifierParts :: C.QName -> [C.Name]
+moduleQualifierParts = \case
+  C.QName{}        -> []
+  C.Qual name rest -> name : moduleQualifierParts rest
 
 
 isSpecialCon :: QName -> Maybe (Hs.QName ())
@@ -54,17 +59,22 @@ isSpecialCon = prettyShow >>> \case
   where special c = Just (Hs.Special () $ c ())
 
 -- | Convert identifier and import module strings into the Haskell equivalent syntax.
+
+-- FIXME(wasabi315): support constructors in rewrite rules. currently we assume there the identifier is not constructor by 'Nothing'
+-- FIXME(wasabi315): support type operators in rewrite rules. currently we assume the identifier is not a type operator by 'Hs.NoNamespace'
 toNameImport :: String -> Maybe String -> (Hs.Name (), Maybe Import)
 toNameImport x Nothing = (hsName x, Nothing)
 toNameImport x (Just mod) =
   ( hsName x
-  , Just $ Import (hsModuleName mod) Unqualified Nothing (hsName x) (Hs.NoNamespace ())
+  , Just $ Import (hsModuleName mod) Unqualified Nothing (NamespacedName (Hs.NoNamespace ()) (hsName x))
   )
 
 -- | Default rewrite rules.
 defaultSpecialRules :: SpecialRules
 defaultSpecialRules = Map.fromList
   [ "Agda.Builtin.Nat.Nat"          `to` "Natural"      `importing` Just "Numeric.Natural"
+  , "Agda.Builtin.Nat.Nat.zero"     `to` "0"            `importing` Nothing
+  , "Agda.Builtin.Nat.Nat.suc"      `to` "succ"         `importing` Nothing
   , "Haskell.Prelude.coerce"        `to` "unsafeCoerce" `importing` Just "Unsafe.Coerce"
   , "Agda.Builtin.Int.Int"          `to` "Integer"      `importing` Nothing
   , "Agda.Builtin.Word.Word64"      `to` "Word"         `importing` Nothing
@@ -108,10 +118,13 @@ compileQName f = do
       _                                      -> f
     hf0 <- compileName (qnameName f)
     special <- isSpecialName f
-    let (hf, mimpBuiltin) = fromMaybe (hf0, Nothing) special
+    let (hf, mimpSpecial) = fromMaybe (hf0, Nothing) special
+    hf <- computeNamespacedName f hf
 
     parent <- parentName f
-    par <- traverse (compileName . qnameName) parent
+    par <- forM parent $ \parent ->
+      compileName (qnameName parent) >>= computeNamespacedName parent
+
     let mod0 = qnameModule $ fromMaybe f parent
     (mkind, mod) <- compileModuleName mod0
 
@@ -128,34 +141,32 @@ compileQName f = do
     unless existsInHaskell $ do
       reportSDoc "agda2hs.name" 20 $ text "DOES NOT EXIST IN HASKELL"
       typeError $ CustomBackendError "agda2hs" $ P.text $
-        "Symbol " ++ Hs.prettyPrint hf ++ " is missing a COMPILE pragma or rewrite rule"
+        "Symbol " ++ Hs.prettyPrint (nnName hf) ++ " is missing a COMPILE pragma or rewrite rule"
 
     currMod <- asks $ hsTopLevelModuleName . currModule
     let skipModule = mod == currMod
-                  || isJust mimpBuiltin
+                  || isJust mimpSpecial
                   || prettyShow mod0 `elem` primMonadModules
     qual <- if skipModule then return Unqualified
               else getQualifier (fromMaybe f parent) mod
-    -- we only calculate this when dealing with type operators; usually that's where 'type' prefixes are needed in imports
-    namespace <- case hf of
-          Hs.Symbol _ _ -> getNamespace f
-          Hs.Ident  _ _ -> return (Hs.NoNamespace ())
     let
       -- We generate import statements for everything except
       -- unqualified prim modules (Prelude)
       mimp = if mkind == PrimModule && not (isQualified qual)
              then Nothing
-             else Just (Import mod qual par hf namespace)
-      qf = qualify mod hf qual
+             else Just (Import mod qual par hf)
+      qf = qualify mod (nnName hf) qual
 
     -- add (possibly qualified) import
     whenM (asks writeImports) $
-      whenJust (mimpBuiltin <|> mimp) tellImport
+      whenJust (mimpSpecial <|> mimp) $ \imp -> do
+        tellImport imp
+        tellTypeOperatorsImport imp
 
     reportSDoc "agda2hs.name" 25 $ text
        $ "-------------------------------------------------"
       ++ "\ncompiling name: " ++ prettyShow f
-      ++ "\nhaskell name: " ++ Hs.prettyPrint hf
+      ++ "\nhaskell name: " ++ Hs.prettyPrint (nnName hf)
       ++ "\nparent name: " ++ prettyShow parent
       ++ "\nmod0: " ++ prettyShow mod0
       ++ "\nmodule name: " ++ Hs.prettyPrint mod
@@ -173,10 +184,18 @@ compileQName f = do
       _ -> Nothing
 
     getQualifier :: QName -> Hs.ModuleName () -> C Qualifier
-    getQualifier f mod =
-      (inverseScopeLookupName f <$> getScope) >>= \case
-        (C.QName{} : _) -> return Unqualified
-        (C.Qual as C.QName{} : _) -> liftTCM $ do
+    getQualifier f mod = do
+      scope <- getScope
+      let names = inverseScopeLookupName f scope
+          validNames = filter validModuleQualifier names
+          noValidQualifier = agda2hsErrorM $
+            "No valid Haskell module qualifier for" <+> prettyTCM f <+>
+            "among" <+> prettyTCM names
+      reportSDoc "agda2hs.name.scope" 40 $
+        "qualifier candidates for" <+> prettyTCM f <+> "=>" <+> prettyTCM names
+      case validNames of
+        C.QName{} : _ -> return Unqualified
+        C.Qual as C.QName{} : _ -> liftTCM $ do
           let qual = hsModuleName $ prettyShow as
           lookupModuleInCurrentModule as >>= \case
             (x:_) | qual /= mod -> do
@@ -184,7 +203,14 @@ compileQName f = do
               return $ QualifiedAs (if isDataMod then Nothing else Just qual)
             _ -> return $ QualifiedAs Nothing
           `catchError` \_ -> return $ QualifiedAs Nothing
-        _ -> return $ QualifiedAs Nothing
+        -- Preserve the fallback for deeper qualified names after validating
+        -- their complete module prefix above.
+        C.Qual{} : _ -> return $ QualifiedAs Nothing
+        [] | null names -> case mod of
+          Hs.ModuleName _ _ | validModuleName mod ->
+            return $ QualifiedAs Nothing
+          _ -> noValidQualifier
+        _ -> noValidQualifier
 
     qualify :: Hs.ModuleName () -> Hs.Name () -> Qualifier -> Hs.QName ()
     qualify mod n = \case
@@ -193,10 +219,17 @@ compileQName f = do
 
     primMonadModules = ["Haskell.Prim.Monad.Dont", "Haskell.Prim.Monad.Do"]
 
+    computeNamespacedName :: QName -> Hs.Name () -> C NamespacedName
+    computeNamespacedName name compiledName =
+      -- we only calculate namespace when dealing with type operators; usually that's where 'type' prefixes are needed in imports
+      flip NamespacedName compiledName <$> case compiledName of
+        Hs.Symbol {} -> computeNamespace name
+        Hs.Ident {} -> pure $ Hs.NoNamespace ()
+
     -- Determine whether it is a type operator or an "ordinary" operator.
     -- _getSort is not for that; e. g. a data has the same sort as its constructor.
-    getNamespace :: QName -> C (Hs.Namespace ())
-    getNamespace qName = do
+    computeNamespace :: QName -> C (Hs.Namespace ())
+    computeNamespace qName = do
       qType <- unEl . getResultType . defType <$> getConstInfo qName
       if isJust $ isSort qType then do
         let fname = nameCanonical $ qnameName f

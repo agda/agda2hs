@@ -1,4 +1,4 @@
-module Fail.NonStarRecordIndex where
+module NonStarRecordIndex where
 
 open import Haskell.Prelude
 

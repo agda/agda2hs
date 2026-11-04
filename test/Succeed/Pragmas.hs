@@ -1,7 +1,9 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Pragmas where
+module Pragmas
+  ()
+where
 
 foo :: Bool -> a -> (a, Int)
 foo = \ case

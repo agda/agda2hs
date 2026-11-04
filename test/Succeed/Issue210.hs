@@ -1,4 +1,6 @@
-module Issue210 where
+module Issue210
+  (Test(..), f1, f2)
+where
 
 import Numeric.Natural (Natural)
 

@@ -1,4 +1,6 @@
-module Records where
+module Records
+  (Pair(..), Wrap(..), MyMonoid(..), swap, swap₂, User(..))
+where
 
 import Numeric.Natural (Natural)
 

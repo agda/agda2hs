@@ -1,4 +1,6 @@
-module Issue264 where
+module Issue264
+  (Term(..), reduce)
+where
 
 data Term = Dummy
 

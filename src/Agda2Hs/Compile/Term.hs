@@ -1,31 +1,21 @@
 module Agda2Hs.Compile.Term where
 
-import Control.Arrow ( (>>>), (&&&), second )
-import Control.Monad ( zipWithM )
-import Control.Monad.Except
+import Control.Arrow ( (>>>), second )
 import Control.Monad.Reader
 
-import Data.Foldable ( toList )
 import Data.Functor ( ($>) )
 import Data.List ( isPrefixOf )
-import Data.Maybe ( fromMaybe, isJust )
 import qualified Data.Text as Text ( unpack )
 import qualified Data.Set as Set ( singleton )
 
 import Agda.Syntax.Common.Pretty ( prettyShow )
-import qualified Agda.Syntax.Common.Pretty as P
 import Agda.Syntax.Common
 import Agda.Syntax.Literal
 import Agda.Syntax.Internal
 
-import Agda.TypeChecking.CheckInternal ( infer )
-import Agda.TypeChecking.Constraints ( noConstraints )
-import Agda.TypeChecking.Conversion ( equalTerm )
-import Agda.TypeChecking.InstanceArguments ( findInstance )
-import Agda.TypeChecking.MetaVars ( newInstanceMeta )
 import Agda.TypeChecking.Monad
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Records ( shouldBeProjectible, isRecordType, recordFieldNames )
+import Agda.TypeChecking.Records ( shouldBeProjectible, isRecordType )
 import Agda.TypeChecking.Datatypes ( getConType )
 import Agda.TypeChecking.Reduce ( unfoldDefinitionStep, instantiate, reduce )
 import Agda.TypeChecking.Substitute
@@ -38,10 +28,9 @@ import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Size
 
-import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( compileQName, importInstance )
 
-import Agda2Hs.Compile.Type ( compileType, compileDom, compileTelSize, compileDomType )
+import Agda2Hs.Compile.Type ( compileType, compileDom, compileTelSize )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
@@ -66,6 +55,7 @@ isSpecialDef q = case prettyShow q of
   "Haskell.Prim.the"             -> Just expTypeSig
   "Haskell.Extra.Delay.runDelay" -> Just compileErasedApp
   "Agda.Builtin.Word.primWord64FromNat" -> Just primWord64FromNat
+  "Haskell.Extra.Nat.predNat"            -> Just predNat
   _                              -> Nothing
 
 
@@ -137,6 +127,14 @@ primWord64FromNat ty args = compileArgs ty args >>= \case
   -- anything else
   _ -> agda2hsError "primWord64FromNat must be applied to a literal"
 
+-- | Compile 'predNat' to Haskell's 'pred'. The erased proof argument is
+-- dropped by 'compileArgs', so the single remaining argument is the
+-- natural number whose predecessor we want.
+predNat :: DefCompileRule
+predNat ty args = compileArgs ty args >>= \case
+  n : es' -> return $ eApp (hsVar "pred") [n] `eApp` es'
+  _       -> agda2hsError "predNat must be applied to a natural number"
+
 
 compileVar :: Int -> Type -> [Term] -> C (Hs.Exp ())
 compileVar i ty es = do
@@ -176,7 +174,6 @@ compileDef f ty args =
     let defMod = qnameModule f
 
     minRecord <- asks minRecordName
-    -- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
     outerWhereModules <- asks whereModules
 
     (ty', args') <-

@@ -1,4 +1,6 @@
-module RuntimeCast where
+module RuntimeCast
+  (mySqrt, checkedSqrt)
+where
 
 import Control.Exception (assert)
 

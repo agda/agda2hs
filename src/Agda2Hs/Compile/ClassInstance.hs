@@ -1,6 +1,6 @@
 module Agda2Hs.Compile.ClassInstance where
 
-import Control.Monad ( when, filterM, unless )
+import Control.Monad ( filterM, unless, void, when )
 import Control.Monad.Reader ( asks, local )
 
 import Data.Foldable ( toList )
@@ -9,23 +9,19 @@ import Data.Maybe ( isNothing, mapMaybe )
 import qualified Data.HashMap.Strict as HMap
 
 import Agda.Compiler.Backend
-import Agda.Compiler.Common ( curDefs, sortDefs )
 
 import Agda.Syntax.Common hiding ( Ranged )
 import Agda.Syntax.Internal
 import Agda.Syntax.Internal.Pattern ( patternToTerm )
-import Agda.Syntax.Scope.Base
-import Agda.Syntax.Scope.Monad ( resolveName )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Substitute ( Apply(applyE), absBody, absApp, apply )
+import Agda.TypeChecking.Substitute ( Apply(applyE), absApp )
 import Agda.TypeChecking.Records
-import Agda.TypeChecking.Telescope ( mustBePi, piApplyM )
+import Agda.TypeChecking.Telescope ( mustBePi )
 
 import Agda.Utils.Lens
-import Agda.Utils.List ( headWithDefault )
-import Agda.Utils.Monad ( ifNotM )
+import Agda.Utils.Monad ( ifNotM, whenM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils
@@ -37,7 +33,8 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( hsName, pp, replaceName, unQual )
+import Agda2Hs.Language.Haskell.Utils
+  ( hsName, pp, replaceName, unQual )
 
 enableCopatterns :: C a -> C a
 enableCopatterns = local $ \e -> e { copatternsEnabled = True }
@@ -82,12 +79,12 @@ compileInstance ToDefinition def@Defn{..} =
       reportSDoc "agda2hs.compile.instance" 25 $ text "compileInstance module: " <+> prettyTCM mod
       tel <- lookupSection mod
       addContext tel $ do
-        liftTCM $ setModuleCheckpoint mod
+        liftTCM $ setModuleCheckpointForInstanceChecking mod
         -- We intentionally do not apply getContextArgs eagerly here so dotted
         -- patterns corresponding to module parameters are correctly detected
         -- (https://github.com/agda/agda2hs/issues/306)
         (ds, rs) <- concatUnzip
-                <$> mapM (\c -> withClauseLocals mod c $ compileInstanceClause mod defType c) funClauses
+                <$> mapM (\c -> withClauseLocals c $ compileInstanceClause mod defType c) funClauses
         reportSDoc "agda2hs.compile.instance" 20 $ vcat $
           text "compileInstance compiled clauses: " :
           map (nest 2 . text . pp) ds
@@ -227,7 +224,7 @@ compileInstanceClause' curModule ty (p:ps) c
             Nothing -> agda2hsError "not allowed: absurd clause for superclass"
             Just b  -> return b
           addContext (clauseTel c) $ do
-            liftTCM $ setModuleCheckpoint curModule
+            liftTCM $ setModuleCheckpointForInstanceChecking curModule
             checkInstance body
           reportSDoc "agda2hs.compile.instance" 20 $ vcat
             [ text "compileInstanceClause dropping clause"
@@ -244,17 +241,27 @@ compileInstanceClause' curModule ty (p:ps) c
         reportSDoc "agda2hs.compile.instance" 40 $
           text $ "raw name: " ++ prettyShow (Def n [])
         d@Defn{..} <- getConstInfo n
-        let mod = if isExtendedLambdaName defName then curModule else qnameModule defName
+        let isExtLam = isExtendedLambdaName defName
+            mod = if isExtLam then curModule else qnameModule defName
+            -- The clauses of a pattern lambda in the right-hand side of the
+            -- instance clause see the where block of that clause.
+            inheritWhere cl
+              | isExtLam  = cl { clauseWhereModule = clauseWhereModule c }
+              | otherwise = cl
         let isMatchingProj [] = False
             isMatchingProj (p:ps) | ProjP _ g <- namedArg p = g .~ q
             isMatchingProj (p:ps) = isMatchingProj ps
         (fc, rs) <- withCurrentModule mod
             $ fmap concatUnzip
-            . mapM (compileInstanceClause mod defType)
+            . mapM (compileInstanceClause mod defType . inheritWhere)
             . filter (isMatchingProj . namedClausePats)
             $ funClauses theDef
         let hd = hsName $ prettyShow $ nameConcrete $ qnameName defName
         let fc' = {- dropPatterns 1 $ -} replaceName hd uf fc
+        -- compileQName - register the method in the import list (e.g. Default(def))
+        -- when it is in record compiled to Haskell typeclass
+        when (not (null fc')) $
+          whenM (isClassFunction q) $ void (compileQName q)
         reportSDoc "agda2hs.compile.instance" 6 $ vcat $
           text "compileInstanceClause compiled clause: " :
           map (nest 2 . text . pp) fc'
@@ -291,6 +298,9 @@ compileInstanceClause' curModule ty (p:ps) c
 
       -- No minimal dictionary used, proceed with compiling as a regular clause.
       | otherwise -> do
+        -- compileQName - register the method in the import list (e.g. Default(def))
+        -- when it is in record compiled to Haskell typeclass
+        whenM (isClassFunction q) $ void (compileQName q)
         reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
         ms <- disableCopatterns $ compileClause curModule [] Nothing uf ty' c'
         let cc = Hs.FunBind () (toList ms)

@@ -1,4 +1,6 @@
-module TypeSynonyms where
+module TypeSynonyms
+  (Nat(..), Nat', myNat, List(..), List', NatList, myListFun, ListList, flatten)
+where
 
 data Nat = Zero
          | Suc Nat

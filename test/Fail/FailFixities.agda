@@ -1,4 +1,4 @@
-module Fail.Fixities where
+module FailFixities where
 
 open import Haskell.Prelude
 

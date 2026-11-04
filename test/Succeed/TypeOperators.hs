@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeOperators #-}
-
-module TypeOperators where
+module TypeOperators
+  (type (:++:), mx, type (++++), mx', type (****)(..), cross)
+where
 
 import Numeric.Natural (Natural)
 

@@ -2,7 +2,7 @@
 -- requires a named definition or an anonymous `λ where` on the Agda side, so a
 -- record is not allowed.
 
-module Fail.Issue169-record where
+module Issue169-record where
 
 open import Haskell.Prelude
 

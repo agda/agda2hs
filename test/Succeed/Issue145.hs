@@ -1,5 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables, BangPatterns #-}
-module Issue145 where
+module Issue145
+  (it, it', Ok'(..), Ok(..), test)
+where
 
 it :: forall a . a -> a
 it x = x

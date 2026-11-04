@@ -1,4 +1,6 @@
-module Issue251 where
+module Issue251
+  (get, test)
+where
 
 get :: Int -> Int
 get x = x

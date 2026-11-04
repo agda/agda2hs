@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
 module Agda2Hs.Compile.Types where
 
-import Control.Applicative ( liftA2 )
 import Control.Monad ( join )
 import Control.Monad.Trans ( MonadTrans(lift) )
 import Control.Monad.Trans.RWS.CPS (RWST(..), runRWST, rwsT )
@@ -15,15 +14,14 @@ import Data.Set ( Set )
 import Data.Map ( Map )
 import Data.String ( IsString(..) )
 
-import Agda.Compiler.Backend
+import Agda.Compiler.Backend hiding ( Strictness )
 import Agda.Syntax.Position ( Range )
-import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
 import Agda.TypeChecking.Warnings ( MonadWarning )
+import Agda.Utils.Haskell.Syntax ( Strictness )
 import Agda.Utils.Null
 import Agda.Utils.Impossible
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( Strictness )
 
 data GlobalEnv = GlobalEnv
   { globalOptions :: Options
@@ -93,13 +91,15 @@ data CompileEnv = CompileEnv
   , compilingLocal :: Bool
   -- ^ whether we are currently compiling a where clause or pattern-matching lambda
   , whereModules :: [ModuleName]
-  -- ^ the where-blocks currently in scope. Hack until Agda adds where-prominence
+  -- ^ the where-blocks currently in scope
   , copatternsEnabled :: Bool
   -- ^ whether copatterns should be allowed when compiling patterns
   , rewrites :: SpecialRules
   -- ^ Special compilation rules.
   , writeImports :: Bool
   -- ^ whether we should add imports of compiled names
+  , writeExports :: Bool
+  -- ^ whether we should add exports of compiled names
   , checkNames :: Bool
   -- ^ whether we should check validity of compiled names
   }
@@ -119,12 +119,9 @@ qualifiedAs = join
 data Import = Import
   { _importModule    :: Hs.ModuleName ()
   , _importQualified :: Qualifier
-  , _importParent    :: Maybe (Hs.Name ())
-  , _importName      :: Hs.Name ()
-  , _importNamespace :: Hs.Namespace ()
-                    -- ^^ if this is a type or something like that, we can add a namespace qualifier to the import spec
-                    -- now it's only useful for differentiating type operators; so for others we always put Hs.NoNamespace () here
-                    -- (we don't calculate it if it's not necessary)
+  , _importParent    :: Maybe NamespacedName
+  , _importName      :: NamespacedName
+                    -- ^^ the namespace part is 'Hs.TypeNamespace' when the name is type operator
   }
   | ImportInstances (Hs.ModuleName ())
 
@@ -134,20 +131,31 @@ importModule (ImportInstances mod) = mod
 
 type Imports = [Import]
 
+-- | Encoding of a Haskell module export list.
+data Export
+  = ExportFun (Hs.Name ())
+  | ExportType (Hs.Name ())
+  | ExportData (Hs.Name ())
+  | ExportClass (Hs.Name ())
+
+type Exports = [Export]
+
 -- | Output produced during the compilation of a module
 data CompileOutput = CompileOutput
   { imports :: Imports
   -- ^ Haskell import statements.
+  , exports :: Exports
+  -- ^ Haskell export list.
   , haskellExtensions :: [Hs.KnownExtension]
   -- ^ Required language extensions.
   }
 
 instance Semigroup CompileOutput where
-  CompileOutput imps exts <> CompileOutput imps' exts' =
-    CompileOutput (imps <> imps') (exts <> exts')
+  CompileOutput imps exps exts <> CompileOutput imps' exps' exts' =
+    CompileOutput (imps <> imps') (exps <> exps') (exts <> exts')
 
 instance Monoid CompileOutput where
-  mempty = CompileOutput mempty mempty
+  mempty = CompileOutput mempty mempty mempty
 
 -- | State used while compiling a single module.
 newtype CompileState = CompileState

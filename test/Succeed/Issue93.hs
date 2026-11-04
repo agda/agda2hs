@@ -1,4 +1,6 @@
-module Issue93 where
+module Issue93
+  (fun, nested)
+where
 
 fun :: Bool -> Bool
 fun x

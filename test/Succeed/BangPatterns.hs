@@ -1,5 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
-module BangPatterns where
+module BangPatterns
+  (strictId, myFoldl, foldl'', LazyMaybe(..), StrictMaybe(..))
+where
 
 strictId :: a -> a
 strictId !x = x
