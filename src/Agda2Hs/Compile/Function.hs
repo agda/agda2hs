@@ -257,7 +257,6 @@ keepClause c@Clause{..} = case (clauseBody, clauseType) of
   (Just body, Just cty) -> compileDom (domFromArg cty) <&> \case
     DODropped  -> False
     DOInstance -> True
-    DOEquality -> True
     DOType     -> __IMPOSSIBLE__
     DOTerm     -> True
 
@@ -302,7 +301,6 @@ compilePats ty ((namedArg -> pat):ps) = do
   let rest = compilePats (absApp b (patternToTerm pat)) ps
   compileDom a >>= \case
     DOInstance -> rest
-    DOEquality -> rest
     DODropped  -> rest
     DOType     -> rest
     DOTerm     -> do

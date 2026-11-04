@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeOperators #-}
 module EqualityConstraint where
 
 myFunc :: a ~ b => c

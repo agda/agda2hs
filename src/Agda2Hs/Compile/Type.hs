@@ -4,7 +4,7 @@
 module Agda2Hs.Compile.Type where
 
 import Control.Arrow ( (>>>) )
-import Control.Monad ( forM, when, unless )
+import Control.Monad ( forM, when, unless, void )
 import Control.Monad.Trans ( lift )
 import Control.Monad.Reader ( asks )
 import Data.List ( find )
@@ -101,7 +101,6 @@ compileType t = do
         DomType _ hsA -> Hs.TyFun () hsA <$> compileB
         DomConstraint hsA -> constrainType hsA <$> compileB
         DomDropped -> compileB
-        DomEquality hsA -> constrainType hsA <$> compileB
         DomForall Nothing -> compileB
         DomForall (Just hsA) -> qualifyType hsA <$> compileB
 
@@ -174,7 +173,6 @@ compileTel (ExtendTel a tel) = compileDom a >>= \case
   DOInstance -> __IMPOSSIBLE__
   DOType     -> __IMPOSSIBLE__
   DOTerm     -> (:) <$> compileType (unEl $ unDom a) <*> underAbstraction a tel compileTel
-  DOEquality -> __IMPOSSIBLE__
 
 -- Version of @compileTel@ that just computes the size,
 -- and avoids compiling the types themselves.
@@ -185,7 +183,6 @@ compileTelSize (ExtendTel a tel) = compileDom a >>= \case
   DOInstance -> __IMPOSSIBLE__
   DOType -> __IMPOSSIBLE__
   DOTerm -> (1+) <$> underAbstraction a tel compileTelSize
-  DOEquality -> __IMPOSSIBLE__
 
 compileUnboxType :: QName -> Args -> C (Hs.Type ())
 compileUnboxType r pars = do
@@ -215,11 +212,11 @@ compileDom a = do
   isEqualityConstraint <- pure (usableModality a) `and2M` pure (isInstance a) `and2M` isBuiltinEqualityType (unDom a)
   isType <- endsInSort (unDom a)
   return $ if
-    | isEqualityConstraint -> DOEquality
-    | isClassConstraint  -> DOInstance
-    | isErasable         -> DODropped
-    | isType             -> DOType
-    | otherwise          -> DOTerm
+    | isEqualityConstraint -> DOInstance
+    | isErasable           -> DODropped
+    | isClassConstraint    -> DOInstance
+    | isType               -> DOType
+    | otherwise            -> DOTerm
 
 -- | Compile a function type domain.
 -- A domain can either be:
@@ -232,8 +229,11 @@ compileDomType :: ArgName -> Dom Type -> C CompiledDom
 compileDomType x a =
   compileDom a >>= \case
     DODropped  -> pure DomDropped
-    DOInstance -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
-    DOEquality -> compileEqualityConstraint (unEl $ unDom a)
+    DOInstance -> do
+      isEquality <- isBuiltinEqualityType (unDom a)
+      if isEquality
+        then compileEqualityConstraint (unEl $ unDom a)
+        else DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
     DOType     -> do
       -- We compile (non-erased) type parameters to an explicit forall if they
       -- come from a module parameter or if we are in a nested position inside the type.
@@ -257,11 +257,13 @@ compileEqualityConstraint :: Term -> C CompiledDom
 compileEqualityConstraint t = do
   Def _ es <- reduce t
   -- The arguments to equality are _a_ (level), _A_ (the type of elements), x (: A), and y (: A)
-  -- We want to compile x and y
-  let Just (_:_:x:y:_) = allApplyElims es
+  -- We want to compile x and y as types
+  let Just (_ : a : x : y : _) = allApplyElims es
+  -- Since x and y are compiled as types, their type A must compile to a Haskell kind
+  void $ compileKind $ El __DUMMY_SORT__ (unArg a)
   hsX <- compileType (unArg x)
   hsY <- compileType (unArg y)
-  return $ DomEquality $ Hs.TypeA () $ Hs.TyInfix () hsX (Hs.UnpromotedName () (Hs.UnQual () (Hs.Symbol () "~"))) hsY
+  return $ DomConstraint $ Hs.TypeA () $ Hs.TyInfix () hsX (Hs.UnpromotedName () (Hs.UnQual () (Hs.Symbol () "~"))) hsY
 
 compileTeleBinds :: Bool -> Telescope -> C [Hs.TyVarBind ()]
 compileTeleBinds kinded = go
@@ -277,7 +279,6 @@ compileTeleBinds kinded = go
         (ha:) <$> underAbstraction a tel go
       DOInstance -> agda2hsError "Constraint in type parameter not supported"
       DOTerm -> agda2hsError "Term variable in type parameter not supported"
-      DOEquality -> agda2hsError "Equality constraint in type parameter not supported"
 
 compileKeptTeleBind :: Bool -> Hs.Name () -> Type -> C (Hs.TyVarBind ())
 compileKeptTeleBind kinded x t = do

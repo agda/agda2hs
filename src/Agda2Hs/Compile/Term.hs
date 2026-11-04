@@ -508,7 +508,6 @@ dependentDom dom = do
     DOTerm     -> False
     DOInstance -> False
     DODropped  -> False
-    DOEquality -> False
 
 compileLam :: Type -> ArgInfo -> Abs Term -> C (Hs.Exp ())
 compileLam ty argi abs = do
@@ -613,7 +612,6 @@ compileArgs' ty (x:xs) = do
   compileDom a >>= \case
     DODropped  -> rest
     DOInstance -> checkInstance x *> rest
-    DOEquality -> checkInstance x *> rest
     DOType     -> checkValidType x *> rest
     DOTerm     -> second . (:) <$> compileTerm (unDom a) x <*> rest
 
