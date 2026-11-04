@@ -22,7 +22,6 @@ import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.Utils.Monad ( liftM2, filterM, anyM, foldM )
 import Agda.Utils.Impossible
 import qualified Agda.Utils.List1 as List1
-import qualified Agda.Utils.Set1 as Set1
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name
@@ -107,7 +106,7 @@ extractReexports menv = do
   let scopeInfo = topLevelScope topInfo
       currScope = fromMaybe __IMPOSSIBLE__ $ Map.lookup (_scopeCurrent scopeInfo) (_scopeModules scopeInfo)
   reexps <- groupByTopLevelModule $ reexportedNames currScope
-  reexpsHs <- Map.traverseMaybeWithKey (\_ -> filterSet1A shouldBeExported) reexps
+  reexpsHs <- traverse (filterSetA shouldBeExported) reexps
   reexpDecls <- topLevelReexportDecls $ topLevelDecls topInfo
   let reexpDeclsHs = Map.intersectionWith (,) reexpsHs reexpDecls
   reportSDoc "agda2hs.reexport" 40 $ "reexported names:" <+> pretty reexps
@@ -116,18 +115,20 @@ extractReexports menv = do
   reportSDoc "agda2hs.reexport" 20 $ "reexport declarations to compile:" <+> pretty reexpDeclsHs
   flip Map.foldMapWithKey reexpDeclsHs $ \mod (names, directives) -> do
     (kind, mod) <- compileTopLevelModuleName mod
-    case kind of
-      PrimModule -> pure [] -- TODO
-      HsModule -> pure [] -- TODO
-      AgdaModule -> case directives of
-        [ImportDirective { using = UseEverything, hiding = [] }] -> pure [ReexportModule mod]
-        _ -> pure [] -- TODO
+    case directives of
+      [ImportDirective {using = UseEverything, hiding = []}] ->
+        case kind of
+          AgdaModule
+            | Set.null names -> pure []
+            | otherwise -> pure [ReexportModule mod]
+          PrimModule -> undefined
+          HsModule -> pure [ReexportModule mod]
+      -- TODO(satoshi): support using and hiding
+      _ -> pure []
   where
-    -- TODO(satoshi): move to util?
-    filterSet1A :: Applicative m => (a -> m Bool) -> Set1.Set1 a -> m (Maybe (Set1.Set1 a))
-    filterSet1A p =
-      fmap (Set1.nonEmptySet . Set.fromDistinctAscList) .
-      filterM p . List1.toList . Set1.toAscList
+    -- TODO(satoshi): use Set.filterA when we start using containers>=0.8.1
+    filterSetA :: Applicative m => (a -> m Bool) -> Set.Set a -> m (Set.Set a)
+    filterSetA p = fmap Set.fromDistinctAscList .  filterM p . List1.toList . Set.toAscList
 
     -- A module can be reexported multiple times with different directives hence the list
     topLevelReexportDecls :: [A.Declaration] -> TCM (Map TopLevelModuleName [A.ImportDirective])
