@@ -6,6 +6,8 @@ Changes to agda2hs
 
 - Proper where-provenance so that subsequent anonymous modules with `module _`
   are no longer mistaken for local `where` definitions (see issue #463).
+- The error message for clashing imports now includes the source location of
+  the definition that triggered the import (see issue #157).
 
 See https://github.com/agda/agda2hs/issues?q=milestone%3A1.5+is%3Apr for the full list of changes.
 

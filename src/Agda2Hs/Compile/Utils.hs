@@ -23,7 +23,7 @@ import Agda.Compiler.Common ( compileDir )
 import Agda.Syntax.Common
 import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Internal
-import Agda.Syntax.Position ( noRange )
+import Agda.Syntax.Position ( Range, noRange )
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad ( bindVariable )
 import Agda.Syntax.TopLevelModuleName
@@ -371,8 +371,18 @@ checkValidConName :: Hs.Name () -> C ()
 checkValidConName x = whenM doNameCheck $ unless (validConName x) $ agda2hsErrorM $ do
   text "Invalid name for Haskell constructor: " <+> text (Hs.prettyPrint x)
 
+-- | Set the source range recorded on an import. Ranges are only recorded for
+--   ordinary imports since instance imports are never checked for clashes.
+setImportRange :: Range -> Import -> Import
+setImportRange r (Import mod qual parent name _) = Import mod qual parent name r
+setImportRange _ imp@ImportInstances{} = imp
+
 tellImport :: Import -> C ()
-tellImport imp = tell $ CompileOutput [imp] [] []
+tellImport imp = do
+  -- The internal syntax does not retain the range of the name that triggers
+  -- the import, but the range of the enclosing definition is still available.
+  r <- getCurrentRange
+  tell $ CompileOutput [setImportRange r imp] [] []
 
 tellExport :: Export -> C ()
 tellExport exp = tell $ CompileOutput [] [exp] []
@@ -389,7 +399,7 @@ tellTypeOperators (Hs.Symbol {}) = tellExtension Hs.TypeOperators
 tellTypeOperators _ = pure ()
 
 tellTypeOperatorsImport :: Import -> C ()
-tellTypeOperatorsImport (Import _ _ parent name)
+tellTypeOperatorsImport (Import _ _ parent name _)
   | Just (Hs.TypeNamespace {}) <- nnNamespace <$> parent = tellExtension Hs.TypeOperators
   | Hs.TypeNamespace {} <- nnNamespace name = tellExtension Hs.TypeOperators
 tellTypeOperatorsImport _ = pure ()
