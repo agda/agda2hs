@@ -176,3 +176,6 @@ isPublicName qname = liftTCM $ do
 
 isPatternSyn :: (MonadTCM m) => QName -> m Bool
 isPatternSyn qname = liftTCM $ Map.member qname <$> getAllPatternSyns
+
+currentScope :: ScopeInfo -> Scope
+currentScope info = fromMaybe __IMPOSSIBLE__ $ Map.lookup (_scopeCurrent info) (_scopeModules info)

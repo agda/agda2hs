@@ -60,8 +60,8 @@ isSpecialCon = prettyShow >>> \case
 
 -- | Convert identifier and import module strings into the Haskell equivalent syntax.
 
--- FIXME(wasabi315): support constructors in rewrite rules. currently we assume there the identifier is not constructor by 'Nothing'
--- FIXME(wasabi315): support type operators in rewrite rules. currently we assume the identifier is not a type operator by 'Hs.NoNamespace'
+-- FIXME(satoshi): support constructors in rewrite rules. currently we assume there the identifier is not constructor by 'Nothing'
+-- FIXME(satoshi): support type operators in rewrite rules. currently we assume the identifier is not a type operator by 'Hs.NoNamespace'
 toNameImport :: String -> Maybe String -> (Hs.Name (), Maybe Import)
 toNameImport x Nothing = (hsName x, Nothing)
 toNameImport x (Just mod) =

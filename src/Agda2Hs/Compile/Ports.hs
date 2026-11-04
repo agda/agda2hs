@@ -27,7 +27,6 @@ import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
-import Agda.Utils.Maybe (fromMaybe)
 
 --------------------------------------------------------------------------------
 -- main
@@ -83,9 +82,7 @@ reexportedNames =
 hasHaskellReexports :: TopLevelModuleName -> TCM Bool
 hasHaskellReexports mname = do
   iface <- maybe __IMPOSSIBLE__ miInterface <$> getVisitedModule mname
-  let scopeInfo = iInsideScope iface
-      currScope = fromMaybe __IMPOSSIBLE__ $ Map.lookup (_scopeCurrent scopeInfo) (_scopeModules scopeInfo)
-  anyM shouldBeExported $ reexportedNames currScope
+  anyM shouldBeExported $ reexportedNames $ currentScope $ iInsideScope iface
 
 data Reexport
   = ReexportModule (Hs.ModuleName ())
@@ -103,11 +100,10 @@ toExport = \case
 extractReexports :: ModuleEnv -> TCM Reexports
 extractReexports menv = do
   topInfo <- moduleAbstrSyn menv
-  let scopeInfo = topLevelScope topInfo
-      currScope = fromMaybe __IMPOSSIBLE__ $ Map.lookup (_scopeCurrent scopeInfo) (_scopeModules scopeInfo)
+  let currScope = currentScope $ topLevelScope topInfo
   reexps <- groupByTopLevelModule $ reexportedNames currScope
   reexpsHs <- traverse (filterSetA shouldBeExported) reexps
-  reexpDecls <- topLevelReexportDecls $ topLevelDecls topInfo
+  reexpDecls <- topLevelReexportDecls topInfo
   let reexpDeclsHs = Map.intersectionWith (,) reexpsHs reexpDecls
   reportSDoc "agda2hs.reexport" 40 $ "reexported names:" <+> pretty reexps
   reportSDoc "agda2hs.reexport" 40 $ "reexported names exist in Haskell:" <+> pretty reexpsHs
@@ -121,66 +117,33 @@ extractReexports menv = do
           AgdaModule
             | Set.null names -> pure []
             | otherwise -> pure [ReexportModule mod]
-          PrimModule -> undefined
+          -- TODO(satoshi): support reexporting Prelude (useful for project-local prelude)
+          PrimModule -> pure []
           HsModule -> pure [ReexportModule mod]
-      -- TODO(satoshi): support using and hiding
+      -- TODO(satoshi): support 'using' and 'hiding'
       _ -> pure []
   where
     -- TODO(satoshi): use Set.filterA when we start using containers>=0.8.1
     filterSetA :: Applicative m => (a -> m Bool) -> Set.Set a -> m (Set.Set a)
     filterSetA p = fmap Set.fromDistinctAscList .  filterM p . List1.toList . Set.toAscList
 
-    -- A module can be reexported multiple times with different directives hence the list
-    topLevelReexportDecls :: [A.Declaration] -> TCM (Map TopLevelModuleName [A.ImportDirective])
-    topLevelReexportDecls = \case
-      [A.Section _ _ _ _ decls] -> do
-        let go = foldM $ \acc decl -> case decl of
-              A.Import _ modName impDir@(ImportDirective{publicOpen = Just _}) -> do
-                modName <- getTopLevelModuleForModuleName modName
-                pure $! Map.insertWith (++) modName [impDir] acc
-              A.ScopedDecl _ decls -> go acc decls
-              _ -> pure acc
-        go Map.empty decls
-      (_ : decls) -> topLevelReexportDecls decls
+-- | Collect top-level reexport declarations.
+-- A module can be reexported multiple times with different directives hence the list.
+topLevelReexportDecls :: TopLevelInfo -> TCM (Map TopLevelModuleName [A.ImportDirective])
+topLevelReexportDecls = collect Map.empty . insideDecls . topLevelDecls
+  where
+    -- top-level declarations starts with a bunch of imports then the top-level module of the file
+    -- ignore "outside" imports because those can't be reexports
+    insideDecls = \case
+      [A.Section _ _ _ _ decls] -> decls
+      (_ : decls) -> insideDecls decls
 
-{-
-
-- How to decide whether a module to reexport exists in Haskell side?
-  - for PrimModules we don't keep reexport.
-  - for HsModules we just assume their existence and thus always reexport?
-    - this doesn't work! There is no corresponding Haskell module for Haskell.Law.Equality, for example.
-    - Haskell.* modules don't produce any Haskell code, but this does not necessarily mean there's no Haskell module to reexport.
-  - we need whether the module is writeModule-ed
-    - `unless (null code && null defs && isMain == NotMain) $ do ...`
-  - store the condition in the global env (update in writeModule)
-  - problem: we skip compilation for up-to-date modules and thus the condition for such modules is not gonna be available
-  - can we do something in moduleSetup?
-    - traverse internal syntax, which we can get from curIF, and see whether the module contains some definition with suitable compile agda2hs pragmas or foreign codes
-  - later we wanna handle open import public using ( ... ).
-
-- Don't reexport modules that does not contain any AGDA2HS COMPILE (default|class|newtype|existing-class|compile-to) pragma
-- Unless the module name is prefixed by Haskell.
-  - drop Haskell. prefix
-
-- Regarding compile-to
-  - suppose module M1 defines a datatype T1, module M2 defines T2 with COMPILE T2 to T1
-  - what do we wanna do if module M3 reexports M2?
-  - we don't wanna do
-      * generate empty module for M2
-      * generate reexport of that empty module in Haskell module for M3!
-
-- removing transparent/inline definitions from export list
-  - we keep the set of such names in GlobalEnv
-
-- what about special names?
-
-- compileQName is in C monad!
-  - needs access to various envs to determine the kind of names
-    - we could manually thread the envs, but this needs a big refactoring because util funs are built around C
-  - compileQName is overloaded right now
-    - calls tellImport and tellTypeOperator inside, beyond just compiling names
-
--}
+    collect = foldM $ \acc decl -> case decl of
+      A.Import _ modName impDir@(ImportDirective{publicOpen = Just _}) -> do
+        modName <- getTopLevelModuleForModuleName modName
+        pure $! Map.insertWith (++) modName [impDir] acc
+      A.ScopedDecl _ decls -> collect acc decls
+      _ -> pure acc
 
 --------------------------------------------------------------------------------
 -- compile imports
