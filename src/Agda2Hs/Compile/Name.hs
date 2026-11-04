@@ -15,6 +15,7 @@ import Agda.Compiler.Backend hiding ( topLevelModuleName )
 
 import Agda.Syntax.Common hiding (Rewrite)
 import Agda.Syntax.Internal
+import Agda.Syntax.Position ( noRange )
 import qualified Agda.Syntax.Concrete as C
 import Agda.Syntax.Scope.Base ( amodName, inverseScopeLookupName )
 import Agda.Syntax.Scope.Monad ( isDatatypeModule )
@@ -66,7 +67,7 @@ toNameImport :: String -> Maybe String -> (Hs.Name (), Maybe Import)
 toNameImport x Nothing = (hsName x, Nothing)
 toNameImport x (Just mod) =
   ( hsName x
-  , Just $ Import (hsModuleName mod) Unqualified Nothing (NamespacedName (Hs.NoNamespace ()) (hsName x))
+  , Just $ Import (hsModuleName mod) Unqualified Nothing (NamespacedName (Hs.NoNamespace ()) (hsName x)) noRange
   )
 
 -- | Default rewrite rules.
@@ -157,7 +158,7 @@ compileQName f = do
       -- unqualified prim modules (Prelude)
       mimp = if mkind == PrimModule && not (isQualified qual)
              then Nothing
-             else Just (Import mod qual par hf)
+             else Just (Import mod qual par hf noRange)
       qf = qualify mod (nnName hf) qual
 
     -- add (possibly qualified) import
