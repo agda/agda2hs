@@ -40,7 +40,8 @@ globalSetup opts = do
   opts <- checkConfig opts
   ctMap <- liftIO $ newIORef M.empty
   ilMap <- liftIO $ newIORef S.empty
-  return $ GlobalEnv opts ctMap ilMap
+  pnRef <- liftIO $ newIORef Nothing
+  return $ GlobalEnv opts ctMap ilMap pnRef
 
 initCompileEnv :: GlobalEnv -> TopLevelModuleName -> SpecialRules -> CompileEnv
 initCompileEnv genv tlm rewrites = CompileEnv
@@ -142,10 +143,12 @@ compile genv tlm _ def =
 verifyOutput ::
   GlobalEnv -> ModuleEnv -> IsMain -> TopLevelModuleName
   -> [(CompiledDef, CompileOutput)] -> TCM ()
-verifyOutput _ _ _ m ls = do
+verifyOutput genv _ _ m ls = do
   reportSDoc "agda2hs.compile" 5 $ text "Checking generated output before rendering: " <+> prettyTCM m
   ensureUniqueConstructors
   ensureNoOutputFromHsModules
+  foreignCode <- map snd <$> getForeignPragmas (optExtensions $ globalOptions genv)
+  ensureNoPreludeClashes genv (concatMap (imports . snd) ls) foreignCode ls
   where
     ensureUniqueConstructors = do
       let allCons = do

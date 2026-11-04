@@ -1,0 +1,4 @@
+prelude:
+  implicit: true
+  hiding:
+    - fromIntegral

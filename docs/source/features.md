@@ -1070,6 +1070,40 @@ If `implicit` is `true`, then everything gets imported from Prelude, except for 
 
 If `implicit` is `false`, Prelude gets imported explicitly, and only those identifiers that are specified in the `using` list. If there is no such list, agda2hs reverts to the default behaviour (it tries to collect imports by itself).
 
+### Checking for clashes with the Prelude
+
+agda2hs checks that the compiled names of user-defined functions, constructors,
+types, and classes do not clash with the names exported by the Haskell Prelude.
+The set of Prelude names is obtained from the `ghc` on the `PATH` by browsing
+the `Prelude` module, so the check matches the compiler that will compile the
+generated code. If `ghc` is not available, the check is skipped and a warning
+is emitted.
+
+A clash is reported as an error. To define a name that also occurs in the
+Prelude, hide it from the Prelude:
+
+* with an explicit `prelude.hiding` list in the configuration file (requires
+  `implicit: true`), or
+* with an explicit `import Prelude hiding (...)` in a `FOREIGN AGDA2HS` block.
+
+For example, the following module defines its own `map`:
+
+```agda
+module Example where
+
+open import Haskell.Prelude hiding (map)
+
+map : (a → b) → List a → List b
+map f []       = []
+map f (x ∷ xs) = f x ∷ map f xs
+
+{-# COMPILE AGDA2HS map #-}
+```
+
+To compile it, either set `implicit: true` and add `map` to the `prelude.hiding`
+list, or add a `FOREIGN AGDA2HS` block containing
+`import Prelude hiding (map)`.
+
 ## Known issues
 
 - Rewrite rules only work for things you do use, not for those that you only define. This causes a problem with class instances: if you choose the default behaviour, then write an instance of the Num class and define signum but do not use it, it will not get into Prelude's import list, and so GHC will complain.

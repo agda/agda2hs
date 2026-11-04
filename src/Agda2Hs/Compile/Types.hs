@@ -23,12 +23,18 @@ import Agda.Utils.Impossible
 
 import qualified Agda2Hs.Language.Haskell as Hs
 
+import Agda2Hs.PreludeNames ( PreludeNames )
+
 data GlobalEnv = GlobalEnv
   { globalOptions :: Options
   , compileToMap :: IORef (Map QName QName)
   -- ^ names with a compile-to pragma
   , inlineSymbols :: IORef (Set QName)
   -- ^ names of functions that should be inlined
+  , preludeNames :: IORef (Maybe (Maybe PreludeNames))
+  -- ^ memoized names exported by the Haskell Prelude, used to check for
+  -- clashes. 'Nothing' means the query has not been run yet, @Just Nothing@
+  -- means it failed, and @Just (Just ns)@ holds the result.
   }
 
 type ModuleEnv   = TopLevelModuleName

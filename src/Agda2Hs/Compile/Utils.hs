@@ -28,13 +28,15 @@ import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad ( bindVariable )
 import Agda.Syntax.TopLevelModuleName
 import Agda.Syntax.Common.Pretty ( prettyShow )
+import qualified Agda.Syntax.Common.Pretty as P
 
 import Agda.TypeChecking.Level ( isLevelType )
-import Agda.TypeChecking.Pretty ( Doc, (<+>), text, PrettyTCM(..), pretty )
+import Agda.TypeChecking.Pretty ( Doc, (<+>), vcat, text, PrettyTCM(..), pretty )
 import Agda.TypeChecking.Records ( isRecordConstructor, getRecordOfField )
 import Agda.TypeChecking.Reduce ( reduce )
 import Agda.TypeChecking.Substitute ( Subst, TelV(TelV) )
 import Agda.TypeChecking.Telescope ( telView )
+import Agda.TypeChecking.Warnings ( warning )
 
 import Agda.Utils.Lens ( (<&>) )
 import Agda.Utils.Haskell.Syntax ( Strictness(..) )
@@ -44,12 +46,13 @@ import Agda.Utils.Singleton
 
 import Agda2Hs.AgdaUtils ( (~~), isPublicName )
 import Agda2Hs.Compile.Types
+import Agda2Hs.PreludeNames
 import Agda2Hs.Pragma
 import qualified Data.List as L
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.Language.Haskell.Utils
-  ( validVarName, validTypeName, validConName, hsName, pp )
+  ( validVarName, validTypeName, validConName, hsName, pp, definedName, cname )
 
 agda2hsError :: (HasCallStack, MonadTCError m) => Doc -> m a
 agda2hsError msg = typeError $ CustomBackendError "agda2hs" msg
@@ -370,6 +373,133 @@ checkValidTypeName x = whenM doNameCheck $ unless (validTypeName x) $ agda2hsErr
 checkValidConName :: Hs.Name () -> C ()
 checkValidConName x = whenM doNameCheck $ unless (validConName x) $ agda2hsErrorM $ do
   text "Invalid name for Haskell constructor: " <+> text (Hs.prettyPrint x)
+
+-- | Extract the raw string of a Haskell name, without pretty-printing.
+hsNameString :: Hs.Name l -> String
+hsNameString (Hs.Ident _ s)  = s
+hsNameString (Hs.Symbol _ s) = s
+
+-- | Check that none of the generated names clash with a name from the
+-- Haskell Prelude.
+--
+-- This must happen after the whole module has been compiled, since whether
+-- the unqualified Prelude is in scope depends on the module as a whole: any
+-- explicit import of the Prelude (from the prelude configuration, from a
+-- @FOREIGN AGDA2HS@ block, or generated because a Prelude name is
+-- referenced qualified) disables the implicit import of the Prelude, and
+-- the names that are in scope are the union of those explicit imports.
+ensureNoPreludeClashes
+  :: GlobalEnv -> Imports -> [Code] -> [(CompiledDef, CompileOutput)] -> TCM ()
+ensureNoPreludeClashes genv imps foreignCode ls = do
+  let names = [ (r, select, x)
+              | (cdef, _)    <- ls
+              , (r, ds)      <- cdef
+              , d            <- ds
+              , (select, x)  <- declNames d
+              ]
+  unless (null names) $ getPreludeNames genv >>= \case
+    Nothing -> return ()
+    Just pn -> forM_ names $ \(r, select, x) ->
+      let n = hsNameString x
+      in when (n `S.member` select pn && inScope n) $
+           setCurrentRange r $ agda2hsErrorM $ vcat
+             [ text "The name `" <> text n
+                 <> text "` clashes with a name from the Haskell Prelude."
+             , text "Rename the Agda definition, or add `" <> text n
+                 <> text "` to the `prelude.hiding` list in the agda2hs configuration file."
+             ]
+  where
+    opts = globalOptions genv
+    po   = optPrelude opts
+    -- An explicit import of the Prelude in a FOREIGN AGDA2HS block replaces
+    -- the implicit import; collect the names it brings into scope.
+    foreignScopes = concatMap foreignPreludeScope foreignCode
+    -- The prelude configuration may also add an explicit import.
+    configScopes
+      | preludeImplicit po              = [\n -> n `notElem` preludeHiding po]
+      | Just using <- preludeImports po = [\n -> n `elem` using]
+      | otherwise                       = []
+    -- A qualified reference to a Prelude name causes the generation of an
+    -- explicit qualified import, which disables the implicit import.
+    collectedPreludeImport = any ((== Hs.prelude_mod ()) . importModule) imps
+    explicitScopes = configScopes ++ foreignScopes
+    implicitPrelude = null explicitScopes && not collectedPreludeImport
+    inScope n = any ($ n) explicitScopes || implicitPrelude
+
+-- | Look up the names exported by the Haskell Prelude, querying the user's
+-- @ghc@ on first use and memoizing the result for the rest of the run. The
+-- result is only queried when a module actually has definitions to check, so
+-- up-to-date compilations pay nothing.
+getPreludeNames :: GlobalEnv -> TCM (Maybe PreludeNames)
+getPreludeNames genv = do
+  cached <- liftIO $ readIORef (preludeNames genv)
+  case cached of
+    Just pn -> return pn
+    Nothing -> do
+      pn <- liftIO queryPreludeNames
+      liftIO $ writeIORef (preludeNames genv) (Just pn)
+      case pn of
+        Nothing -> warning $ CustomBackendWarning "agda2hs" $ P.vcat
+          [ P.text "Could not query the Haskell Prelude to check for name clashes."
+          , P.text "Make sure `ghc` is available on the PATH; skipping the check."
+          ]
+        Just{} -> return ()
+      return pn
+
+-- | The names brought into scope by an explicit import of the Prelude in a
+-- @FOREIGN AGDA2HS@ block, as a predicate. Returns @[]@ if the block does
+-- not import the Prelude.
+foreignPreludeScope :: Code -> [String -> Bool]
+foreignPreludeScope (Hs.Module _ _ _ imps _, _) = concatMap fromImport imps
+foreignPreludeScope _ = []
+
+fromImport :: Hs.ImportDecl Hs.SrcSpanInfo -> [String -> Bool]
+fromImport imp
+  | not (isPrelude (Hs.importModule imp)) = []
+  | Hs.importQualified imp || isJust (Hs.importAs imp) = [const False]
+  | otherwise = case Hs.importSpecs imp of
+      Nothing -> [const True]
+      Just (Hs.ImportSpecList _ hiding specs) ->
+        let names = concatMap importSpecNames specs
+        in [if hiding then (`notElem` names) else (`elem` names)]
+
+isPrelude :: Hs.ModuleName l -> Bool
+isPrelude (Hs.ModuleName _ s) = s == "Prelude"
+
+importSpecNames :: Hs.ImportSpec Hs.SrcSpanInfo -> [String]
+importSpecNames = \case
+  Hs.IVar _ n          -> [hsNameString n]
+  Hs.IAbs _ _ n        -> [hsNameString n]
+  Hs.IThingAll _ n     -> [hsNameString n]
+  Hs.IThingWith _ n cs -> hsNameString n : map (hsNameString . cname) cs
+
+-- | The names defined by a generated declaration, together with the
+-- namespace they live in.
+declNames :: Hs.Decl () -> [(PreludeNames -> Set String, Hs.Name ())]
+declNames = \case
+  Hs.TypeSig _ ns _              -> map (preludeVals,) ns
+  Hs.FunBind _ ms                -> map (\m -> (preludeVals, definedName m)) ms
+  Hs.PatBind _ (Hs.PVar _ n) _ _ -> [(preludeVals, n)]
+  Hs.DataDecl _ _ _ dh cons _    -> declHeadNames dh ++ concatMap conNames cons
+  Hs.TypeDecl _ dh _             -> declHeadNames dh
+  Hs.ClassDecl _ _ dh _ body     -> declHeadNames dh ++ maybe [] (concatMap clsNames) body
+  _                              -> []
+  where
+    declHeadNames = maybe [] (\n -> [(preludeTys, n)]) . declHeadName
+    conNames (Hs.QualConDecl _ _ _ con) = case con of
+      Hs.ConDecl _ n _        -> [(preludeCons, n)]
+      Hs.InfixConDecl _ _ n _ -> [(preludeCons, n)]
+      Hs.RecDecl _ n fs       -> (preludeCons, n) : concatMap fieldNames fs
+    fieldNames (Hs.FieldDecl _ ns _) = map (preludeVals,) ns
+    clsNames (Hs.ClsDecl _ d) = declNames d
+    clsNames _                = []
+
+declHeadName :: Hs.DeclHead () -> Maybe (Hs.Name ())
+declHeadName = \case
+  Hs.DHead _ n     -> Just n
+  Hs.DHInfix _ _ n -> Just n
+  Hs.DHParen _ dh  -> declHeadName dh
+  Hs.DHApp _ dh _  -> declHeadName dh
 
 tellImport :: Import -> C ()
 tellImport imp = tell $ CompileOutput [imp] [] []
