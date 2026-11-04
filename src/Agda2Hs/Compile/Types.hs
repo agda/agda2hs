@@ -210,9 +210,8 @@ instance Null a => Null (C a) where
 instance Semigroup a => Semigroup (C a) where (<>) = liftA2 (<>)
 
 -- | Determines how a 'Dom Type' is treated during compilation.
-data DomOutput = DODropped | DOInstance | DOType | DOTerm | DOEquality
+data DomOutput = DODropped | DOInstance | DOType | DOTerm
 
--- | Determines how an argument is compiled.
 -- | Agda @Dom Type@ can get compiled in three ways.
 data CompiledDom
   = DomType Strictness (Hs.Type ())
@@ -223,8 +222,6 @@ data CompiledDom
     -- ^ To a forall, with an optional type variable declaration. If Nothing, this is an implicit forall; otherwise, explicit.
   | DomDropped
     -- ^ To nothing (e.g. erased proofs)
-  | DomEquality (Hs.Asst ())
-    -- ^ To an equality constraint (e.g. `(a ~ b)`)
 
 
 -- | Whether a datatype/record should be compiled as a @newtype@ haskell definition.
