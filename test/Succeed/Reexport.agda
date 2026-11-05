@@ -12,6 +12,9 @@ open import Haskell.Data.List public
 -- Reexport Prelude
 open import Haskell.Prelude public
 
+-- Preserve module qualifier
+open import Importee as X public
+
 -- Reexports inside nested modules are not supported (ignored)
 
 module M where
