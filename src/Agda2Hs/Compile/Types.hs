@@ -140,12 +140,12 @@ data Import = Import
                     -- ^^ source range of the definition that triggered this import
   }
   | ImportInstances (Hs.ModuleName ())
-  | ImportModule (Hs.ModuleName ()) -- for reexport
+  | ImportModule (Hs.ModuleName ()) (Maybe (Hs.ModuleName ())) -- for reexport
 
 importModule :: Import -> Hs.ModuleName ()
 importModule (Import{ _importModule = mod }) = mod
 importModule (ImportInstances mod) = mod
-importModule (ImportModule mod) = mod
+importModule (ImportModule mod _) = mod
 
 type Imports = [Import]
 
