@@ -51,6 +51,7 @@ data ParsedPragma
   | InlinePragma
   | DefaultPragma [Hs.Deriving ()]
   | ClassPragma [String]
+  | ExistingPragma
   | ExistingClassPragma
   | UnboxPragma UnboxMode
   | TransparentPragma
@@ -92,6 +93,7 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
   Just (CompilerPragma r s)
     | "class" `isPrefixOf` s      -> return $ ClassPragma (words $ drop 5 s)
     | s == "inline"               -> return InlinePragma
+    | s == "existing"             -> return ExistingPragma
     | s == "existing-class"       -> return ExistingClassPragma
     | s == "unboxed"              -> return $ UnboxPragma UnboxLazy
     | s == "unboxed-strict"       -> return $ UnboxPragma UnboxStrict
