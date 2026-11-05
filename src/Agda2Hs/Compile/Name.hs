@@ -270,7 +270,7 @@ compileTopLevelModuleName :: (MonadTCM m) => TopLevelModuleName -> m (HsModuleKi
 compileTopLevelModuleName tlm0 = liftTCM $ do
   let tlm = hsTopLevelModuleName tlm0
   case hsModuleKind tlm of
-    PrimModule -> return (PrimModule, Hs.ModuleName () "Prelude")
+    PrimModule -> return (PrimModule, Hs.prelude_mod ())
     HsModule   -> return (HsModule, dropHaskellPrefix tlm)
     AgdaModule -> return (AgdaModule, tlm)
 
