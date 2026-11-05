@@ -15,6 +15,9 @@ open import Haskell.Prelude public
 -- Reexport other PrimModule -> dropped
 open import Haskell.Prim.Nat public
 
+-- Preserve module qualifier
+open import Importee as X public
+
 -- Reexports inside nested modules are not supported (ignored)
 
 module M where

@@ -15,6 +15,8 @@ import Agda2Hs.Language.Haskell.Utils ( validVarId, validConId, pp )
 import Agda.Compiler.Backend
 import Agda.TypeChecking.Pretty ( pretty, text, prettyList_, (<+>) )
 import qualified Agda.Syntax.Abstract as A
+import qualified Agda.Syntax.Concrete as C
+import Agda.Syntax.Info
 import Agda.Syntax.Translation.ConcreteToAbstract
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Common
@@ -27,6 +29,7 @@ import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
+import Agda.Utils.Maybe (fromMaybe)
 
 --------------------------------------------------------------------------------
 -- main
@@ -85,17 +88,17 @@ hasHaskellReexports mname = do
   anyM shouldBeExported $ reexportedNames $ currentScope $ iInsideScope iface
 
 data Reexport
-  = ReexportModule (Hs.ModuleName ())
+  = ReexportModule (Hs.ModuleName ()) (Maybe (Hs.ModuleName ()))
 
 type Reexports = [Reexport]
 
 toImport :: Reexport -> Import
 toImport = \case
-  ReexportModule m -> ImportModule m
+  ReexportModule m as -> ImportModule m as
 
 toExport :: Reexport -> Export
 toExport = \case
-  ReexportModule m -> ExportModule m
+  ReexportModule m as -> ExportModule (fromMaybe m as)
 
 extractReexports :: ModuleEnv -> TCM Reexports
 extractReexports menv = do
@@ -112,14 +115,15 @@ extractReexports menv = do
   flip Map.foldMapWithKey reexpDeclsHs $ \mod (names, directives) -> do
     (kind, mod') <- compileTopLevelModuleName mod
     case directives of
-      [ImportDirective {using = UseEverything, hiding = []}] ->
+      [(asName, ImportDirective {using = UseEverything, hiding = []})] -> do
+        let asName' = Hs.hsModuleName . prettyShow <$> asName
         case kind of
           AgdaModule
             | Set.null names -> pure []
-            | otherwise -> pure [ReexportModule mod']
-          HsModule -> pure [ReexportModule mod']
+            | otherwise -> pure [ReexportModule mod' asName']
+          HsModule -> pure [ReexportModule mod' asName']
           PrimModule
-            | prettyShow mod == "Haskell.Prelude" -> pure [ReexportModule mod']
+            | prettyShow mod == "Haskell.Prelude" -> pure [ReexportModule mod' asName']
             | otherwise -> pure []
       -- TODO(satoshi): support 'using' and 'hiding'
       _ -> pure []
@@ -130,7 +134,7 @@ extractReexports menv = do
 
 -- | Collect top-level reexport declarations.
 -- A module can be reexported multiple times with different directives hence the list.
-topLevelReexportDecls :: TopLevelInfo -> TCM (Map TopLevelModuleName [A.ImportDirective])
+topLevelReexportDecls :: TopLevelInfo -> TCM (Map TopLevelModuleName [(Maybe C.Name, A.ImportDirective)])
 topLevelReexportDecls = collect Map.empty . insideDecls . topLevelDecls
   where
     -- top-level declarations starts with a bunch of imports then the top-level module of the file
@@ -140,9 +144,9 @@ topLevelReexportDecls = collect Map.empty . insideDecls . topLevelDecls
       (_ : decls) -> insideDecls decls
 
     collect = foldM $ \acc decl -> case decl of
-      A.Import _ modName impDir@(ImportDirective{publicOpen = Just _}) -> do
+      A.Import minfo modName impDir@(ImportDirective{publicOpen = Just _}) -> do
         modName <- getTopLevelModuleForModuleName modName
-        pure $! Map.insertWith (++) modName [impDir] acc
+        pure $! Map.insertWith (++) modName [(minfoAsName minfo, impDir)] acc
       A.ScopedDecl _ decls -> collect acc decls
       _ -> pure acc
 
@@ -176,7 +180,7 @@ checkClashingImports (Import mod as p (NamespacedName _ q) : is) =
       ++ prettyShow (pp . nnName <$> p') ++ ")"
     -- TODO: no range information as we only have Haskell names at this point
 checkClashingImports (ImportInstances mod : is) = checkClashingImports is
-checkClashingImports (ImportModule mod : is) = checkClashingImports is
+checkClashingImports (ImportModule mod _ : is) = checkClashingImports is
 
 groupImports :: Imports -> ImportDeclMap
 groupImports = flip foldr Map.empty $ \case
@@ -184,8 +188,8 @@ groupImports = flip foldr Map.empty $ \case
     Map.insertWith mergeChildren (mod,as) (makeSingle parent name)
   (ImportInstances mod) ->
     Map.insertWith mergeChildren (mod,Unqualified) (Just mempty)
-  (ImportModule mod) ->
-    Map.insertWith mergeChildren (mod,Unqualified) Nothing
+  (ImportModule mod as) ->
+    Map.insertWith mergeChildren (mod, Just <$> as) Nothing
   where
     mergeChildren :: Maybe ImportSpecMap -> Maybe ImportSpecMap -> Maybe ImportSpecMap
     mergeChildren = liftM2 (Map.unionWith Set.union)

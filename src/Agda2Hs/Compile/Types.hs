@@ -135,12 +135,12 @@ data Import = Import
                     -- ^^ the namespace part is 'Hs.TypeNamespace' when the name is type operator
   }
   | ImportInstances (Hs.ModuleName ())
-  | ImportModule (Hs.ModuleName ()) -- for reexport
+  | ImportModule (Hs.ModuleName ()) (Maybe (Hs.ModuleName ())) -- for reexport
 
 importModule :: Import -> Hs.ModuleName ()
 importModule (Import{ _importModule = mod }) = mod
 importModule (ImportInstances mod) = mod
-importModule (ImportModule mod) = mod
+importModule (ImportModule mod _) = mod
 
 type Imports = [Import]
 
