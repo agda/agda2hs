@@ -110,16 +110,17 @@ extractReexports menv = do
   reportSDoc "agda2hs.reexport" 40 $ "all reexport declarations:" <+> pretty reexpDecls
   reportSDoc "agda2hs.reexport" 20 $ "reexport declarations to compile:" <+> pretty reexpDeclsHs
   flip Map.foldMapWithKey reexpDeclsHs $ \mod (names, directives) -> do
-    (kind, mod) <- compileTopLevelModuleName mod
+    (kind, mod') <- compileTopLevelModuleName mod
     case directives of
       [ImportDirective {using = UseEverything, hiding = []}] ->
         case kind of
           AgdaModule
             | Set.null names -> pure []
-            | otherwise -> pure [ReexportModule mod]
-          -- TODO(satoshi): support reexporting Prelude (useful for project-local prelude)
-          PrimModule -> pure []
-          HsModule -> pure [ReexportModule mod]
+            | otherwise -> pure [ReexportModule mod']
+          HsModule -> pure [ReexportModule mod']
+          PrimModule
+            | prettyShow mod == "Haskell.Prelude" -> pure [ReexportModule mod']
+            | otherwise -> pure []
       -- TODO(satoshi): support 'using' and 'hiding'
       _ -> pure []
   where

@@ -9,6 +9,9 @@ open import ExportTransparentOnly public
 -- Reexport HsModule
 open import Haskell.Data.List public
 
+-- Reexport Prelude
+open import Haskell.Prelude public
+
 -- Reexports inside nested modules are not supported (ignored)
 
 module M where
