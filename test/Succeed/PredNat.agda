@@ -2,7 +2,7 @@ module PredNat where
 
 open import Haskell.Prelude
 open import Agda2Hs.Extra.Dec
-open import Haskell.Prim.Nat
+open import Agda2Hs.Extra.Nat
 open import Agda2Hs.Extra.Refinement
 open import Agda2Hs.Law.Eq
 open import Agda2Hs.Law.Eq.Instances

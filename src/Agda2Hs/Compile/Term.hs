@@ -53,9 +53,9 @@ isSpecialDef q = case prettyShow q of
   "Haskell.Prim.if_then_else_"          -> Just ifThenElse
   "Haskell.Prim.case_of_"               -> Just caseOf
   "Haskell.Prim.the"                    -> Just expTypeSig
-  "Haskell.Prim.Delay.runDelay"         -> Just compileErasedApp
+  "Agda2Hs.Extra.Delay.runDelay"         -> Just compileErasedApp
   "Agda.Builtin.Word.primWord64FromNat" -> Just primWord64FromNat
-  "Haskell.Prim.Nat.predNat"            -> Just predNat
+  "Agda2Hs.Extra.Nat.predNat"            -> Just predNat
   _                                     -> Nothing
 
 
@@ -371,8 +371,8 @@ isSpecialCon = prettyShow >>> \case
   "Haskell.Prim.Int.Int.int64"      -> Just int64Term
   "Haskell.Extra.Sigma._,_"         -> Just tupleTerm
   "Haskell.Extra.Erase.Erased"      -> Just erasedTerm
-  "Haskell.Prim.Delay.Delay.now"   -> Just compileErasedApp
-  "Haskell.Prim.Delay.Delay.later" -> Just compileErasedApp
+  "Agda2Hs.Extra.Delay.Delay.now"   -> Just compileErasedApp
+  "Agda2Hs.Extra.Delay.Delay.later" -> Just compileErasedApp
   _                                 -> Nothing
 
 tupleTerm :: ConCompileRule

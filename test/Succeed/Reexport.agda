@@ -13,7 +13,7 @@ open import Haskell.Data.List public
 open import Haskell.Prelude public
 
 -- Reexport other PrimModule -> dropped
-open import Haskell.Prim.Nat public
+open import Agda2Hs.Extra.Nat public
 
 -- Preserve module qualifier
 open import Importee as X public

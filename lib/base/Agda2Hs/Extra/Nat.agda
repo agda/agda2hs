@@ -1,4 +1,4 @@
-module Haskell.Prim.Nat where
+module Agda2Hs.Extra.Nat where
 
 open import Haskell.Prelude
 open import Agda2Hs.Extra.Refinement

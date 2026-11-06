@@ -52,8 +52,8 @@ isSpecialCon qn = case prettyShow qn of
     badConstructors =
       [ "Agda.Builtin.Nat.Nat.zero"
       , "Agda.Builtin.Nat.Nat.suc"
-      , "Haskell.Prim.Delay.Delay.now"
-      , "Haskell.Prim.Delay.Delay.later"
+      , "Agda2Hs.Extra.Delay.Delay.now"
+      , "Agda2Hs.Extra.Delay.Delay.later"
       ]
 
     itsBad :: Type -> NAPs -> C (Hs.Pat ())

@@ -37,7 +37,7 @@ import Agda2Hs.Language.Haskell.Utils
 -- | Type definitions from the prelude that get special translation rules.
 isSpecialType :: QName -> Maybe (Elims -> C (Hs.Type ()))
 isSpecialType = prettyShow >>> \case
-  "Haskell.Prim.Delay.Delay" -> Just delayType
+  "Agda2Hs.Extra.Delay.Delay" -> Just delayType
   _                          -> Nothing
 
 

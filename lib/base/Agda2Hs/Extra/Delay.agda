@@ -1,6 +1,6 @@
 {-# OPTIONS --sized-types #-}
 
-module Haskell.Prim.Delay where
+module Agda2Hs.Extra.Delay where
 
 open import Agda.Builtin.Size public
 
