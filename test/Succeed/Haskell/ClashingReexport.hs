@@ -1,0 +1,4 @@
+module Haskell.ClashingReexport
+  ()
+where
+
