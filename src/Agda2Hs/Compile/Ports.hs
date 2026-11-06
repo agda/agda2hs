@@ -21,7 +21,7 @@ import Agda.Syntax.Translation.ConcreteToAbstract
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Common
 import Agda.Syntax.Common.Pretty ( prettyShow )
-import Agda.Utils.Monad ( liftM2, filterM, anyM, foldM )
+import Agda.Utils.Monad ( liftM2, filterM, anyM, foldM, when )
 import Agda.Utils.Impossible
 import qualified Agda.Utils.List1 as List1
 
@@ -121,7 +121,12 @@ extractReexports menv = do
           AgdaModule
             | Set.null names -> pure []
             | otherwise -> pure [ReexportModule mod' asName']
-          HsModule -> pure [ReexportModule mod' asName']
+          HsModule -> do
+            -- dropping the 'Haskell' prefix may results in name clash
+            -- e.g.) reexporting 'Haskell.Data.Map' from 'Data.Map'
+            when (pp mod' == prettyShow (moduleName menv)) $
+              agda2hsErrorM $ "Clashing export: trying to reexport" <+> pretty mod <+> "from" <+> pretty (moduleName menv)
+            pure [ReexportModule mod' asName']
           PrimModule
             | prettyShow mod == "Haskell.Prelude" -> pure [ReexportModule mod' asName']
             | otherwise -> pure []
