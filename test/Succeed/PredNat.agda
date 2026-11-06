@@ -1,11 +1,11 @@
 module PredNat where
 
 open import Haskell.Prelude
-open import Haskell.Extra.Dec
-open import Haskell.Extra.Nat
-open import Haskell.Extra.Refinement
-open import Haskell.Law.Eq
-open import Haskell.Law.Eq.Instances
+open import Agda2Hs.Extra.Dec
+open import Agda2Hs.Extra.Nat
+open import Agda2Hs.Extra.Refinement
+open import Agda2Hs.Law.Eq
+open import Agda2Hs.Law.Eq.Instances
 
 -- The predecessor of a nonzero natural number.
 predNat' : (n : Nat) → @0 (n ≡ 0 → ⊥) → Nat

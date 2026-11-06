@@ -1,7 +1,7 @@
 
 open import Haskell.Prelude
-open import Haskell.Extra.Dec
-open import Haskell.Extra.Refinement
+open import Agda2Hs.Extra.Dec
+open import Agda2Hs.Extra.Refinement
 
 foo : (b : Bool) → {{Dec (IsTrue b)}} → Bool
 foo _ {{b ⟨ _ ⟩}} = not b

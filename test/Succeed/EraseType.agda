@@ -1,7 +1,7 @@
 module EraseType where
 
 open import Haskell.Prelude
-open import Haskell.Extra.Erase
+open import Agda2Hs.Extra.Erase
 
 testErase : Erase Int
 testErase = Erased 42

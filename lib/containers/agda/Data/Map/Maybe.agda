@@ -6,7 +6,7 @@ module Data.Map.Maybe
     This is used to make proofs for 'Data.Map' more transparent.
     -} where
 
-open import Haskell.Law.Equality
+open import Agda2Hs.Law.Equality
 open import Haskell.Prelude hiding (null; map; filter)
 
 open import Haskell.Data.Maybe using

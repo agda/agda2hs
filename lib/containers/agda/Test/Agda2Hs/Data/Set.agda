@@ -2,8 +2,8 @@ module Test.Agda2Hs.Data.Set where
 
 open import Haskell.Prelude
 
-open import Data.Set using (Set)
-import Data.Set as Set
+open import Haskell.Data.Set using (Set)
+import Haskell.Data.Set as Set
 
 {-----------------------------------------------------------------------------
     Test definitions

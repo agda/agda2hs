@@ -4,7 +4,7 @@ open import Haskell.Prim
 open import Haskell.Prim.Bool
 open import Haskell.Prim.Monad
 open import Haskell.Prim.String
-open import Haskell.Extra.Erase
+open import Agda2Hs.Extra.Erase
 
 guard : {{ MonadFail m }} → (b : Bool) → m (Erase (b ≡ True))
 guard True = return (Erased refl)

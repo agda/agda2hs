@@ -52,8 +52,8 @@ isSpecialCon qn = case prettyShow qn of
     badConstructors =
       [ "Agda.Builtin.Nat.Nat.zero"
       , "Agda.Builtin.Nat.Nat.suc"
-      , "Haskell.Extra.Delay.Delay.now"
-      , "Haskell.Extra.Delay.Delay.later"
+      , "Agda2Hs.Extra.Delay.Delay.now"
+      , "Agda2Hs.Extra.Delay.Delay.later"
       ]
 
     itsBad :: Type -> NAPs -> C (Hs.Pat ())
@@ -112,7 +112,7 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
     (ensureNoLocals err >> compileTypeDef x def)
     -- otherwise, we have to compile clauses.
     $ do
-    whenM (shouldBeExported defName `and2M` asks writeExports) $ do
+    whenM (andM [shouldBeExported defName, asks (not . compilingLocal), asks writeExports]) $
       tellExport (ExportFun x)
 
     tel <- lookupSection m

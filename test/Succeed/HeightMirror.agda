@@ -1,6 +1,6 @@
 
 open import Haskell.Prelude hiding (max)
-open import Haskell.Law.Equality hiding (subst)
+open import Agda2Hs.Law.Equality hiding (subst)
 
 subst : {p : @0 a → Type} {@0 m n : a} → @0 m ≡ n → p m → p n
 subst refl t = t

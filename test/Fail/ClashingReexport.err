@@ -1,0 +1,3 @@
+error: [CustomBackendError]
+agda2hs:
+  Clashing export: trying to reexport Haskell.ClashingReexport from ClashingReexport

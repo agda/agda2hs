@@ -1,5 +1,5 @@
 open import Haskell.Prelude
-open import Haskell.Law
+open import Agda2Hs.Law
 
 data Ordered (a : Type) : Type where
     Gt : ⦃ @0 iOrd : Ord a ⦄ → (a' : a) → (a'' : a) → ⦃ @0 pf : (a' > a'') ≡ True ⦄ → Ordered a

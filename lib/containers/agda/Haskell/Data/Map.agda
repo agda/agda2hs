@@ -2,7 +2,7 @@
 -- | Postulates and definitions of the operations supported by 'Map'.
 module Haskell.Data.Map where
 
-open import Haskell.Law.Equality
+open import Agda2Hs.Law.Equality
 open import Haskell.Prelude hiding (lookup; null; map; filter)
 import Haskell.Prelude as L using (map)
 
@@ -13,8 +13,8 @@ open import Haskell.Data.Maybe using
 import Data.Map.Maybe as Maybe
 import Haskell.Prelude as List using (map)
 
-open import Data.Set using (Set)
-import Data.Set as Set
+open import Haskell.Data.Set using (Set)
+import Haskell.Data.Set as Set
 
 {-----------------------------------------------------------------------------
     Helper predicates

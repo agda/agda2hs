@@ -2,8 +2,8 @@
 -- | Proofs on 'Map'.
 module Data.Map.Prop where
 
-open import Haskell.Law.Bool
-open import Haskell.Law.Equality
+open import Agda2Hs.Law.Bool
+open import Agda2Hs.Law.Equality
 open import Haskell.Prelude hiding (lookup; null; map; filter)
 
 open import Haskell.Data.Map
@@ -13,8 +13,8 @@ open import Haskell.Data.Maybe using
 
 import Data.Map.Maybe as Maybe
 import Haskell.Prelude as List using (map)
-open import Data.Set using (Set)
-import Data.Set as Set
+open import Haskell.Data.Set using (Set)
+import Haskell.Data.Set as Set
 
 {-----------------------------------------------------------------------------
     Proofs
