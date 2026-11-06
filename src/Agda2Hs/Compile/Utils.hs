@@ -36,7 +36,6 @@ import Agda.TypeChecking.Reduce ( reduce )
 import Agda.TypeChecking.Substitute ( Subst, TelV(TelV) )
 import Agda.TypeChecking.Telescope ( telView )
 
-import Agda.Utils.Lens ( (<&>) )
 import Agda.Utils.Haskell.Syntax ( Strictness(..) )
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
@@ -102,6 +101,7 @@ setCurrentRangeQ = setCurrentRange . nameBindingSite . qnameName
 
 isInScopeUnqualified :: QName -> C Bool
 isInScopeUnqualified x = lift $ do
+  recomputeInverseScope
   inScope <- isNameInScopeUnqualified x <$> getScope
   reportSDoc "agda2hs.scope-check" 40 $
     "unqualified scope check for" <+> prettyTCM x <+> "=>" <+> text (show inScope)
@@ -439,7 +439,7 @@ checkNoAsPatterns = \case
     ConP _ cpi ps -> do
       checkPatternInfo $ conPInfo cpi
       forM_ ps $ checkNoAsPatterns . namedArg
-    LitP i _ -> checkPatternInfo i
+    LitP i _ -> checkPatternInfo $ litPInfo i
     ProjP{} -> return ()
     IApplyP i _ _ _ -> checkPatternInfo i
     DefP i _ ps -> do

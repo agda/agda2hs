@@ -19,9 +19,7 @@ import Agda.TypeChecking.Datatypes ( getConType )
 import Agda.TypeChecking.Records ( getDefType )
 import Agda.TypeChecking.Reduce ( reduce )
 
-import Agda.Utils.Functor ( (<&>) )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
-import Agda.Utils.Lens ((^.))
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Size ( Sized(size) )
@@ -361,6 +359,9 @@ withFunctionLocals q k = do
   def <- getConstInfo q
   ls <- map fst
       . filter ((`inWhereBlockOf` def) . fst)
+      -- Agda 2.9 includes module-application copies in curDefs. They are
+      -- references to existing definitions, not local declarations to compile.
+      . filter (not . defCopy . snd)
       . filter (usableModality . getModality . snd)
       . sortDefs <$> liftTCM curDefs
   reportSDoc "agda2hs.compile.locals" 17 $ "Function locals: "<+> prettyTCM ls

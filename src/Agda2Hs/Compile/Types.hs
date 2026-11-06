@@ -174,6 +174,7 @@ type C = RWST CompileEnv CompileOutput CompileState TCM
 -- some missing instances from the Agda side
 instance HasFresh i => MonadFresh i C
 instance MonadTCState C
+instance MonadFileId C
 instance Monoid w => MonadTransControl (RWST r w s) where
   type StT (RWST r w s) a = (a, s, w)
   liftWith f = rwsT $ \r s -> fmap (, s, mempty) (f $ \t -> runRWST t r s)
