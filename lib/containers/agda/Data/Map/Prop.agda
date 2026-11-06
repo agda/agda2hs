@@ -13,8 +13,8 @@ open import Haskell.Data.Maybe using
 
 import Data.Map.Maybe as Maybe
 import Haskell.Prelude as List using (map)
-open import Data.Set using (Set)
-import Data.Set as Set
+open import Haskell.Data.Set using (Set)
+import Haskell.Data.Set as Set
 
 {-----------------------------------------------------------------------------
     Proofs

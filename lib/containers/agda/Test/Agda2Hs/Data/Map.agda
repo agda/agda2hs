@@ -2,8 +2,8 @@ module Test.Agda2Hs.Data.Map where
 
 open import Haskell.Prelude
 
-open import Data.Map using (Map)
-import Data.Map as Map
+open import Haskell.Data.Map using (Map)
+import Haskell.Data.Map as Map
 
 {-----------------------------------------------------------------------------
     Test definitions
