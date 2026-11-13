@@ -11,6 +11,10 @@ Changes to agda2hs
 - The constructor of a record without an explicitly named constructor is now
   imported together with the record type when used from another module
   (see issue #454).
+- Pragma information (such as `inline` and `COMPILE ... to`) is now also
+  recorded for modules that are skipped because they are already up-to-date.
+  Previously this could result in names not being compiled away when
+  recompiling only a downstream module (see issue #486).
 - Postulates in a `where` block are now compiled to a runtime error instead of
   crashing the compiler. Declarations other than functions and postulates are
   rejected with a proper error message (see issue #443).
