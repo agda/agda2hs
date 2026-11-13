@@ -14,6 +14,9 @@ Changes to agda2hs
 - Postulates in a `where` block are now compiled to a runtime error instead of
   crashing the compiler. Declarations other than functions and postulates are
   rejected with a proper error message (see issue #443).
+- The `Traversable` instances in the Prelude are now defined directly using
+  copatterns and default instances instead of the `traverse=` helper, so that
+  they pass the instance validity check (see issue #457).
 
 See https://github.com/agda/agda2hs/issues?q=milestone%3A1.5+is%3Apr for the full list of changes.
 
