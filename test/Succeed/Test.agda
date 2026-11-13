@@ -2,7 +2,7 @@
 
 module _ where
 
-open import Haskell.Prelude
+open import Haskell.Prelude hiding (toInteger)
 open import Agda.Builtin.Equality
 
 -- ** Foreign HS code

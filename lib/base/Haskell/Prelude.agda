@@ -26,10 +26,13 @@ open import Haskell.Prim.Double      public
 open import Haskell.Prim.Either      public
 open import Haskell.Prim.Enum        public
 open import Haskell.Prim.Eq          public
+open import Haskell.Prim.Floating    public
 open import Haskell.Prim.Foldable    public
+open import Haskell.Prim.Fractional  public
 open import Haskell.Prim.Functor     public
 open import Haskell.Prim.Int         public
 open import Haskell.Prim.Integer     public
+open import Haskell.Prim.Integral    public
 open import Haskell.Prim.IO          public
 open import Haskell.Prim.List        public
 open import Haskell.Prim.Maybe       public
@@ -37,6 +40,10 @@ open import Haskell.Prim.Monad       public
 open import Haskell.Prim.Monoid      public
 open import Haskell.Prim.Num         public
 open import Haskell.Prim.Ord         public
+open import Haskell.Prim.Rational    public
+open import Haskell.Prim.Real        public
+open import Haskell.Prim.RealFloat   public
+open import Haskell.Prim.RealFrac    public
 open import Haskell.Prim.Show        public
 open import Haskell.Prim.String      public
 open import Haskell.Prim.Traversable public
@@ -51,17 +58,6 @@ open import Haskell.Prim.Word        public
 -- Missing from the Haskell Prelude:
 --
 --     Float        [Float]
---     Rational
---
---     Real(toRational),
---     Integral(quot, rem, div, mod, quotRem, divMod, toInteger),
---     Fractional((/), recip, fromRational),
---     Floating(pi, exp, log, sqrt, (**), logBase, sin, cos, tan,
---              asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh),
---     RealFrac(properFraction, truncate, round, ceiling, floor),
---     RealFloat(floatRadix, floatDigits, floatRange, decodeFloat,
---               encodeFloat, exponent, significand, scaleFloat, isNaN,
---               isInfinite, isDenormalized, isIEEE, isNegativeZero, atan2),
 --
 --     subtract, even, odd, gcd, lcm, (^), (^^),
 --     fromIntegral, realToFrac,
