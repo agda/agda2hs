@@ -95,4 +95,4 @@ main = do
     -- Issue #201: disable backend when run in interactive mode
     disable <- shouldDisable
 
-    runAgda [Backend backend{isEnabled = const $ not disable }]
+    runAgda [Backend backend{isEnabled = \opts -> not disable && isEnabled backend opts}]

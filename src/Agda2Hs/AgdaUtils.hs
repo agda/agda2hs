@@ -96,7 +96,8 @@ getTopLevelModuleForQName = getTopLevelModuleForModuleName . qnameModule
 -- in nested compilation contexts, the original checkpoint omits parameters
 -- currently in scope. Recording the active checkpoint preserves them.
 setModuleCheckpointForInstanceChecking :: ModuleName -> TCM ()
-setModuleCheckpointForInstanceChecking = setModuleCheckpoint
+setModuleCheckpointForInstanceChecking m =
+  asksTC (envCurrentCheckpoint . envTCContext) >>= setModuleCheckpoint m
 
 lookupModuleInCurrentModule :: C.Name -> TCM [AbstractModule]
 lookupModuleInCurrentModule x =
