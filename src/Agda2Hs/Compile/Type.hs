@@ -4,7 +4,7 @@
 module Agda2Hs.Compile.Type where
 
 import Control.Arrow ( (>>>) )
-import Control.Monad ( unless )
+import Control.Monad ( unless, void )
 import Control.Monad.Reader ( asks )
 
 import Agda.Compiler.Backend hiding ( Args, Strictness )
@@ -201,19 +201,18 @@ compileTransparentType ty args = compileTypeArgs ty args >>= \case
   (v:vs) -> return $ v `tApp` vs
   []     -> __IMPOSSIBLE__
 
-
-data DomOutput = DOInstance | DODropped | DOType | DOTerm
-
 compileDom :: Dom Type -> C DomOutput
 compileDom a = do
   isErasable <- pure (not $ usableModality a) `or2M` canErase (unDom a)
   isClassConstraint <- pure (isInstance a) `and2M` isClassType (unDom a)
+  isEqualityConstraint <- pure (usableModality a) `and2M` pure (isInstance a) `and2M` isBuiltinEqualityType (unDom a)
   isType <- endsInSort (unDom a)
   return $ if
-    | isErasable        -> DODropped
-    | isClassConstraint -> DOInstance
-    | isType            -> DOType
-    | otherwise         -> DOTerm
+    | isEqualityConstraint -> DOInstance
+    | isErasable           -> DODropped
+    | isClassConstraint    -> DOInstance
+    | isType               -> DOType
+    | otherwise            -> DOTerm
 
 -- | Compile a function type domain.
 -- A domain can either be:
@@ -226,7 +225,11 @@ compileDomType :: ArgName -> Dom Type -> C CompiledDom
 compileDomType x a =
   compileDom a >>= \case
     DODropped  -> pure DomDropped
-    DOInstance -> DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
+    DOInstance -> do
+      isEquality <- isBuiltinEqualityType (unDom a)
+      if isEquality
+        then compileEqualityConstraint (unEl $ unDom a)
+        else DomConstraint . Hs.TypeA () <$> compileType (unEl $ unDom a)
     DOType     -> do
       -- We compile (non-erased) type parameters to an explicit forall if they
       -- come from a module parameter or if we are in a nested position inside the type.
@@ -246,6 +249,18 @@ compileDomType x a =
         -- Return an implicit forall.
         | otherwise -> return $ DomForall Nothing
     DOTerm     -> fmap (uncurry DomType) . withNestedType . compileTypeWithStrictness . unEl $ unDom a
+
+compileEqualityConstraint :: Term -> C CompiledDom
+compileEqualityConstraint t = do
+  Def _ es <- reduce t
+  -- The arguments to equality are _a_ (level), _A_ (the type of elements), x (: A), and y (: A)
+  -- We want to compile x and y as types
+  let Just (_ : a : x : y : _) = allApplyElims es
+  -- Since x and y are compiled as types, their type A must compile to a Haskell kind
+  void $ compileKind $ El __DUMMY_SORT__ (unArg a)
+  hsX <- compileType (unArg x)
+  hsY <- compileType (unArg y)
+  return $ DomConstraint $ Hs.TypeA () $ Hs.TyInfix () hsX (Hs.UnpromotedName () (Hs.UnQual () (Hs.Symbol () "~"))) hsY
 
 compileTeleBinds :: Bool -> Telescope -> C [Hs.TyVarBind ()]
 compileTeleBinds kinded = go
