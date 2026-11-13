@@ -88,6 +88,11 @@ defaultSpecialRules = Map.fromList
   , "Haskell.Prim.Tuple.first"      `to` "first"        `importing` Just "Control.Arrow"
   , "Haskell.Prim.Tuple.second"     `to` "second"       `importing` Just "Control.Arrow"
   , "Haskell.Prim.Tuple._***_"      `to` "_***_"        `importing` Just "Control.Arrow"
+  , "Haskell.Prim.Rational.Ratio"             `to` "Ratio"       `importing` Just "Data.Ratio"
+  , "Haskell.Prim.Rational.Rational"          `to` "Rational"    `importing` Just "Data.Ratio"
+  , "Haskell.Prim.Rational.Ratio.numerator"   `to` "numerator"   `importing` Just "Data.Ratio"
+  , "Haskell.Prim.Rational.Ratio.denominator" `to` "denominator" `importing` Just "Data.Ratio"
+  , "Haskell.Prim.Rational._:%_"              `to` "_%_"         `importing` Just "Data.Ratio"
   ]
   where infixr 6 `to`, `importing`
         to = (,)

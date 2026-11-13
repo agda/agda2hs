@@ -28,6 +28,10 @@ Additions to the agda2hs Prelude
   the original number is its successor. It compiles to Haskell's `pred`
   and enables defining functions such as a `Nat` recursor on top of
   `ifDec` (see issue #385).
+- Added bindings for the numeric type classes `Real`, `Integral`,
+  `Fractional`, `Floating`, `RealFrac`, and `RealFloat`, together with the
+  `Rational` type. Instances for the standard numeric types are postulated
+  for now (see issue #262).
 
 Fixed issues
 ------------
