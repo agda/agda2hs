@@ -3,6 +3,7 @@ module Main where
 import Control.Monad (forM, filterM)
 import qualified Data.ByteString.Lazy as LBS
 import Data.List (isPrefixOf, isSuffixOf, isInfixOf, sort)
+import Data.Maybe (catMaybes)
 import Data.Ord (Down(..))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -14,6 +15,7 @@ import System.Directory
   , getModificationTime
   , getTemporaryDirectory
   , listDirectory
+  , removeFile
   , removePathForcibly
   , setCurrentDirectory
   )
@@ -50,11 +52,13 @@ main = do
   -- Discover test cases
   succeedTests <- discoverSucceedTests testDir buildDir
   failTests <- discoverFailTests testDir buildDir
+  customTests <- discoverIncrementalTests testDir buildDir
 
   -- Run tests
   defaultMain $ testGroup "agda2hs"
     [ testGroup "Succeed" succeedTests
     , testGroup "Fail" failTests
+    , testGroup "Custom" customTests
     ]
 
 -- | Discover all .agda files under the Succeed directory recursively.
@@ -70,6 +74,27 @@ discoverSucceedTests testDir buildDir =
 discoverFailTests :: FilePath -> FilePath -> IO [TestTree]
 discoverFailTests testDir buildDir =
   discoverTests testDir buildDir "Fail" ".err" failTest
+
+-- | Discover incremental tests under the Incremental directory.
+-- A test is an @<Name>.agda@ file that has a matching golden @<Name>.hs@.
+-- Other @.agda@ files in the directory are treated as helper modules and are
+-- not run as tests directly. The golden file is the output of a clean
+-- compilation; the test recompiles the module after deleting only its output,
+-- forcing its dependencies to be skipped, and checks that the regenerated
+-- output still matches the golden file (see Issue #486).
+discoverIncrementalTests :: FilePath -> FilePath -> IO [TestTree]
+discoverIncrementalTests testDir buildDir = do
+  let dir = testDir </> "Incremental"
+  agdaFiles <- findAgdaFiles dir
+  tests <- forM agdaFiles $ \agdaFile -> do
+    let goldenFile = dropExtension agdaFile ++ ".hs"
+    hasGolden <- doesFileExist goldenFile
+    if hasGolden
+      then do
+        let testName = dropExtension (makeRelative dir agdaFile)
+        return $ Just $ incrementalTest testDir buildDir testName agdaFile goldenFile
+      else return Nothing
+  return $ catMaybes tests
 
 -- | Generic test discovery function.
 -- Takes the directory name, golden file extension, and test function.
@@ -179,6 +204,39 @@ failTest testDir buildDir testName agdaFile goldenFile =
         return $ stringToLBS "UNEXPECTED SUCCESS"
       ExitFailure _ ->
         return $ stringToLBS relativizedOutput
+
+-- | Create a test for an incremental compilation scenario (Issue #486).
+-- First compiles the module from scratch, then deletes only its output so that
+-- it is recompiled while its dependencies are considered up-to-date (and thus
+-- skipped). The regenerated output must still match the clean output.
+incrementalTest :: FilePath -> FilePath -> String -> FilePath -> FilePath -> TestTree
+incrementalTest testDir buildDir testName agdaFile goldenFile =
+  goldenVsStringDiff testName diffCmd goldenFile $ do
+    let incrDir = testDir </> "Incremental"
+        -- Output to build directory to avoid polluting source tree
+        outDir = buildDir </> "Incremental"
+
+    createDirectoryIfMissing True outDir
+
+    -- First, compile from scratch so that both this module and its
+    -- dependencies are generated and their interface files are written.
+    (exitCode1, stdout1, stderr1) <- runAgda2Hs incrDir
+      [agdaFile, "-o", outDir, "-v0", "-i" ++ incrDir]
+    case exitCode1 of
+      ExitFailure _ -> return $ stringToLBS $
+        "agda2hs (clean) failed:\n" ++ stdout1 ++ stderr1
+      ExitSuccess -> do
+        let generatedFile = outDir </> dropExtension (makeRelative incrDir agdaFile) ++ ".hs"
+        -- Delete only this module's output. Its dependencies keep their output
+        -- and interface files, so they will be skipped on the next run.
+        removeFile generatedFile
+        -- Recompile. This module is rebuilt; its dependencies are skipped.
+        (exitCode2, stdout2, stderr2) <- runAgda2Hs incrDir
+          [agdaFile, "-o", outDir, "-v0", "-i" ++ incrDir]
+        case exitCode2 of
+          ExitFailure _ -> return $ stringToLBS $
+            "agda2hs (incremental) failed:\n" ++ stdout2 ++ stderr2
+          ExitSuccess   -> LBS.readFile generatedFile
 
 -- | Run agda2hs from the test project's directory so Agda picks up the
 -- corresponding per-directory .agda-lib file. Include paths alone do not
