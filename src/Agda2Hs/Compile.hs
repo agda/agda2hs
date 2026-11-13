@@ -13,7 +13,7 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 
 import Agda.Compiler.Backend
-import Agda.Compiler.Common ( curIF )
+import Agda.Compiler.Common ( curIF, curDefs, sortDefs )
 import Agda.Utils.FileName ( isNewerThan )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.TypeChecking.Pretty
@@ -22,9 +22,10 @@ import Agda.Utils.List
 import Agda.Utils.Null
 import Agda.Utils.Monad ( whenM, anyM, when, unless )
 
+import Agda2Hs.AgdaUtils ( resolveStringName )
 import Agda2Hs.Compile.ClassInstance ( compileInstance )
 import Agda2Hs.Compile.Data ( compileData, checkCompileToDataPragma )
-import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkInlinePragma, checkCompileToFunctionPragma )
+import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkInlinePragma, checkCompileToFunctionPragma, recordInlineSymbols )
 import Agda2Hs.Compile.Name ( hsTopLevelModuleName )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
@@ -78,11 +79,29 @@ moduleSetup genv _ m mifile = do
         liftIO =<< isNewerThan <$> ofile <*> pure ifile
     if uptodate then do
       reportSDoc "agda2hs.compile" 3 $ text "Module " <+> prettyTCM m <+> text " is already up-to-date"
+      -- Even though we skip compilation, we still need to record the pragmas
+      -- of this module so that modules depending on it are compiled correctly
+      -- (see Issue #486).
+      setScope . iInsideScope =<< curIF
+      defs <- map snd . sortDefs <$> curDefs
+      mapM_ (runC genv m (optRewrites opts) . recordPragma) defs
       return $ Skip ()
     else do
       reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
       setScope . iInsideScope =<< curIF
       return $ Recompile m
+
+-- | Record the side effects of a definition's pragma without compiling it.
+-- Used for up-to-date modules that are skipped during compilation (Issue #486).
+recordPragma :: Definition -> C ()
+recordPragma def = processPragma (defName def) >>= \case
+  InlinePragma      -> recordInlineSymbols def
+  CompileToPragma s -> do
+    r <- resolveStringName s
+    case theDef def of
+      Datatype{} -> recordCompileToData (defName def) r
+      _          -> addCompileToName (defName def) r
+  _                 -> return ()
 
 -- Main compile function
 ------------------------

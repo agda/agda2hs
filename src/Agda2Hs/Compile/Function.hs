@@ -408,11 +408,15 @@ checkTransparentPragma def = withoutSignature (compileFun def) >>= \case
       "Cannot make function" <+> prettyTCM (defName def) <+> "transparent." <+>
       "A transparent function must have exactly one non-erased argument and return it unchanged."
 
--- | Mark a definition as one that should be inlined.
-checkInlinePragma :: Definition -> C ()
-checkInlinePragma def@(Defn { defName = q , theDef = df }) = do
+-- | Record the names that should be inlined for a definition with an @inline@ pragma.
+recordInlineSymbols :: Definition -> C ()
+recordInlineSymbols def@(Defn { defName = q , theDef = df }) = do
   let qs = fromMaybe [] $ getMutual_ df
   addInlineSymbols $ q : qs
+
+-- | Mark a definition as one that should be inlined.
+checkInlinePragma :: Definition -> C ()
+checkInlinePragma = recordInlineSymbols
 
 checkCompileToFunctionPragma :: Definition -> String -> C ()
 checkCompileToFunctionPragma def s = noCheckNames $ noWriteExports $ do

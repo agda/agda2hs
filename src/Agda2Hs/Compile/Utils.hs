@@ -335,6 +335,17 @@ addCompileToName q r = do
   liftIO $ modifyIORef ctMapRef $ M.insert q r
   debugCompileToMap
 
+-- | Record the compile-to mapping for a datatype, including the mappings
+--   of its constructors to those of the target datatype.
+--   Assumes the two datatypes have already been validated to be compatible.
+recordCompileToData :: QName -> QName -> C ()
+recordCompileToData d r = do
+  addCompileToName d r
+  ddef <- getConstInfo d
+  rdef <- getConstInfo r
+  forM_ (zip (dataCons $ theDef ddef) (dataCons $ theDef rdef)) $ \(c1, c2) ->
+    addCompileToName c1 c2
+
 withNestedType :: C a -> C a
 withNestedType = local $ \e -> e { isNestedInType = True }
 
