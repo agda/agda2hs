@@ -44,35 +44,38 @@ record DefaultTraversable (t : Type → Type) : Type₁ where
 open Traversable ⦃...⦄ public
 {-# COMPILE AGDA2HS Traversable existing-class #-}
 -- ** instances
-private
-  mkTraversable : DefaultTraversable t → Traversable t
-  mkTraversable x = record {DefaultTraversable x}
-
-  infix 0 traverse=_
-  traverse=_ : ⦃ Functor t ⦄ → ⦃ Foldable t ⦄
-            → (∀ {f a b} → ⦃ Applicative f ⦄ → (a → f b) → t a → f (t b))
-            → Traversable t
-  traverse= x = record {DefaultTraversable (record {traverse = x})}
 instance
   open DefaultTraversable
 
-  iTraversableList : Traversable List
-  iTraversableList = traverse= traverseList
+  iDefaultTraversableList : DefaultTraversable List
+  iDefaultTraversableList .DefaultTraversable.traverse = traverseList
     where
       traverseList : ⦃ Applicative f ⦄ → (a → f b) → List a → f (List b)
       traverseList f []       = pure []
       traverseList f (x ∷ xs) = ⦇ f x ∷ traverseList f xs ⦈
 
-  iTraversableMaybe : Traversable Maybe
-  iTraversableMaybe = traverse= λ where
+  iTraversableList : Traversable List
+  iTraversableList = record {DefaultTraversable iDefaultTraversableList}
+
+  iDefaultTraversableMaybe : DefaultTraversable Maybe
+  iDefaultTraversableMaybe .DefaultTraversable.traverse = λ where
     f Nothing  → pure Nothing
     f (Just x) → Just <$> f x
 
-  iTraversableEither : Traversable (Either a)
-  iTraversableEither = traverse= λ where
+  iTraversableMaybe : Traversable Maybe
+  iTraversableMaybe = record {DefaultTraversable iDefaultTraversableMaybe}
+
+  iDefaultTraversableEither : DefaultTraversable (Either a)
+  iDefaultTraversableEither .DefaultTraversable.traverse = λ where
     f (Left  x) → pure (Left x)
     f (Right y) → Right <$> f y
 
-  iTraversablePair : Traversable (a ×_)
-  iTraversablePair = traverse= λ
+  iTraversableEither : Traversable (Either a)
+  iTraversableEither = record {DefaultTraversable iDefaultTraversableEither}
+
+  iDefaultTraversablePair : DefaultTraversable (a ×_)
+  iDefaultTraversablePair .DefaultTraversable.traverse = λ
     f (x , y) → (x ,_) <$> f y
+
+  iTraversablePair : Traversable (a ×_)
+  iTraversablePair = record {DefaultTraversable iDefaultTraversablePair}
