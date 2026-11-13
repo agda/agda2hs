@@ -1,25 +1,18 @@
 {
   pkgs ? import <nixpkgs> { },
   agdaSrc ? null,
-  tastyGoldenSrc ? null,
   ...
 }:
 let
   # cabal2nix ignores source-repository-package entries in cabal.project, so
-  # use the same pinned Agda source explicitly for the Nix build.
+  # use the released Agda source explicitly for the Nix build.
   agdaPackage =
     if agdaSrc == null then
       pkgs.haskellPackages.Agda
     else
       pkgs.haskellPackages.callCabal2nix "Agda" agdaSrc { };
-  tastyGoldenPackage =
-    if tastyGoldenSrc == null then
-      pkgs.haskellPackages.tasty-golden
-    else
-      pkgs.haskellPackages.callCabal2nix "tasty-golden" tastyGoldenSrc { };
   hpkg = (pkgs.haskellPackages.callCabal2nix "agda2hs" ../. {
     Agda = agdaPackage;
-    tasty-golden = tastyGoldenPackage;
   }).overrideAttrs (
     finAttr: preAttr: {
       # add ./dist/build/agda2hs to $PATH
