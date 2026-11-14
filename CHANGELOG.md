@@ -29,6 +29,14 @@ Additions to the agda2hs Prelude
   and enables defining functions such as a `Nat` recursor on top of
   `ifDec` (see issue #385).
 
+Changes to agda2hs-containers
+-----------------------------
+
+- `prop-member-map` in `Haskell.Data.Set` now states only that
+  `member x s ≡ True` implies `member (f x) (map f s) ≡ True`. The previous
+  equation does not hold for non-injective `f` and could be used to prove
+  `⊥` (see issue #487).
+
 Fixed issues
 ------------
 
