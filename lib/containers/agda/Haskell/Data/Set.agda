@@ -114,7 +114,8 @@ postulate
   prop-member-map
     : ∀ {a b} {{_ : Ord a}} {{_ : Ord b}}
       (x : a) (s : Set a) (f : a → b)
-    → member (f x) (map f s) ≡ member x s
+    → member x s ≡ True
+    → member (f x) (map f s) ≡ True
 
 instance
   iSetFoldable : Foldable Set
