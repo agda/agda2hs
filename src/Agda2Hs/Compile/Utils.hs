@@ -35,21 +35,23 @@ import Agda.TypeChecking.Records ( isRecordConstructor, getRecordOfField )
 import Agda.TypeChecking.Reduce ( reduce )
 import Agda.TypeChecking.Substitute ( Subst, TelV(TelV) )
 import Agda.TypeChecking.Telescope ( telView )
+import Agda.TypeChecking.Warnings ( MonadWarning, warning )
 
 import Agda.Utils.Lens ( (<&>) )
 import Agda.Utils.Haskell.Syntax ( Strictness(..) )
+import Agda.Utils.Either
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Singleton
 
-import Agda2Hs.AgdaUtils ( (~~), isPublicName, isPatternSyn )
+import Agda2Hs.AgdaUtils ( (~~), isPublicName, getTopLevelModuleForQName )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Pragma
 import qualified Data.List as L
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.Language.Haskell.Utils
-  ( validVarName, validTypeName, validConName, hsName, pp )
+  ( validVarName, validTypeName, validConName, hsName )
 
 agda2hsError :: (HasCallStack, MonadTCError m) => Doc -> m a
 agda2hsError msg = typeError $ CustomBackendError "agda2hs" msg
@@ -59,6 +61,12 @@ agda2hsErrorM msg = agda2hsError =<< msg
 
 agda2hsStringError :: (HasCallStack, MonadTCError m) => String -> m a
 agda2hsStringError = agda2hsError . fromString
+
+agda2hsWarning :: (HasCallStack, MonadWarning m) => Doc -> m ()
+agda2hsWarning msg = warning $ CustomBackendWarning "agda2hs" msg
+
+agda2hsWarningM :: (HasCallStack, MonadWarning m) => m Doc -> m ()
+agda2hsWarningM msg = agda2hsWarning =<< msg
 
 
 data HsModuleKind
@@ -76,11 +84,13 @@ primModules =
   , "Haskell.Prelude"
   ]
 
-hsModuleKind :: Hs.ModuleName () -> HsModuleKind
+hsModuleKind :: TopLevelModuleName -> HsModuleKind
 hsModuleKind mod
-  | any (`isPrefixOf` pp mod) primModules = PrimModule
-  | "Haskell." `isPrefixOf` pp mod        = HsModule
-  | otherwise                             = AgdaModule
+  | any (`isPrefixOf` ppmod) primModules = PrimModule
+  | "Haskell." `isPrefixOf` ppmod        = HsModule
+  | otherwise                            = AgdaModule
+  where
+    ppmod = prettyShow mod
 
 dropHaskellPrefix :: Hs.ModuleName () -> Hs.ModuleName ()
 dropHaskellPrefix (Hs.ModuleName l s) =
@@ -510,27 +520,42 @@ shouldGenerateSignature :: C Bool
 shouldGenerateSignature = reader genSignature
 
 shouldBeExported :: (MonadTCM m) => QName -> m Bool
-shouldBeExported name =
-  andM
-    [ not <$> isPatternSyn name
-    , isPublicName name
-    , processPragma name >>= \case
-        InlinePragma -> pure False
-        -- NOTE: an instance has no name in Haskell, but it should still be exported
-        DefaultPragma {} -> pure True
-        ClassPragma {} -> pure True
-        ExistingPragma -> pure True
-        ExistingClassPragma -> pure True
-        UnboxPragma {} -> pure False
-        TransparentPragma -> pure False
-        NewTypePragma {} -> pure True
-        GadtPragma {} -> pure True
-        TuplePragma {} -> pure False
-        CompileToPragma {} -> pure False
-        -- an instance has no name in Haskell, but it should still be exported
-        DerivePragma {} -> pure True
-        NoPragma ->
-          ifJustM (liftTCM $ isRecordConstructor name) (shouldBeExported . fst) $ -- TODO(satoshi): take abstract into account
-          ifJustM (liftTCM $ getRecordOfField name) shouldBeExported $ -- TODO(satoshi): take abstract into account
-          pure False
-    ]
+shouldBeExported name = isPublicName name `and2M` hasHaskellEntity name
+
+-- | Does this Agda name have a corresponding Haskell entity?
+-- Assumes the name is not subject to rewrite rules, compile-to, or special compilation rule!
+
+-- TODO(satoshi): refactor compileQName
+hasHaskellEntity :: (MonadTCM m) => QName -> m Bool
+hasHaskellEntity = liftTCM . go
+  where
+    go name =
+      caseEitherM (getConstInfo' name) (const $ pure False) $ \def ->
+      andM
+        [ pure $ usableModality def
+        , processPragma name >>= \case
+            InlinePragma -> pure False
+            -- NOTE: an instance has no name in Haskell, but it should still be exported
+            DefaultPragma {} -> pure True
+            ClassPragma {} -> pure True
+            ExistingPragma -> pure True
+            ExistingClassPragma -> pure True
+            UnboxPragma {} -> pure False
+            TransparentPragma -> pure False
+            NewTypePragma {} -> pure True
+            GadtPragma {} -> pure True
+            TuplePragma {} -> pure False
+            CompileToPragma {} -> pure False
+            -- an instance has no name in Haskell, but it should still be exported
+            DerivePragma {} -> pure True
+            NoPragma
+              | Constructor {conData = dt} <- theDef def -> go dt
+              | Function {funProjection = proj} <- theDef def
+              , Right (Projection {projProper = Just{}, projFromType = rt}) <- proj -> go $ unArg rt
+              | otherwise -> do
+                  mod <- getTopLevelModuleForQName name
+                  -- returning True for PrimModule is an over-approximation!
+                  -- TODO(satoshi): revisit once primitive modules only contain
+                  -- bindings to Haskell's Prelude.
+                  pure $ hsModuleKind mod `elem` [PrimModule, HsModule]
+        ]

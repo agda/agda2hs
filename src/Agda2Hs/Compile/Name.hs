@@ -67,7 +67,7 @@ toNameImport :: String -> Maybe String -> (Hs.Name (), Maybe Import)
 toNameImport x Nothing = (hsName x, Nothing)
 toNameImport x (Just mod) =
   ( hsName x
-  , Just $ Import (hsModuleName mod) Unqualified Nothing (NamespacedName (Hs.NoNamespace ()) (hsName x)) noRange
+  , Just $ Import (hsModuleName mod) (Unqualified Nothing) Nothing (NamespacedName (Hs.NoNamespace ()) (hsName x)) noRange
   )
 
 -- | Default rewrite rules.
@@ -162,7 +162,7 @@ compileQName f = do
     let skipModule = mod == currMod
                   || isJust mimpSpecial
                   || prettyShow mod0 `elem` primMonadModules
-    qual <- if skipModule then return Unqualified
+    qual <- if skipModule then return (Unqualified Nothing)
               else getQualifier (fromMaybe f parent) mod
     let
       -- We generate import statements for everything except
@@ -186,7 +186,7 @@ compileQName f = do
       ++ "\nmod0: " ++ prettyShow mod0
       ++ "\nmodule name: " ++ Hs.prettyPrint mod
       ++ "\ncurrent module: " ++ Hs.prettyPrint currMod
-      ++ "\nqualifier: " ++ prettyShow (fmap (fmap pp) qual)
+      ++ "\nqualifier: " ++ prettyQualifier qual
       ++ "\n(qualified) haskell name: " ++ pp qf
     return qf
   where
@@ -210,7 +210,7 @@ compileQName f = do
       reportSDoc "agda2hs.name.scope" 40 $
         "qualifier candidates for" <+> prettyTCM f <+> "=>" <+> prettyTCM names
       case validNames of
-        C.QName{} : _ -> return Unqualified
+        C.QName{} : _ -> return (Unqualified Nothing)
         C.Qual as C.QName{} : _ -> liftTCM $ do
           let qual = hsModuleName $ prettyShow as
           lookupModuleInCurrentModule as >>= \case
@@ -230,8 +230,8 @@ compileQName f = do
 
     qualify :: Hs.ModuleName () -> Hs.Name () -> Qualifier -> Hs.QName ()
     qualify mod n = \case
-      (QualifiedAs as) -> Hs.Qual () (fromMaybe mod as) n
-      Unqualified      -> Hs.UnQual () n
+      QualifiedAs as -> Hs.Qual () (fromMaybe mod as) n
+      Unqualified _  -> Hs.UnQual () n
 
     primMonadModules = ["Haskell.Prim.Monad.Dont", "Haskell.Prim.Monad.Do"]
 
@@ -282,7 +282,7 @@ compileModuleName m = liftTCM $ do
 compileTopLevelModuleName :: (MonadTCM m) => TopLevelModuleName -> m (HsModuleKind, Hs.ModuleName ())
 compileTopLevelModuleName tlm0 = liftTCM $ do
   let tlm = hsTopLevelModuleName tlm0
-  case hsModuleKind tlm of
+  case hsModuleKind tlm0 of
     PrimModule -> return (PrimModule, Hs.prelude_mod ())
     HsModule   -> return (HsModule, dropHaskellPrefix tlm)
     AgdaModule -> return (AgdaModule, tlm)

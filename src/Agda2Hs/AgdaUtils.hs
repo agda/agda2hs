@@ -13,11 +13,14 @@ import Agda.Interaction.FindFile ( findFile' )
 import Agda.Syntax.Common ( defaultArg )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import qualified Agda.Syntax.Concrete as C
+import qualified Agda.Syntax.Abstract as A
+import qualified Agda.Syntax.Abstract.Views as A
 import Agda.Syntax.Internal
 import Agda.Syntax.Position ( noRange )
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad
 import Agda.Syntax.TopLevelModuleName
+import Agda.Syntax.Translation.ConcreteToAbstract ( TopLevelInfo, topLevelDecls )
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Sort
@@ -179,3 +182,11 @@ isPatternSyn qname = liftTCM $ Map.member qname <$> getAllPatternSyns
 
 currentScope :: ScopeInfo -> Scope
 currentScope info = fromMaybe __IMPOSSIBLE__ $ Map.lookup (_scopeCurrent info) (_scopeModules info)
+
+insideDecls :: TopLevelInfo -> [A.Declaration]
+insideDecls = A.deepUnscopeDecls . go . topLevelDecls
+  where
+    go = \case
+      [A.Section _ _ _ _ decls] -> decls
+      (_ : decls) -> go decls
+      [] -> []

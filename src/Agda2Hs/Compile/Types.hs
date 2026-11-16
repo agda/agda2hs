@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
 module Agda2Hs.Compile.Types where
 
-import Control.Monad ( join )
 import Control.Monad.Trans ( MonadTrans(lift) )
 import Control.Monad.Trans.RWS.CPS (RWST(..), runRWST, rwsT )
 import Control.Monad.Trans.Control (MonadTransControl(..))
@@ -9,7 +8,6 @@ import Control.Monad.State ( StateT(..) )
 import Control.DeepSeq ( NFData(..) )
 
 import Data.IORef
-import Data.Maybe ( isJust )
 import Data.Set ( Set )
 import Data.Map ( Map )
 import Data.String ( IsString(..) )
@@ -114,19 +112,27 @@ data CompileEnv = CompileEnv
   -- ^ whether we should generate type signatures for functions
   }
 
--- | @Nothing@       → no qualifier
---   @Just Nothing@  → qualified
---   @Just (Just m)@ → qualified as m
-type Qualifier = Maybe (Maybe (Hs.ModuleName ()))
-
-pattern Unqualified   = Nothing
-pattern QualifiedAs m = Just m
+data Qualifier
+  = Unqualified (Maybe (Hs.ModuleName ()))
+  | QualifiedAs (Maybe (Hs.ModuleName ()))
+  deriving (Eq, Ord)
 
 isQualified :: Qualifier -> Bool
-isQualified = isJust
+isQualified QualifiedAs{} = True
+isQualified _             = False
 
-qualifiedAs :: Qualifier -> Maybe (Hs.ModuleName ())
-qualifiedAs = join
+-- | The @as@ part of the import, if any.
+importAlias :: Qualifier -> Maybe (Hs.ModuleName ())
+importAlias = \case
+  Unqualified m   -> m
+  QualifiedAs m   -> m
+
+prettyQualifier :: Qualifier -> String
+prettyQualifier = \case
+  Unqualified Nothing    -> "unqualified"
+  Unqualified (Just m)   -> "as " ++ Hs.pp m
+  QualifiedAs Nothing    -> "qualified"
+  QualifiedAs (Just m)   -> "qualified as " ++ Hs.pp m
 
 -- | Encoding of a Haskell module import statement.
 data Import = Import
@@ -155,6 +161,7 @@ data Export
   | ExportData (Hs.Name ())
   | ExportClass (Hs.Name ())
   | ExportModule (Hs.ModuleName ())
+  deriving (Eq, Ord)
 
 type Exports = [Export]
 

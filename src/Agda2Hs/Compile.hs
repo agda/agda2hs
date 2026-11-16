@@ -33,7 +33,6 @@ import Agda2Hs.Compile.ClassInstance ( compileInstance )
 import Agda2Hs.Compile.Data ( compileData, checkCompileToDataPragma )
 import Agda2Hs.Compile.Exports ( tellDefinitionExport )
 import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkCompileToFunctionPragma, recordInlineSymbols )
-import Agda2Hs.Compile.Name ( hsTopLevelModuleName )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
 import Agda2Hs.Compile.Types
@@ -233,8 +232,7 @@ verifyOutput _ _ _ m ls = do
         agda2hsErrorM $ vcat (map (\x -> text $ "Cannot generate multiple definitions with the same name: " <> Hs.prettyPrint (headWithDefault __IMPOSSIBLE__ x)) duplicateNames)
 
     ensureNoOutputFromHsModules = unless (null $ concat $ map fst ls) $ do
-      let hsModName = hsTopLevelModuleName m
-      case hsModuleKind hsModName of
+      case hsModuleKind m of
         HsModule -> do
           reportSDoc "agda2hs.compile" 10 $ text "Haskell module" <+> prettyTCM m <+> text "has non-null output."
           agda2hsErrorM $ hsep
