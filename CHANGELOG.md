@@ -17,6 +17,11 @@ Changes to agda2hs
 - The `Traversable` instances in the Prelude are now defined directly using
   copatterns and default instances instead of the `traverse=` helper, so that
   they pass the instance validity check (see issue #457).
+- `assert` now takes an erased argument of type `MayThrow AssertionFailed`,
+  which is propagated to any function that calls it.
+- The `TypeError` data type in `Haskell.Prim` has been renamed to
+  `UnsatisfiedConstraint`, to avoid a clash with the `TypeError` exception
+  type added to `Haskell.Control.Exception`.
 
 See https://github.com/agda/agda2hs/issues?q=milestone%3A1.5+is%3Apr for the full list of changes.
 
@@ -32,6 +37,12 @@ Additions to the agda2hs Prelude
   `Fractional`, `Floating`, `RealFrac`, and `RealFloat`, together with the
   `Rational` type. Instances for the standard numeric types are postulated
   for now (see issue #262).
+- Added basic support for Haskell exceptions in `Haskell.Control.Exception`.
+  Since `throw` would otherwise break soundness, the exception type is tracked
+  with an erased `MayThrow` argument that functions raising an exception must
+  take in scope (see issue #432).
+- Added bindings to `System.Environment` in `Haskell.System.Environment`
+  (see issue #433).
 
 Changes to agda2hs-containers
 -----------------------------
