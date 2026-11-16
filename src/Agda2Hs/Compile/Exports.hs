@@ -4,18 +4,17 @@ import Control.Monad.Reader ( asks )
 
 import Agda.Compiler.Backend
 import Agda.TypeChecking.Pretty ( text, prettyList_, (<+>) )
-import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.Utils.Maybe ( whenJustM )
 import Agda.Utils.Monad ( and2M, whenM, ifM )
 
 import Agda2Hs.AgdaUtils ( endsInSort )
 import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Types
-import Agda2Hs.Compile.Utils ( tellExport, shouldBeExported, isClassPragma )
+import Agda2Hs.Compile.Utils ( tellExport, shouldBeExported, isClassPragma, compileName )
 import Agda2Hs.Pragma
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( hsName, pp )
+import Agda2Hs.Language.Haskell.Utils ( pp )
 
 compileExports :: Exports -> TCM (Hs.ExportSpecList ())
 compileExports exps = do
@@ -60,5 +59,5 @@ definitionExport def = case theDef def of
       else ExportData <$> typeName
   _          -> pure Nothing
   where
-    typeName     = pure $ hsName $ prettyShow $ qnameName $ defName def
+    typeName     = pure $ compileName (qnameName $ defName def)
     functionName = Hs.unQual <$> compileQName (defName def)

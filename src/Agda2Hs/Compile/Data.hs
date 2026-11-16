@@ -3,8 +3,6 @@ module Agda2Hs.Compile.Data where
 import Agda.Compiler.Backend
 import Agda.Syntax.Common
 import Agda.Syntax.Internal
-import Agda.Syntax.Common.Pretty ( prettyShow )
-
 import Agda.TypeChecking.Datatypes
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Reduce
@@ -24,7 +22,6 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( hsName )
 
 import Agda2Hs.Pragma
 
@@ -37,7 +34,7 @@ checkNewtype name cs = do
 
 compileData :: AsNewType -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
 compileData newtyp ds def = do
-  let d = hsName $ prettyShow $ qnameName $ defName def
+  let d = compileName (qnameName $ defName def)
   checkValidTypeName d
   tellTypeOperators d
 
@@ -78,7 +75,7 @@ compileConstructor params c = do
   ty <- ty `piApplyM` params
   reportSDoc "agda2hs.data.con" 20 $ text "  ty = " <+> prettyTCM ty
   TelV tel _ <- telView ty
-  let conName = hsName $ prettyShow $ qnameName c
+  let conName = compileName (qnameName c)
   checkValidConName conName
   args <- compileConstructorArgs tel
   return $ Hs.QualConDecl () Nothing Nothing $ Hs.ConDecl () conName args

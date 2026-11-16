@@ -179,6 +179,10 @@ isErasedBaseType x = orM
   ]
   where b = El __DUMMY_SORT__ x
 
+-- | The Haskell name of an Agda name, ignoring module qualification.
+compileName :: Name -> Hs.Name ()
+compileName = hsName . prettyShow . nameConcrete
+
 hasCompilePragma :: QName -> C Bool
 hasCompilePragma q = (/= NoPragma) <$> processPragma q
 
@@ -454,7 +458,7 @@ checkFixityLevel name (Related lvl) =
 maybePrependFixity :: QName -> Fixity -> C [Hs.Decl ()] -> C [Hs.Decl ()]
 maybePrependFixity n f comp | f /= noFixity = do
   hsLvl <- checkFixityLevel n (fixityLevel f)
-  let x = hsName $ prettyShow $ qnameName n
+  let x = compileName (qnameName n)
   let hsAssoc = case fixityAssoc f of
         NonAssoc   -> Hs.AssocNone ()
         LeftAssoc  -> Hs.AssocLeft ()

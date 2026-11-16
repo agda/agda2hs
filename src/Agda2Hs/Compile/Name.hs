@@ -102,9 +102,6 @@ defaultSpecialRules = Map.fromList
 isSpecialName :: QName -> C (Maybe (Hs.Name (), Maybe Import))
 isSpecialName f = asks (Map.lookup (prettyShow f) . rewrites)
 
-compileName :: Applicative m => Name -> m (Hs.Name ())
-compileName n = hsName . show <$> pretty (nameConcrete n)
-
 compileQName :: QName -> C (Hs.QName ())
 compileQName f = do
   whenM (isInlinedFunction f) $
@@ -125,7 +122,7 @@ compileQName f = do
     (f, mparent) <- isRecordConstructor f <&> \case
       Just (r, def) | not (_recNamedCon def) -> (r, Just r) -- use record name for unnamed constructors
       _                                      -> (f, Nothing)
-    hf0 <- compileName (qnameName f)
+    let hf0 = compileName (qnameName f)
     special <- isSpecialName f
     let (hf, mimpSpecial) = fromMaybe (hf0, Nothing) special
     hf <- computeNamespacedName f hf
@@ -141,7 +138,7 @@ compileQName f = do
         "Cannot project the field" <+> prettyTCM f <+> "of the record" <+> prettyTCM p <+>
         "which is bound to an existing Haskell type"
     par <- forM parent $ \parent ->
-      compileName (qnameName parent) >>= computeNamespacedName parent
+      computeNamespacedName parent (compileName (qnameName parent))
 
     let mod0 = qnameModule $ fromMaybe f parent
     (mkind, mod) <- compileModuleName mod0
