@@ -1,0 +1,3 @@
+test/Fail/ExistingClassNonRecord.agda:6.1-4: error: [CustomBackendError]
+agda2hs:
+  The `existing-class` keyword can only be applied to a record, but foo is not a record
