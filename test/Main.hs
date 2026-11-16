@@ -3,7 +3,6 @@ module Main where
 import Control.Monad (forM, filterM)
 import qualified Data.ByteString.Lazy as LBS
 import Data.List (isPrefixOf, isSuffixOf, isInfixOf, sort)
-import Data.Maybe (catMaybes)
 import Data.Ord (Down(..))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -58,7 +57,8 @@ main = do
   defaultMain $ testGroup "agda2hs"
     [ testGroup "Succeed" succeedTests
     , testGroup "Fail" failTests
-    , testGroup "Custom" customTests
+    , testGroup "Custom"
+        [ testGroup "Incremental" customTests ]
     ]
 
 -- | Discover all .agda files under the Succeed directory recursively.
@@ -66,49 +66,49 @@ main = do
 -- modification date (newest first), then alphabetically.
 discoverSucceedTests :: FilePath -> FilePath -> IO [TestTree]
 discoverSucceedTests testDir buildDir =
-  discoverTests testDir buildDir "Succeed" ".hs" succeedTest
+  discoverTests testDir buildDir "Succeed" ".hs" NoHelpers succeedTest
 
 -- | Discover all .agda files under the Fail directory.
 -- Files are ordered by: modification date (newest first), then golden value
 -- modification date (newest first), then alphabetically.
 discoverFailTests :: FilePath -> FilePath -> IO [TestTree]
 discoverFailTests testDir buildDir =
-  discoverTests testDir buildDir "Fail" ".err" failTest
+  discoverTests testDir buildDir "Fail" ".err" NoHelpers failTest
 
--- | Discover incremental tests under the Incremental directory.
--- A test is an @<Name>.agda@ file that has a matching golden @<Name>.hs@.
--- Other @.agda@ files in the directory are treated as helper modules and are
--- not run as tests directly. The golden file is the output of a clean
--- compilation; the test recompiles the module after deleting only its output,
--- forcing its dependencies to be skipped, and checks that the regenerated
--- output still matches the golden file (see Issue #486).
+-- | Discover the incremental tests under the Custom/Incremental directory.
+-- A test is an @<Name>.agda@ file that has a matching golden @<Name>.hs@;
+-- other @.agda@ files are treated as helper modules and skipped. The golden
+-- file is the output of a clean compilation; the test recompiles the module
+-- after deleting only its output, forcing its dependencies to be skipped, and
+-- checks that the regenerated output still matches the golden file
+-- (see Issue #486).
 discoverIncrementalTests :: FilePath -> FilePath -> IO [TestTree]
-discoverIncrementalTests testDir buildDir = do
-  let dir = testDir </> "Incremental"
-  agdaFiles <- findAgdaFiles dir
-  tests <- forM agdaFiles $ \agdaFile -> do
-    let goldenFile = dropExtension agdaFile ++ ".hs"
-    hasGolden <- doesFileExist goldenFile
-    if hasGolden
-      then do
-        let testName = dropExtension (makeRelative dir agdaFile)
-        return $ Just $ incrementalTest testDir buildDir testName agdaFile goldenFile
-      else return Nothing
-  return $ catMaybes tests
+discoverIncrementalTests testDir buildDir =
+  discoverTests testDir buildDir "Custom/Incremental" ".hs" SkipHelpers incrementalTest
+
+-- | Whether .agda files without a matching golden file are helper modules that
+-- are skipped, or tests for which a missing golden is an error.
+data Helpers = SkipHelpers | NoHelpers
 
 -- | Generic test discovery function.
--- Takes the directory name, golden file extension, and test function.
-discoverTests :: FilePath -> FilePath -> String -> String
+-- Takes the directory (relative to the test directory), golden file extension,
+-- helper policy, and test function.
+-- Files are ordered by: modification date (newest first), then golden value
+-- modification date (newest first), then alphabetically.
+discoverTests :: FilePath -> FilePath -> String -> String -> Helpers
               -> (FilePath -> FilePath -> String -> FilePath -> FilePath -> TestTree)
               -> IO [TestTree]
-discoverTests testDir buildDir dirName goldenExt testFn = do
+discoverTests testDir buildDir dirName goldenExt helpers testFn = do
   let dir = testDir </> dirName
+      goldenOf f = dropExtension f ++ goldenExt
   agdaFiles <- findAgdaFiles dir
-  sortedFiles <- sortByModTime agdaFiles (\f -> dropExtension f ++ goldenExt)
+  files <- case helpers of
+    SkipHelpers -> filterM (doesFileExist . goldenOf) agdaFiles
+    NoHelpers   -> return agdaFiles
+  sortedFiles <- sortByModTime files goldenOf
   forM sortedFiles $ \agdaFile -> do
     let testName = dropExtension (makeRelative dir agdaFile)
-        goldenFile = dropExtension agdaFile ++ goldenExt
-    return $ testFn testDir buildDir testName agdaFile goldenFile
+    return $ testFn testDir buildDir testName agdaFile (goldenOf agdaFile)
 
 -- | Sort files by modification time (newest first), then by golden value
 -- modification time (if it exists), then alphabetically.
@@ -212,9 +212,9 @@ failTest testDir buildDir testName agdaFile goldenFile =
 incrementalTest :: FilePath -> FilePath -> String -> FilePath -> FilePath -> TestTree
 incrementalTest testDir buildDir testName agdaFile goldenFile =
   goldenVsStringDiff testName diffCmd goldenFile $ do
-    let incrDir = testDir </> "Incremental"
+    let incrDir = testDir </> "Custom" </> "Incremental"
         -- Output to build directory to avoid polluting source tree
-        outDir = buildDir </> "Incremental"
+        outDir = buildDir </> "Custom" </> "Incremental"
 
     createDirectoryIfMissing True outDir
 

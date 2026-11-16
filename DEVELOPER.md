@@ -6,7 +6,7 @@ The test suite uses `tasty-golden` for golden value testing. Tests are organized
 
 - **Succeed tests** (`test/Succeed/`): Agda files that should compile successfully with agda2hs. The generated `.hs` files are the golden values.
 - **Fail tests** (`test/Fail/`): Agda files that should fail to compile. The error messages (in `.err` files) are the golden values.
-- **Incremental tests** (`test/Incremental/`): Agda files that check incremental compilation. A test first compiles a module from scratch, deletes only its output, then recompiles it while its dependencies are considered up-to-date and skipped. The regenerated `.hs` file is the golden value and must still match the clean output (see Issue #486). Other `.agda` files in the directory are helper modules and are not run as tests directly.
+- **Custom tests** (`test/Custom/`): Tests that need a bespoke harness instead of a plain golden comparison. The current kind is **incremental tests** (`test/Custom/Incremental/`): a test compiles a module from scratch, deletes only its output, then recompiles it while its dependencies are considered up-to-date and skipped. The regenerated `.hs` file is the golden value and must still match the clean output (see Issue #486). Other `.agda` files in the directory are helper modules and are not run as tests directly.
 
 ### Running All Tests
 
@@ -27,7 +27,7 @@ make succeed
 # Run only failing tests
 make fail
 
-# Run only incremental tests
+# Run only custom tests
 make custom
 
 # Or using cabal directly with pattern matching
@@ -62,7 +62,7 @@ make golden-succeed
 # Update only failing test golden values
 make golden-fail
 
-# Update only incremental test golden values
+# Update only custom test golden values
 make golden-custom
 
 # Or using cabal directly
@@ -87,9 +87,11 @@ After updating golden values, review the changes with `git diff` to ensure they 
 3. Verify the error message is correct
 4. Commit both the `.agda` and `.err` files
 
-### Adding an Incremental Test
+### Adding a Custom Test
 
-1. Create the test module and any helper modules it imports in `test/Incremental/`
+Custom tests live under `test/Custom/<Kind>/`; the current kind is an incremental test. To add one:
+
+1. Create the test module and any helper modules it imports in `test/Custom/Incremental/`
 2. Run `make golden-custom` to generate the golden `.hs` file
 3. Verify the generated Haskell code is correct
 4. Commit all the `.agda` files and the golden `.hs` file
