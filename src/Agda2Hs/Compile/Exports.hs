@@ -11,7 +11,7 @@ import Agda.Utils.Monad ( and2M, whenM, ifM )
 import Agda2Hs.AgdaUtils ( endsInSort )
 import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Types
-import Agda2Hs.Compile.Utils ( tellExport, shouldBeExported )
+import Agda2Hs.Compile.Utils ( tellExport, shouldBeExported, isClassPragma )
 import Agda2Hs.Pragma
 
 import qualified Agda2Hs.Language.Haskell as Hs
@@ -55,10 +55,9 @@ definitionExport def = case theDef def of
   Datatype{} -> Just . ExportData <$> typeName
   Record{}   -> do
     p <- processPragma (defName def)
-    Just <$> case p of
-      ClassPragma{}         -> ExportClass <$> typeName
-      ExistingClassPragma{} -> ExportClass <$> typeName
-      _                     -> ExportData <$> typeName
+    Just <$> if isClassPragma p
+      then ExportClass <$> typeName
+      else ExportData <$> typeName
   _          -> pure Nothing
   where
     typeName     = pure $ hsName $ prettyShow $ qnameName $ defName def
