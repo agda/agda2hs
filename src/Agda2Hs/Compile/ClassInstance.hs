@@ -34,7 +34,7 @@ import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
-  ( hsName, pp, replaceName, unQual )
+  ( pp, replaceName, unQual )
 
 enableCopatterns :: C a -> C a
 enableCopatterns = local $ \e -> e { copatternsEnabled = True }
@@ -210,7 +210,7 @@ compileInstanceClause' curModule ty (p:ps) c
     ls <- asks locals
     reportSDoc "agda2hs.compile.instance" 18 $ text "Clause locals:" <+> prettyTCM ls
 
-    let uf = hsName $ prettyShow $ nameConcrete $ qnameName q
+    let uf = compileName (qnameName q)
 
     let
       (.~) :: QName -> QName -> Bool
@@ -256,7 +256,7 @@ compileInstanceClause' curModule ty (p:ps) c
             . mapM (compileInstanceClause mod defType . inheritWhere)
             . filter (isMatchingProj . namedClausePats)
             $ funClauses theDef
-        let hd = hsName $ prettyShow $ nameConcrete $ qnameName defName
+        let hd = compileName (qnameName defName)
         let fc' = {- dropPatterns 1 $ -} replaceName hd uf fc
         -- compileQName - register the method in the import list (e.g. Default(def))
         -- when it is in record compiled to Haskell typeclass
@@ -340,7 +340,7 @@ findDefinitions p m = do
 lookupDefaultImplementations :: QName -> [Hs.Name ()] -> C [Definition]
 lookupDefaultImplementations recName fields = do
   let modName = qnameToMName recName
-      isField f _ = (`elem` fields) <$> compileName (qnameName f)
+      isField f _ = pure $ compileName (qnameName f) `elem` fields
   findDefinitions isField modName
 
 classMemberNames :: Definition -> C [Hs.Name ()]

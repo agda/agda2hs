@@ -12,7 +12,6 @@ import Agda.Compiler.Backend
 
 import Agda.Syntax.Common ( HasEta'(..) )
 import Agda.Syntax.Internal
-import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty ( ($$), (<+>), text, vcat, prettyTCM, pretty, prettyList_ )
 import Agda.TypeChecking.Substitute ( TelV(TelV), Apply(apply) )
@@ -29,7 +28,7 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( hsName, definedName, pp, isQuantifiedAsst )
+import Agda2Hs.Language.Haskell.Utils ( definedName, pp, isQuantifiedAsst )
 
 -- | Primitive fields and default implementations
 type MinRecord = ([Hs.Name ()], Map (Hs.Name ()) (Hs.Decl ()))
@@ -128,8 +127,8 @@ compileRecord target def = do
         compileDataRecord constraints fieldDecls target hd ds
 
   where
-    rName = hsName $ prettyShow $ qnameName $ defName def
-    cName | recNamedCon = hsName $ prettyShow $ qnameName $ conName recConHead
+    rName = compileName (qnameName $ defName def)
+    cName | recNamedCon = compileName (qnameName $ conName recConHead)
           | otherwise   = rName   -- Reuse record name for constructor if no given name
 
     -- In Haskell, projections live in the same scope as the record type, so check here that the
@@ -158,7 +157,7 @@ compileRecord target def = do
         (hsAssts, hsFields) <- underAbstraction dom tel' $ compileRecFields decl ns
         case hsDom of
           DomType s hsA -> do
-            let fieldName = hsName $ prettyShow $ qnameName $ unDom n
+            let fieldName = compileName (qnameName $ unDom n)
             fieldType <- addTyBang s hsA
             checkValidFunName fieldName
             return (hsAssts, decl fieldName fieldType : hsFields)
