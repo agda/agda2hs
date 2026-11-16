@@ -28,6 +28,7 @@ import Agda.Utils.Size ( Sized(size) )
 
 import AgdaInternals ( inWhereBlockOf )
 import Agda2Hs.AgdaUtils
+import Agda2Hs.Compile.Exports ( tellDefinitionExport )
 import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Term ( compileTerm, dependentDom )
@@ -114,8 +115,7 @@ compileFun' def@Defn{..} = inTopContext $ withCurrentModule m $ do
     (ensureNoLocals err >> compileTypeDef x def)
     -- otherwise, we have to compile clauses.
     $ do
-    whenM (shouldBeExported defName `and2M` asks writeExports) $ do
-      tellExport (ExportFun x)
+    tellDefinitionExport def
 
     tel <- lookupSection m
 

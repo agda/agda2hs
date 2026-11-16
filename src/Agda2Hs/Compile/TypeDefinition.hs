@@ -1,7 +1,5 @@
 module Agda2Hs.Compile.TypeDefinition where
 
-import Control.Monad.Reader ( asks )
-
 import Data.Maybe ( fromMaybe )
 
 import Agda.Compiler.Backend
@@ -16,17 +14,17 @@ import Agda2Hs.Compile.Type ( compileType, compileTypeArgs )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Compile.Var ( compileDBVar )
+import Agda2Hs.Compile.Exports ( tellDefinitionExport )
 
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils ( hsName )
 
 compileTypeDef :: Hs.Name () -> Definition -> C [Hs.Decl ()]
-compileTypeDef name (Defn {..}) = do
+compileTypeDef name def@(Defn {..}) = do
   unlessM (isTransparentFunction defName) $ do
     checkValidTypeName name
     tellTypeOperators name
-  whenM (shouldBeExported defName `and2M` asks writeExports) $ do
-    tellExport (ExportType name)
+  tellDefinitionExport def
   Clause{..} <- singleClause funClauses
   addContext (KeepNames clauseTel) $ do
     as <- compileTypePatternArgs defType namedClausePats
