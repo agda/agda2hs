@@ -1,9 +1,8 @@
 module Reexport
-  (module X, module Data.List, module Inlining, module Prelude)
+  (module Inlining, module Data.Void, module X)
 where
 
-import Data.List
-import qualified Importee as X
+import Data.Void
+import Importee as X
 import Inlining
-import Prelude
 

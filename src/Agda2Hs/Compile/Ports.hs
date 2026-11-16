@@ -1,54 +1,82 @@
 -- Compiling (im|ex)ports
-module Agda2Hs.Compile.Ports ( compilePorts, preludeImportDecl, hasHaskellReexports ) where
+module Agda2Hs.Compile.Ports ( compilePorts, hasHaskellExports ) where
 
 import Data.Char ( isUpper )
-import Data.Functor.Compose ( Compose(Compose) )
 import qualified Data.List as L
 import Data.Map ( Map )
 import qualified Data.Map as Map
 import Data.Set ( Set )
 import qualified Data.Set as Set
+import Data.Containers.ListUtils ( nubOrd )
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( validVarId, validConId, pp )
+import Agda2Hs.Language.Haskell.Utils ( validVarId, validConId, validModuleName, pp )
 
 import Agda.Compiler.Backend
 import Agda.TypeChecking.Pretty ( pretty, text, prettyList_, (<+>) )
-import qualified Agda.Syntax.Abstract as A
+import Agda.Syntax.Position ( Range, getRange, HasRange )
 import qualified Agda.Syntax.Concrete as C
+import qualified Agda.Syntax.Abstract as A
 import Agda.Syntax.Info
 import Agda.Syntax.Translation.ConcreteToAbstract
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Common
-import Agda.Syntax.Common.Pretty ( prettyShow )
-import Agda.Utils.Monad ( liftM2, filterM, anyM, foldM, when )
+import Agda.Syntax.Common.Pretty ( prettyShow, Pretty, Doc )
+import Agda.Utils.Maybe ( fromMaybe, isJust )
+import Agda.Utils.Monad ( liftM2, anyM, ifNotM, forM_, when, unless, filterM )
 import Agda.Utils.Impossible
-import qualified Agda.Utils.List1 as List1
+import qualified Agda.Utils.Null as Null
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
-import Agda.Utils.Maybe (fromMaybe)
 
 --------------------------------------------------------------------------------
 -- main
 
+-- | Compile the imports and exports of a module,
+--   with special handling for the @Prelude@ as prescribed by the 'PreludeOptions'.
 compilePorts
-  :: String -> ModuleEnv -> Imports -> Exports -> TCM ([Hs.ImportDecl ()], Hs.ExportSpecList ())
-compilePorts top menv is0 es0 = do
-  reexps <- extractReexports menv
+  :: PreludeOptions -> String -> ModuleEnv -> Imports -> Exports
+  -> TCM ([Hs.ImportDecl ()], Hs.ExportSpecList ())
+compilePorts preOpts@PreludeOpts{..} top menv imps0 es0 = do
+  topInfo <- moduleAbstrSyn menv
+  reexps <- collectReexports topInfo
+  reexps <- foldMap (translateReexport (moduleName menv)) reexps
 
-  let is = filter ((top /=) . Hs.prettyPrint . importModule) (map toImport reexps ++ is0)
+  let isPrelude = (== Hs.prelude_mod ())
+
+  -- the 'hiding' list also applies to the reexport of the prelude, which would
+  -- silently not export the hidden names
+  when (preludeImplicit && not (null preludeHiding)) $
+    forM_ reexps $ \(ReexportModule m _ r) ->
+      when (isPrelude m) $
+        badReexport r (pp m) "not supported when the prelude config has 'hiding'"
+
+  let -- if Prelude is imported implicitly, we remove all prelude imports, including those of reexports
+      is0 = map toImport reexps ++ imps0
+      is1 | preludeImplicit = filter (not . isPrelude . importModule) is0
+          | otherwise       = is0
+
+      -- and add back the configured one:
+      preludeImport = [preludeImportDecl preOpts | preludeImplicit]
+
+      toExport' r@(ReexportModule m _ _)
+        -- export Prelude directly because we throwed away explicit imports of Prelude
+        | preludeImplicit && isPrelude m = ExportModule m
+        | otherwise = toExport r
+
+  let is = filter ((top /=) . Hs.prettyPrint . importModule) is1
   checkClashingImports is
   let imps = Map.toList $ groupImports is
   reportSLn "agda2hs.import" 10 $ "All imported modules: " ++ show (map (pp . fst . fst) imps)
-  let impDecls = map (uncurry $ uncurry makeImportDecl) imps
+  let impDecls = preludeImport ++ map (uncurry $ uncurry makeImportDecl) imps
 
-  let exps = map compileExport (map toExport reexps ++ es0)
-  -- TODO: check clashing exports
+  let exps = map compileExport $ nubOrd $ map toExport' reexps ++ es0
+  -- TODO(satoshi): check clashing exports
   reportSDoc "agda2hs.export" 10 $
-    "All exports: " <+> prettyList_ (map (text . pp) exps)
+    "All exports:" <+> prettyList_ (map (text . pp) exps)
 
   return (impDecls, Hs.ExportSpecList () exps)
 
@@ -78,82 +106,116 @@ preludeImportDecl (PreludeOpts{..}) =
 --------------------------------------------------------------------------------
 -- extract re-exports
 
-reexportedNames :: Scope -> Set QName
-reexportedNames =
-  foldMap (Set.singleton . anameName) . Compose . namesInScope [ImportedNS]
-
-hasHaskellReexports :: TopLevelModuleName -> TCM Bool
-hasHaskellReexports mname = do
+-- | Does the Haskell module corresponding to the given Agda module export anything?
+-- NOTE: This function may over-approximate, inheriting hasHaskellEntity
+hasHaskellExports :: TopLevelModuleName -> TCM Bool
+hasHaskellExports mname = do
   iface <- maybe __IMPOSSIBLE__ miInterface <$> getVisitedModule mname
-  anyM shouldBeExported $ reexportedNames $ currentScope $ iInsideScope iface
+  let pubNames = publicNames $ iInsideScope iface
+  reportSDoc "agda2hs.export" 30 $ do
+    hsNames <- filterSetA (hasHaskellEntity . anameName) pubNames
+    pretty mname <+> "exports:" <+> pretty hsNames
+  anyM (hasHaskellEntity . anameName) pubNames
+  where
+    -- TODO(satoshi): use Set.filterA when we start using containers>=0.8.1
+    filterSetA :: (Applicative m) => (a -> m Bool) -> Set a -> m (Set a)
+    filterSetA p = fmap Set.fromDistinctAscList . filterM p . Set.toAscList
 
 data Reexport
-  = ReexportModule (Hs.ModuleName ()) (Maybe (Hs.ModuleName ()))
+  = ReexportModule (Hs.ModuleName ()) (Maybe (Hs.ModuleName ())) Range
 
 type Reexports = [Reexport]
 
 toImport :: Reexport -> Import
 toImport = \case
-  ReexportModule m as -> ImportModule m as
+  ReexportModule m as _ -> ImportModule m as
 
 toExport :: Reexport -> Export
 toExport = \case
-  ReexportModule m as -> ExportModule (fromMaybe m as)
+  ReexportModule m as _ -> ExportModule (fromMaybe m as)
 
-extractReexports :: ModuleEnv -> TCM Reexports
-extractReexports menv = do
-  topInfo <- moduleAbstrSyn menv
-  let currScope = currentScope $ topLevelScope topInfo
-  reexps <- groupByTopLevelModule $ reexportedNames currScope
-  reexpsHs <- traverse (filterSetA shouldBeExported) reexps
-  reexpDecls <- topLevelReexportDecls topInfo
-  let reexpDeclsHs = Map.intersectionWith (,) reexpsHs reexpDecls
-  reportSDoc "agda2hs.reexport" 40 $ "reexported names:" <+> pretty reexps
-  reportSDoc "agda2hs.reexport" 40 $ "reexported names exist in Haskell:" <+> pretty reexpsHs
-  reportSDoc "agda2hs.reexport" 40 $ "all reexport declarations:" <+> pretty reexpDecls
-  reportSDoc "agda2hs.reexport" 20 $ "reexport declarations to compile:" <+> pretty reexpDeclsHs
-  flip Map.foldMapWithKey reexpDeclsHs $ \mod (names, directives) -> do
-    (kind, mod') <- compileTopLevelModuleName mod
-    case directives of
-      [(asName, ImportDirective {using = UseEverything, hiding = []})] -> do
-        let asName' = Hs.hsModuleName . prettyShow <$> asName
-        case kind of
-          AgdaModule
-            | Set.null names -> pure []
-            | otherwise -> pure [ReexportModule mod' asName']
-          HsModule -> do
-            -- dropping the 'Haskell' prefix may results in name clash
-            -- e.g.) reexporting 'Haskell.Data.Map' from 'Data.Map'
-            when (pp mod' == prettyShow (moduleName menv)) $
-              agda2hsErrorM $ "Clashing export: trying to reexport" <+> pretty mod <+> "from" <+> pretty (moduleName menv)
-            pure [ReexportModule mod' asName']
-          PrimModule
-            | prettyShow mod == "Haskell.Prelude" -> pure [ReexportModule mod' asName']
-            | otherwise -> pure []
-      -- TODO(satoshi): support 'using' and 'hiding'
+data AgdaReexport = AgdaReexport
+  { agdaReexpRange  :: Range
+  , agdaReexpModule :: TopLevelModuleName
+  , agdaReexpAs     :: Maybe C.Name
+  }
+
+collectReexports :: TopLevelInfo -> TCM [AgdaReexport]
+collectReexports topInfo = go False $ insideDecls topInfo
+  where
+    go nested = foldMap $ \case
+      A.Section _ _ m _ decls | isPubMod m -> go True decls
+
+      A.Import minfo m dir@(isOpenPublic -> True)
+        | nested ->
+            badReexport minfo m "reexports inside nested modules are not supported"
+        | not (null (impRenaming dir)) ->
+            badReexport minfo m "'renaming' directive is not supported"
+        | not (Null.null dir) -> do
+            -- TODO(satoshi): support 'using' and 'hiding'
+            [] <$ myBadReexport minfo m "'using' and 'hiding' are not supported yet"
+        | otherwise -> do
+            tlm <- getTopLevelModuleForModuleName m
+            pure [AgdaReexport (getRange minfo) tlm (minfoAsName minfo)]
+
+      -- 'import M' followed by a separate 'open M public'
+      A.Open minfo m dir@(isOpenPublic -> True)
+        | not (isInCurrMod m) ->
+            badReexport minfo m "reexporting with a separate 'open ... public' is not supported"
+
+      -- module applications, e.g. 'open import M args public'
+      A.Apply minfo _ _ (A.SectionApp _ m _) _ dir
+        | isOpenPublic dir || any isOpenPublic (minfoDirective minfo), not (isInCurrMod m) ->
+            badReexport minfo m "reexporting module applications is not supported"
+
       _ -> pure []
-  where
-    -- TODO(satoshi): use Set.filterA when we start using containers>=0.8.1
-    filterSetA :: Applicative m => (a -> m Bool) -> Set.Set a -> m (Set.Set a)
-    filterSetA p = fmap Set.fromDistinctAscList .  filterM p . List1.toList . Set.toAscList
 
--- | Collect top-level reexport declarations.
--- A module can be reexported multiple times with different directives hence the list.
-topLevelReexportDecls :: TopLevelInfo -> TCM (Map TopLevelModuleName [(Maybe C.Name, A.ImportDirective)])
-topLevelReexportDecls = collect Map.empty . insideDecls . topLevelDecls
-  where
-    -- top-level declarations starts with a bunch of imports then the top-level module of the file
-    -- ignore "outside" imports because those can't be reexports
-    insideDecls = \case
-      [A.Section _ _ _ _ decls] -> decls
-      (_ : decls) -> insideDecls decls
+    isInCurrMod =
+      let curr = _scopeCurrent $ topLevelScope topInfo
+       in (`A.isLeChildModuleOf` curr)
 
-    collect = foldM $ \acc decl -> case decl of
-      A.Import minfo modName impDir@(ImportDirective{publicOpen = Just _}) -> do
-        modName <- getTopLevelModuleForModuleName modName
-        pure $! Map.insertWith (++) modName [(minfoAsName minfo, impDir)] acc
-      A.ScopedDecl _ decls -> collect acc decls
-      _ -> pure acc
+    isPubMod =
+      let pubMods = publicModules $ topLevelScope topInfo
+       in \m -> A.isAnonymousModuleName m || Map.member m pubMods
+
+    isOpenPublic = isJust . publicOpen
+
+
+translateReexport :: TopLevelModuleName -> AgdaReexport -> TCM Reexports
+translateReexport current (AgdaReexport range tlm asName) =
+  case hsModuleKind tlm of
+    -- only Haskell.Prelude is supported among PrimModules
+    PrimModule
+      | prettyShow tlm == "Haskell.Prelude" -> translate
+      | otherwise -> [] <$ myBadReexport range tlm "reexporting this module is not supported yet"
+    _ -> ifNotM (hasHaskellExports tlm) (pure []) translate
+  where
+    translate = do
+      (kind, mod) <- compileTopLevelModuleName tlm
+      checkNameClash kind mod
+      asName <- traverse compileModuleAlias asName
+      pure [ReexportModule mod asName range]
+
+    -- Dropping the 'Haskell' prefix of a reexported Haskell module may result
+    -- in a name clash, e.g. reexporting 'Haskell.Data.Map' from 'Data.Map'.
+    checkNameClash kind mod' =
+      when (kind == HsModule && pp mod' == prettyShow current) $
+        badReexport range tlm "name clash after dropping the 'Haskell.' prefix"
+
+    compileModuleAlias name = do
+      let name' = Hs.hsModuleName $ prettyShow name
+      unless (validModuleName name') $
+        badReexport range tlm $ pretty name <+> "is not a valid Haskell module name"
+      pure name'
+
+
+badReexport :: (HasRange r, Pretty mod) => r -> mod -> TCM Doc -> TCM a
+badReexport range mod reason = setCurrentRange range $ agda2hsErrorM $
+  "Cannot compile reexport of" <+> (pretty mod <> ":") <+> reason
+
+myBadReexport :: (HasRange r, Pretty mod) => r -> mod -> TCM Doc -> TCM ()
+myBadReexport range mod reason = setCurrentRange range $ agda2hsWarningM $
+  "Cannot compile reexport of" <+> (pretty mod <> ":") <+> reason
 
 --------------------------------------------------------------------------------
 -- compile imports
@@ -191,9 +253,9 @@ groupImports = flip foldr Map.empty $ \case
   (Import mod as parent name _) ->
     Map.insertWith mergeChildren (mod,as) (makeSingle parent name)
   (ImportInstances mod) ->
-    Map.insertWith mergeChildren (mod,Unqualified) (Just mempty)
+    Map.insertWith mergeChildren (mod, Unqualified Nothing) (Just mempty)
   (ImportModule mod as) ->
-    Map.insertWith mergeChildren (mod, Just <$> as) Nothing
+    Map.insertWith mergeChildren (mod, Unqualified as) Nothing
   where
     mergeChildren :: Maybe ImportSpecMap -> Maybe ImportSpecMap -> Maybe ImportSpecMap
     mergeChildren = liftM2 (Map.unionWith Set.union)
@@ -219,7 +281,7 @@ makeImportSpec (NamespacedName namespace q) qs
 
 makeImportDecl :: Hs.ModuleName () -> Qualifier -> Maybe ImportSpecMap -> Hs.ImportDecl ()
 makeImportDecl mod qual specs = Hs.ImportDecl ()
-  mod (isQualified qual) False False Nothing (qualifiedAs qual)
+  mod (isQualified qual) False False Nothing (importAlias qual)
   (Hs.ImportSpecList ()
         False                                             -- whether the list should be a list of hidden identifiers ('hiding')
         . map (uncurry makeImportSpec) . Map.toList <$> specs)

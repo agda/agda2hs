@@ -3,10 +3,10 @@ module Agda2Hs.Render where
 import Control.Monad ( unless )
 import Control.Monad.IO.Class ( MonadIO(liftIO) )
 
-import Data.Bifunctor ( first, bimap )
+import Data.Bifunctor ( bimap )
 import Data.Function ( on )
 import Data.List ( sortBy, nub, unzip4 )
-import Data.Maybe ( fromMaybe, isNothing )
+import Data.Maybe ( fromMaybe )
 
 import System.FilePath ( takeDirectory )
 import System.Directory ( createDirectoryIfMissing )
@@ -18,7 +18,7 @@ import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Ports
-import Agda2Hs.Compile.Utils ( moduleFileName )
+import Agda2Hs.Compile.Utils ( moduleFileName, hsModuleKind, HsModuleKind(..) )
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
   ( extToName, pp, moveToTop, insertParens )
@@ -60,26 +60,6 @@ codeBlocks code = [(r, [uncurry Hs.exactPrint $ moveToTop $ noPragmas mcs]) | (r
 ensureDirectory :: FilePath -> IO ()
 ensureDirectory = createDirectoryIfMissing True . takeDirectory
 
--- | Compile the full import list,
--- with special handling for the @Prelude@ as prescribed by 'Options'.
-compilePortsWithPrelude
-  :: Options -> String -> ModuleEnv -> Imports -> Exports -> TCM ([Hs.ImportDecl ()], Hs.ExportSpecList ())
-compilePortsWithPrelude opts mod menv imps exps = do
-    -- if the prelude is supposed to be implicit,
-    -- or the prelude imports have been fixed in the config file,
-    -- we remove it from the list of imports
-    let filteredImps =
-          if not preludeImplicit && isNothing preludeImports
-            then imps
-            else filter ((/= Hs.prelude_mod ()) . importModule) imps
-
-    -- then we try to add it back
-    if (not preludeImplicit && isNothing preludeImports) || null preludeHiding
-      then compilePorts mod menv filteredImps exps
-      else first (preludeImportDecl preOpts:) <$> compilePorts mod menv filteredImps exps
-  where
-    preOpts@PreludeOpts{..} = optPrelude opts
-
 -- | Render the @.hs@ module as a 'String' and write it to a file.
 writeModule :: GlobalEnv -> ModuleEnv -> IsMain -> TopLevelModuleName
             -> [(CompiledDef, CompileOutput)] -> TCM ModuleRes
@@ -93,8 +73,11 @@ writeModule genv menv isMain m outs = do
       imps = concat impss
       exps = concat expss
       exts = concat extss
-  hasReexp <- hasHaskellReexports m
-  unless (null code && null defs && isMain == NotMain && not hasReexp) $ do
+
+  hasExports <- case hsModuleKind m of
+    AgdaModule -> hasHaskellExports m
+    _          -> pure False
+  unless (null code && null defs && isMain == NotMain && not hasExports) $ do
 
     let unlines' [] = []
         unlines' ss = unlines ss ++ "\n"
@@ -102,7 +85,7 @@ writeModule genv menv isMain m outs = do
         prettyImps = unlines' . map Hs.prettyShowImportDecl
         prettyExps = Hs.prettyShowExportSpecList
 
-    (autoImports, autoExports) <- bimap prettyImps prettyExps <$> compilePortsWithPrelude opts mod menv imps exps
+    (autoImports, autoExports) <- bimap prettyImps prettyExps <$> compilePorts (optPrelude opts) mod menv imps exps
 
     -- The comments make it hard to generate and pretty print a full module
     hsFile <- moduleFileName opts m
