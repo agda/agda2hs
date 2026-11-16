@@ -39,7 +39,7 @@ succeed :
 fail :
 	cabal test agda2hs-test --test-options='-p Fail. --no-create'
 
-# Run only incremental/custom tests
+# Run only custom tests
 custom :
 	cabal test agda2hs-test --test-options='-p Custom. --no-create'
 
@@ -54,7 +54,7 @@ golden-succeed :
 golden-fail :
 	cabal test agda2hs-test --test-options='-p Fail. --accept'
 
-# Update golden values for incremental/custom tests
+# Update golden values for custom tests
 golden-custom :
 	cabal test agda2hs-test --test-options='-p Custom. --accept'
 
