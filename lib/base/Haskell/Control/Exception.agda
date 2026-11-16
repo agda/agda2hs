@@ -141,6 +141,3 @@ postulate
   bracketOnError : IO a → (a → IO b) → (a → IO c) → IO c
   finally : IO a → IO b → IO a
   onException : IO a → IO b → IO a
-
-ioException : @0 {{MayThrow IOException}} → IOException → IO a
-ioException = throwIO
