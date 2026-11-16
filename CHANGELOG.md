@@ -30,6 +30,10 @@ Changes to agda2hs
   code generation for a definition whose Haskell implementation is provided by
   a `FOREIGN` pragma. Such definitions are still exported. The
   `existing-class` keyword is now restricted to records (see issue #447).
+- A record marked with `existing` is treated as opaque: projecting one of its
+  fields is rejected, because the corresponding Haskell type may not export a
+  field selector. The exception records in `Haskell.Control.Exception` are
+  marked with `existing` accordingly.
 
 See https://github.com/agda/agda2hs/issues?q=milestone%3A1.5+is%3Apr for the full list of changes.
 

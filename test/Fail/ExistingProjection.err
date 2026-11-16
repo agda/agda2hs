@@ -1,0 +1,3 @@
+test/Fail/ExistingProjection.agda:6.1-9: error: [CustomBackendError]
+agda2hs:
+  Cannot project the field AssertionFailed.theFailedAssertion of the record AssertionFailed which is bound to an existing Haskell type
