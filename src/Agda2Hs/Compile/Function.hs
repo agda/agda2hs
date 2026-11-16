@@ -414,10 +414,6 @@ recordInlineSymbols def@(Defn { defName = q , theDef = df }) = do
   let qs = fromMaybe [] $ getMutual_ df
   addInlineSymbols $ q : qs
 
--- | Mark a definition as one that should be inlined.
-checkInlinePragma :: Definition -> C ()
-checkInlinePragma = recordInlineSymbols
-
 checkCompileToFunctionPragma :: Definition -> String -> C ()
 checkCompileToFunctionPragma def s = noCheckNames $ noWriteExports $ do
   r <- resolveStringName s

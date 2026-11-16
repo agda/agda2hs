@@ -25,7 +25,7 @@ import Agda.Utils.Monad ( whenM, anyM, when, unless )
 import Agda2Hs.AgdaUtils ( resolveStringName )
 import Agda2Hs.Compile.ClassInstance ( compileInstance )
 import Agda2Hs.Compile.Data ( compileData, checkCompileToDataPragma )
-import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkInlinePragma, checkCompileToFunctionPragma, recordInlineSymbols )
+import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkCompileToFunctionPragma, recordInlineSymbols )
 import Agda2Hs.Compile.Name ( hsTopLevelModuleName )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
@@ -138,7 +138,7 @@ compile genv tlm _ def =
         (ExistingClassPragma , _         ) -> return []
         (UnboxPragma s       , Record{}  ) -> [] <$ checkUnboxPragma def
         (TransparentPragma   , Function{}) -> [] <$ checkTransparentPragma def
-        (InlinePragma        , Function{}) -> [] <$ checkInlinePragma def
+        (InlinePragma        , Function{}) -> [] <$ recordInlineSymbols def
         (TuplePragma b       , Record{}  ) -> return []
         (CompileToPragma s   , Datatype{}) -> [] <$ checkCompileToDataPragma def s
         (CompileToPragma s   , Function{}) -> [] <$ checkCompileToFunctionPragma def s
