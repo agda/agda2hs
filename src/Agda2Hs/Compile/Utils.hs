@@ -213,15 +213,19 @@ isClassModule m
     minRec <- asks minRecordName
     if Just m == minRec then return True else isClassName (mnameToQName m)
 
+-- | Check whether a pragma compiles a record to a Haskell type class.
+isClassPragma :: ParsedPragma -> Bool
+isClassPragma = \case
+  ClassPragma{}         -> True
+  ExistingClassPragma{} -> True
+  _                     -> False
+
 -- | Check if the given name corresponds to a type class in Haskell.
 isClassName :: QName -> C Bool
 isClassName q = getConstInfo' q >>= \case
   Right Defn{defName = r, theDef = Record{}} ->
     -- It would be nicer if we remembered this from when we looked at the record the first time.
-    processPragma r <&> \case
-      ClassPragma _       -> True
-      ExistingClassPragma -> True
-      _                   -> False
+    isClassPragma <$> processPragma r
   _                       -> return False
 
 -- | Check if the given type corresponds to a class constraint in Haskell.
