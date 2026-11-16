@@ -913,6 +913,69 @@ testA = A.foo
 testB = A.foo
 ```
 
+# Existing Haskell definitions
+
+Some Agda definitions should not be translated to Haskell because an equivalent
+Haskell definition already exists. This happens for example when the Haskell
+code is supplied through a `FOREIGN` pragma, either as an inline definition or
+through an import. Adding the `existing` keyword to the compile pragma tells
+agda2hs to skip the definition while still treating its name as defined in
+Haskell.
+
+Agda
+```agda
+{-# FOREIGN AGDA2HS
+import Data.Char (ord)
+
+existingFun :: Int
+existingFun = 42
+#-}
+
+existingFun : Int
+existingFun = 0
+{-# COMPILE AGDA2HS existingFun existing #-}
+
+postulate
+  ord : Char → Int
+{-# COMPILE AGDA2HS ord existing #-}
+```
+
+Haskell
+```hs
+import Data.Char (ord)
+
+existingFun :: Int
+existingFun = 42
+```
+
+The Agda definitions of `existingFun` and `ord` are only used inside Agda;
+agda2hs leaves them out of the generated code. As with any other definition,
+public `existing` names are added to the module's export list, so they can be
+used from other modules.
+
+The `existing-class` keyword is a variant of `existing` for records that stand
+for an existing Haskell type class. Unlike `existing`, it can only be applied
+to a record.
+
+Agda
+```agda
+{-# FOREIGN AGDA2HS
+class ExistingClass a where
+  existingMethod :: a -> Int
+#-}
+
+record ExistingClass (a : Type) : Type where
+  field
+    existingMethod : a → Int
+{-# COMPILE AGDA2HS ExistingClass existing-class #-}
+```
+
+Haskell
+```hs
+class ExistingClass a where
+  existingMethod :: a -> Int
+```
+
 # Rewrite rules and Prelude imports
 
 ## Rewrite rules

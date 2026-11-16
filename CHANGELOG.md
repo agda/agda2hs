@@ -26,6 +26,10 @@ Changes to agda2hs
 - The `TypeError` data type in `Haskell.Prim` has been renamed to
   `UnsatisfiedConstraint`, to avoid a clash with the `TypeError` exception
   type added to `Haskell.Control.Exception`.
+- Added the `existing` keyword to the `COMPILE AGDA2HS` pragma, which skips
+  code generation for a definition whose Haskell implementation is provided by
+  a `FOREIGN` pragma. Such definitions are still exported. The
+  `existing-class` keyword is now restricted to records (see issue #447).
 
 See https://github.com/agda/agda2hs/issues?q=milestone%3A1.5+is%3Apr for the full list of changes.
 
