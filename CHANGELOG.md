@@ -38,9 +38,8 @@ Additions to the agda2hs Prelude
   `Rational` type. Instances for the standard numeric types are postulated
   for now (see issue #262).
 - Added basic support for Haskell exceptions in `Haskell.Control.Exception`.
-  Since `throw` would otherwise break soundness, the exception type is tracked
-  with an erased `MayThrow` argument that functions raising an exception must
-  take in scope (see issue #432).
+  A function that may raise an exception takes an erased `MayThrow` argument
+  recording the exception type (see issue #432).
 - Added bindings to `System.Environment` in `Haskell.System.Environment`
   (see issue #433).
 
