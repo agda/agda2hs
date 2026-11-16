@@ -212,6 +212,10 @@ compileInstanceClause' curModule ty (p:ps) c
 
     let uf = compileName (qnameName q)
 
+    -- Register the method in the import list (e.g. Default(def)) when it is a
+    -- field of a record that is compiled to a Haskell type class.
+    let registerMethodImport = whenM (isClassFunction q) $ void (compileQName q)
+
     let
       (.~) :: QName -> QName -> Bool
       x .~ y = nameConcrete (qnameName x) == nameConcrete (qnameName y)
@@ -258,10 +262,7 @@ compileInstanceClause' curModule ty (p:ps) c
             $ funClauses theDef
         let hd = compileName (qnameName defName)
         let fc' = {- dropPatterns 1 $ -} replaceName hd uf fc
-        -- compileQName - register the method in the import list (e.g. Default(def))
-        -- when it is in record compiled to Haskell typeclass
-        when (not (null fc')) $
-          whenM (isClassFunction q) $ void (compileQName q)
+        when (not (null fc')) registerMethodImport
         reportSDoc "agda2hs.compile.instance" 6 $ vcat $
           text "compileInstanceClause compiled clause: " :
           map (nest 2 . text . pp) fc'
@@ -298,9 +299,7 @@ compileInstanceClause' curModule ty (p:ps) c
 
       -- No minimal dictionary used, proceed with compiling as a regular clause.
       | otherwise -> do
-        -- compileQName - register the method in the import list (e.g. Default(def))
-        -- when it is in record compiled to Haskell typeclass
-        whenM (isClassFunction q) $ void (compileQName q)
+        registerMethodImport
         reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
         ms <- disableCopatterns $ compileClause curModule [] Nothing uf ty' c'
         let cc = Hs.FunBind () (toList ms)
