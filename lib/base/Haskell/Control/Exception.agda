@@ -51,16 +51,13 @@ postulate instance
 -- They are modelled as Agda records so that values can be constructed with
 -- record syntax and inspected by pattern matching. However, the corresponding
 -- Haskell types do not export a field selector, so the fields below cannot be
--- projected: a projection would compile to a Haskell selector that does not
--- exist.
---
--- TODO: reject projections from records that are not given a COMPILE AGDA2HS
--- pragma, for example by adding an @existing-data@ (or @existing-record@)
--- pragma to mark records that are bound to an existing Haskell type.
+-- projected. Marking the records with @existing@ tells agda2hs that they are
+-- bound to existing Haskell types, so that projecting a field is rejected.
 
 record AssertionFailed : Set where
   no-eta-equality; pattern
   field theFailedAssertion : String
+{-# COMPILE AGDA2HS AssertionFailed existing #-}
 
 postulate instance
   iExceptionAssertionFailed : Exception AssertionFailed
@@ -68,6 +65,7 @@ postulate instance
 record NoMethodError : Set where
   no-eta-equality; pattern
   field theNoMethodError : String
+{-# COMPILE AGDA2HS NoMethodError existing #-}
 
 postulate instance
   iExceptionNoMethodError : Exception NoMethodError
@@ -75,6 +73,7 @@ postulate instance
 record PatternMatchFail : Set where
   no-eta-equality; pattern
   field thePatternMatchFail : String
+{-# COMPILE AGDA2HS PatternMatchFail existing #-}
 
 postulate instance
   iExceptionPatternMatchFail : Exception PatternMatchFail
@@ -82,6 +81,7 @@ postulate instance
 record RecConError : Set where
   no-eta-equality; pattern
   field theRecConError : String
+{-# COMPILE AGDA2HS RecConError existing #-}
 
 postulate instance
   iExceptionRecConError : Exception RecConError
@@ -89,6 +89,7 @@ postulate instance
 record RecSelError : Set where
   no-eta-equality; pattern
   field theRecSelError : String
+{-# COMPILE AGDA2HS RecSelError existing #-}
 
 postulate instance
   iExceptionRecSelError : Exception RecSelError
@@ -96,6 +97,7 @@ postulate instance
 record RecUpdError : Set where
   no-eta-equality; pattern
   field theRecUpdError : String
+{-# COMPILE AGDA2HS RecUpdError existing #-}
 
 postulate instance
   iExceptionRecUpdError : Exception RecUpdError
@@ -103,6 +105,7 @@ postulate instance
 record ErrorCall : Set where
   no-eta-equality; pattern
   field theErrorCall : String
+{-# COMPILE AGDA2HS ErrorCall existing #-}
 
 postulate instance
   iOrdErrorCall : Ord ErrorCall
@@ -111,6 +114,7 @@ postulate instance
 record TypeError : Set where
   no-eta-equality; pattern
   field theTypeError : String
+{-# COMPILE AGDA2HS TypeError existing #-}
 
 postulate instance
   iExceptionTypeError : Exception TypeError

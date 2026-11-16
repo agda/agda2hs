@@ -953,9 +953,15 @@ agda2hs leaves them out of the generated code. As with any other definition,
 public `existing` names are added to the module's export list, so they can be
 used from other modules.
 
+A record marked `existing` is treated as opaque: since agda2hs does not know
+its Haskell definition, it cannot tell whether the Haskell type exports a field
+selector, so projecting a field from such a record is rejected. The record can
+still be constructed with record syntax and inspected by pattern matching.
+
 The `existing-class` keyword is a variant of `existing` for records that stand
 for an existing Haskell type class. Unlike `existing`, it can only be applied
-to a record.
+to a record, and its fields can be projected since they correspond to the
+methods of the Haskell class.
 
 Agda
 ```agda
