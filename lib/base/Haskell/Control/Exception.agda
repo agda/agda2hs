@@ -53,6 +53,10 @@ postulate instance
 -- Haskell types do not export a field selector, so the fields below cannot be
 -- projected: a projection would compile to a Haskell selector that does not
 -- exist.
+--
+-- TODO: reject projections from records that are not given a COMPILE AGDA2HS
+-- pragma, for example by adding an @existing-data@ (or @existing-record@)
+-- pragma to mark records that are bound to an existing Haskell type.
 
 record AssertionFailed : Set where
   no-eta-equality; pattern
