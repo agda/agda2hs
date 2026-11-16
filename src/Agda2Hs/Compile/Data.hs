@@ -1,7 +1,5 @@
 module Agda2Hs.Compile.Data where
 
-import Control.Monad.Reader ( asks )
-
 import Agda.Compiler.Backend
 import Agda.Syntax.Common
 import Agda.Syntax.Internal
@@ -19,6 +17,7 @@ import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils
 
+import Agda2Hs.Compile.Exports ( tellDefinitionExport )
 import Agda2Hs.Compile.Name
 import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds, compileDom )
 import Agda2Hs.Compile.Types
@@ -42,8 +41,7 @@ compileData newtyp ds def = do
   checkValidTypeName d
   tellTypeOperators d
 
-  whenM (shouldBeExported (defName def) `and2M` asks writeExports) $ do
-    tellExport (ExportData d)
+  tellDefinitionExport def
 
   let Datatype{dataPars = n, dataIxs = numIxs, dataCons = cs} = theDef def
   TelV tel t <- telViewUpTo n (defType def)
