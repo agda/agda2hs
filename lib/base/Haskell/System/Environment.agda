@@ -1,8 +1,7 @@
+module Haskell.System.Environment where
 
 open import Haskell.Prelude
 open import Haskell.Control.Exception
-
-module Haskell.System.Environment where
 
 postulate
   getArgs : IO (List String)
