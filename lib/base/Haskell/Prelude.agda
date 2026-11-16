@@ -76,7 +76,6 @@ open import Haskell.Control.Exception
 --     IO, putChar, putStr, putStrLn, print,
 --     getChar, getLine, getContents, interact,
 --     FilePath, readFile, writeFile, appendFile, readIO, readLn,
---     IOError, ioError, userError,
 
 
 --------------------------------------------------
