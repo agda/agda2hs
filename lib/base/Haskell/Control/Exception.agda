@@ -47,6 +47,13 @@ postulate instance
   iOrdArrayException : Ord ArrayException
   iExceptionArrayException : Exception ArrayException
 
+-- The exception types below are Haskell newtypes wrapping a single @String@.
+-- They are modelled as Agda records so that values can be constructed with
+-- record syntax and inspected by pattern matching. However, the corresponding
+-- Haskell types do not export a field selector, so the fields below cannot be
+-- projected: a projection would compile to a Haskell selector that does not
+-- exist.
+
 record AssertionFailed : Set where
   no-eta-equality; pattern
   field theFailedAssertion : String
