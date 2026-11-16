@@ -33,7 +33,7 @@ postulate
     iExceptionIOException : Exception IOException
 
 data ArithException : Set where
-  Overflow UnderFlow LossOfPrecision DivideByZero Denormal : ArithException
+  Overflow Underflow LossOfPrecision DivideByZero Denormal : ArithException
   RatioZeroDenominator : ArithException
 
 postulate instance
