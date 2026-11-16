@@ -103,7 +103,7 @@ showInt a = showInteger (intToInteger a)
 
 @0 IsNonNegativeInt : Int → Type
 IsNonNegativeInt a@(int64 _) =
-  if isNegativeInt a then TypeError (primStringAppend (primStringFromList (showInt a)) " is negative")
+  if isNegativeInt a then UnsatisfiedConstraint (primStringAppend (primStringFromList (showInt a)) " is negative")
                      else ⊤
 
 intToNat : (a : Int) → @0 ⦃ IsNonNegativeInt a ⦄ → Nat

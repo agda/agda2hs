@@ -14,8 +14,8 @@ it : {{A}} → A
 it {{x}} = x
 
 data _~_ : (A : Set) (B : Set) → Set₁
-cast  : A ~ B → A → B
-cast' : A ~ B → B → A
+cast  : @0 {{MayThrow AssertionFailed}} → A ~ B → A → B
+cast' : @0 {{MayThrow AssertionFailed}} → A ~ B → B → A
 
 data _~_ where
   refl : A ~ A
@@ -78,7 +78,9 @@ module Sqrt where
 
   {-# COMPILE AGDA2HS eqr inline #-}
 
-  checkedSqrt : (x : Double) → ∃ Double (λ y → IsTrue (y >= 0) × IsTrue (abs (x - y * y) <= 0.01))
+  checkedSqrt : @0 {{MayThrow AssertionFailed}}
+              → (x : Double)
+              → ∃ Double (λ y → IsTrue (y >= 0) × IsTrue (abs (x - y * y) <= 0.01))
   checkedSqrt = cast eqr mySqrt
 
   {-# COMPILE AGDA2HS checkedSqrt #-}
