@@ -10,6 +10,8 @@ Changes to agda2hs
 - Pattern-matching lambdas (`λ where`) with more than one argument are now
   supported. They are compiled to a lambda over a tuple of the arguments that
   is matched against the patterns.
+- Record patterns in lambdas are now supported. They are compiled to a lambda
+  over a fresh variable whose fields are projected in the body.
 - Proper where-provenance so that subsequent anonymous modules with `module _`
   are no longer mistaken for local `where` definitions (see issue #463).
 - The error message for clashing imports now includes the source location of

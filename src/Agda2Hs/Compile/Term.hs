@@ -555,13 +555,16 @@ compileLam ty argi abs = do
   -- usable domain, user-written lambda is preserved
   else if getOrigin argi == UserWritten then do
 
-    when (patternInTeleName `isPrefixOf` absName abs) $ agda2hsError $
-      "Record pattern translation not supported. Use a pattern matching lambda instead."
-
     reportSDoc "agda2hs.compile" 17 $ text "compiling regular lambda"
 
-    let varName = absName abs
-        ctxElt  = (varName,) <$> dom
+    -- A record pattern in a lambda is translated to a fresh variable whose
+    -- fields are projected in the body, so it suffices to give it a valid
+    -- Haskell name.
+    varName <- if patternInTeleName `isPrefixOf` absName abs
+      then freshString "x"
+      else pure (absName abs)
+
+    let ctxElt  = (varName,) <$> dom
 
     hsLambda varName <$> addContext ctxElt (compileTerm (absBody cod) (absBody abs))
 
