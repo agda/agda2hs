@@ -42,7 +42,7 @@ import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Singleton
 
-import Agda2Hs.AgdaUtils ( (~~), isPublicName, isExportedFromDefiningModule )
+import Agda2Hs.AgdaUtils ( (~~), isPublicName, isExportedFromDefiningModule, topLevelModuleNameForModuleName )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Pragma
 import qualified Data.List as L
@@ -350,6 +350,21 @@ recordCompileToData d r = do
 
 withNestedType :: C a -> C a
 withNestedType = local $ \e -> e { isNestedInType = True }
+
+-- | Run a computation in the context of the module where the given definition
+--   is defined, so that its local definitions and scope are available. The
+--   type-checking state is restored afterwards, so the module and scope do not
+--   leak out of the computation.
+withModuleOf :: QName -> C a -> C a
+withModuleOf q act = do
+  let m = qnameModule q
+  tlm <- liftTCM $ topLevelModuleNameForModuleName m
+  liftTCM (getVisitedModule tlm) >>= \case
+    Nothing -> act
+    Just mi -> localCState $ do
+      liftTCM $ setTCLens stCurrentModule (Just (m, tlm))
+      liftTCM $ setScope (iInsideScope $ miInterface mi)
+      local (\e -> e { currModule = tlm }) act
 
 compileLocal :: C a -> C a
 compileLocal = local $ \e -> e { compilingLocal = True }
