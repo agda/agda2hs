@@ -276,6 +276,14 @@ compileInstanceClause' curModule ty (p:ps) c
       (.~) :: QName -> QName -> Bool
       x .~ y = nameConcrete (qnameName x) == nameConcrete (qnameName y)
 
+      -- Whether two names live in records of the same parent module. This is
+      -- used to tell a field of a superclass or minimal record apart from an
+      -- unrelated definition that happens to have the same concrete name, such
+      -- as a renamed builtin.
+      sameParentModule :: QName -> QName -> Bool
+      sameParentModule x y =
+        init (mnameToList $ qnameModule x) == init (mnameToList $ qnameModule y)
+
     if
       -- Instance field: check canonicity.
       | isInstance arg -> do
@@ -327,7 +335,8 @@ compileInstanceClause' curModule ty (p:ps) c
        -- Projection of a default implementation: drop while making sure these are drawn from the
        -- same (minimal) dictionary as the primitive fields.
       | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
-      , n .~ q -> do
+      , n .~ q
+      , sameParentModule n q -> do
         let err = agda2hsError $ "illegal instance declaration: instances using default methods should use a named definition or an anonymous `λ where`."
             filterArgs :: Type -> [Term] -> C [Term]
             filterArgs ty [] = return []
