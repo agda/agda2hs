@@ -489,7 +489,8 @@ checkCompileToFunctionPragma def s = noCheckNames $ noWriteExports $ do
   -- Check that clauses match
   reportSDoc "agda2hs.compileto" 20 $ "Checking that clauses of" <+> ppd <+> "matches those of" <+> ppr
   [Hs.FunBind _ dcls] <- withoutSignature $ compileFun def
-  [Hs.FunBind _ rcls] <- withoutSignature $ compileFun rdef
+  [Hs.FunBind _ rcls] <- withoutSignature
+    $ withModuleOf r $ noWriteImports $ compileFun rdef
   unless (length dcls == length rcls) $ fail $
     "they have a different number of clauses"
   forM_ (zip dcls rcls) $ \(dcl , rcl) -> do
