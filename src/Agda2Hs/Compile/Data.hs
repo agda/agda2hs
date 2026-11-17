@@ -152,7 +152,11 @@ checkCompileToDataPragma def s = noCheckNames $ noWriteExports $ do
     DefaultPragma{} -> return ()
     NewTypePragma{} -> return ()
     GadtPragma{} -> return ()
-    NoPragma{} -> fail "it is missing a COMPILE pragma"
+    NoPragma{} -> do
+      -- A datatype from a primitive module (such as `Bool`) is bound to an
+      -- existing Haskell type without a COMPILE pragma.
+      (mkind, _, _) <- compileModuleName (qnameModule r)
+      unless (mkind == PrimModule) $ fail "it is missing a COMPILE pragma"
     _ -> fail "it has an unsupported COMPILE pragma"
   -- Check that parameters match
   reportSDoc "agda2hs.compileto" 20 $ "Checking that parameters of" <+> ppd <+> "match those of" <+> ppr
