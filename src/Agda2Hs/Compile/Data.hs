@@ -49,22 +49,23 @@ compileData target ds def = do
   binds <- compileTeleBinds False tel -- TODO: add kind annotations?
   addContext tel $ do
     -- TODO: filter out erased constructors
-    cs <- mapM (compileConstructor params) cs
+    cs <- mapM (compileConstructor (target == ToGadt) params) cs
     let hd = foldl (Hs.DHApp ()) (Hs.DHead () d) binds
     let htarget = toDataTarget target
 
     when (target == ToNewType) (checkNewtype d $ map fst cs)
+    when (target == ToGadt) $ tellExtension Hs.GADTs
 
     return . singleton $ case target of
       ToGadt -> Hs.GDataDecl () htarget Nothing hd Nothing (map (uncurry conToGadtCon) cs) ds
       _      -> Hs.DataDecl () htarget Nothing hd (map fst cs) ds
 
   where
-    conToGadtCon :: Hs.QualConDecl () -> Hs.Type () -> Hs.GadtDecl ()
-    conToGadtCon (Hs.QualConDecl _ tys ctx con) rt = case con of
+    conToGadtCon :: Hs.QualConDecl () -> Maybe (Hs.Type ()) -> Hs.GadtDecl ()
+    conToGadtCon (Hs.QualConDecl _ tys ctx con) mrt = case con of
       Hs.ConDecl () c ts ->
         Hs.GadtDecl () c tys ctx Nothing $
-          foldr (Hs.TyFun ()) rt ts
+          foldr (Hs.TyFun ()) (fromMaybe __IMPOSSIBLE__ mrt) ts
       Hs.InfixConDecl{} -> __IMPOSSIBLE__
       Hs.RecDecl{} -> __IMPOSSIBLE__
 
@@ -77,8 +78,12 @@ allIndicesErased t = reduce (unEl t) >>= \case
     DomForall{}     -> agda2hsError "Not supported: indexed datatypes"
   _ -> return ()
 
-compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl (), Hs.Type ())
-compileConstructor params c = do
+-- | Compile a constructor to a Haskell constructor declaration. The second
+--   component is the compiled result type of the constructor; it is only needed
+--   for GADT syntax and for checking a @compile-to@ pragma, so it is only
+--   computed when @withRet@ is 'True'.
+compileConstructor :: Bool -> [Arg Term] -> QName -> C (Hs.QualConDecl (), Maybe (Hs.Type ()))
+compileConstructor withRet params c = do
   reportSDoc "agda2hs.data.con" 15 $ text "compileConstructor" <+> prettyTCM c
   reportSDoc "agda2hs.data.con" 20 $ text "  params = " <+> prettyTCM params
   ty <- defType <$> getConstInfo c
@@ -89,7 +94,7 @@ compileConstructor params c = do
   let conName = compileName (qnameName c)
   checkValidConName conName
   args <- compileConstructorArgs tel
-  hret <- addContext tel $ compileType $ unEl ret
+  hret <- if withRet then Just <$> (addContext tel $ compileType $ unEl ret) else return Nothing
   return (Hs.QualConDecl () Nothing Nothing $ Hs.ConDecl () conName args, hret)
 
 compileConstructorArgs :: Telescope -> C [Hs.Type ()]
@@ -122,6 +127,7 @@ checkCompileToDataPragma def s = noCheckNames $ noWriteExports $ do
   whenNothing (isSpecialCon r) $ case rpragma of
     DefaultPragma{} -> return ()
     NewTypePragma{} -> return ()
+    GadtPragma{} -> return ()
     NoPragma{} -> fail "it is missing a COMPILE pragma"
     _ -> fail "it has an unsupported COMPILE pragma"
   -- Check that parameters match
@@ -146,13 +152,19 @@ checkCompileToDataPragma def s = noCheckNames $ noWriteExports $ do
   unless (length rcons == length dcons) $ fail
     "they have a different number of constructors"
   forM_ (zip dcons rcons) $ \(c1, c2) -> do
-    (Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC1 args1) , rt1) <-
-      addContext dtel $ compileConstructor (teleArgs dtel) c1
+    (Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC1 args1) , Just rt1) <-
+      addContext dtel $ compileConstructor True (teleArgs dtel) c1
     -- rename parameters of r to match those of d
     rtel' <- renameParameters dtel rtel
-    (Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC2 args2) , rt2) <-
-      addContext rtel' $ compileConstructor (teleArgs rtel') c2
-    -- TODO: check that rt1 and rt2 are equal?
+    (Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC2 args2) , Just rt2) <-
+      addContext rtel' $ compileConstructor True (teleArgs rtel') c2
+    -- The result types should be equal. On the current feature set this is
+    -- automatic, because the datatype is not allowed to have any non-erased
+    -- indices and the parameters have already been checked to match. The check
+    -- matters once indexed (GADT) datatypes are supported.
+    unless (rt1 == rt2) $ fail $
+      "the result type of constructor" <+> text (Hs.pp hsC1) <+>
+      "does not match" <+> text (Hs.pp hsC2)
     unless (hsC1 == hsC2) $ fail $
       "name of constructor" <+> text (Hs.pp hsC1) <+>
       "does not match" <+> text (Hs.pp hsC2)

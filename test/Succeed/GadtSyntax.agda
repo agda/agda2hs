@@ -2,12 +2,17 @@
 
 open import Haskell.Prelude
 
-data Bol : Set where Tru Fls : Bol
+data Bol : Type where Tru Fls : Bol
 
 {-# COMPILE AGDA2HS Bol gadt #-}
 
-data Free (f : @++ Set → Set) (a : Set) : Set where
+data Free (f : @++ Type → Type) (a : Type) : Type where
   Return : a → Free f a
   Roll : f (Free f a) → Free f a
 
 {-# COMPILE AGDA2HS Free gadt #-}
+
+data Color : Type where
+  Red Green : Color
+
+{-# COMPILE AGDA2HS Color gadt deriving ( Show ) #-}

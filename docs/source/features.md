@@ -210,6 +210,8 @@ As with `newtype`, the `gadt` keyword can be combined with a `deriving` clause:
 
 Agda:
 ```agda
+data Bol : Type where Tru Fls : Bol
+
 {-# COMPILE AGDA2HS Bol gadt deriving ( Show ) #-}
 ```
 
