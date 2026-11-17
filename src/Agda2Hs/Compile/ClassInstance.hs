@@ -82,7 +82,7 @@ compileInstance ToDefinition def@Defn{..} =
         liftTCM $ setModuleCheckpointForInstanceChecking mod
         -- We intentionally do not apply getContextArgs eagerly here so dotted
         -- patterns corresponding to module parameters are correctly detected
-        -- (https://github.com/agda/agda2hs/issues/306)
+        -- (see #306)
         (ds, rs) <- concatUnzip
                 <$> mapM (\c -> withClauseLocals c $ compileInstanceClause mod defType c) funClauses
         reportSDoc "agda2hs.compile.instance" 20 $ vcat $
@@ -164,7 +164,8 @@ compileInstanceClause curModule ty c = ifNotM (keepClause c) (return ([], [])) $
     concatUnzip <$> mapM (compileInstanceClause curModule ty) cs
 
   -- otherwise we seek the first projection pattern
-  else addContext (KeepNames $ clauseTel c) $
+  else addContext (KeepNames $ clauseTel c) $ do
+    checkForcedPatterns ty naps
     compileInstanceClause' curModule ty naps c { clauseTel = EmptyTel }
 
 -- abuse compileClause:
@@ -314,7 +315,6 @@ compileInstanceClause' curModule ty (p:ps) c
 --              if there is something other than erased parameters
 compileInstanceClause' curModule ty (p:ps) c = do
   (a, b) <- mustBePi ty
-  checkIllegalForced a (namedArg p)
   compileInstanceClause' curModule (absApp b (patternToTerm $ namedArg p)) ps c
 
 fieldArgInfo :: QName -> C ArgInfo

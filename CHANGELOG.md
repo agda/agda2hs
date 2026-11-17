@@ -37,6 +37,10 @@ Changes to agda2hs
 - Added the `gadt` keyword to the `COMPILE AGDA2HS` pragma, which compiles a
   datatype using Haskell GADT syntax, with the result type of each constructor
   written out explicitly (see issue #242).
+- Forced (dot) patterns in non-erased positions are now only rejected if the
+  clause also matches a constructor in an erased position. This allows refining
+  types by matching on a non-erased equality constraint, while still rejecting
+  the unsafe coercion from issue #142 (see issue #494).
 
 See https://github.com/agda/agda2hs/issues?q=milestone%3A1.5+is%3Apr for the full list of changes.
 
