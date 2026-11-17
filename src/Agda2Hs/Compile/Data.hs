@@ -48,26 +48,18 @@ compileData target ds def = do
   let params = teleArgs tel
   binds <- compileTeleBinds False tel -- TODO: add kind annotations?
   addContext tel $ do
-    -- TODO: filter out erased constructors
-    cs <- mapM (compileConstructor (target == ToGadt) params) cs
     let hd = foldl (Hs.DHApp ()) (Hs.DHead () d) binds
     let htarget = toDataTarget target
-
-    when (target == ToNewType) (checkNewtype d $ map fst cs)
-    when (target == ToGadt) $ tellExtension Hs.GADTs
-
-    return . singleton $ case target of
-      ToGadt -> Hs.GDataDecl () htarget Nothing hd Nothing (map (uncurry conToGadtCon) cs) ds
-      _      -> Hs.DataDecl () htarget Nothing hd (map fst cs) ds
-
-  where
-    conToGadtCon :: Hs.QualConDecl () -> Maybe (Hs.Type ()) -> Hs.GadtDecl ()
-    conToGadtCon (Hs.QualConDecl _ tys ctx con) mrt = case con of
-      Hs.ConDecl () c ts ->
-        Hs.GadtDecl () c tys ctx Nothing $
-          foldr (Hs.TyFun ()) (fromMaybe __IMPOSSIBLE__ mrt) ts
-      Hs.InfixConDecl{} -> __IMPOSSIBLE__
-      Hs.RecDecl{} -> __IMPOSSIBLE__
+    -- TODO: filter out erased constructors
+    case target of
+      ToGadt -> do
+        tellExtension Hs.GADTs
+        cs <- mapM (compileGadtConstructor params) cs
+        return $ singleton $ Hs.GDataDecl () htarget Nothing hd Nothing cs ds
+      _ -> do
+        cs <- mapM (compileConstructor params) cs
+        when (target == ToNewType) (checkNewtype d cs)
+        return $ singleton $ Hs.DataDecl () htarget Nothing hd cs ds
 
 allIndicesErased :: Type -> C ()
 allIndicesErased t = reduce (unEl t) >>= \case
@@ -78,12 +70,35 @@ allIndicesErased t = reduce (unEl t) >>= \case
     DomForall{}     -> agda2hsError "Not supported: indexed datatypes"
   _ -> return ()
 
--- | Compile a constructor to a Haskell constructor declaration. The second
---   component is the compiled result type of the constructor; it is only needed
---   for GADT syntax and for checking a @compile-to@ pragma, so it is only
---   computed when @withRet@ is 'True'.
-compileConstructor :: Bool -> [Arg Term] -> QName -> C (Hs.QualConDecl (), Maybe (Hs.Type ()))
-compileConstructor withRet params c = do
+-- | The information about a constructor that is shared between the different
+--   compilation targets. The result type is only needed for GADT syntax and for
+--   checking a @compile-to@ pragma, so it is only computed on demand.
+data CompiledConstructor = CompiledConstructor
+  { constructorName   :: Hs.Name ()
+  , constructorArgs   :: [Hs.Type ()]
+  , constructorResult :: Maybe (Hs.Type ())
+  }
+
+-- | Compile a constructor to a regular Haskell constructor declaration.
+compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl ())
+compileConstructor params c = do
+  info <- compileConstructorInfo False params c
+  return $ Hs.QualConDecl () Nothing Nothing $
+    Hs.ConDecl () (constructorName info) (constructorArgs info)
+
+-- | Compile a constructor to a Haskell GADT constructor declaration.
+compileGadtConstructor :: [Arg Term] -> QName -> C (Hs.GadtDecl ())
+compileGadtConstructor params c = do
+  info <- compileConstructorInfo True params c
+  case constructorResult info of
+    Nothing  -> __IMPOSSIBLE__
+    Just ret -> return $ Hs.GadtDecl () (constructorName info) Nothing Nothing Nothing $
+      foldr (Hs.TyFun ()) ret (constructorArgs info)
+
+-- | Compute the information about a constructor that is shared between the
+--   different compilation targets.
+compileConstructorInfo :: Bool -> [Arg Term] -> QName -> C CompiledConstructor
+compileConstructorInfo withResult params c = do
   reportSDoc "agda2hs.data.con" 15 $ text "compileConstructor" <+> prettyTCM c
   reportSDoc "agda2hs.data.con" 20 $ text "  params = " <+> prettyTCM params
   ty <- defType <$> getConstInfo c
@@ -94,8 +109,8 @@ compileConstructor withRet params c = do
   let conName = compileName (qnameName c)
   checkValidConName conName
   args <- compileConstructorArgs tel
-  hret <- if withRet then Just <$> (addContext tel $ compileType $ unEl ret) else return Nothing
-  return (Hs.QualConDecl () Nothing Nothing $ Hs.ConDecl () conName args, hret)
+  hret <- if withResult then Just <$> (addContext tel $ compileType $ unEl ret) else return Nothing
+  return $ CompiledConstructor conName args hret
 
 compileConstructorArgs :: Telescope -> C [Hs.Type ()]
 compileConstructorArgs EmptyTel = return []
@@ -152,12 +167,12 @@ checkCompileToDataPragma def s = noCheckNames $ noWriteExports $ do
   unless (length rcons == length dcons) $ fail
     "they have a different number of constructors"
   forM_ (zip dcons rcons) $ \(c1, c2) -> do
-    (Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC1 args1) , Just rt1) <-
-      addContext dtel $ compileConstructor True (teleArgs dtel) c1
+    CompiledConstructor hsC1 args1 (Just rt1) <-
+      addContext dtel $ compileConstructorInfo True (teleArgs dtel) c1
     -- rename parameters of r to match those of d
     rtel' <- renameParameters dtel rtel
-    (Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC2 args2) , Just rt2) <-
-      addContext rtel' $ compileConstructor True (teleArgs rtel') c2
+    CompiledConstructor hsC2 args2 (Just rt2) <-
+      addContext rtel' $ compileConstructorInfo True (teleArgs rtel') c2
     -- The result types should be equal. On the current feature set this is
     -- automatic, because the datatype is not allowed to have any non-erased
     -- indices and the parameters have already been checked to match. The check
