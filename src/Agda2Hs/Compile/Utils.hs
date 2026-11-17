@@ -7,6 +7,7 @@ import Control.Monad.State ( modify )
 import Data.IORef
 import Data.List ( isPrefixOf, stripPrefix )
 import qualified Data.Map as M
+import Data.Monoid ( First(..) )
 import Data.String ( IsString(..) )
 import Data.Set ( Set )
 import qualified Data.Set as S
@@ -23,6 +24,7 @@ import Agda.Compiler.Common ( compileDir )
 import Agda.Syntax.Common
 import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Internal
+import Agda.Syntax.Internal.Generic ( foldTerm )
 import Agda.Syntax.Position ( Range, noRange )
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad ( bindVariable )
@@ -324,8 +326,14 @@ getCompileToName q = do
   reportSDoc "agda2hs.compile.to" 35 $ text $
     "Checking if there is a compile-to rule for " <> prettyShow q
   debugCompileToMap
+  M.lookup q <$> getCompileToMap
+
+-- | The recorded compile-to rules, mapping a name to the name it is compiled
+--   to.
+getCompileToMap :: C (M.Map QName QName)
+getCompileToMap = do
   ctMapRef <- asks $ compileToMap . globalEnv
-  liftIO $ M.lookup q <$> readIORef ctMapRef
+  liftIO $ readIORef ctMapRef
 
 addCompileToName :: QName -> QName -> C ()
 addCompileToName q r = do
@@ -347,6 +355,32 @@ recordCompileToData d r = do
   rdef <- getConstInfo r
   forM_ (zip (dataCons $ theDef ddef) (dataCons $ theDef rdef)) $ \(c1, c2) ->
     addCompileToName c1 c2
+
+-- | If the type of an instance mentions a type with a compile-to pragma,
+--   return that type. Instances for such types must themselves have a
+--   compile-to pragma so that agda2hs can check that they are consistent with
+--   the instance of the target type.
+instanceCompileToType :: Definition -> C (Maybe QName)
+instanceCompileToType def = do
+  TelV _ t <- telView (defType def)
+  ctMap <- getCompileToMap
+  -- 'First' keeps the first name that has a compile-to mapping.
+  let collectDefs = \case
+        Def q _ -> First $ q <$ M.lookup q ctMap
+        _       -> First Nothing
+  pure $ getFirst $ foldTerm collectDefs t
+
+-- | Raise an error for an instance that is compiled to Haskell but is for a
+--   type that is itself compiled to another Haskell type. Such an instance must
+--   be given a compile-to pragma so that agda2hs can check that it is
+--   consistent with the instance of the target type.
+requireCompileToInstancePragma :: Definition -> C ()
+requireCompileToInstancePragma def =
+  whenM (isNothing <$> getCompileToName (defName def)) $
+    whenJustM (instanceCompileToType def) $ \t -> agda2hsErrorM $
+      "The instance" <+> prettyTCM (defName def) <+> "is for the type" <+> prettyTCM t
+        <+> "which is compiled to another Haskell type, so it must also have a"
+        <+> "`to` pragma."
 
 withNestedType :: C a -> C a
 withNestedType = local $ \e -> e { isNestedInType = True }
