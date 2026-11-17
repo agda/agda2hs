@@ -23,7 +23,7 @@ import Agda.Utils.Null
 import Agda.Utils.Monad ( whenM, anyM, when, unless )
 
 import Agda2Hs.AgdaUtils ( resolveStringName )
-import Agda2Hs.Compile.ClassInstance ( compileInstance )
+import Agda2Hs.Compile.ClassInstance ( compileInstance, checkCompileToInstancePragma )
 import Agda2Hs.Compile.Data ( compileData, checkCompileToDataPragma )
 import Agda2Hs.Compile.Exports ( tellDefinitionExport )
 import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkCompileToFunctionPragma, recordInlineSymbols )
@@ -146,6 +146,7 @@ compile genv tlm _ def =
         (TransparentPragma   , Function{}) -> [] <$ checkTransparentPragma def
         (InlinePragma        , Function{}) -> [] <$ recordInlineSymbols def
         (TuplePragma b       , Record{}  ) -> return []
+        (CompileToPragma s   , _         ) | isInstance -> [] <$ checkCompileToInstancePragma def s
         (CompileToPragma s   , Datatype{}) -> [] <$ checkCompileToDataPragma def s
         (CompileToPragma s   , Function{}) -> [] <$ checkCompileToFunctionPragma def s
 
