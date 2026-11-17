@@ -34,6 +34,9 @@ Changes to agda2hs
   fields is rejected, because the corresponding Haskell type may not export a
   field selector. The exception records in `Haskell.Control.Exception` are
   marked with `existing` accordingly.
+- Added the `gadt` keyword to the `COMPILE AGDA2HS` pragma, which compiles a
+  datatype using Haskell GADT syntax, with the result type of each constructor
+  written out explicitly (see issue #242).
 
 See https://github.com/agda/agda2hs/issues?q=milestone%3A1.5+is%3Apr for the full list of changes.
 

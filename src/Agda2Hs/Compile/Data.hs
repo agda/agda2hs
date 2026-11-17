@@ -11,13 +11,14 @@ import Agda.TypeChecking.Telescope
 
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
+import Agda.Utils.Singleton
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils
 
 import Agda2Hs.Compile.Exports ( tellDefinitionExport )
 import Agda2Hs.Compile.Name
-import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds, compileDom )
+import Agda2Hs.Compile.Type ( compileType, compileDomType, compileTeleBinds, compileDom )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
@@ -32,8 +33,8 @@ checkNewtype name cs = do
     (Hs.QualConDecl () _ _ (Hs.ConDecl () cName types):_) -> checkNewtypeCon cName types
     _ -> __IMPOSSIBLE__
 
-compileData :: AsNewType -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
-compileData newtyp ds def = do
+compileData :: DataTarget -> [Hs.Deriving ()] -> Definition -> C [Hs.Decl ()]
+compileData target ds def = do
   let d = compileName (qnameName $ defName def)
   checkValidTypeName d
   tellTypeOperators d
@@ -47,15 +48,18 @@ compileData newtyp ds def = do
   let params = teleArgs tel
   binds <- compileTeleBinds False tel -- TODO: add kind annotations?
   addContext tel $ do
-    -- TODO: filter out erased constructors
-    cs <- mapM (compileConstructor params) cs
     let hd = foldl (Hs.DHApp ()) (Hs.DHead () d) binds
-
-    let target = if newtyp then Hs.NewType () else Hs.DataType ()
-
-    when newtyp (checkNewtype d cs)
-
-    return [Hs.DataDecl () target Nothing hd cs ds]
+    let htarget = toDataTarget target
+    -- TODO: filter out erased constructors
+    case target of
+      ToGadt -> do
+        tellExtension Hs.GADTs
+        cs <- mapM (compileGadtConstructor params) cs
+        return $ singleton $ Hs.GDataDecl () htarget Nothing hd Nothing cs ds
+      _ -> do
+        cs <- mapM (compileConstructor params) cs
+        when (target == ToNewType) (checkNewtype d cs)
+        return $ singleton $ Hs.DataDecl () htarget Nothing hd cs ds
 
 allIndicesErased :: Type -> C ()
 allIndicesErased t = reduce (unEl t) >>= \case
@@ -66,19 +70,47 @@ allIndicesErased t = reduce (unEl t) >>= \case
     DomForall{}     -> agda2hsError "Not supported: indexed datatypes"
   _ -> return ()
 
+-- | The information about a constructor that is shared between the different
+--   compilation targets. The result type is only needed for GADT syntax and for
+--   checking a @compile-to@ pragma, so it is only computed on demand.
+data CompiledConstructor = CompiledConstructor
+  { constructorName   :: Hs.Name ()
+  , constructorArgs   :: [Hs.Type ()]
+  , constructorResult :: Maybe (Hs.Type ())
+  }
+
+-- | Compile a constructor to a regular Haskell constructor declaration.
 compileConstructor :: [Arg Term] -> QName -> C (Hs.QualConDecl ())
 compileConstructor params c = do
+  info <- compileConstructorInfo False params c
+  return $ Hs.QualConDecl () Nothing Nothing $
+    Hs.ConDecl () (constructorName info) (constructorArgs info)
+
+-- | Compile a constructor to a Haskell GADT constructor declaration.
+compileGadtConstructor :: [Arg Term] -> QName -> C (Hs.GadtDecl ())
+compileGadtConstructor params c = do
+  info <- compileConstructorInfo True params c
+  case constructorResult info of
+    Nothing  -> __IMPOSSIBLE__
+    Just ret -> return $ Hs.GadtDecl () (constructorName info) Nothing Nothing Nothing $
+      foldr (Hs.TyFun ()) ret (constructorArgs info)
+
+-- | Compute the information about a constructor that is shared between the
+--   different compilation targets.
+compileConstructorInfo :: Bool -> [Arg Term] -> QName -> C CompiledConstructor
+compileConstructorInfo withResult params c = do
   reportSDoc "agda2hs.data.con" 15 $ text "compileConstructor" <+> prettyTCM c
   reportSDoc "agda2hs.data.con" 20 $ text "  params = " <+> prettyTCM params
   ty <- defType <$> getConstInfo c
   reportSDoc "agda2hs.data.con" 30 $ text "  ty (before piApply) = " <+> prettyTCM ty
   ty <- ty `piApplyM` params
   reportSDoc "agda2hs.data.con" 20 $ text "  ty = " <+> prettyTCM ty
-  TelV tel _ <- telView ty
+  TelV tel ret <- telView ty
   let conName = compileName (qnameName c)
   checkValidConName conName
   args <- compileConstructorArgs tel
-  return $ Hs.QualConDecl () Nothing Nothing $ Hs.ConDecl () conName args
+  hret <- if withResult then Just <$> (addContext tel $ compileType $ unEl ret) else return Nothing
+  return $ CompiledConstructor conName args hret
 
 compileConstructorArgs :: Telescope -> C [Hs.Type ()]
 compileConstructorArgs EmptyTel = return []
@@ -110,6 +142,7 @@ checkCompileToDataPragma def s = noCheckNames $ noWriteExports $ do
   whenNothing (isSpecialCon r) $ case rpragma of
     DefaultPragma{} -> return ()
     NewTypePragma{} -> return ()
+    GadtPragma{} -> return ()
     NoPragma{} -> fail "it is missing a COMPILE pragma"
     _ -> fail "it has an unsupported COMPILE pragma"
   -- Check that parameters match
@@ -134,12 +167,19 @@ checkCompileToDataPragma def s = noCheckNames $ noWriteExports $ do
   unless (length rcons == length dcons) $ fail
     "they have a different number of constructors"
   forM_ (zip dcons rcons) $ \(c1, c2) -> do
-    Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC1 args1) <-
-      addContext dtel $ compileConstructor (teleArgs dtel) c1
+    CompiledConstructor hsC1 args1 (Just rt1) <-
+      addContext dtel $ compileConstructorInfo True (teleArgs dtel) c1
     -- rename parameters of r to match those of d
     rtel' <- renameParameters dtel rtel
-    Hs.QualConDecl _ _ _ (Hs.ConDecl _ hsC2 args2) <-
-      addContext rtel' $ compileConstructor (teleArgs rtel') c2
+    CompiledConstructor hsC2 args2 (Just rt2) <-
+      addContext rtel' $ compileConstructorInfo True (teleArgs rtel') c2
+    -- The result types should be equal. On the current feature set this is
+    -- automatic, because the datatype is not allowed to have any non-erased
+    -- indices and the parameters have already been checked to match. The check
+    -- matters once indexed (GADT) datatypes are supported.
+    unless (rt1 == rt2) $ fail $
+      "the result type of constructor" <+> text (Hs.pp hsC1) <+>
+      "does not match" <+> text (Hs.pp hsC2)
     unless (hsC1 == hsC2) $ fail $
       "name of constructor" <+> text (Hs.pp hsC1) <+>
       "does not match" <+> text (Hs.pp hsC2)

@@ -70,3 +70,17 @@ vreverse : Vec a n → Vec a n
 vreverse {a = a} = vfoldl (Vec a) (λ xs x → x ∷ xs) []
 
 {-# COMPILE AGDA2HS vreverse #-}
+
+-- The index of the source datatype need not have the same type as the index of
+-- the target: erased indices are dropped when compiling the constructor result
+-- type, so the result types still match.
+data VecB (a : Set) : @0 Bool → Set where
+    [] : VecB a True
+    _∷_ : a → VecB a True → VecB a True
+
+{-# COMPILE AGDA2HS VecB to List #-}
+
+test4 : VecB Int True
+test4 = 4 ∷ 5 ∷ 6 ∷ []
+
+{-# COMPILE AGDA2HS test4 #-}

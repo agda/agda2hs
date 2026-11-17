@@ -149,15 +149,19 @@ compile genv tlm _ def =
         (CompileToPragma s   , Function{}) -> [] <$ checkCompileToFunctionPragma def s
 
         (ClassPragma ms      , Record{}  ) -> pure <$> compileRecord (ToClass ms) def
-        (NewTypePragma ds    , Record{}  ) -> pure <$> compileRecord (ToRecord True ds) def
-        (NewTypePragma ds    , Datatype{}) -> compileData True ds def
-        (DefaultPragma ds    , Datatype{}) -> compileData False ds def
+        (NewTypePragma ds    , Record{}  ) -> pure <$> compileRecord (ToRecord ToNewType ds) def
+        (NewTypePragma ds    , Datatype{}) -> compileData ToNewType ds def
+        (GadtPragma ds       , Datatype{}) -> compileData ToGadt ds def
+        (GadtPragma _        , _         ) -> agda2hsErrorM $
+          text "The `gadt` keyword can only be applied to a datatype, but"
+            <+> prettyTCM (defName def) <+> text "is not a datatype"
+        (DefaultPragma ds    , Datatype{}) -> compileData ToData ds def
         (DerivePragma s      , _         ) | isInstance -> pure <$> compileInstance (ToDerivation s) def
         (DefaultPragma _     , Axiom{}   ) | isInstance -> pure <$> compileInstance (ToDerivation Nothing) def
         (DefaultPragma _     , _         ) | isInstance -> pure <$> compileInstance ToDefinition def
         (DefaultPragma _     , Axiom{}   ) -> compilePostulate def
         (DefaultPragma _     , Function{}) -> compileFun def
-        (DefaultPragma ds    , Record{}  ) -> pure <$> compileRecord (ToRecord False ds) def
+        (DefaultPragma ds    , Record{}  ) -> pure <$> compileRecord (ToRecord ToData ds) def
 
         _ -> agda2hsErrorM $ text "Don't know how to compile" <+> prettyTCM (defName def)
 
