@@ -80,6 +80,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="#imports">Imports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#existing-haskell-definitions">Existing Haskell definitions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#rewrite-rules-and-prelude-imports">Rewrite rules and Prelude imports</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#rewrite-rules">Rewrite rules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#handling-of-prelude">Handling of Prelude</a></li>
@@ -966,6 +967,68 @@ testB<span class="w"> </span><span class="ow">=</span><span class="w"> </span>B.
 <span class="nf">testC</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">A</span><span class="o">.</span><span class="n">foo</span>
 <span class="nf">testA</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">A</span><span class="o">.</span><span class="n">foo</span>
 <span class="nf">testB</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">A</span><span class="o">.</span><span class="n">foo</span>
+</pre></div>
+</div>
+</section>
+<section id="existing-haskell-definitions">
+<h1>Existing Haskell definitions<a class="headerlink" href="#existing-haskell-definitions" title="Link to this heading"></a></h1>
+<p>Some Agda definitions should not be translated to Haskell because an equivalent
+Haskell definition already exists. This happens for example when the Haskell
+code is supplied through a <code class="docutils literal notranslate"><span class="pre">FOREIGN</span></code> pragma, either as an inline definition or
+through an import. Adding the <code class="docutils literal notranslate"><span class="pre">existing</span></code> keyword to the compile pragma tells
+agda2hs to skip the definition while still treating its name as defined in
+Haskell.</p>
+<p>Agda</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="cm">{-# FOREIGN AGDA2HS</span>
+<span class="cm">import Data.Char (ord)</span>
+
+<span class="cm">existingFun :: Int</span>
+<span class="cm">existingFun = 42</span>
+<span class="cm">#-}</span>
+
+<span class="nf">existingFun</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Int
+existingFun<span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="cm">{-# COMPILE AGDA2HS existingFun existing #-}</span>
+
+<span class="kr">postulate</span>
+<span class="w">  </span><span class="nf">ord</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Char<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Int
+<span class="cm">{-# COMPILE AGDA2HS ord existing #-}</span>
+</pre></div>
+</div>
+<p>Haskell</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">import</span><span class="w"> </span><span class="nn">Data.Char</span><span class="w"> </span><span class="p">(</span><span class="nf">ord</span><span class="p">)</span>
+
+<span class="nf">existingFun</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">existingFun</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">42</span>
+</pre></div>
+</div>
+<p>The Agda definitions of <code class="docutils literal notranslate"><span class="pre">existingFun</span></code> and <code class="docutils literal notranslate"><span class="pre">ord</span></code> are only used inside Agda;
+agda2hs leaves them out of the generated code. As with any other definition,
+public <code class="docutils literal notranslate"><span class="pre">existing</span></code> names are added to the module’s export list, so they can be
+used from other modules.</p>
+<p>A record marked <code class="docutils literal notranslate"><span class="pre">existing</span></code> is treated as opaque: since agda2hs does not know
+its Haskell definition, it cannot tell whether the Haskell type exports a field
+selector, so projecting a field from such a record is rejected. The record can
+still be constructed with record syntax and inspected by pattern matching.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">existing-class</span></code> keyword is a variant of <code class="docutils literal notranslate"><span class="pre">existing</span></code> for records that stand
+for an existing Haskell type class. Unlike <code class="docutils literal notranslate"><span class="pre">existing</span></code>, it can only be applied
+to a record, and its fields can be projected since they correspond to the
+methods of the Haskell class.</p>
+<p>Agda</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="cm">{-# FOREIGN AGDA2HS</span>
+<span class="cm">class ExistingClass a where</span>
+<span class="cm">  existingMethod :: a -&gt; Int</span>
+<span class="cm">#-}</span>
+
+<span class="kr">record</span><span class="w"> </span>ExistingClass<span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="kr">field</span>
+<span class="w">    </span><span class="nf">existingMethod</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Int
+<span class="cm">{-# COMPILE AGDA2HS ExistingClass existing-class #-}</span>
+</pre></div>
+</div>
+<p>Haskell</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">ExistingClass</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="n">existingMethod</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
 </pre></div>
 </div>
 </section>
