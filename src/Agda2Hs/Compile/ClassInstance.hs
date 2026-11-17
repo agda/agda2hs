@@ -1,11 +1,12 @@
 module Agda2Hs.Compile.ClassInstance where
 
 import Control.Monad ( filterM, unless, void, when )
+import Control.Monad.Except ( catchError )
 import Control.Monad.Reader ( asks, local )
 
 import Data.Foldable ( toList )
 import Data.List ( nub )
-import Data.Maybe ( isNothing, mapMaybe )
+import Data.Maybe ( isJust, isNothing, mapMaybe )
 import qualified Data.HashMap.Strict as HMap
 
 import Agda.Compiler.Backend
@@ -16,9 +17,11 @@ import Agda.Syntax.Internal.Pattern ( patternToTerm )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
+import Agda.TypeChecking.Errors ( prettyError )
 import Agda.TypeChecking.Substitute ( Apply(applyE), absApp )
 import Agda.TypeChecking.Records
 import Agda.TypeChecking.Telescope ( mustBePi )
+import Agda.TypeChecking.Warnings ( warning )
 
 import Agda.Utils.Lens
 import Agda.Utils.Monad ( ifNotM, whenM )
@@ -92,6 +95,58 @@ compileInstance ToDefinition def@Defn{..} =
           agda2hsErrorM $ fsep (pwords "More than one minimal record used.")
         return $ Hs.InstDecl () Nothing ir (Just ds)
     where Function{..} = theDef
+
+
+-- | Check a @COMPILE AGDA2HS <instance> to <target>@ pragma: the target must be
+-- an instance whose compiled Haskell declaration matches that of the source
+-- instance. Comparing the compiled declarations means that the source instance
+-- must be written in the same way as the target, including the names of any
+-- local @where@ definitions.
+--
+-- The check is best-effort: if the two instances cannot be shown to match, a
+-- warning is emitted instead of an error, since the target instance is the one
+-- that is used in the generated code.
+checkCompileToInstancePragma :: Definition -> String -> C ()
+checkCompileToInstancePragma def s = noCheckNames $ noWriteExports $ do
+  r <- resolveStringName s
+  -- Start by adding the compile-to rule, so that the instance of `def` is
+  -- compiled to the instance of `r` even if the check below fails.
+  addCompileToName (defName def) r
+  let header =
+        [ "The instance" <+> prettyTCM (defName def) <+> "is annotated with a"
+            <+> "`to` pragma targeting" <+> (prettyTCM r <> text ",") ]
+      warn docs = warning =<< (CustomBackendWarning "agda2hs" <$> vcat (header ++ docs))
+      unchecked reason = warn
+        [ nest 2 $ "but its consistency could not be checked:" <+> reason ]
+  -- An instance without a definition cannot be checked.
+  case theDef def of
+    Axiom{} -> unchecked "it is postulated"
+    _       -> do
+      rdef <- getConstInfo r
+      if not (isJust $ defInstance rdef)
+        then unchecked "the target is not an instance"
+        else
+          -- Compare the compiled instances. The target is compiled in the
+          -- context of the module where it is defined, so that its local
+          -- definitions are available. Neither instance is written to the
+          -- current module, so no imports are recorded for them either.
+          catchError
+            (do d  <- noWriteImports $ compileInstance ToDefinition def
+                rd <- withModuleOf r $ noWriteImports $ compileInstance ToDefinition rdef
+                reportSDoc "agda2hs.compileto" 20 $ vcat
+                  [ text "compiled source instance:" <+> text (pp d)
+                  , text "compiled target instance:" <+> text (pp rd)
+                  ]
+                unless (d == rd) $ warn $
+                  [ nest 2 "but the two instances do not compile to the same Haskell declaration:" ] ++
+                  concat
+                    [ ((text "compiled instance" <+> prettyTCM q) <> text ":") :
+                      map (nest 2 . text) (lines $ pp x)
+                    | (q, x) <- [(defName def, d), (r, rd)]
+                    ])
+            (\e -> do
+              msg <- prettyError e
+              unchecked $ vcat [ "the instances could not be compiled:", nest 2 (pure msg) ])
 
 
 compileInstRule :: [Hs.TyVarBind ()] -> [Hs.Asst ()] -> Term -> C (Hs.InstRule ())
