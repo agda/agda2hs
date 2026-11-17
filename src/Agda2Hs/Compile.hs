@@ -34,6 +34,7 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Config
 import Agda2Hs.Pragma
+import Agda2Hs.Language.Haskell.Utils ( declaredNames )
 
 import qualified Agda2Hs.Language.Haskell as Hs
 
@@ -174,6 +175,7 @@ verifyOutput ::
 verifyOutput _ _ _ m ls = do
   reportSDoc "agda2hs.compile" 5 $ text "Checking generated output before rendering: " <+> prettyTCM m
   ensureUniqueConstructors
+  ensureUniqueTopLevelNames
   ensureNoOutputFromHsModules
   where
     ensureUniqueConstructors = do
@@ -189,6 +191,15 @@ verifyOutput _ _ _ m ls = do
           duplicateCons = filter ((> 1) . length) . group . sort  $ allCons
       when (length duplicateCons > 0) $
         agda2hsErrorM $ vcat (map (\x -> text $ "Cannot generate multiple constructors with the same identifier: " <> Hs.prettyPrint (headWithDefault __IMPOSSIBLE__ x)) duplicateCons)
+
+    -- Haskell does not have local modules, so definitions from different
+    -- modules are all compiled to the top level and must have distinct names
+    -- (see Issue #122).
+    ensureUniqueTopLevelNames = do
+      let allNames = [ n | (cdef, _) <- ls, (_, ds) <- cdef, d <- ds, n <- declaredNames d ]
+          duplicateNames = filter ((> 1) . length) . group . sort $ allNames
+      when (length duplicateNames > 0) $
+        agda2hsErrorM $ vcat (map (\x -> text $ "Cannot generate multiple definitions with the same name: " <> Hs.prettyPrint (headWithDefault __IMPOSSIBLE__ x)) duplicateNames)
 
     ensureNoOutputFromHsModules = unless (null $ concat $ map fst ls) $ do
       let hsModName = hsTopLevelModuleName m

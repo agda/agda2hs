@@ -111,6 +111,26 @@ definedName :: Match l -> Name l
 definedName (Match _ f _ _ _) = f
 definedName (InfixMatch _ _ f _ _ _) = f
 
+-- | The name declared by a declaration head.
+declHeadName :: DeclHead l -> Name l
+declHeadName = \case
+  DHead _ n     -> n
+  DHInfix _ _ n -> n
+  DHParen _ dh  -> declHeadName dh
+  DHApp _ dh _  -> declHeadName dh
+
+-- | The top-level names declared by a declaration. Type signatures, fixity
+--   declarations, and instances do not declare a new entity and are ignored.
+declaredNames :: Decl l -> [Name l]
+declaredNames = \case
+  TypeDecl _ dh _          -> [declHeadName dh]
+  DataDecl _ _ _ dh _ _    -> [declHeadName dh]
+  GDataDecl _ _ _ dh _ _ _ -> [declHeadName dh]
+  ClassDecl _ _ dh _ _     -> [declHeadName dh]
+  FunBind _ ms             -> take 1 (map definedName ms)
+  PatBind _ p _ _          -> [n | PVar _ n <- [p]]
+  _                        -> []
+
 replaceName :: Data a => Name () -> Name () -> a -> a
 replaceName pre post = everywhere (mkT go `extT` go')
   where

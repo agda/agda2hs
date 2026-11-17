@@ -4,6 +4,9 @@ Release notes for agda2hs v1.5
 Changes to agda2hs
 ------------------
 
+- Compiling two definitions with the same Haskell name is now rejected with a
+  proper error message. This can happen for definitions in local modules, since
+  Haskell does not have local modules (see issue #122).
 - Proper where-provenance so that subsequent anonymous modules with `module _`
   are no longer mistaken for local `where` definitions (see issue #463).
 - The error message for clashing imports now includes the source location of
