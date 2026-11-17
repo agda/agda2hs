@@ -90,6 +90,8 @@ moduleSetup genv _ m mifile = do
     else do
       reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
       setScope . iInsideScope =<< curIF
+      -- Agda 2.9 no longer recomputes inverse-scope maps in setScope.
+      recomputeInverseScope
       return $ Recompile m
 
 -- | Record the side effects of a definition's pragma without compiling it.
