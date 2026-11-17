@@ -18,6 +18,15 @@ Changes to agda2hs
   recorded for modules that are skipped because they are already up-to-date.
   Previously this could result in names not being compiled away when
   recompiling only a downstream module (see issue #486).
+- The `to` keyword of the `COMPILE AGDA2HS` pragma is now also supported for
+  instances. An instance for a type that is compiled to another type with a
+  `to` pragma must itself be given a `to` pragma pointing to the corresponding
+  instance of the target type. This prevents the generation of duplicate
+  instances. agda2hs warns if the two compiled instances do not match, or if
+  the comparison cannot be performed (for instance because the target uses a
+  feature that agda2hs does not support, such as multi-argument pattern
+  lambdas); the target instance is the one that is used in the generated code
+  either way (see issue #269).
 - Postulates in a `where` block are now compiled to a runtime error instead of
   crashing the compiler. Declarations other than functions and postulates are
   rejected with a proper error message (see issue #443).
