@@ -27,6 +27,9 @@ Changes to agda2hs
   feature that agda2hs does not support, such as multi-argument pattern
   lambdas); the target instance is the one that is used in the generated code
   either way (see issue #269).
+- A datatype from a primitive module (such as `Bool` or `Maybe`) can now be
+  the target of a compile-to pragma without having a `COMPILE` pragma of its
+  own.
 - Postulates in a `where` block are now compiled to a runtime error instead of
   crashing the compiler. Declarations other than functions and postulates are
   rejected with a proper error message (see issue #443).
