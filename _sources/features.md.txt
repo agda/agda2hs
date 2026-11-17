@@ -168,6 +168,65 @@ createDuo :: a -> a -> Duo a
 createDuo a b = Duo (a, b)
 ```
 
+### GADT Syntax
+
+Adding the `gadt` keyword to the compile pragma compiles a datatype using
+Haskell GADT syntax, in which each constructor carries an explicit result type.
+
+Agda:
+```agda
+data Bol : Type where Tru Fls : Bol
+
+{-# COMPILE AGDA2HS Bol gadt #-}
+```
+
+Haskell:
+```hs
+data Bol where
+    Tru :: Bol
+    Fls :: Bol
+```
+
+For a datatype with parameters, the parameters appear before the `where` and
+every constructor's full result type is written out:
+
+Agda:
+```agda
+data Free (f : @++ Type → Type) (a : Type) : Type where
+  Return : a → Free f a
+  Roll : f (Free f a) → Free f a
+
+{-# COMPILE AGDA2HS Free gadt #-}
+```
+
+Haskell:
+```hs
+data Free f a where
+    Return :: a -> Free f a
+    Roll :: f (Free f a) -> Free f a
+```
+
+As with `newtype`, the `gadt` keyword can be combined with a `deriving` clause:
+
+Agda:
+```agda
+data Bol : Type where Tru Fls : Bol
+
+{-# COMPILE AGDA2HS Bol gadt deriving ( Show ) #-}
+```
+
+Haskell:
+```hs
+data Bol where
+    Tru :: Bol
+    Fls :: Bol
+    deriving (Show)
+```
+
+At the moment `gadt` only changes the syntax of the generated declaration.
+Indexed datatypes (such as `Vec a n`) are still rejected, with or without the
+keyword.
+
 ## Pattern Matching on Datatype Values
 
 Agda:

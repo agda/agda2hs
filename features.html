@@ -51,6 +51,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#datatypes">Datatypes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#records">Records</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#newtypes">Newtypes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gadt-syntax">GADT Syntax</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#pattern-matching-on-datatype-values">Pattern Matching on Datatype Values</a></li>
@@ -268,6 +269,56 @@ createDuo<span class="w"> </span>a<span class="w"> </span>b<span class="w"> </sp
 <span class="nf">createDuo</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Duo</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section id="gadt-syntax">
+<h3>GADT Syntax<a class="headerlink" href="#gadt-syntax" title="Link to this heading"></a></h3>
+<p>Adding the <code class="docutils literal notranslate"><span class="pre">gadt</span></code> keyword to the compile pragma compiles a datatype using
+Haskell GADT syntax, in which each constructor carries an explicit result type.</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Bol<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span><span class="w"> </span>Tru<span class="w"> </span>Fls<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Bol
+
+<span class="cm">{-# COMPILE AGDA2HS Bol gadt #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Bol</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kt">Tru</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Bol</span>
+<span class="w">    </span><span class="kt">Fls</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Bol</span>
+</pre></div>
+</div>
+<p>For a datatype with parameters, the parameters appear before the <code class="docutils literal notranslate"><span class="pre">where</span></code> and
+every constructor’s full result type is written out:</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Free<span class="w"> </span><span class="o">(</span>f<span class="w"> </span><span class="ow">:</span><span class="w"> </span>@++<span class="w"> </span>Type<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="o">(</span>a<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="o">)</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="nf">Return</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>a<span class="w"> </span><span class="ow">→</span><span class="w"> </span>Free<span class="w"> </span>f<span class="w"> </span>a
+<span class="w">  </span><span class="nf">Roll</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>f<span class="w"> </span><span class="o">(</span>Free<span class="w"> </span>f<span class="w"> </span>a<span class="o">)</span><span class="w"> </span><span class="ow">→</span><span class="w"> </span>Free<span class="w"> </span>f<span class="w"> </span>a
+
+<span class="cm">{-# COMPILE AGDA2HS Free gadt #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Free</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kt">Return</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Free</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="kt">Roll</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="p">(</span><span class="kt">Free</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Free</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">a</span>
+</pre></div>
+</div>
+<p>As with <code class="docutils literal notranslate"><span class="pre">newtype</span></code>, the <code class="docutils literal notranslate"><span class="pre">gadt</span></code> keyword can be combined with a <code class="docutils literal notranslate"><span class="pre">deriving</span></code> clause:</p>
+<p>Agda:</p>
+<div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span>Bol<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Type<span class="w"> </span><span class="kr">where</span><span class="w"> </span>Tru<span class="w"> </span>Fls<span class="w"> </span><span class="ow">:</span><span class="w"> </span>Bol
+
+<span class="cm">{-# COMPILE AGDA2HS Bol gadt deriving ( Show ) #-}</span>
+</pre></div>
+</div>
+<p>Haskell:</p>
+<div class="highlight-hs notranslate"><div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Bol</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kt">Tru</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Bol</span>
+<span class="w">    </span><span class="kt">Fls</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Bol</span>
+<span class="w">    </span><span class="kr">deriving</span><span class="w"> </span><span class="p">(</span><span class="kt">Show</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>At the moment <code class="docutils literal notranslate"><span class="pre">gadt</span></code> only changes the syntax of the generated declaration.
+Indexed datatypes (such as <code class="docutils literal notranslate"><span class="pre">Vec</span> <span class="pre">a</span> <span class="pre">n</span></code>) are still rejected, with or without the
+keyword.</p>
 </section>
 </section>
 <section id="pattern-matching-on-datatype-values">
