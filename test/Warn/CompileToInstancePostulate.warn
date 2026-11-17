@@ -1,0 +1,5 @@
+
+test/Warn/CompileToInstancePostulate.agda:6.20-26: warning: -W[no]CustomBackendWarning
+agda2hs:
+  The instance iEqVec is annotated with a `to` pragma targeting iEqList,
+    but its consistency could not be checked: it is postulated

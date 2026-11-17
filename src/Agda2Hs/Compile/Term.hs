@@ -641,6 +641,9 @@ checkInstance u = do
       checkInstanceElims es
     Def f es -> do
       unlessM (isJust . defInstance <$> getConstInfo f) illegalInstance
+      -- An instance that is compiled away is imported from the module of the
+      -- instance it is compiled to.
+      f <- fromMaybe f <$> getCompileToName f
       importInstance f
       checkInstanceElims es
   -- We need to compile applications of `fromNat`, `fromNeg`, and
