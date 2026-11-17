@@ -127,13 +127,13 @@ compileFun' def@Defn{..} = inTopContext $ withCurrentModule m $ do
 
       -- Jesper: we need to set the checkpoint for the current module so that
       -- the canonicity check for typeclass instances picks up the
-      -- module parameters (see https://github.com/agda/agda2hs/issues/305).
+      -- module parameters (see #305).
       liftTCM $ setModuleCheckpointForInstanceChecking m
 
       -- We apply the function clause to the module parameters from the context.
       -- In case of a projection-like function, the clause is already
       -- (partially or fully) applied so we should not apply again
-      -- (see https://github.com/agda/agda2hs/issues/359)
+      -- (see #359)
       let droppedPars = case funProjection of
             Left{} -> 0
             Right proj -> size $ getProjLams $ projLams proj
@@ -189,10 +189,9 @@ compileClause curModule pars mproj x t c = withClauseLocals c $ do
 
 compileClause' :: ModuleName -> Args -> Maybe QName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
 compileClause' curModule pars projName x ty c = do
-  -- Check whether any parameters (including module parameters) are forced
-  -- See https://github.com/agda/agda2hs/issues/306
-  annPats <- annPats ty (namedClausePats c)
-  traverse (uncurry checkIllegalForced) annPats
+  -- Check whether any parameters (including module parameters) are forced.
+  -- See #306 and #494.
+  checkForcedPatterns ty (namedClausePats c)
   ty' <- piApplyM ty pars
   compileClause'' curModule projName x ty' (c `apply` pars)
 
@@ -262,11 +261,59 @@ keepClause c@Clause{..} = case (clauseBody, clauseType) of
     DOType     -> __IMPOSSIBLE__
     DOTerm     -> True
 
+-- | Check that a clause does not use forced (dot) patterns in non-erased
+-- positions to fake an equality between arbitrary types.
+--
+-- See #142 and #306. A constructor pattern in an erased position is not
+-- available at runtime, so it can be used to refine the type of another,
+-- non-erased argument, introducing a forced pattern there. Following the
+-- proposal in #494, we only reject forced patterns in non-erased positions if
+-- the clause also matches a constructor in an erased position. This is an
+-- over-approximation: a clause is also rejected when it merely contains an
+-- unrelated erased constructor pattern, even if the dot pattern was introduced
+-- by a non-erased match (such as a match on an equality constraint). The user
+-- can work around this by introducing a helper function for the erased match.
+checkForcedPatterns :: Type -> NAPs -> C ()
+checkForcedPatterns ty ps = do
+  annPats <- annPats ty ps
+  erasedMatch <- or <$> mapM (uncurry hasErasedMatch) annPats
+  when erasedMatch $ mapM_ (uncurry checkIllegalForced) annPats
+
+-- | Check whether a pattern matches a constructor in an erased position,
+-- either directly or nested as an argument of another constructor.
+hasErasedMatch :: Dom Type -> DeBruijnPattern -> C Bool
+hasErasedMatch a pat = case pat of
+  ConP ch _ ps -> compileDom a >>= \case
+    DODropped -> pure True
+    _ -> do
+      annPats <- annConPats (unDom a) ch ps
+      or <$> mapM (uncurry hasErasedMatch) annPats
+  -- Only constructor patterns can match a constructor.
+  _ -> pure False
+
+-- | Annotate the arguments of a constructor pattern with the types of the
+-- constructor's arguments. Returns the empty list if the constructor type
+-- cannot be determined.
+annConPats :: Type -> ConHead -> NAPs -> C [(Dom Type, DeBruijnPattern)]
+annConPats ty ch ps = do
+  reduce ty >>= getConType ch >>= \case
+    Just ((_, _, _), cty) -> annPats cty ps
+    Nothing               -> pure []
+
 checkIllegalForced :: Dom Type -> DeBruijnPattern -> C ()
 checkIllegalForced a pat = do
   dep <- dependentDom a
   when (dep && isForcedPat pat) $ agda2hsError
     "not supported: forced (dot) patterns in non-erased positions"
+  case pat of
+    -- Check the arguments of a constructor pattern as well. A nested forced
+    -- pattern can only occur at a type-valued argument, which agda2hs currently
+    -- drops since existential and indexed datatypes are not supported, so this
+    -- is mainly defensive; it will matter once those are supported.
+    ConP ch _ ps -> do
+      annPats <- annConPats (unDom a) ch ps
+      mapM_ (uncurry checkIllegalForced) annPats
+    _ -> pure ()
 
 annPats :: Type -> NAPs -> C [(Dom Type, DeBruijnPattern)]
 annPats ty []       = pure []
