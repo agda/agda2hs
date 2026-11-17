@@ -4,6 +4,7 @@ import Control.Arrow ( (>>>), second )
 import Control.Monad.Reader
 
 import Data.Functor ( ($>) )
+import Data.Generics ( listify )
 import Data.List ( isPrefixOf )
 import qualified Data.Text as Text ( unpack )
 import qualified Data.Set as Set ( singleton )
@@ -79,16 +80,52 @@ lambdaCase q ty args = compileLocal $ setCurrentRangeQ q $ do
     [Hs.Match _ _ ps (Hs.UnGuardedRhs _ rhs) _]
       | null ps -> return rhs
       | all isVarPat ps -> return $ Hs.Lambda () ps rhs
-    _ -> do
-      ty'   <- piApplyM ty pars
-      lcase <- hsLCase =<< mapM clauseToAlt cs -- Pattern lambdas cannot have where blocks
-      eApp lcase <$> compileArgs ty' rest
+    _ | multiArgLambda cs -> do
+          ty' <- piApplyM ty pars
+          body <- compileMultiArgLambda cs
+          eApp body <$> compileArgs ty' rest
+      | otherwise -> do
+          ty'   <- piApplyM ty pars
+          lcase <- hsLCase =<< mapM clauseToAlt cs -- Pattern lambdas cannot have where blocks
+          eApp lcase <$> compileArgs ty' rest
       -- undefined -- compileApp lcase (undefined, undefined, rest)
 
   where
     isVarPat :: Hs.Pat () -> Bool
     isVarPat Hs.PVar{} = True
     isVarPat _ = False
+
+-- | Whether a pattern-matching lambda has more than one argument.
+multiArgLambda :: [Hs.Match ()] -> Bool
+multiArgLambda cs = any (\case Hs.Match _ _ ps _ _ -> length ps > 1; _ -> False) cs
+
+-- | Compile a pattern-matching lambda with several arguments to a lambda over a
+--   tuple of fresh variables that is matched against the patterns.
+compileMultiArgLambda :: [Hs.Match ()] -> C (Hs.Exp ())
+compileMultiArgLambda cs = do
+  let n = maximum [ length ps | Hs.Match _ _ ps _ _ <- cs ]
+  xs <- freshArgNames n (concatMap matchPatVars cs)
+  let vars  = [ Hs.PVar () (hsName x) | x <- xs ]
+      scrut = Hs.Tuple () Hs.Boxed [ Hs.Var () (hsUnqualName x) | x <- xs ]
+      alts  = [ Hs.Alt () (Hs.PTuple () Hs.Boxed ps) rhs wh | Hs.Match _ _ ps rhs wh <- cs ]
+  return $ Hs.Lambda () vars (Hs.Case () scrut alts)
+
+-- | The names bound by the patterns of a clause.
+matchPatVars :: Hs.Match () -> [String]
+matchPatVars (Hs.Match _ _ ps _ _) = concatMap patVars ps
+matchPatVars _                     = []
+
+patVars :: Hs.Pat () -> [String]
+patVars p = [ x | Hs.PVar _ (Hs.Ident _ x) <- listify (const True) p :: [Hs.Pat ()] ]
+
+-- | Generate @n@ fresh names that are not among the given ones.
+freshArgNames :: Int -> [String] -> C [String]
+freshArgNames n avoid = go 0 []
+  where
+    go i acc | length acc >= n = return (reverse acc)
+    go i acc = do
+      x <- freshString ("x" ++ show i)
+      go (i + 1) (if x `elem` avoid then acc else x : acc)
 
 -- | Compile @if_then_else_@ to a Haskell @if ... then ... else ... @ expression.
 ifThenElse :: DefCompileRule
