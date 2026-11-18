@@ -1,0 +1,20 @@
+
+test/Warn/CompileToInstanceInconsistent.agda:11.3-9: warning: -W[no]CustomBackendWarning
+agda2hs:
+  The instance iEqVec is annotated with a `to` pragma targeting iEqList,
+    but the two instances do not compile to the same Haskell declaration:
+  compiled instance iEqVec:
+    instance (Eq a) => Eq ([a]) where
+        (==) = eqList
+          where
+            eqList :: [a] -> [a] -> Bool
+            eqList [] [] = True
+            eqList (x : xs) (y : ys) = x == y || eqList xs ys
+  compiled instance iEqList:
+    instance (Eq a) => Eq ([a]) where
+        (==) = eqList
+          where
+            eqList :: [a] -> [a] -> Bool
+            eqList [] [] = True
+            eqList (x : xs) (y : ys) = x == y && eqList xs ys
+            eqList _ _ = False

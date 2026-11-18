@@ -51,12 +51,14 @@ main = do
   -- Discover test cases
   succeedTests <- discoverSucceedTests testDir buildDir
   failTests <- discoverFailTests testDir buildDir
+  warnTests <- discoverWarnTests testDir buildDir
   customTests <- discoverIncrementalTests testDir buildDir
 
   -- Run tests
   defaultMain $ testGroup "agda2hs"
     [ testGroup "Succeed" succeedTests
     , testGroup "Fail" failTests
+    , testGroup "Warn" warnTests
     , testGroup "Custom"
         [ testGroup "Incremental" customTests ]
     ]
@@ -74,6 +76,14 @@ discoverSucceedTests testDir buildDir =
 discoverFailTests :: FilePath -> FilePath -> IO [TestTree]
 discoverFailTests testDir buildDir =
   discoverTests testDir buildDir "Fail" ".err" NoHelpers failTest
+
+-- | Discover all .agda files under the Warn directory. A test is an @<Name>.agda@
+-- file that has a matching golden @<Name>.warn@; other @.agda@ files are
+-- treated as helper modules and skipped. The test compiles successfully and the
+-- warnings it produces are the golden value.
+discoverWarnTests :: FilePath -> FilePath -> IO [TestTree]
+discoverWarnTests testDir buildDir =
+  discoverTests testDir buildDir "Warn" ".warn" SkipHelpers warnTest
 
 -- | Discover the incremental tests under the Custom/Incremental directory.
 -- A test is an @<Name>.agda@ file that has a matching golden @<Name>.hs@;
@@ -204,6 +214,34 @@ failTest testDir buildDir testName agdaFile goldenFile =
         return $ stringToLBS "UNEXPECTED SUCCESS"
       ExitFailure _ ->
         return $ stringToLBS relativizedOutput
+
+-- | Create a test for a case that should compile successfully but produce a
+-- warning. The warnings printed by agda2hs are the golden value.
+warnTest :: FilePath -> FilePath -> String -> FilePath -> FilePath -> TestTree
+warnTest testDir buildDir testName agdaFile goldenFile =
+  goldenVsStringDiff testName diffCmd goldenFile $ do
+    let warnDir = testDir </> "Warn"
+        -- Output to build directory to avoid polluting source tree
+        outDir = buildDir </> "Warn"
+
+    -- Ensure output directory exists
+    createDirectoryIfMissing True outDir
+
+    -- Warnings are only printed at verbosity 1 or higher, so we cannot use -v0
+    -- here. Instead we set the default verbosity to 0 and enable only warnings,
+    -- so that the output consists of the warnings alone.
+    (exitCode, stdout, stderr) <- runAgda2Hs warnDir
+      [agdaFile, "-o", outDir, "-v0", "-v", "warning:1", "-i" ++ warnDir]
+
+    let output = stdout ++ stderr
+        -- Relativize paths in the output
+        relativizedOutput = relativizePaths output
+
+    case exitCode of
+      ExitSuccess ->
+        return $ stringToLBS relativizedOutput
+      ExitFailure _ ->
+        return $ stringToLBS $ "UNEXPECTED FAILURE:\n" ++ relativizedOutput
 
 -- | Create a test for an incremental compilation scenario (Issue #486).
 -- First compiles the module from scratch, then deletes only its output so that

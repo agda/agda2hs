@@ -23,7 +23,7 @@ import Agda.Utils.Null
 import Agda.Utils.Monad ( whenM, anyM, when, unless )
 
 import Agda2Hs.AgdaUtils ( resolveStringName )
-import Agda2Hs.Compile.ClassInstance ( compileInstance )
+import Agda2Hs.Compile.ClassInstance ( compileInstance, checkCompileToInstancePragma )
 import Agda2Hs.Compile.Data ( compileData, checkCompileToDataPragma )
 import Agda2Hs.Compile.Exports ( tellDefinitionExport )
 import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkCompileToFunctionPragma, recordInlineSymbols )
@@ -146,6 +146,7 @@ compile genv tlm _ def =
         (TransparentPragma   , Function{}) -> [] <$ checkTransparentPragma def
         (InlinePragma        , Function{}) -> [] <$ recordInlineSymbols def
         (TuplePragma b       , Record{}  ) -> return []
+        (CompileToPragma s   , _         ) | isInstance -> [] <$ checkCompileToInstancePragma def s
         (CompileToPragma s   , Datatype{}) -> [] <$ checkCompileToDataPragma def s
         (CompileToPragma s   , Function{}) -> [] <$ checkCompileToFunctionPragma def s
 
@@ -157,9 +158,9 @@ compile genv tlm _ def =
           text "The `gadt` keyword can only be applied to a datatype, but"
             <+> prettyTCM (defName def) <+> text "is not a datatype"
         (DefaultPragma ds    , Datatype{}) -> compileData ToData ds def
-        (DerivePragma s      , _         ) | isInstance -> pure <$> compileInstance (ToDerivation s) def
-        (DefaultPragma _     , Axiom{}   ) | isInstance -> pure <$> compileInstance (ToDerivation Nothing) def
-        (DefaultPragma _     , _         ) | isInstance -> pure <$> compileInstance ToDefinition def
+        (DerivePragma s      , _         ) | isInstance -> compileInstanceChecked (ToDerivation s)
+        (DefaultPragma _     , Axiom{}   ) | isInstance -> compileInstanceChecked (ToDerivation Nothing)
+        (DefaultPragma _     , _         ) | isInstance -> compileInstanceChecked ToDefinition
         (DefaultPragma _     , Axiom{}   ) -> compilePostulate def
         (DefaultPragma _     , Function{}) -> compileFun def
         (DefaultPragma ds    , Record{}  ) -> pure <$> compileRecord (ToRecord ToData ds) def
@@ -168,6 +169,14 @@ compile genv tlm _ def =
 
     postCompile :: C ()
     postCompile = whenM (gets $ lcaseUsed >>> (> 0)) $ tellExtension Hs.LambdaCase
+
+    -- Compile an instance, first checking that it is not for a type that is
+    -- itself compiled to another Haskell type (in which case it must have a
+    -- compile-to pragma instead).
+    compileInstanceChecked :: InstanceTarget -> C [Hs.Decl ()]
+    compileInstanceChecked target = do
+      requireCompileToInstancePragma def
+      pure <$> compileInstance target def
 
 verifyOutput ::
   GlobalEnv -> ModuleEnv -> IsMain -> TopLevelModuleName

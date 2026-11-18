@@ -32,6 +32,9 @@ data-files:
     test/Succeed/**/*.hs
     test/Fail/*.agda
     test/Fail/*.err
+    test/Warn/warn.agda-lib
+    test/Warn/*.agda
+    test/Warn/*.warn
 
 source-repository head
   type:     git

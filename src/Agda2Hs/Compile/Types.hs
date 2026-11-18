@@ -18,6 +18,7 @@ import Agda.Compiler.Backend hiding ( Strictness )
 import Agda.Syntax.Position ( Range )
 import Agda.TypeChecking.Warnings ( MonadWarning )
 import Agda.Utils.Haskell.Syntax ( Strictness )
+import Agda.Utils.Monad ( bracket_ )
 import Agda.Utils.Null
 import Agda.Utils.Impossible
 
@@ -208,6 +209,11 @@ instance Null a => Null (C a) where
   empty = lift empty
   null = __IMPOSSIBLE__
 instance Semigroup a => Semigroup (C a) where (<>) = liftA2 (<>)
+
+-- | Run a computation with the type checking state restored afterwards, like
+--   'Agda.TypeChecking.Monad.localTCState' but for the compilation monad.
+localCState :: C a -> C a
+localCState = bracket_ getTC (liftTCM . putTCPreservingSession)
 
 -- | Determines how a 'Dom Type' is treated during compilation.
 data DomOutput = DODropped | DOInstance | DOType | DOTerm

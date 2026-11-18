@@ -640,7 +640,15 @@ checkInstance u = do
       unlessM (isInstance <$> domOfBV x) illegalInstance
       checkInstanceElims es
     Def f es -> do
-      unlessM (isJust . defInstance <$> getConstInfo f) illegalInstance
+      def <- getConstInfo f
+      unless (isJust $ defInstance def) illegalInstance
+      -- An instance for a type that is compiled to another Haskell type must
+      -- itself have a compile-to pragma, so that we know which existing Haskell
+      -- instance it corresponds to.
+      requireCompileToInstancePragma def
+      -- An instance that is compiled away is imported from the module of the
+      -- instance it is compiled to.
+      f <- fromMaybe f <$> getCompileToName f
       importInstance f
       checkInstanceElims es
   -- We need to compile applications of `fromNat`, `fromNeg`, and

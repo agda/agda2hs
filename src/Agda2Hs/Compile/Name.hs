@@ -141,7 +141,7 @@ compileQName f = do
       computeNamespacedName parent (compileName (qnameName parent))
 
     let mod0 = qnameModule $ fromMaybe f parent
-    (mkind, mod) <- compileModuleName mod0
+    (mkind, mod, mod0Top) <- compileModuleName mod0
 
     existsInHaskell <- orM
       [ pure $ isJust special
@@ -158,8 +158,8 @@ compileQName f = do
       typeError $ CustomBackendError "agda2hs" $ P.text $
         "Symbol " ++ Hs.prettyPrint (nnName hf) ++ " is missing a COMPILE pragma or rewrite rule"
 
-    currMod <- asks $ hsTopLevelModuleName . currModule
-    let skipModule = mod == currMod
+    currMod <- asks currModule
+    let skipModule = mod0Top == currMod
                   || isJust mimpSpecial
                   || prettyShow mod0 `elem` primMonadModules
     qual <- if skipModule then return Unqualified
@@ -185,7 +185,7 @@ compileQName f = do
       ++ "\nparent name: " ++ prettyShow parent
       ++ "\nmod0: " ++ prettyShow mod0
       ++ "\nmodule name: " ++ Hs.prettyPrint mod
-      ++ "\ncurrent module: " ++ Hs.prettyPrint currMod
+      ++ "\ncurrent module: " ++ prettyShow currMod
       ++ "\nqualifier: " ++ prettyShow (fmap (fmap pp) qual)
       ++ "\n(qualified) haskell name: " ++ pp qf
     return qf
@@ -270,20 +270,22 @@ hsTopLevelModuleName = hsModuleName . Text.unpack . Text.intercalate "."
                      . List1.toList . moduleNameParts
 
 -- | Given a module name (assumed to be a toplevel module),
--- compute the associated Haskell module name.
-compileModuleName :: ModuleName -> C (HsModuleKind, Hs.ModuleName ())
+-- compute the associated Haskell module name, together with the top-level
+-- Agda module it belongs to.
+compileModuleName :: ModuleName -> C (HsModuleKind, Hs.ModuleName (), TopLevelModuleName)
 compileModuleName m = do
-  tlm <- liftTCM $ hsTopLevelModuleName <$> getTopLevelModuleForModuleName m
+  tlm <- liftTCM $ getTopLevelModuleForModuleName m
+  let hmod = hsTopLevelModuleName tlm
   reportSDoc "agda2hs.name" 25 $
-    "Top-level module name for" <+> prettyTCM m <+> "is" <+> text (pp tlm)
-  case hsModuleKind tlm of
-    PrimModule -> return (PrimModule, Hs.ModuleName () "Prelude")
-    HsModule   -> return (HsModule, dropHaskellPrefix tlm)
-    AgdaModule -> return (AgdaModule, tlm)
+    "Top-level module name for" <+> prettyTCM m <+> "is" <+> text (pp hmod)
+  case hsModuleKind hmod of
+    PrimModule -> return (PrimModule, Hs.ModuleName () "Prelude", tlm)
+    HsModule   -> return (HsModule, dropHaskellPrefix hmod, tlm)
+    AgdaModule -> return (AgdaModule, hmod, tlm)
 
 importInstance :: QName -> C ()
 importInstance f = do
-  (kind, mod) <- compileModuleName $ qnameModule f
+  (kind, mod, _) <- compileModuleName $ qnameModule f
   unless (kind == PrimModule) $ do
     reportSLn "agda2hs.import" 20 $ "Importing instances from " ++ pp mod
     tellImport $ ImportInstances mod
