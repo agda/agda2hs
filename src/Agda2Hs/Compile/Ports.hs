@@ -1,5 +1,7 @@
 -- Compiling (im|ex)ports
-module Agda2Hs.Compile.Ports ( compilePorts, hasHaskellExports ) where
+module Agda2Hs.Compile.Ports ( compilePorts, hasHaskellExports, tellDefinitionExport ) where
+
+import Control.Monad.Reader ( asks )
 
 import Data.Char ( isUpper )
 import qualified Data.List as L
@@ -21,9 +23,10 @@ import Agda.Syntax.Info
 import Agda.Syntax.Translation.ConcreteToAbstract
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Common
+import Agda.Syntax.Internal ( unDom, conName )
 import Agda.Syntax.Common.Pretty ( prettyShow, Pretty, Doc )
 import Agda.Utils.Maybe ( fromMaybe, isJust )
-import Agda.Utils.Monad ( liftM2, anyM, ifNotM, forM_, when, unless, filterM )
+import Agda.Utils.Monad ( liftM2, andM, anyM, ifM, ifNotM, forM_, when, whenM, unless, filterM )
 import Agda.Utils.Impossible
 import qualified Agda.Utils.Null as Null
 
@@ -31,6 +34,7 @@ import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
+import Agda2Hs.Pragma ( processPragma )
 
 --------------------------------------------------------------------------------
 -- main
@@ -153,7 +157,7 @@ collectReexports topInfo = go False $ insideDecls topInfo
             badReexport minfo m "'renaming' directive is not supported"
         | not (Null.null dir) -> do
             -- TODO(satoshi): support 'using' and 'hiding'
-            [] <$ myBadReexport minfo m "'using' and 'hiding' are not supported yet"
+            [] <$ warnDropReexport minfo m "'using' and 'hiding' are not supported yet"
         | otherwise -> do
             tlm <- getTopLevelModuleForModuleName m
             pure [AgdaReexport (getRange minfo) tlm (minfoAsName minfo)]
@@ -184,10 +188,12 @@ collectReexports topInfo = go False $ insideDecls topInfo
 translateReexport :: TopLevelModuleName -> AgdaReexport -> TCM Reexports
 translateReexport current (AgdaReexport range tlm asName) =
   case hsModuleKind tlm of
-    -- only Haskell.Prelude is supported among PrimModules
     PrimModule
-      | prettyShow tlm == "Haskell.Prelude" -> translate
-      | otherwise -> [] <$ myBadReexport range tlm "reexporting this module is not supported yet"
+      -- TODO(satoshi): once PrimModules only contain items with a Prelude
+      -- counterpart, compile this to an explicit list of those items.
+      | prettyShow tlm /= "Haskell.Prelude" ->
+          [] <$ warnDropReexport range tlm "not supported yet"
+      | otherwise -> translate
     _ -> ifNotM (hasHaskellExports tlm) (pure []) translate
   where
     translate = do
@@ -213,9 +219,9 @@ badReexport :: (HasRange r, Pretty mod) => r -> mod -> TCM Doc -> TCM a
 badReexport range mod reason = setCurrentRange range $ agda2hsErrorM $
   "Cannot compile reexport of" <+> (pretty mod <> ":") <+> reason
 
-myBadReexport :: (HasRange r, Pretty mod) => r -> mod -> TCM Doc -> TCM ()
-myBadReexport range mod reason = setCurrentRange range $ agda2hsWarningM $
-  "Cannot compile reexport of" <+> (pretty mod <> ":") <+> reason
+warnDropReexport :: (HasRange r, Pretty mod) => r -> mod -> TCM Doc -> TCM ()
+warnDropReexport range mod reason = setCurrentRange range $ agda2hsWarningM $
+  "Dropping reexport of" <+> (pretty mod <> ":") <+> reason
 
 --------------------------------------------------------------------------------
 -- compile imports
@@ -300,3 +306,46 @@ compileExport = \case
     Hs.EThingWith () (Hs.NoWildcard ()) (Hs.UnQual () name) (map (Hs.ConName ()) cons)
   ExportClass name -> Hs.EThingWith () (Hs.EWildcard () 0) (Hs.UnQual () name) []
   ExportModule mname -> Hs.EModuleContents () mname
+
+-- | Register the export list entries for a definition that is being compiled,
+-- unless it should not be exported.
+tellDefinitionExport :: Definition -> C ()
+tellDefinitionExport def =
+  whenM (andM [shouldBeExported (defName def), asks (not . compilingLocal), asks writeExports]) $
+    mapM_ tellExport =<< definitionExport def
+
+-- | The export list entries corresponding to a definition, if any.
+--
+-- This is the single source of truth for how definitions are exported: it is
+-- used both for definitions compiled by agda2hs and for definitions that are
+-- bound to an existing Haskell definition (marked with the @existing@ or
+-- @existing-class@ keyword).
+definitionExport :: Definition -> C [Export]
+definitionExport def = case theDef def of
+  Function{} -> do
+    e <- ifM (endsInSort $ defType def)
+           (ExportType <$> functionName)
+           (ExportFun <$> functionName)
+    pure [e]
+  Axiom{}    -> pure [ExportFun typeName]
+  Datatype{} -> pure [ExportData typeName]
+  Record{}   -> do
+    p <- processPragma (defName def)
+    if isClassPragma p then pure [ExportClass typeName] else recordExport def
+  _          -> pure []
+  where
+    typeName     = compileName (qnameName $ defName def)
+    functionName = Hs.unQual <$> compileQName (defName def)
+
+-- | The export entries for a record compiled as a Haskell data type. The
+-- constructor is always exported, but a field is only exported if its
+-- projection is exported from the module that defines the record, i.e. if the
+-- record module is opened publicly there.
+recordExport :: Definition -> C [Export]
+recordExport def = do
+  let tn = compileName (qnameName $ defName def)
+      Record{ recFields, recConHead, recNamedCon } = theDef def
+      cn = if recNamedCon then compileName (qnameName $ conName recConHead) else tn
+  publicFields <- filterM (isExportedProjection . unDom) recFields
+  if length publicFields == length recFields then pure [ExportData tn] else
+    pure $ ExportDataCons tn [cn] : map (ExportFun . compileName . qnameName . unDom) publicFields

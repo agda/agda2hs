@@ -27,7 +27,7 @@ import Agda.Utils.Size ( Sized(size) )
 
 import AgdaInternals ( inWhereBlockOf )
 import Agda2Hs.AgdaUtils
-import Agda2Hs.Compile.Exports ( tellDefinitionExport )
+import Agda2Hs.Compile.Ports ( tellDefinitionExport )
 import Agda2Hs.Compile.Name ( compileQName )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Term ( compileTerm, dependentDom )
