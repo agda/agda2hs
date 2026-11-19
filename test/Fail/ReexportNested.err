@@ -1,0 +1,3 @@
+test/Fail/ReexportNested.agda:4.3-30: error: [CustomBackendError]
+agda2hs:
+  Cannot compile reexport of Importee: reexports inside nested modules are not supported
