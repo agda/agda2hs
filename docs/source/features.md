@@ -1012,15 +1012,21 @@ agda2hs leaves them out of the generated code. As with any other definition,
 public `existing` names are added to the module's export list, so they can be
 used from other modules.
 
-A record marked `existing` is treated as opaque: since agda2hs does not know
-its Haskell definition, it cannot tell whether the Haskell type exports a field
-selector, so projecting a field from such a record is rejected. The record can
-still be constructed with record syntax and inspected by pattern matching.
+A record projection is only compiled to a Haskell selector if the record
+module is opened publicly (`open R public`) in the module that defines the
+record. Without it, the record is still exported and its constructor can be
+used to construct and pattern match on values, but projecting a field is
+rejected. This applies to records marked `existing` as well: since agda2hs does
+not know the Haskell definition, `open R public` is what tells it that the
+Haskell type exports a selector for the field.
+
+Note that `open R public` should only be used in the module that defines the
+record `R`: the compiled selector always belongs to that module, and agda2hs
+currently does not follow re-exports.
 
 The `existing-class` keyword is a variant of `existing` for records that stand
 for an existing Haskell type class. Unlike `existing`, it can only be applied
-to a record, and its fields can be projected since they correspond to the
-methods of the Haskell class.
+to a record.
 
 Agda
 ```agda
