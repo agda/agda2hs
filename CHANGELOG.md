@@ -33,12 +33,12 @@ Changes to agda2hs
   code generation for a definition whose Haskell implementation is provided by
   a `FOREIGN` pragma. Such definitions are still exported. The
   `existing-class` keyword is now restricted to records (see issue #447).
-- A record projection is only compiled to a Haskell selector if the record
-  module is opened publicly (`open R public`) in the module that defines the
-  record. Otherwise the record is still exported with its constructor, but a
-  projection of one of its fields is rejected. This also applies to records
-  marked with `existing`, so their fields can be kept private when the
-  corresponding Haskell type does not export a selector.
+- The Haskell selectors of a record are only exported if the record module is
+  opened publicly (`open R public`) in the module that defines the record.
+  Otherwise the record is still exported with its constructor, but a projection
+  of one of its fields is rejected. This also applies to records marked with
+  `existing`, so their fields can be kept private when the corresponding
+  Haskell type does not export a selector.
 - Added the `gadt` keyword to the `COMPILE AGDA2HS` pragma, which compiles a
   datatype using Haskell GADT syntax, with the result type of each constructor
   written out explicitly (see issue #242).

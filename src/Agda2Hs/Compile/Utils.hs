@@ -185,8 +185,8 @@ hasCompilePragma :: QName -> C Bool
 hasCompilePragma q = (/= NoPragma) <$> processPragma q
 
 -- | Check whether a record field is exported from the module that defines its
--- record. A field is only compiled to a Haskell selector if this is the case,
--- since the Haskell selector otherwise is not part of the module's interface.
+-- record. Otherwise the Haskell selector, if generated at all, is not part of
+-- the module's interface and a projection of the field is rejected.
 isExportedProjection :: QName -> C Bool
 isExportedProjection = liftTCM . isExportedFromDefiningModule
 
