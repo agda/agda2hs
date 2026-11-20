@@ -27,6 +27,7 @@ import Agda.TypeChecking.Reduce ( reduceDefCopy )
 
 import Agda.Utils.Either ( isRight )
 import Agda.Utils.GetOpt ( OptDescr(..) , ArgDescr(..) )
+import Agda.Utils.Lens ( (^.) )
 import qualified Agda.Utils.List1 as List1
 import Agda.Utils.Monad ( ifM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
@@ -167,3 +168,25 @@ isPublicName qname = liftTCM $ do
   let pubNames = Set.mapMonotonic anameName $ publicNames scopeInfo
   reportSDoc "agda2hs.public" 40 $ pretty pubNames
   pure $! Set.member qname pubNames
+
+-- | The names that a module exports itself, as opposed to the names that are
+-- only reachable through one of its public submodules. In particular, this
+-- excludes the fields of a record, which live in the module named after the
+-- record, unless they are explicitly opened with @open R public@.
+moduleExports :: ScopeInfo -> Set.Set QName
+moduleExports scopeInfo =
+  Set.fromList $ map anameName $ concatMap List1.toList $
+    maybe [] (Map.elems . exportedNamesInScope)
+      (Map.lookup (scopeInfo ^. scopeCurrent) (scopeInfo ^. scopeModules))
+
+-- | Check whether a name is exported from the module in which it is defined.
+-- For a record field this holds exactly when the record module is opened
+-- publicly (with @open R public@) in the module that defines the record.
+isExportedFromDefiningModule :: QName -> TCM Bool
+isExportedFromDefiningModule qname = do
+  current    <- getScope
+  tlm        <- getTopLevelModuleForQName qname
+  currentTLM <- getTopLevelModuleForModuleName (current ^. scopeCurrent)
+  scopeInfo  <- if tlm == currentTLM then pure (Just current) else
+    fmap (fmap (iInsideScope . miInterface)) (getVisitedModule tlm)
+  pure $! maybe False (Set.member qname . moduleExports) scopeInfo

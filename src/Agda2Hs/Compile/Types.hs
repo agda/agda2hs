@@ -140,6 +140,7 @@ data Export
   = ExportFun (Hs.Name ())
   | ExportType (Hs.Name ())
   | ExportData (Hs.Name ())
+  | ExportDataCons (Hs.Name ()) [Hs.Name ()]
   | ExportClass (Hs.Name ())
 
 type Exports = [Export]
