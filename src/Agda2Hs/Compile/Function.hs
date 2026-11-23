@@ -18,6 +18,7 @@ import Agda.TypeChecking.Telescope ( mustBePi, piApplyM )
 import Agda.TypeChecking.Datatypes ( getConType )
 import Agda.TypeChecking.Records ( getDefType )
 import Agda.TypeChecking.Reduce ( reduce )
+import Agda.TypeChecking.Warnings ( warning )
 
 import Agda.Utils.Functor ( (<&>) )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
@@ -469,6 +470,13 @@ checkCompileToFunctionPragma def s = noCheckNames $ noWriteExports $ do
   let fail reason = agda2hsErrorM $
         "Cannot compile function" <+> liftTCM ppd <+>
         "to" <+> liftTCM ppr <+> "because" <+> reason
+      -- The clauses of a compile-to function are not generated, so a mismatch
+      -- only means that the generated code has different semantics, not that it
+      -- fails to compile. Emit a warning instead of an error in that case.
+      warn reason = warning =<< (CustomBackendWarning "agda2hs" <$> vcat
+        [ "The function" <+> liftTCM ppd <+> "is annotated with a `to` pragma"
+            <+> "targeting" <+> (liftTCM ppr <> text ",")
+        , nest 2 $ "but" <+> reason ])
   -- Start by adding the compile-to rule because it makes the check
   -- for matching clauses easier
   addCompileToName (defName def) r
@@ -490,9 +498,9 @@ checkCompileToFunctionPragma def s = noCheckNames $ noWriteExports $ do
   reportSDoc "agda2hs.compileto" 20 $ "Checking that clauses of" <+> ppd <+> "matches those of" <+> ppr
   [Hs.FunBind _ dcls] <- withoutSignature $ compileFun def
   [Hs.FunBind _ rcls] <- withoutSignature $ compileFun rdef
-  unless (length dcls == length rcls) $ fail $
-    "they have a different number of clauses"
+  unless (length dcls == length rcls) $ warn $
+    "it has a different number of clauses than the target"
   forM_ (zip dcls rcls) $ \(dcl , rcl) -> do
-    unless (dcl == rcl) $ fail $
+    unless (dcl == rcl) $ warn $
       "the clause" <+> text (Hs.pp dcl) <+>
       "does not match the clause" <+> text (Hs.pp rcl)
