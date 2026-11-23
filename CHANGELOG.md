@@ -79,6 +79,14 @@ Additions to the agda2hs Prelude
 - Added bindings to `System.Environment` in `Haskell.System.Environment`
   (see issue #433).
 
+Changes to the agda2hs Prelude
+------------------------------
+
+- The `Word` laws in `Haskell.Law.Num.Word` are now derived from the fact that
+  `n2w` is a surjective homomorphism from `Nat` to `Word`. The previous
+  postulates that `w2n` preserves addition and multiplication ignored wrapping
+  modulo 2⁶⁴ and could be used to prove `⊥` (see issue #499).
+
 Changes to agda2hs-containers
 -----------------------------
 
