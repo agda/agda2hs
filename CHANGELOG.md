@@ -86,6 +86,9 @@ Changes to the agda2hs Prelude
   `n2w` is a surjective homomorphism from `Nat` to `Word`. The previous
   postulates that `w2n` preserves addition and multiplication ignored wrapping
   modulo 2⁶⁴ and could be used to prove `⊥` (see issue #499).
+- The `Double` definitions of `negate`, `abs` and `signum` in
+  `Haskell.Prim.Num`, and of `max` and `min` in `Haskell.Prim.Ord`, now agree
+  with GHC's Prelude on signed zeros and NaN (see issue #500).
 
 Changes to agda2hs-containers
 -----------------------------
