@@ -1057,14 +1057,19 @@ existingFun<span class="w"> </span><span class="ow">=</span><span class="w"> </s
 agda2hs leaves them out of the generated code. As with any other definition,
 public <code class="docutils literal notranslate"><span class="pre">existing</span></code> names are added to the module’s export list, so they can be
 used from other modules.</p>
-<p>A record marked <code class="docutils literal notranslate"><span class="pre">existing</span></code> is treated as opaque: since agda2hs does not know
-its Haskell definition, it cannot tell whether the Haskell type exports a field
-selector, so projecting a field from such a record is rejected. The record can
-still be constructed with record syntax and inspected by pattern matching.</p>
+<p>The Haskell selectors of a record are only exported if the record module is
+opened publicly (<code class="docutils literal notranslate"><span class="pre">open</span> <span class="pre">R</span> <span class="pre">public</span></code>) in the module that defines the record.
+Without it, the record is still exported and its constructor can be used to
+construct and pattern match on values, but projecting a field is rejected.
+This applies to records marked <code class="docutils literal notranslate"><span class="pre">existing</span></code> as well: since agda2hs does not know
+the Haskell definition, <code class="docutils literal notranslate"><span class="pre">open</span> <span class="pre">R</span> <span class="pre">public</span></code> is what tells it that the Haskell type
+exports a selector for the field.</p>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">open</span> <span class="pre">R</span> <span class="pre">public</span></code> should only be used in the module that defines the
+record <code class="docutils literal notranslate"><span class="pre">R</span></code>: the selector always belongs to that module, and agda2hs currently
+does not follow re-exports.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">existing-class</span></code> keyword is a variant of <code class="docutils literal notranslate"><span class="pre">existing</span></code> for records that stand
 for an existing Haskell type class. Unlike <code class="docutils literal notranslate"><span class="pre">existing</span></code>, it can only be applied
-to a record, and its fields can be projected since they correspond to the
-methods of the Haskell class.</p>
+to a record.</p>
 <p>Agda</p>
 <div class="highlight-agda notranslate"><div class="highlight"><pre><span></span><span class="cm">{-# FOREIGN AGDA2HS</span>
 <span class="cm">class ExistingClass a where</span>
