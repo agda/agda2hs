@@ -1,0 +1,10 @@
+
+test/Warn/CompileToFunctionClause.agda:15.1-7: warning: -W[no]CustomBackendWarning
+agda2hs:
+  The function source is annotated with a `to` pragma targeting target,
+    but the clause target False = True does not match the clause target False = False
+
+test/Warn/CompileToFunctionClause.agda:15.1-7: warning: -W[no]CustomBackendWarning
+agda2hs:
+  The function source is annotated with a `to` pragma targeting target,
+    but the clause target True = False does not match the clause target True = True

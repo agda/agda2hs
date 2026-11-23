@@ -1,0 +1,5 @@
+
+test/Warn/CompileToDataConstructor.agda:14.6-12: warning: -W[no]CustomBackendWarning
+agda2hs:
+  The datatype Source is annotated with a `to` pragma targeting Target,
+    but the name of constructor MkSource does not match MkTarget

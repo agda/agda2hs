@@ -8,6 +8,7 @@ import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Reduce
 import Agda.TypeChecking.Substitute
 import Agda.TypeChecking.Telescope
+import Agda.TypeChecking.Warnings ( warning )
 
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
@@ -132,6 +133,14 @@ checkCompileToDataPragma def s = noCheckNames $ noWriteExports $ do
   let fail reason = agda2hsErrorM $
         "Cannot compile datatype" <+> liftTCM ppd <+>
         "to" <+> liftTCM ppr <+> "because" <+> reason
+      -- The constructors of a compile-to datatype are not generated, so a
+      -- mismatch in their names only means that the generated code uses
+      -- different names than the Agda source, not that it fails to compile.
+      -- Emit a warning instead of an error in that case.
+      warn reason = warning =<< (CustomBackendWarning "agda2hs" <$> vcat
+        [ "The datatype" <+> liftTCM ppd <+> "is annotated with a `to` pragma"
+            <+> "targeting" <+> (liftTCM ppr <> text ",")
+        , nest 2 $ "but" <+> reason ])
   -- Start by adding compile-to rule because it makes the check
   -- for constructor types easier
   addCompileToName (defName def) r
@@ -180,8 +189,8 @@ checkCompileToDataPragma def s = noCheckNames $ noWriteExports $ do
     unless (rt1 == rt2) $ fail $
       "the result type of constructor" <+> text (Hs.pp hsC1) <+>
       "does not match" <+> text (Hs.pp hsC2)
-    unless (hsC1 == hsC2) $ fail $
-      "name of constructor" <+> text (Hs.pp hsC1) <+>
+    unless (hsC1 == hsC2) $ warn $
+      "the name of constructor" <+> text (Hs.pp hsC1) <+>
       "does not match" <+> text (Hs.pp hsC2)
     unless (length args1 == length args2) $ fail $
       "number of arguments to" <+> text (Hs.pp hsC1) <+>
