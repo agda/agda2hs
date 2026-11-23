@@ -77,6 +77,9 @@ Changes to the agda2hs Prelude
 - The `Double` definitions of `negate`, `abs` and `signum` in
   `Haskell.Prim.Num`, and of `max` and `min` in `Haskell.Prim.Ord`, now agree
   with GHC's Prelude on signed zeros and NaN (see issue #500).
+- Removed the unsound `IsLawfulOrd Double` instance. It was refuted by NaN
+  (`NaN <= NaN` and `NaN == NaN` are both `False`) and could be used to prove
+  `⊥` (see issue #488).
 
 Changes to agda2hs-containers
 -----------------------------
