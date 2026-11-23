@@ -50,9 +50,9 @@ postulate instance
 -- The exception types below are Haskell newtypes wrapping a single @String@.
 -- They are modelled as Agda records so that values can be constructed with
 -- record syntax and inspected by pattern matching. However, the corresponding
--- Haskell types do not export a field selector, so the fields below cannot be
--- projected. Marking the records with @existing@ tells agda2hs that they are
--- bound to existing Haskell types, so that projecting a field is rejected.
+-- Haskell types do not export a field selector, so the record modules are not
+-- opened publicly. Projecting a field of these records is therefore rejected,
+-- while construction and pattern matching still work.
 
 record AssertionFailed : Set where
   no-eta-equality; pattern

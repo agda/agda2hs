@@ -131,15 +131,6 @@ compileRecord target def = do
     cName | recNamedCon = compileName (qnameName $ conName recConHead)
           | otherwise   = rName   -- Reuse record name for constructor if no given name
 
-    -- In Haskell, projections live in the same scope as the record type, so check here that the
-    -- record module has been opened.
-    checkFieldInScope f = isInScopeUnqualified f >>= \case
-      True  -> return ()
-      False -> setCurrentRangeQ f $ agda2hsErrorM $
-        ("Record projections (`" <> prettyTCM (qnameName f) <>"` in this case)") <+>
-        "must be brought into scope when compiling to Haskell record types." <+>
-        "Add `open" <+> text (Hs.prettyPrint rName) <+> "public` after the record declaration to fix this."
-
     Record{..} = theDef def
 
     classDecl :: Hs.Name () -> Hs.Type () -> Hs.ClassDecl ()
@@ -181,7 +172,6 @@ compileRecord target def = do
       -> C (Hs.Decl ())
     compileDataRecord constraints fieldDecls don hd ds = do
       unless (null constraints) __IMPOSSIBLE__ -- no constraints for records
-      mapM_ checkFieldInScope (map unDom recFields)
       let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
       return $ Hs.DataDecl () don Nothing hd [conDecl] ds
 

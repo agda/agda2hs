@@ -11,3 +11,7 @@ fExample a = a
 example2 : (a : Type) → Example a
 example2 a = record { fun = fExample }
 {-# COMPILE AGDA2HS example2 #-}
+
+exampleFun : {a : Type} → Example a → (a → a)
+exampleFun e = fun e
+{-# COMPILE AGDA2HS exampleFun #-}
