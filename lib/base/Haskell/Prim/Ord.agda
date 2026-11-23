@@ -92,10 +92,10 @@ record OrdFromLessThan (a : Type) : Type where
   x <= y = x < y || x == y
 
   max  : a → a → a
-  max x y = if x < y then y else x
+  max x y = if x <= y then y else x
 
   min  : a → a → a
-  min x y = if y < x then y else x
+  min x y = if x <= y then x else y
 
 
 open Ord ⦃...⦄ public

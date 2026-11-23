@@ -103,9 +103,12 @@ instance
   iNumDouble ._+_ x y             = primFloatPlus x y
   iNumDouble ._-_ x y             = primFloatMinus x y
   iNumDouble ._*_ x y             = primFloatTimes x y
-  iNumDouble .negate x            = primFloatMinus 0.0 x
-  iNumDouble .abs x               = if x < 0.0 then primFloatMinus 0.0 x else x
-  iNumDouble .signum x            = case compare x 0.0 of λ where
+  iNumDouble .negate x            = primFloatNegate x
+  iNumDouble .abs x               = if x < 0.0 then primFloatNegate x
+                                    else if primFloatIsNegativeZero x then primFloatNegate x
+                                    else x
+  iNumDouble .signum x            = if primFloatIsNaN x then x
+                                    else case compare x 0.0 of λ where
                                       LT → -1.0
                                       EQ → x
                                       GT → 1.0
