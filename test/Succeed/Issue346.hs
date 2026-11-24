@@ -1,6 +1,11 @@
 module Issue346
-  (Dummy(..))
+  (D(..), R(..), f)
 where
 
-data Dummy = Dum
+data D = DC
+
+data R = RC{}
+
+f :: D -> R
+f DC = RC
 

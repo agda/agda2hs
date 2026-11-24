@@ -180,6 +180,7 @@ type C = RWST CompileEnv CompileOutput CompileState TCM
 -- some missing instances from the Agda side
 instance HasFresh i => MonadFresh i C
 instance MonadTCState C
+instance MonadFileId C
 instance Monoid w => MonadTransControl (RWST r w s) where
   type StT (RWST r w s) a = (a, s, w)
   liftWith f = rwsT $ \r s -> fmap (, s, mempty) (f $ \t -> runRWST t r s)
@@ -214,7 +215,7 @@ instance Semigroup a => Semigroup (C a) where (<>) = liftA2 (<>)
 -- | Run a computation with the type checking state restored afterwards, like
 --   'Agda.TypeChecking.Monad.localTCState' but for the compilation monad.
 localCState :: C a -> C a
-localCState = bracket_ getTC (liftTCM . putTCPreservingSession)
+localCState = bracket_ getTC (liftTCM . putTCPreservingStats)
 
 -- | Determines how a 'Dom Type' is treated during compilation.
 data DomOutput = DODropped | DOInstance | DOType | DOTerm
