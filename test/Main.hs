@@ -147,8 +147,8 @@ findAgdaFiles dir = do
   return $ agdaFiles ++ subFiles
 
 -- | Create a test for a succeed case.
--- Runs agda2hs on the .agda file, compares the output .hs to the golden file,
--- then compiles the .hs file with ghc.
+-- Runs agda2hs on the .agda file, checks that it produces no warnings, compares
+-- the output .hs to the golden file, then compiles the .hs file with ghc.
 succeedTest :: FilePath -> FilePath -> String -> FilePath -> FilePath -> TestTree
 succeedTest testDir buildDir testName agdaFile goldenFile =
   goldenVsStringDiff testName diffCmd goldenFile $ do
@@ -164,24 +164,29 @@ succeedTest testDir buildDir testName agdaFile goldenFile =
     -- Ensure output directory exists (including subdirectories)
     createDirectoryIfMissing True generatedDir
 
-    -- Run agda2hs with include path for Succeed directory
+    -- Run agda2hs with include path for Succeed directory. Warnings are enabled
+    -- so that a test that produces any must be moved to the Warn directory.
     (exitCode, stdout, stderr) <- runAgda2Hs succeedDir
-      [agdaFile, "-o", outDir, "-v0", "-i" ++ succeedDir]
+      [agdaFile, "-o", outDir, "-v0", "-v", "warning:1", "-i" ++ succeedDir]
 
     case exitCode of
-      ExitSuccess -> do
-        -- Also run ghc to check the generated code compiles
-        -- Add include path for finding imported modules
-        (ghcExit, ghcOut, ghcErr) <- readProcessWithExitCode
-          "ghc"
-          ["-fno-code", "-i" ++ outDir, generatedFile]
-          ""
+      ExitSuccess
+        | not (null (stdout ++ stderr)) ->
+            return $ stringToLBS $
+              "agda2hs produced unexpected warnings:\n" ++ stdout ++ stderr
+        | otherwise -> do
+            -- Also run ghc to check the generated code compiles
+            -- Add include path for finding imported modules
+            (ghcExit, ghcOut, ghcErr) <- readProcessWithExitCode
+              "ghc"
+              ["-fno-code", "-i" ++ outDir, generatedFile]
+              ""
 
-        case ghcExit of
-          -- The generated .hs file is the golden value
-          ExitSuccess -> LBS.readFile generatedFile
-          ExitFailure _ -> return $ stringToLBS $
-            "GHC compilation failed:\n" ++ ghcOut ++ ghcErr
+            case ghcExit of
+              -- The generated .hs file is the golden value
+              ExitSuccess -> LBS.readFile generatedFile
+              ExitFailure _ -> return $ stringToLBS $
+                "GHC compilation failed:\n" ++ ghcOut ++ ghcErr
 
       ExitFailure _ -> return $ stringToLBS $
         "agda2hs failed:\n" ++ stdout ++ stderr
