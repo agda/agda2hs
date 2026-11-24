@@ -70,6 +70,8 @@ Additions to the agda2hs Prelude
 - Added basic support for Haskell exceptions in `Haskell.Control.Exception`.
   A function that may raise an exception returns a value in the `MayThrow`
   monad, which records the exception type in its type (see issue #432).
+  The corresponding monad transformer is `MayThrowT`, which compiles to the
+  underlying monad.
 - Added `Functor`, `Applicative`, and `Monad` instances for `Delay` in
   `Haskell.Extra.Delay`. Like `MayThrow`, `Delay` is a *transparent* monad:
   it is compiled to the identity monad, so its class methods are compiled to

@@ -154,6 +154,54 @@ instance
       iDefaultMonadMayThrow : DefaultMonad (MayThrow e)
       iDefaultMonadMayThrow .DefaultMonad._>>=_ = bindMayThrow
 
+-- | The monad transformer corresponding to the @MayThrow@ monad. A value of
+-- type @MayThrowT e m a@ is an action in @m@ that may throw an exception of
+-- type @e@. It is compiled to @m a@, so the monad is inherited from @m@.
+record MayThrowT (e : Set) (m : Type → Type) (a : Set) : Set where
+  constructor mkMayThrowT
+  field runMayThrowT : m (MayThrow e a)
+open MayThrowT public
+{-# COMPILE AGDA2HS MayThrowT unboxed #-}
+
+-- | Throw an exception in the @MayThrowT@ monad transformer.
+throwT : ⦃ Applicative m ⦄ → ⦃ Exception e ⦄ → e → MayThrowT e m a
+throwT e = mkMayThrowT (pure (throw e))
+{-# COMPILE AGDA2HS throwT inline #-}
+
+-- | Lift an action in @m@ into the @MayThrowT@ monad transformer.
+liftMayThrowT : ⦃ Functor m ⦄ → m a → MayThrowT e m a
+liftMayThrowT x = mkMayThrowT (fmap ok x)
+{-# COMPILE AGDA2HS liftMayThrowT inline #-}
+
+instance
+  iDefaultFunctorMayThrowT : ⦃ Functor m ⦄ → DefaultFunctor (MayThrowT e m)
+  iDefaultFunctorMayThrowT .DefaultFunctor.fmap f x =
+    mkMayThrowT (fmap (fmap ⦃ iFunctorMayThrow ⦄ f) (runMayThrowT x))
+
+  iFunctorMayThrowT : ⦃ Functor m ⦄ → Functor (MayThrowT e m)
+  iFunctorMayThrowT = record {DefaultFunctor iDefaultFunctorMayThrowT}
+
+  iDefaultApplicativeMayThrowT : ⦃ Applicative m ⦄
+                              → DefaultApplicative (MayThrowT e m)
+  iDefaultApplicativeMayThrowT .DefaultApplicative.pure x =
+    mkMayThrowT (pure (ok x))
+  iDefaultApplicativeMayThrowT .DefaultApplicative._<*>_ mf mx =
+    mkMayThrowT (_<*>_ (fmap (_<*>_ ⦃ iApplicativeMayThrow ⦄)
+                              (runMayThrowT mf))
+                       (runMayThrowT mx))
+
+  iApplicativeMayThrowT : ⦃ Applicative m ⦄ → Applicative (MayThrowT e m)
+  iApplicativeMayThrowT = record {DefaultApplicative iDefaultApplicativeMayThrowT}
+
+  iDefaultMonadMayThrowT : ⦃ Monad m ⦄ → DefaultMonad (MayThrowT e m)
+  iDefaultMonadMayThrowT .DefaultMonad._>>=_ x k =
+    mkMayThrowT (_>>=_ (runMayThrowT x) λ where
+      (ok y)              → runMayThrowT (k y)
+      (throw ⦃ i ⦄ err)   → pure (throw ⦃ i ⦄ err))
+
+  iMonadMayThrowT : ⦃ Monad m ⦄ → Monad (MayThrowT e m)
+  iMonadMayThrowT = record {DefaultMonad iDefaultMonadMayThrowT}
+
 postulate
   throwIO : {{Exception e}} → e → IO a
 
