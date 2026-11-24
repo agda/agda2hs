@@ -129,7 +129,7 @@ lookup x ((x₁ , y) ∷ xs) = if x == x₁ then Just y else lookup x xs
 
 IOError = IOException
 
-ioError : @0 {{MayThrow IOError}} → IOError → IO a
+ioError : IOError → IO a
 ioError = throwIO
 
 postulate

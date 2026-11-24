@@ -1,6 +1,7 @@
 module Haskell.Control.Exception where
 
 open import Haskell.Prim
+open import Haskell.Prim.Applicative
 open import Haskell.Prim.Either
 open import Haskell.Prim.Eq
 open import Haskell.Prim.Functor
@@ -119,34 +120,65 @@ record TypeError : Set where
 postulate instance
   iExceptionTypeError : Exception TypeError
 
+-- | The @MayThrow@ monad marks computations that may throw an exception of
+-- type @e@. On the Haskell side it is compiled to the identity monad:
+-- @MayThrow e a@ becomes just @a@ and the constructors are erased. Hence the
+-- constructors cannot be pattern matched in functions that are compiled to
+-- Haskell.
+data MayThrow (e : Set) (a : Set) : Set where
+  ok : a → MayThrow e a
+  throw  : {{Exception e}} → e → MayThrow e a
+
+bindMayThrow : MayThrow e a → (a → MayThrow e b) → MayThrow e b
+bindMayThrow (ok x) f = f x
+bindMayThrow (throw ⦃ i ⦄ e) f = throw ⦃ i ⦄ e
+
+instance
+  iFunctorMayThrow : Functor (MayThrow e)
+  iFunctorMayThrow = record {DefaultFunctor iDefaultFunctorMayThrow}
+    where
+      iDefaultFunctorMayThrow : DefaultFunctor (MayThrow e)
+      iDefaultFunctorMayThrow .DefaultFunctor.fmap f m = bindMayThrow m (ok ∘ f)
+
+  iApplicativeMayThrow : Applicative (MayThrow e)
+  iApplicativeMayThrow = record {DefaultApplicative iDefaultApplicativeMayThrow}
+    where
+      iDefaultApplicativeMayThrow : DefaultApplicative (MayThrow e)
+      iDefaultApplicativeMayThrow .DefaultApplicative.pure = ok
+      iDefaultApplicativeMayThrow .DefaultApplicative._<*>_ mf mx =
+        bindMayThrow mf λ f → bindMayThrow mx λ x → ok (f x)
+
+  iMonadMayThrow : Monad (MayThrow e)
+  iMonadMayThrow = record {DefaultMonad iDefaultMonadMayThrow}
+    where
+      iDefaultMonadMayThrow : DefaultMonad (MayThrow e)
+      iDefaultMonadMayThrow .DefaultMonad._>>=_ = bindMayThrow
+
 postulate
-  @0 MayThrow : Set → Set
-
-  throw : {{Exception e}} → @0 {{MayThrow e}} → e → a
-  throwIO : {{Exception e}} → @0 {{MayThrow e}} → e → IO a
+  throwIO : {{Exception e}} → e → IO a
 
 postulate
-  catch : {{Exception e}} → (@0 {{MayThrow e}} → IO a) → (e → IO a) → IO a
-  catchJust : {{Exception e}} → (e → Maybe b) → (@0 {{MayThrow e}} → IO a) → (b → IO a) → IO a
+  catch : {{Exception e}} → IO a → (e → IO a) → IO a
+  catchJust : {{Exception e}} → (e → Maybe b) → IO a → (b → IO a) → IO a
 
-handle : {{Exception e}} → (e → IO a) → (@0 {{MayThrow e}} → IO a) → IO a
+handle : {{Exception e}} → (e → IO a) → IO a → IO a
 handle = flip catch
 
-handleJust : {{Exception e}} → (e → Maybe b) → (b → IO a) → (@0 {{MayThrow e}} → IO a) → IO a
+handleJust : {{Exception e}} → (e → Maybe b) → (b → IO a) → IO a → IO a
 handleJust f = flip (catchJust f)
 
-try : {{Exception e}} → (@0 {{MayThrow e}} → IO a) → IO (Either e a)
-try a = catch (fmap Right a) (return ∘ Left)
+try : {{Exception e}} → IO a → IO (Either e a)
+try a = catch (fmap Right a) (pure ∘ Left)
 
-tryJust : {{Exception e}} → (e → Maybe b) → (@0 {{MayThrow e}} → IO a) → IO (Either b a)
-tryJust p a = catchJust p (fmap Right a) (return ∘ Left)
+tryJust : {{Exception e}} → (e → Maybe b) → IO a → IO (Either b a)
+tryJust p a = catchJust p (fmap Right a) (pure ∘ Left)
 
 postulate
   evaluate : a → IO a
   mapException : {{Exception e1}} → {{Exception e2}} → (e1 → e2) → a → a
 
-assert : @0 {{MayThrow AssertionFailed}} → (@0 b : Type ℓ) → {{Dec b}} → (@0 {{b}} → a) → a
-assert _ {{True  ⟨ p ⟩}} x = x {{p}}
+assert : (@0 b : Type ℓ) → {{Dec b}} → (@0 {{b}} → a) → MayThrow AssertionFailed a
+assert _ {{True  ⟨ p ⟩}} x = ok (x {{p}})
 assert _ {{False ⟨ _ ⟩}} x = throw oops
   where postulate oops : AssertionFailed
 

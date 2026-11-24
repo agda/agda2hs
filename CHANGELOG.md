@@ -39,8 +39,14 @@ Changes to agda2hs
 - The `Traversable` instances in the Prelude are now defined directly using
   copatterns and default instances instead of the `traverse=` helper, so that
   they pass the instance validity check (see issue #457).
-- `assert` now takes an erased argument of type `MayThrow AssertionFailed`,
-  which is propagated to any function that calls it.
+- Exceptions can now only be thrown in the `MayThrow` monad. This monad is
+  compiled to the identity monad, i.e. `MayThrow e a` is compiled to just `a`
+  and its constructors are erased, so they cannot be pattern matched in
+  functions that are compiled to Haskell. Functions that may throw (such as
+  `assert` and `throw`) now return a value in this monad instead of taking an
+  erased `MayThrow` argument. Since a value of type `MayThrow e a` cannot be
+  used where an `a` is expected, a check can no longer be silently erased
+  (see issue #428).
 - The `TypeError` data type in `Haskell.Prim` has been renamed to
   `UnsatisfiedConstraint`, to avoid a clash with the `TypeError` exception
   type added to `Haskell.Control.Exception`.
@@ -77,8 +83,12 @@ Additions to the agda2hs Prelude
   `Rational` type. Instances for the standard numeric types are postulated
   for now (see issue #262).
 - Added basic support for Haskell exceptions in `Haskell.Control.Exception`.
-  A function that may raise an exception takes an erased `MayThrow` argument
-  recording the exception type (see issue #432).
+  A function that may raise an exception returns a value in the `MayThrow`
+  monad, which records the exception type in its type (see issue #432).
+- Added `Functor`, `Applicative`, and `Monad` instances for `Delay` in
+  `Haskell.Extra.Delay`. Like `MayThrow`, `Delay` is a *transparent* monad:
+  it is compiled to the identity monad, so its class methods are compiled to
+  their identity counterparts.
 - Added bindings to `System.Environment` in `Haskell.System.Environment`
   (see issue #433).
 
