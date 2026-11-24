@@ -19,14 +19,17 @@ Changes to agda2hs
   Previously this could result in names not being compiled away when
   recompiling only a downstream module (see issue #486).
 - The `to` keyword of the `COMPILE AGDA2HS` pragma is now also supported for
-  instances. An instance for a type that is compiled to another type with a
-  `to` pragma must itself be given a `to` pragma pointing to the corresponding
-  instance of the target type. This prevents the generation of duplicate
-  instances. agda2hs warns if the two compiled instances do not match, or if
-  the comparison cannot be performed (for instance because the target uses a
-  feature that agda2hs does not support, such as multi-argument pattern
-  lambdas); the target instance is the one that is used in the generated code
-  either way (see issue #269).
+  instances. An instance for a type that is compiled to another type (either
+  with a `to` pragma, or because it is an unboxed or tuple record) must itself
+  be given a `to` pragma pointing to the corresponding instance of the target
+  type. This prevents the generation of duplicate instances. agda2hs warns if
+  the two compiled instances do not match, or if the comparison cannot be
+  performed (for instance because the target uses a feature that agda2hs does
+  not support, such as multi-argument pattern lambdas); the target instance is
+  the one that is used in the generated code either way (see issue #269). An
+  instance whose every clause just applies the method being defined to its
+  arguments (such as `x == y = x == y`) is accepted, since it defers to the
+  instance it is compiled to.
 - A datatype from a primitive module (such as `Bool` or `Maybe`) can now be
   the target of a compile-to pragma without having a `COMPILE` pragma of its
   own.

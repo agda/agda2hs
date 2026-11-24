@@ -1,0 +1,3 @@
+test/Fail/CompileToInstanceTupleNoTo.agda:12.3-10: error: [CustomBackendError]
+agda2hs:
+  The instance iEqPair is for the type Pair which is compiled to another Haskell type, so it must also have a `to` pragma.

@@ -7,7 +7,6 @@ import Control.Monad.State ( modify )
 import Data.IORef
 import Data.List ( isPrefixOf, stripPrefix )
 import qualified Data.Map as M
-import Data.Monoid ( First(..) )
 import Data.String ( IsString(..) )
 import Data.Set ( Set )
 import qualified Data.Set as S
@@ -51,7 +50,7 @@ import qualified Data.List as L
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.Language.Haskell.Utils
-  ( validVarName, validTypeName, validConName, hsName, pp )
+  ( validVarName, validTypeName, validConName, hsName, hsModuleName, pp )
 
 agda2hsError :: (HasCallStack, MonadTCError m) => Doc -> m a
 agda2hsError msg = typeError $ CustomBackendError "agda2hs" msg
@@ -356,19 +355,26 @@ recordCompileToData d r = do
   forM_ (zip (dataCons $ theDef ddef) (dataCons $ theDef rdef)) $ \(c1, c2) ->
     addCompileToName c1 c2
 
--- | If the type of an instance mentions a type with a compile-to pragma,
---   return that type. Instances for such types must themselves have a
+-- | If the type of an instance is compiled to another Haskell type, either
+--   because it has a compile-to pragma or because it is an unboxed or tuple
+--   record, return that type. Instances for such types must themselves have a
 --   compile-to pragma so that agda2hs can check that they are consistent with
 --   the instance of the target type.
 instanceCompileToType :: Definition -> C (Maybe QName)
 instanceCompileToType def = do
   TelV _ t <- telView (defType def)
-  ctMap <- getCompileToMap
-  -- 'First' keeps the first name that has a compile-to mapping.
-  let collectDefs = \case
-        Def q _ -> First $ q <$ M.lookup q ctMap
-        _       -> First Nothing
-  pure $ getFirst $ foldTerm collectDefs t
+  -- 'compiledAway' checks whether a name is compiled to another Haskell type,
+  -- either via a compile-to pragma or because it is an unboxed or tuple record.
+  let compiledAway q = orM
+        [ isJust <$> getCompileToName q
+        , isJust <$> isUnboxRecord q
+        , isJust <$> isTupleRecord q
+        ]
+      -- Keep the first name that is compiled away, in the order in which the
+      -- names occur in the type.
+      go []       = pure Nothing
+      go (q : qs) = ifM (compiledAway q) (pure $ Just q) (go qs)
+  go $ foldTerm (\case Def q _ -> [q]; _ -> []) t
 
 -- | Raise an error for an instance that is compiled to Haskell but is for a
 --   type that is itself compiled to another Haskell type. Such an instance must
@@ -376,11 +382,19 @@ instanceCompileToType def = do
 --   consistent with the instance of the target type.
 requireCompileToInstancePragma :: Definition -> C ()
 requireCompileToInstancePragma def =
-  whenM (isNothing <$> getCompileToName (defName def)) $
-    whenJustM (instanceCompileToType def) $ \t -> agda2hsErrorM $
-      "The instance" <+> prettyTCM (defName def) <+> "is for the type" <+> prettyTCM t
-        <+> "which is compiled to another Haskell type, so it must also have a"
-        <+> "`to` pragma."
+  -- Instances from primitive or Haskell modules are trusted to match the
+  -- Haskell definitions and are never compiled, so they do not need a pragma.
+  when (isCompiledModule (qnameModule $ defName def)) $
+    whenM (isNothing <$> getCompileToName (defName def)) $
+      whenJustM (instanceCompileToType def) $ \t -> agda2hsErrorM $
+        "The instance" <+> prettyTCM (defName def) <+> "is for the type" <+> prettyTCM t
+          <+> "which is compiled to another Haskell type, so it must also have a"
+          <+> "`to` pragma."
+
+-- | Whether agda2hs compiles code for the given module. Definitions in
+--   primitive or Haskell modules (such as the Prelude) are trusted instead.
+isCompiledModule :: ModuleName -> Bool
+isCompiledModule m = hsModuleKind (hsModuleName $ prettyShow m) == AgdaModule
 
 withNestedType :: C a -> C a
 withNestedType = local $ \e -> e { isNestedInType = True }
