@@ -1,3 +1,6 @@
+-- Regression test for #346: a datatype declared before its definition must
+-- still be compiled to Haskell.
+
 data D : Set
 {-# COMPILE AGDA2HS D #-}
 data D where  DC : D
@@ -11,8 +14,3 @@ record R where
 f : D → R
 {-# COMPILE AGDA2HS f #-}
 f DC = RC
-
--- To make output non-empty
-data Dummy : Set where
-  Dum : Dummy
-{-# COMPILE AGDA2HS Dummy #-}
