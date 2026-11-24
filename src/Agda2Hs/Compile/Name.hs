@@ -93,6 +93,7 @@ defaultSpecialRules = Map.fromList
   , "Haskell.Prim.Rational.Ratio.numerator"   `to` "numerator"   `importing` Just "Data.Ratio"
   , "Haskell.Prim.Rational.Ratio.denominator" `to` "denominator" `importing` Just "Data.Ratio"
   , "Haskell.Prim.Rational._:%_"              `to` "_%_"         `importing` Just "Data.Ratio"
+  , "Haskell.Control.Exception.MayThrow.throw" `to` "throw"       `importing` Just "Control.Exception"
   ]
   where infixr 6 `to`, `importing`
         to = (,)

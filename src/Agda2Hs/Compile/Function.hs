@@ -57,6 +57,8 @@ isSpecialCon qn = case prettyShow qn of
       , "Agda.Builtin.Nat.Nat.suc"
       , "Haskell.Extra.Delay.Delay.now"
       , "Haskell.Extra.Delay.Delay.later"
+      , "Haskell.Control.Exception.MayThrow.ok"
+      , "Haskell.Control.Exception.MayThrow.throw"
       ]
 
     itsBad :: Type -> NAPs -> C (Hs.Pat ())

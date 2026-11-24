@@ -210,6 +210,10 @@ isSpecialProj q = case prettyShow q of
   "Haskell.Prim.Enum.Enum.enumFromThenTo"       -> Just mkEnumFromThenTo
   "Haskell.Prim.Monad.Do.Monad._>>=_"           -> Just monadBind
   "Haskell.Prim.Monad.Do.Monad._>>_"            -> Just monadSeq
+  "Haskell.Prim.Functor.Functor.fmap"           -> Just $ transparentClassMethod q compileTransparentFmap
+  "Haskell.Prim.Applicative.Applicative.pure"   -> Just $ transparentClassMethod q compileTransparentPure
+  "Haskell.Prim.Applicative.Applicative._<*>_"  -> Just $ transparentClassMethod q compileTransparentAp
+  "Haskell.Prim.Monad.Do.Monad.return"          -> Just $ transparentClassMethod q compileTransparentPure
   "Agda.Builtin.FromNeg.Negative.fromNeg"       -> Just fromNeg
   "Agda.Builtin.FromString.IsString.fromString" -> Just fromString
   _                                             -> Nothing
@@ -221,6 +225,84 @@ compileClassFun q _ w ty args = do
   curMod <- currentModule
   unless (curMod `isLeChildModuleOf` qnameModule q) $ checkInstance w
   eApp (Hs.Var () hf) <$> compileArgs ty args
+
+-- | The instances of the transparent monads in the prelude, i.e. the monads
+-- that are compiled to the identity monad. The class methods of these monads
+-- are compiled to their identity counterparts.
+transparentMonadInstances :: [String]
+transparentMonadInstances =
+  [ "Haskell.Control.Exception.iFunctorMayThrow"
+  , "Haskell.Control.Exception.iApplicativeMayThrow"
+  , "Haskell.Control.Exception.iMonadMayThrow"
+  , "Haskell.Extra.Delay.iFunctorDelay"
+  , "Haskell.Extra.Delay.iApplicativeDelay"
+  , "Haskell.Extra.Delay.iMonadDelay"
+  ]
+
+-- | Check whether an instance value is an instance of a transparent monad.
+isTransparentMonad :: Term -> C Bool
+isTransparentMonad w = do
+  w <- reduce w
+  return $ case w of
+    Def f _ -> prettyShow f `elem` transparentMonadInstances
+    _       -> False
+
+-- | Compile a class method for a transparent monad to its identity
+-- counterpart, falling back to the normal class method compilation otherwise.
+-- Note that we do not call @checkInstance@ for a transparent monad: the
+-- instance is not needed in the generated Haskell code, and it would register
+-- an import of the (possibly non-existent) Haskell module of the instance.
+transparentClassMethod :: QName -> ([Hs.Exp ()] -> C (Hs.Exp ())) -> ProjCompileRule
+transparentClassMethod q transparent tty w ty args =
+  ifM (isTransparentMonad w)
+      (transparent =<< compileArgs ty args)
+      (compileClassFun q tty w ty args)
+
+-- | @fmap f m = f m@ for a transparent monad.
+compileTransparentFmap :: [Hs.Exp ()] -> C (Hs.Exp ())
+compileTransparentFmap = \case
+  [f, m] -> return $ eApp f [m]
+  [f]    -> return f
+  []     -> return $ hsVar "id"
+  vs     -> unsupportedMethod vs
+
+-- | @pure x = x@ (and similarly @return@) for a transparent monad.
+compileTransparentPure :: [Hs.Exp ()] -> C (Hs.Exp ())
+compileTransparentPure = \case
+  [x] -> return x
+  []  -> return $ hsVar "id"
+  vs  -> unsupportedMethod vs
+
+-- | @mf <*> mx = mf mx@ for a transparent monad.
+compileTransparentAp :: [Hs.Exp ()] -> C (Hs.Exp ())
+compileTransparentAp = \case
+  [mf, mx] -> return $ eApp mf [mx]
+  [mf]     -> return mf
+  []       -> return $ hsVar "id"
+  vs       -> unsupportedMethod vs
+
+-- | @u >>= f = let x = u in seq x (f x)@ for a transparent monad, so that a
+-- possible exception thrown by @u@ is not silently discarded.
+compileTransparentBind :: Type -> [Term] -> C (Hs.Exp ())
+compileTransparentBind ty args = compileArgs ty args >>= \case
+  [u, Hs.Lambda _ [Hs.PVar _ x] v] ->
+    return $ Hs.Let ()
+      (Hs.BDecls () [Hs.PatBind () (Hs.PVar () x) (Hs.UnGuardedRhs () u) Nothing])
+      (eApp (hsVar "seq") [Hs.Var () (Hs.UnQual () x), v])
+  [u, f] -> return $ eApp (hsVar "seq") [u, eApp f [u]]
+  _      -> agda2hsError "Transparent _>>=_ must be fully applied"
+
+-- | @u >> v = seq u v@ for a transparent monad, so that a possible exception
+-- thrown by @u@ is not silently discarded.
+compileTransparentSeq :: Type -> [Term] -> C (Hs.Exp ())
+compileTransparentSeq ty args = compileArgs ty args >>= \case
+  [u, v] -> return $ eApp (hsVar "seq") [u, v]
+  _      -> agda2hsError "Transparent _>>_ must be fully applied"
+
+unsupportedMethod :: [Hs.Exp ()] -> C a
+unsupportedMethod vs = agda2hsStringError $
+  "Unsupported number of arguments for a method of a transparent monad ("
+    ++ show (length vs) ++ ")"
 
 compileTupleProjection :: QName -> Hs.Boxed -> ProjCompileRule
 compileTupleProjection f b wty w ty args = do
@@ -333,13 +415,17 @@ fromString = specialClassFunction2 (hsVar "fromString") $ \v _ -> case v of
   s@Hs.Lit{} -> s
   v          -> hsVar "fromString" `eApp` [v]
 
--- | Compile monadic bind operator _>>=_ to Haskell do notation.
+-- | Compile monadic bind operator _>>=_ to Haskell do notation. For a
+-- transparent monad it is instead compiled to the identity monad.
 monadBind :: ProjCompileRule
-monadBind = specialClassFunctionM $ \case
-  [u, Hs.Lambda _ [p] v] -> pure $ bind' u p v
-  [u, Hs.LCase () [Hs.Alt () p (Hs.UnGuardedRhs () v) Nothing]] ->
-    decrementLCase >> return (bind' u p v)
-  vs -> pure $ hsVar "_>>=_" `eApp` vs
+monadBind _ w ty args = do
+  ifM (isTransparentMonad w)
+      (compileTransparentBind ty args)
+      (checkInstance w >> compileArgs ty args >>= \case
+        [u, Hs.Lambda _ [p] v] -> pure $ bind' u p v
+        [u, Hs.LCase () [Hs.Alt () p (Hs.UnGuardedRhs () v) Nothing]] ->
+          decrementLCase >> return (bind' u p v)
+        vs -> pure $ hsVar "_>>=_" `eApp` vs)
   where
     bind' :: Hs.Exp () -> Hs.Pat () -> Hs.Exp () -> Hs.Exp ()
     bind' u p v =
@@ -348,15 +434,19 @@ monadBind = specialClassFunctionM $ \case
         Hs.Do _ stmts -> Hs.Do () (stmt1 : stmts)
         _             -> Hs.Do () [stmt1, Hs.Qualifier () v]
 
--- | Compile monadic bind operator _>>_ to Haskell do notation.
+-- | Compile monadic bind operator _>>_ to Haskell do notation. For a
+-- transparent monad it is instead compiled to the identity monad.
 monadSeq :: ProjCompileRule-- TElims -> C (Hs.Exp ())
-monadSeq = specialClassFunction $ \case
-  (u : v : vs) -> do
-    let stmt1 = Hs.Qualifier () u
-    case v of
-      Hs.Do _ stmts -> Hs.Do () (stmt1 : stmts)
-      _             -> Hs.Do () [stmt1, Hs.Qualifier () v]
-  vs -> hsVar "_>>_" `eApp` vs
+monadSeq _ w ty args =
+  ifM (isTransparentMonad w)
+      (compileTransparentSeq ty args)
+      (checkInstance w >> compileArgs ty args >>= \case
+        (u : v : vs) -> do
+          let stmt1 = Hs.Qualifier () u
+          return $ case v of
+            Hs.Do _ stmts -> Hs.Do () (stmt1 : stmts)
+            _             -> Hs.Do () [stmt1, Hs.Qualifier () v]
+        vs -> return $ hsVar "_>>_" `eApp` vs)
 
 
 -- * Compilation of constructors
@@ -373,6 +463,7 @@ isSpecialCon = prettyShow >>> \case
   "Haskell.Extra.Erase.Erased"      -> Just erasedTerm
   "Haskell.Extra.Delay.Delay.now"   -> Just compileErasedApp
   "Haskell.Extra.Delay.Delay.later" -> Just compileErasedApp
+  "Haskell.Control.Exception.MayThrow.ok" -> Just compileErasedApp
   _                                 -> Nothing
 
 tupleTerm :: ConCompileRule

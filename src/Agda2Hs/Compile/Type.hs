@@ -42,6 +42,7 @@ isSpecialType = prettyShow >>> \case
   "Haskell.Extra.Sigma.Σ"     -> Just tupleType
   "Haskell.Extra.Erase.Erase" -> Just unitType
   "Haskell.Extra.Delay.Delay" -> Just delayType
+  "Haskell.Control.Exception.MayThrow" -> Just mayThrowType
   _                           -> Nothing
 
 
@@ -63,6 +64,13 @@ delayType :: Elims -> C (Hs.Type ())
 delayType (Apply a : _) = compileType (unArg a)
 delayType (_       : _) = __IMPOSSIBLE__
 delayType [] = agda2hsError "Cannot compile unapplied Delay type"
+
+
+-- | Compile a fully applied MayThrow type as its last type argument, dropping
+-- the exception type. E.g. @MayThrow AssertionFailed a@ compiles to @a@.
+mayThrowType :: Elims -> C (Hs.Type ())
+mayThrowType (Apply _ : Apply a : _) = compileType (unArg a)
+mayThrowType _ = agda2hsError "Cannot compile unapplied MayThrow type"
 
 
 -- | Compile an Agda term into a Haskell type, along with its strictness.

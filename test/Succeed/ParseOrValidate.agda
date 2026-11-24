@@ -29,13 +29,13 @@ split c s = case rest of λ where
 -- "Parse, don't validate". Here I ignore her advice but instead implement
 -- a validation function that returns evidence of the property it checked.
 
-validateNonEmpty : @0 {{MayThrow IOException}} → (xs : List a) → IO (Erase (NonEmpty xs))
+validateNonEmpty : (xs : List a) → IO (Erase (NonEmpty xs))
 validateNonEmpty [] = throwIO (userError "list cannot be empty")
 validateNonEmpty (x ∷ xs) = return it
 
 {-# COMPILE AGDA2HS validateNonEmpty #-}
 
-getConfigurationDirectories : @0 {{MayThrow IOException}} → IO (∃ (List FilePath) NonEmpty)
+getConfigurationDirectories : IO (∃ (List FilePath) NonEmpty)
 getConfigurationDirectories = do
   configDirsString <- getEnv "CONFIG_DIRS"
   let configDirsList = split ',' configDirsString
@@ -49,7 +49,7 @@ postulate
   initializeCache : String → IO ⊤
 {-# COMPILE AGDA2HS initializeCache #-}
 
-main : @0 {{MayThrow IOException}} → IO ⊤
+main : IO ⊤
 main = do
   configDirs ⟨ i ⟩ <- getConfigurationDirectories
   initializeCache (head configDirs {{i}})
