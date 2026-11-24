@@ -225,6 +225,11 @@ postulate
   evaluate : a → IO a
   mapException : {{Exception e1}} → {{Exception e2}} → (e1 → e2) → a → a
 
+-- | The monad morphism from @MayThrow@ to @IO@. Since @MayThrow e a@ is
+-- compiled to @a@, this is compiled to @return@.
+postulate
+  runMayThrow : MayThrow e a → IO a
+
 assert : (@0 b : Type ℓ) → {{Dec b}} → (@0 {{b}} → a) → MayThrow AssertionFailed a
 assert _ {{True  ⟨ p ⟩}} x = ok (x {{p}})
 assert _ {{False ⟨ _ ⟩}} x = throw oops

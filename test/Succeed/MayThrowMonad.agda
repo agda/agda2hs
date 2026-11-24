@@ -33,3 +33,8 @@ doMayThrow = do
 seqMayThrow : MayThrow AssertionFailed Nat → MayThrow AssertionFailed Nat
 seqMayThrow m = boom >> m
 {-# COMPILE AGDA2HS seqMayThrow #-}
+
+-- The monad morphism from MayThrow to IO, compiled to `return`.
+runMayThrow' : IO Nat
+runMayThrow' = runMayThrow boom
+{-# COMPILE AGDA2HS runMayThrow' #-}

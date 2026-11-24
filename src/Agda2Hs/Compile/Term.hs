@@ -56,6 +56,7 @@ isSpecialDef q = case prettyShow q of
   "Haskell.Extra.Delay.runDelay" -> Just compileErasedApp
   "Agda.Builtin.Word.primWord64FromNat" -> Just primWord64FromNat
   "Haskell.Extra.Nat.predNat"            -> Just predNat
+  "Haskell.Control.Exception.runMayThrow" -> Just runMayThrow
   _                              -> Nothing
 
 
@@ -134,6 +135,12 @@ predNat :: DefCompileRule
 predNat ty args = compileArgs ty args >>= \case
   n : es' -> return $ eApp (hsVar "pred") [n] `eApp` es'
   _       -> agda2hsError "predNat must be applied to a natural number"
+
+-- | Compile the monad morphism from @MayThrow@ to @IO@ to @return@.
+runMayThrow :: DefCompileRule
+runMayThrow ty args = compileArgs ty args >>= \case
+  [x] -> return $ eApp (hsVar "return") [x]
+  _   -> agda2hsError "runMayThrow must be applied to a single argument"
 
 
 compileVar :: Int -> Type -> [Term] -> C (Hs.Exp ())
