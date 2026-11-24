@@ -1,5 +1,5 @@
 module MayThrowMonad
-  (oops, boom, okay, bindMayThrow', mapMayThrow, doMayThrow, seqMayThrow)
+  (oops, boom, okay, bindMayThrow', mapMayThrow, doMayThrow, seqMayThrow, runMayThrow')
 where
 
 import Control.Exception (AssertionFailed, throw)
@@ -25,4 +25,7 @@ doMayThrow = let x = okay in seq x (let y = 3 in seq y (x + y))
 
 seqMayThrow :: Natural -> Natural
 seqMayThrow m = seq boom m
+
+runMayThrow' :: IO Natural
+runMayThrow' = return boom
 
