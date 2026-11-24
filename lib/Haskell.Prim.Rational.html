@@ -1,0 +1,24 @@
+<!DOCTYPE HTML>
+<html><head><meta charset="utf-8"><title>Haskell.Prim.Rational</title><link rel="stylesheet" href="Agda.css"></head><body><pre class="Agda">
+<a id="2" class="Keyword">module</a> <a id="9" href="Haskell.Prim.Rational.html" class="Module">Haskell.Prim.Rational</a> <a id="31" class="Keyword">where</a>
+
+<a id="38" class="Keyword">open</a> <a id="43" class="Keyword">import</a> <a id="50" href="Haskell.Prim.html" class="Module">Haskell.Prim</a>
+
+<a id="64" class="Comment">--------------------------------------------------</a>
+<a id="115" class="Comment">-- Ratio</a>
+
+<a id="125" class="Comment">-- | Rational numbers, with numerator and denominator of some &#39;Integral&#39; type.</a>
+<a id="204" class="Comment">-- The constructor is compiled to Haskell&#39;s @%@ from @Data.Ratio@, since</a>
+<a id="277" class="Comment">-- @Data.Ratio@ does not export the @:%@ constructor.</a>
+<a id="331" class="Keyword">record</a> <a id="Ratio"></a><a id="338" href="Haskell.Prim.Rational.html#338" class="Record">Ratio</a> <a id="344" class="Symbol">(</a><a id="345" href="Haskell.Prim.Rational.html#345" class="Bound">a</a> <a id="347" class="Symbol">:</a> <a id="349" href="Haskell.Prim.html#346" class="Primitive">Type</a><a id="353" class="Symbol">)</a> <a id="355" class="Symbol">:</a> <a id="357" href="Haskell.Prim.html#346" class="Primitive">Type</a> <a id="362" class="Keyword">where</a>
+  <a id="370" class="Keyword">constructor</a> <a id="_:%_"></a><a id="382" href="Haskell.Prim.Rational.html#382" class="InductiveConstructor Operator">_:%_</a>
+  <a id="389" class="Keyword">field</a>
+    <a id="Ratio.numerator"></a><a id="399" href="Haskell.Prim.Rational.html#399" class="Field">numerator</a> <a id="409" class="Symbol">:</a> <a id="411" href="Haskell.Prim.Rational.html#345" class="Bound">a</a>
+    <a id="Ratio.denominator"></a><a id="417" href="Haskell.Prim.Rational.html#417" class="Field">denominator</a> <a id="429" class="Symbol">:</a> <a id="431" href="Haskell.Prim.Rational.html#345" class="Bound">a</a>
+<a id="433" class="Keyword">open</a> <a id="438" href="Haskell.Prim.Rational.html#338" class="Module">Ratio</a> <a id="444" class="Keyword">public</a>
+
+<a id="452" class="Comment">-- | Arbitrary-precision rational numbers, represented as a ratio of two</a>
+<a id="525" class="Comment">-- &#39;Integer&#39; values.</a>
+<a id="Rational"></a><a id="546" href="Haskell.Prim.Rational.html#546" class="Function">Rational</a> <a id="555" class="Symbol">:</a> <a id="557" href="Haskell.Prim.html#346" class="Primitive">Type</a>
+<a id="562" href="Haskell.Prim.Rational.html#546" class="Function">Rational</a> <a id="571" class="Symbol">=</a> <a id="573" href="Haskell.Prim.Rational.html#338" class="Record">Ratio</a> <a id="579" href="Haskell.Prim.html#495" class="Datatype">Integer</a>
+</pre></body></html>
