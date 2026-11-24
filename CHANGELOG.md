@@ -72,7 +72,10 @@ Additions to the agda2hs Prelude
   monad, which records the exception type in its type (see issue #432).
   The corresponding monad transformer is `MayThrowT`, which compiles to the
   underlying monad. The monad morphism `runMayThrow : MayThrow e a → IO a`
-  compiles to `return`.
+  compiles to `return`. Note that `MayThrow` only makes `throw` sound on the
+  Agda side: it does not prevent definitions whose type does not mention
+  `MayThrow` from throwing an exception, e.g. by forcing a `MayThrow` value in
+  a strict field.
 - Added `Functor`, `Applicative`, and `Monad` instances for `Delay` in
   `Haskell.Extra.Delay`. Like `MayThrow`, `Delay` is a *transparent* monad:
   it is compiled to the identity monad, so its class methods are compiled to
