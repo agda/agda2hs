@@ -4,6 +4,25 @@ Release notes for agda2hs v1.5
 Changes to agda2hs
 ------------------
 
+- Increased the Agda base version to 2.9.0.
+- Increased bounds to support GHC 9.14.1.
+- Added support for `COMPILE AGDA2HS ... to ...` pragmas, which compile a
+  datatype or function to an existing Haskell definition instead of generating
+  new code. agda2hs checks that the compiled definition matches the target;
+  mismatches in the names of constructors or in the clauses of a function are
+  reported as warnings, while other mismatches are errors (see issue #155).
+- Non-erased propositional equality in an instance argument is now compiled to
+  a Haskell equality constraint, e.g. `⦃ a ≡ b ⦄` becomes `a ~ b =>`
+  (see issue #140).
+- Each compiled module now has an explicit export list of the definitions that
+  are public in Agda and are not compiled away (for example inline,
+  transparent, unboxed, tuple, and compile-to definitions are omitted). The
+  `TypeOperators` extension is enabled automatically when the export list
+  contains a type operator (see issue #44).
+- The `inline` pragma can now be used on any function, not only on
+  single-clause functions that match on variables or transparent record
+  constructors. If a function marked `inline` is not inlined at a call site,
+  agda2hs reports an error (see issue #259).
 - Compiling two definitions with the same Haskell name is now rejected with a
   proper error message. This can happen for definitions in local modules, since
   Haskell does not have local modules (see issue #122).
@@ -67,6 +86,21 @@ Changes to agda2hs
   clause also matches a constructor in an erased position. This allows refining
   types by matching on a non-erased equality constraint, while still rejecting
   the unsafe coercion from issue #142 (see issue #494).
+- The names of type variables in generated Haskell code are now checked to be
+  valid Haskell identifiers. Previously an invalid name such as `A` could
+  result in invalid Haskell code (see issue #467).
+- Type class methods are now imported when they are used in an instance
+  declaration, instead of only importing the class itself (see issue #464).
+- `if ... then ... else ...` is now parenthesized when it appears as the first
+  argument of an infix operator (see issue #460).
+- The `zero` and `suc` constructors of `Nat` are now compiled to `0` and
+  `succ`, respectively.
+- A datatype that is declared before its definition is now compiled correctly
+  instead of silently generating no code (see issue #346).
+- Using `Set` (or `Type`) as a Haskell type is now rejected with an error.
+  This covers both instantiating a type variable with `Set` and datatypes
+  indexed by `Set`, which previously produced invalid Haskell (see issues
+  #437 and #449).
 
 See https://github.com/agda/agda2hs/issues?q=milestone%3A1.5+is%3Apr for the full list of changes.
 
@@ -90,17 +124,33 @@ Additions to the agda2hs Prelude
   compiles to `return`. Note that `MayThrow` only makes `throw` sound on the
   Agda side: it does not prevent definitions whose type does not mention
   `MayThrow` from throwing an exception, e.g. by forcing a `MayThrow` value in
-  a strict field.
+  a strict field. The module also provides bindings for the standard Haskell
+  exception types, and `MayThrow` and `MayThrowT` have `Functor`,
+  `Applicative`, and `Monad` instances. The Prelude provides `IOError`,
+  `ioError`, and `userError` for exception handling in `IO`.
 - Added `Functor`, `Applicative`, and `Monad` instances for `Delay` in
   `Haskell.Extra.Delay`. Like `MayThrow`, `Delay` is a *transparent* monad:
   it is compiled to the identity monad, so its class methods are compiled to
   their identity counterparts.
 - Added bindings to `System.Environment` in `Haskell.System.Environment`
   (see issue #433).
+- Added `iDecPair` and `iDecEither` instances to `Haskell.Extra.Dec`, giving
+  decidability of pairs and `Either` values from decidability of their
+  components.
+- Added `Surjection₂` and `MonoidSurjection₂` to `Haskell.Law.Function`,
+  together with lemmas for transferring algebraic laws along a surjective
+  homomorphism. These are used to derive the `Word` laws from the `Nat` laws.
 
 Changes to the agda2hs Prelude
 ------------------------------
 
+- The `number`, `numZero`, and `numOne` fields of the `Num` type class have
+  been replaced by the `numberFromNum` function and the `zeroOK` and `oneOK`
+  fields. The `IsLawfulNum` laws no longer require `FromIntegerOK` arguments
+  for `0` and `1`.
+- The `∃` type in `Haskell.Extra.Refinement` now has the constructor `_⟨⟩`
+  with an implicit proof argument. The old syntax `x ⟨ p ⟩` is still
+  available as a pattern synonym.
 - The `Word` laws in `Haskell.Law.Num.Word` are now derived from the fact that
   `n2w` is a surjective homomorphism from `Nat` to `Word`. The previous
   postulates that `w2n` preserves addition and multiplication ignored wrapping
