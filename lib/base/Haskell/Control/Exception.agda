@@ -125,6 +125,13 @@ postulate instance
 -- @MayThrow e a@ becomes just @a@ and the constructors are erased. Hence the
 -- constructors cannot be pattern matched in functions that are compiled to
 -- Haskell.
+--
+-- This makes the definition of @throw@ sound on the Agda side, since there is
+-- no way to obtain an @a@ from a @MayThrow e a@. However, it does not prevent
+-- code whose type does not mention @MayThrow@ from throwing an exception:
+-- because @MayThrow e a@ is compiled to @a@, a value of this type can still be
+-- forced by strict code (a strict field, @seq@, ...), which raises the
+-- exception at that point.
 data MayThrow (e : Set) (a : Set) : Set where
   ok : a → MayThrow e a
   throw  : {{Exception e}} → e → MayThrow e a
