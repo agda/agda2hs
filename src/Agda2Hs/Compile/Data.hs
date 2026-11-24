@@ -24,6 +24,7 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
+import Agda2Hs.Language.Haskell.Utils ( alphaEq )
 
 import Agda2Hs.Pragma
 
@@ -167,7 +168,7 @@ checkCompileToDataPragma def s = noCheckNames $ noWriteExports $ do
   unless (length rpars == length dpars) $ fail
     "they have a different number of parameters"
   forM_ (zip dpars rpars) $ \(Hs.KindedVar _ a ak, Hs.KindedVar _ b bk) ->
-    unless (ak == bk) $ fail $
+    unless (alphaEq ak bk) $ fail $
       "parameter" <+> text (Hs.pp a) <+> "of kind" <+> text (Hs.pp ak) <+>
       "does not match" <+> text (Hs.pp b) <+> "of kind" <+> text (Hs.pp bk)
   -- Check that d has no non-erased indices
@@ -190,7 +191,7 @@ checkCompileToDataPragma def s = noCheckNames $ noWriteExports $ do
     -- automatic, because the datatype is not allowed to have any non-erased
     -- indices and the parameters have already been checked to match. The check
     -- matters once indexed (GADT) datatypes are supported.
-    unless (rt1 == rt2) $ fail $
+    unless (alphaEq rt1 rt2) $ fail $
       "the result type of constructor" <+> text (Hs.pp hsC1) <+>
       "does not match" <+> text (Hs.pp hsC2)
     unless (hsC1 == hsC2) $ warn $
@@ -200,7 +201,7 @@ checkCompileToDataPragma def s = noCheckNames $ noWriteExports $ do
       "number of arguments to" <+> text (Hs.pp hsC1) <+>
       "does not match with" <+> text (Hs.pp hsC2)
     forM_ (zip args1 args2) $ \(b1, b2) ->
-      unless (b1 == b2) $ fail $
+      unless (alphaEq b1 b2) $ fail $
         "constructor argument type" <+> text (Hs.pp b1) <+>
         "does not match with" <+> text (Hs.pp b2)
     addCompileToName c1 c2
