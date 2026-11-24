@@ -37,7 +37,7 @@ import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
-  ( pp, replaceName, unQual )
+  ( pp, replaceName, unQual, eApp, patToExp )
 
 enableCopatterns :: C a -> C a
 enableCopatterns = local $ \e -> e { copatternsEnabled = True }
@@ -137,7 +137,7 @@ checkCompileToInstancePragma def s = noCheckNames $ noWriteExports $ do
                   [ text "compiled source instance:" <+> text (pp d)
                   , text "compiled target instance:" <+> text (pp rd)
                   ]
-                unless (d == rd) $ warn $
+                unless (consistentInstances d rd) $ warn $
                   [ nest 2 "but the two instances do not compile to the same Haskell declaration:" ] ++
                   concat
                     [ ((text "compiled instance" <+> prettyTCM q) <> text ":") :
@@ -147,6 +147,39 @@ checkCompileToInstancePragma def s = noCheckNames $ noWriteExports $ do
             (\e -> do
               msg <- prettyError e
               unchecked $ vcat [ "the instances could not be compiled:", nest 2 (pure msg) ])
+
+
+-- | Whether the compiled source instance is consistent with the compiled
+-- target instance. Besides being syntactically equal, an instance with the same
+-- head is consistent if every one of its clauses is an identity clause, i.e. it
+-- just applies the method being defined to its arguments (for instance
+-- @x == y = x == y@). Such a clause is the identity function and hence defers
+-- to the instance that is in scope, which is the instance the source is
+-- compiled to.
+consistentInstances :: Hs.Decl () -> Hs.Decl () -> Bool
+consistentInstances d rd =
+  d == rd || (instanceHead d == instanceHead rd && all identityClause (instanceClauses d))
+
+-- | The overlap and instance rule of an instance declaration.
+instanceHead :: Hs.Decl () -> Maybe (Maybe (Hs.Overlap ()), Hs.InstRule ())
+instanceHead (Hs.InstDecl _ ov ir _) = Just (ov, ir)
+instanceHead _                       = Nothing
+
+-- | All clauses of the method definitions of a compiled instance declaration.
+instanceClauses :: Hs.Decl () -> [Hs.Match ()]
+instanceClauses (Hs.InstDecl _ _ _ (Just ds)) =
+  [ m | Hs.InsDecl _ (Hs.FunBind _ ms) <- ds, m <- ms ]
+instanceClauses _ = []
+
+-- | Whether a clause just applies the method being defined to its arguments,
+-- e.g. @x == y = x == y@.
+identityClause :: Hs.Match () -> Bool
+identityClause = \case
+  Hs.Match _ f ps (Hs.UnGuardedRhs _ e) _ ->
+    Just e == (eApp (Hs.Var () $ Hs.UnQual () f) <$> traverse patToExp ps)
+  Hs.InfixMatch _ p f qs (Hs.UnGuardedRhs _ e) _ ->
+    Just e == (eApp (Hs.Var () $ Hs.UnQual () f) <$> traverse patToExp (p : qs))
+  _ -> False
 
 
 compileInstRule :: [Hs.TyVarBind ()] -> [Hs.Asst ()] -> Term -> C (Hs.InstRule ())

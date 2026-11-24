@@ -1,0 +1,3 @@
+test/Fail/CompileToInstanceUnboxedNoTo.agda:10.3-10: error: [CustomBackendError]
+agda2hs:
+  The instance iEqWrap is for the type Wrap which is compiled to another Haskell type, so it must also have a `to` pragma.
