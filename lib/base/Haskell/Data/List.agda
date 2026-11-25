@@ -13,6 +13,7 @@ open import Haskell.Law.Equality
 
 partition : (a → Bool) → List a → (List a × List a)
 partition p xs = (filter p xs , filter (not ∘ p) xs)
+{-# COMPILE AGDA2HS partition existing #-}
 
 -- | Delete all occurrences of an item.
 -- Not part of 'Data.List'.
@@ -25,18 +26,22 @@ deleteAll x = filter (not ∘ (x ==_))
 nub : ⦃ _ : Eq a ⦄ → @0 ⦃ IsLawfulEq a ⦄ → List a → List a
 nub [] = []
 nub (x ∷ xs) = x ∷ deleteAll x (nub xs)
+{-# COMPILE AGDA2HS nub existing #-}
 
 postulate
   sortBy : (a → a → Ordering) → List a → List a
+{-# COMPILE AGDA2HS sortBy existing #-}
 
 sort : ⦃ Ord a ⦄ → List a → List a
 sort = sortBy compare
+{-# COMPILE AGDA2HS sort existing #-}
 
 sortOn : ⦃ Ord b ⦄ → (a → b) → List a → List a
 sortOn f =
     map snd
     ∘ sortBy (comparing fst)
     ∘ map (λ x → let y = f x in seq y (y , x))
+{-# COMPILE AGDA2HS sortOn existing #-}
 
 {-----------------------------------------------------------------------------
     Properties
