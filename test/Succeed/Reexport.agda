@@ -6,7 +6,7 @@ open import Inlining public
 -- Nothing is reexported on Haskell side -> dropped
 open import ExportTransparentOnly public
 
--- Reexport HsModule
+-- Reexport HsModule that exports an 'existing' item
 open import Haskell.Data.Void public
 
 -- Reexport erased HsModule -> dropped
