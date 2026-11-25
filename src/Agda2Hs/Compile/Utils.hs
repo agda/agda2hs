@@ -46,7 +46,7 @@ import Agda.Utils.Monad
 import Agda.Utils.Singleton
 import Agda.Utils.Tuple.Strict ( Pair(..) )
 
-import Agda2Hs.AgdaUtils ( (~~), isPublicName, getTopLevelModuleForQName, isExportedFromDefiningModule, topLevelModuleNameForModuleName )
+import Agda2Hs.AgdaUtils ( (~~), isPublicName, isExportedFromDefiningModule, topLevelModuleNameForModuleName )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Pragma
 import qualified Data.List as L
@@ -609,10 +609,5 @@ hasHaskellEntity = liftTCM . go
               | Constructor {conData = dt} <- theDef def -> go dt
               | Function {funProjection = proj} <- theDef def
               , Right (Projection {projProper = Just{}, projFromType = rt}) <- proj -> go $ unArg rt
-              | otherwise -> do
-                  mod <- getTopLevelModuleForQName name
-                  -- returning True for PrimModule is an over-approximation!
-                  -- TODO(satoshi): revisit once primitive modules only contain
-                  -- bindings to Haskell's Prelude.
-                  pure $ hsModuleKind mod `elem` [PrimModule, HsModule]
+              | otherwise -> pure False
         ]

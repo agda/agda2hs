@@ -1,6 +1,6 @@
 module Agda2Hs.Render where
 
-import Control.Monad ( unless )
+import Control.Monad ( when )
 import Control.Monad.IO.Class ( MonadIO(liftIO) )
 
 import Data.Bifunctor ( bimap )
@@ -15,6 +15,7 @@ import Agda.Compiler.Backend
 
 import Agda.Syntax.Position
 import Agda.Syntax.Common.Pretty ( prettyShow )
+import Agda.Utils.Monad ( and2M, orM )
 
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Ports
@@ -74,10 +75,9 @@ writeModule genv menv isMain m outs = do
       exps = concat expss
       exts = concat extss
 
-  hasExports <- case hsModuleKind m of
-    AgdaModule -> hasHaskellExports m
-    _          -> pure False
-  unless (null code && null defs && isMain == NotMain && not hasExports) $ do
+  write <- pure (hsModuleKind m == AgdaModule) `and2M`
+    orM [pure $ not (null code && null defs), pure $ isMain == IsMain, hasHaskellExports m]
+  when write $ do
 
     let unlines' [] = []
         unlines' ss = unlines ss ++ "\n"

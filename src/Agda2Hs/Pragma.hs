@@ -1,7 +1,6 @@
 module Agda2Hs.Pragma where
 
 import Data.List ( isPrefixOf )
-import Data.Maybe ( fromMaybe )
 import qualified Data.Map as Map
 import qualified Data.Text as Text
 
@@ -30,10 +29,12 @@ languagePragmas (Hs.Module _ _ ps _ _, _) =
   [ Hs.parseExtension s | Hs.LanguagePragma _ ss <- ps, Hs.Ident _ s <- ss ]
 languagePragmas _ = []
 
+getForeignCode :: TCM [ForeignCode]
+getForeignCode =
+  reverse . maybe [] getForeignCodeStack . Map.lookup pragmaName . iForeignCode <$> curIF
+
 getForeignPragmas :: [Hs.Extension] -> TCM [(Range, Code)]
-getForeignPragmas exts = do
-  pragmas <- fromMaybe [] . fmap getForeignCodeStack . Map.lookup pragmaName . iForeignCode <$> curIF
-  getCode exts $ reverse pragmas
+getForeignPragmas exts = getCode exts =<< getForeignCode
   where
     getCode :: [Hs.Extension] -> [ForeignCode] -> TCM [(Range, Code)]
     getCode _ [] = return []

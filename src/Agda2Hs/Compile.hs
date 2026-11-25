@@ -26,7 +26,7 @@ import Agda.Utils.Impossible
 import Agda.Utils.Maybe
 import Agda.Utils.List
 import Agda.Utils.Null
-import Agda.Utils.Monad ( whenM, anyM, when, unless )
+import Agda.Utils.Monad ( whenM, anyM, when )
 
 import Agda2Hs.AgdaUtils ( resolveStringName )
 import Agda2Hs.Compile.ClassInstance ( compileInstance, checkCompileToInstancePragma )
@@ -242,16 +242,21 @@ verifyOutput _ _ _ m ls = do
       when (length duplicateNames > 0) $
         agda2hsErrorM $ vcat (map (\x -> text $ "Cannot generate multiple definitions with the same name: " <> Hs.prettyPrint (headWithDefault __IMPOSSIBLE__ x)) duplicateNames)
 
-    ensureNoOutputFromHsModules = unless (null $ concat $ map fst ls) $ do
-      case hsModuleKind m of
-        HsModule -> do
+    -- Haskell modules bind existing Haskell modules, so they must not produce any code.
+    ensureNoOutputFromHsModules = when (hsModuleKind m == HsModule) $ do
+      case [ r | (cdef, _) <- ls, (r, ds) <- cdef, not (null ds) ] of
+        r : _ -> setCurrentRange r $ do
           reportSDoc "agda2hs.compile" 10 $ text "Haskell module" <+> prettyTCM m <+> text "has non-null output."
-          agda2hsErrorM $ hsep
-            (  pwords "The `Haskell.` namespace are reserved for binding existing Haskell modules, so the module"
-            ++ [text "`" <> prettyTCM m <> text "`"]
-            ++ pwords "should not contain any"
-            ++ [text "`{-# COMPILE AGDA2HS ... #-}`"]
-            ++ pwords "pragmas that produce Haskell code."
-            )
-        PrimModule -> __IMPOSSIBLE__
-        AgdaModule -> return ()
+          rejectInHsModule "`{-# COMPILE AGDA2HS ... #-}` pragmas that produce Haskell code."
+        [] -> return ()
+      getForeignCode >>= \case
+        ForeignCode r _ : _ -> setCurrentRange r $
+          rejectInHsModule "`{-# FOREIGN AGDA2HS ... #-}` pragmas."
+        [] -> return ()
+
+    rejectInHsModule what = agda2hsErrorM $ hsep
+      (  pwords "The `Haskell.` namespace is reserved for binding existing Haskell modules, so the module"
+      ++ [text "`" <> prettyTCM m <> text "`"]
+      ++ pwords "should not contain any"
+      ++ pwords what
+      )

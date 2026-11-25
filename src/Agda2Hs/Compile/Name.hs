@@ -155,7 +155,6 @@ compileQName f = do
     existsInHaskell <- orM
       [ pure $ isJust special
       , pure $ mkind == PrimModule
-      , pure $ mkind == HsModule
       , hasCompilePragma f
       , isClassFunction f
       , isWhereFunction f

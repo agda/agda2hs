@@ -51,8 +51,8 @@ compilePorts preOpts@PreludeOpts{..} top menv imps0 es0 = do
 
   let isPrelude = (== Hs.prelude_mod ())
 
-  -- the 'hiding' list also applies to the reexport of the prelude, which would
-  -- silently not export the hidden names
+  -- Reexported names from Prelude must not be hidden by the config,
+  -- otherwise they would silently not be exported.
   when (preludeImplicit && not (null preludeHiding)) $
     forM_ reexps $ \(ReexportModule m _ r) ->
       when (isPrelude m) $
@@ -111,7 +111,6 @@ preludeImportDecl (PreludeOpts{..}) =
 -- extract re-exports
 
 -- | Does the Haskell module corresponding to the given Agda module export anything?
--- NOTE: This function may over-approximate, inheriting hasHaskellEntity
 hasHaskellExports :: TopLevelModuleName -> TCM Bool
 hasHaskellExports mname = do
   iface <- maybe __IMPOSSIBLE__ miInterface <$> getVisitedModule mname
@@ -188,9 +187,9 @@ collectReexports topInfo = go False $ insideDecls topInfo
 translateReexport :: TopLevelModuleName -> AgdaReexport -> TCM Reexports
 translateReexport current (AgdaReexport range tlm asName) =
   case hsModuleKind tlm of
+    -- TODO(satoshi): once PrimModules only contain items with a Prelude
+    -- counterpart, compile this to an explicit list of those items.
     PrimModule
-      -- TODO(satoshi): once PrimModules only contain items with a Prelude
-      -- counterpart, compile this to an explicit list of those items.
       | prettyShow tlm /= "Haskell.Prelude" ->
           [] <$ warnDropReexport range tlm "not supported yet"
       | otherwise -> translate
