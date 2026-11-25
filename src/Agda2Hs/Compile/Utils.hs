@@ -53,7 +53,7 @@ import qualified Data.List as L
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.Language.Haskell.Utils
-  ( validVarName, validTypeName, validConName, hsName, hsModuleName, pp )
+  ( validVarName, validTypeName, validConName, hsName )
 
 agda2hsError :: (HasCallStack, MonadTCError m) => Doc -> m a
 agda2hsError msg = typeError $ CustomBackendError "agda2hs" msg
@@ -87,12 +87,15 @@ primModules =
   ]
 
 hsModuleKind :: TopLevelModuleName -> HsModuleKind
-hsModuleKind mod
+hsModuleKind = moduleKindOfName . prettyShow
+
+-- | The kind of a module, given its (printed) name. Also works for submodules,
+--   as only the prefix of the name matters.
+moduleKindOfName :: String -> HsModuleKind
+moduleKindOfName ppmod
   | any (`isPrefixOf` ppmod) primModules = PrimModule
   | "Haskell." `isPrefixOf` ppmod        = HsModule
   | otherwise                            = AgdaModule
-  where
-    ppmod = prettyShow mod
 
 dropHaskellPrefix :: Hs.ModuleName () -> Hs.ModuleName ()
 dropHaskellPrefix (Hs.ModuleName l s) =
@@ -405,7 +408,7 @@ requireCompileToInstancePragma def =
 -- | Whether agda2hs compiles code for the given module. Definitions in
 --   primitive or Haskell modules (such as the Prelude) are trusted instead.
 isCompiledModule :: ModuleName -> Bool
-isCompiledModule m = hsModuleKind (hsModuleName $ prettyShow m) == AgdaModule
+isCompiledModule m = moduleKindOfName (prettyShow m) == AgdaModule
 
 withNestedType :: C a -> C a
 withNestedType = local $ \e -> e { isNestedInType = True }

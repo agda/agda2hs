@@ -119,7 +119,7 @@ recoverAbstrSynAction m = do
       src <- Imp.parseSource srcFile
       let srcOrigin = Imp.srcOrigin src
           topDecls = C.modDecls (Imp.srcModule src)
-      info <- localTCState $ localTC (\e -> e { envCurrentPath = Just (srcFileId srcFile) }) $ do
+      info <- localTCState $ localTC (set eCurrentPath (Just (srcFileId srcFile))) $ do
         setScope emptyScopeInfo
         concreteToAbstract_ (TopLevel srcOrigin m topDecls)
       liftIO $ writeIORef ref (Just info)

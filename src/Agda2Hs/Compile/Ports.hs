@@ -210,7 +210,7 @@ translateReexport current (AgdaReexport range tlm asName) =
     compileModuleAlias name = do
       let name' = Hs.hsModuleName $ prettyShow name
       unless (validModuleName name') $
-        badReexport range tlm $ pretty name <+> "is not a valid Haskell module name"
+        badReexport name tlm $ pretty name <+> "is not a valid Haskell module name"
       pure name'
 
 
