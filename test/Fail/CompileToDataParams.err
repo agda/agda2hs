@@ -1,0 +1,8 @@
+test/Fail/CompileToDataParams.agda:14.6-9: warning: -W[no]CustomBackendWarning
+agda2hs:
+  The datatype Bar is annotated with a `to` pragma targeting Foo,
+    but the name of constructor D does not match C
+
+test/Fail/CompileToDataParams.agda:14.6-9: error: [CustomBackendError]
+agda2hs:
+  Cannot compile datatype Bar to Foo because constructor argument type a does not match with b

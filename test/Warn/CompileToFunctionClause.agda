@@ -16,3 +16,22 @@ source : Bool → Bool
 source True  = False
 source False = True
 {-# COMPILE AGDA2HS source to target #-}
+
+-- A local helper whose argument shadows a pattern variable of the enclosing
+-- function. The helper of `sourceShadow` returns the enclosing parameter,
+-- while the helper of `targetShadow` returns its own argument. The two
+-- functions are not alpha-equivalent: shadowing must not be ignored.
+targetShadow : Nat → Nat
+targetShadow x = go 0
+  where
+    go : Nat → Nat
+    go x = x
+
+sourceShadow : Nat → Nat
+sourceShadow x = go 0
+  where
+    go : Nat → Nat
+    go y = x
+
+{-# COMPILE AGDA2HS targetShadow #-}
+{-# COMPILE AGDA2HS sourceShadow to targetShadow #-}

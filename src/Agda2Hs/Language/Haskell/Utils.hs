@@ -6,9 +6,9 @@ import Prelude hiding ( foldl' )
 import Control.Monad ( guard )
 
 import Data.Data ( Data, cast, toConstr )
-import Data.Generics ( listify, everywhere, everything, everythingWithContext, mkQ, mkT, extT )
+import Data.Generics ( listify, everywhere, everything, everythingWithContext, mkQ, mkT, extQ, extT )
 import Data.Generics.Twins ( gzipWithQ )
-import Data.List ( foldl' )
+import Data.List ( find, foldl' )
 import Data.Map ( Map )
 
 import qualified Data.Map as Map
@@ -146,6 +146,14 @@ type AlphaRenaming = [(Name (), Name ())]
 alphaEq :: Data a => a -> a -> Bool
 alphaEq = eqAlpha []
 
+-- | Like 'alphaEq', but the names in the given renaming are treated as bound
+-- and are matched according to the renaming rather than being implicitly
+-- universally quantified. This is needed when comparing Haskell code in which
+-- the names in question are bound by, for example, a datatype's type
+-- parameters.
+alphaEqWith :: Data a => AlphaRenaming -> a -> a -> Bool
+alphaEqWith = eqAlpha
+
 eqAlpha :: forall d e. (Data d, Data e) => AlphaRenaming -> d -> e -> Bool
 eqAlpha ren x y
   | Just (x' :: Match ())    <- cast x, Just (y' :: Match ())    <- cast y = eqMatch ren x' y'
@@ -162,10 +170,14 @@ eqAlpha ren x y
 eqStruct :: forall d e. (Data d, Data e) => AlphaRenaming -> d -> e -> Bool
 eqStruct ren x y = toConstr x == toConstr y && and (gzipWithQ (eqAlpha ren) x y)
 
+-- | Compare two names under the given renaming. The renaming is ordered from
+-- innermost to outermost binding. The first entry that mentions either name
+-- determines which binder each of them refers to; if they refer to different
+-- binders (or one is free and the other bound) the names are not equal.
 eqName :: AlphaRenaming -> Name () -> Name () -> Bool
-eqName ren x y = case lookup x ren of
-  Just y' -> y == y'
-  Nothing -> x == y && y `notElem` map snd ren
+eqName ren x y = case find (\(x', y') -> x' == x || y' == y) ren of
+  Just (x', y') -> x' == x && y' == y
+  Nothing -> x == y
 
 eqQName :: AlphaRenaming -> QName () -> QName () -> Bool
 eqQName ren (UnQual _ x) (UnQual _ y) = eqName ren x y
@@ -250,21 +262,29 @@ eqType ren (TyForall _ mvs mctx t) (TyForall _ mvs2 mctx2 t2) =
         y = TyForall () mvs2 mctx2 t2
 eqType ren x y = eqStruct (freeTyVars ren x y) x y
 
--- | Extend a renaming with the free variables of two types, which are
+-- | Extend a renaming with the free variables of two terms, which are
 -- implicitly universally quantified.
-freeTyVars :: AlphaRenaming -> Type () -> Type () -> AlphaRenaming
+freeTyVars :: (Data a, Data b) => AlphaRenaming -> a -> b -> AlphaRenaming
 freeTyVars ren x y = zip (freeVars (map fst ren) x) (freeVars (map snd ren) y) ++ ren
 
--- | The type variables of a type that are not in the given set of bound names,
--- in order of first occurrence.
-freeVars :: [Name ()] -> Type () -> [Name ()]
+-- | The type variables of a term that are not in the given set of bound names,
+-- in order of first occurrence. Explicitly quantified variables are excluded.
+freeVars :: Data a => [Name ()] -> a -> [Name ()]
 freeVars bound0 = everythingWithContext bound0 (++) collect
   where
     collect :: forall a. Data a => a -> [Name ()] -> ([Name ()], [Name ()])
-    collect = mkQ (\bound -> ([], bound)) $ \case
+    collect = mkQ (\bound -> ([], bound)) collectType `extQ` collectInst
+
+    collectType :: Type () -> [Name ()] -> ([Name ()], [Name ()])
+    collectType = \case
       TyForall _ mvs _ _ -> \bound -> ([], tyVarBinders mvs ++ bound)
       TyVar _ n          -> \bound -> ([n | n `notElem` bound], bound)
       _                  -> \bound -> ([], bound)
+
+    collectInst :: InstRule () -> [Name ()] -> ([Name ()], [Name ()])
+    collectInst = \case
+      IRule _ mvs _ _ -> \bound -> ([], tyVarBinders mvs ++ bound)
+      _               -> \bound -> ([], bound)
 
 -- Declarations
 
@@ -288,7 +308,9 @@ eqInstRule ren (IRule _ mvs mctx ih) (IRule _ mvs2 mctx2 ih2) =
       eqAlpha ren' mvs mvs2
    && eqAlpha ren' mctx mctx2
    && eqAlpha ren' ih ih2
-  where ren' = zip (tyVarBinders mvs) (tyVarBinders mvs2) ++ ren
+  where ren' = zip (tyVarBinders mvs) (tyVarBinders mvs2) ++ freeTyVars ren x y
+        x = IRule () mvs mctx ih
+        y = IRule () mvs2 mctx2 ih2
 eqInstRule ren (IParen _ ir) (IParen _ ir2) = eqInstRule ren ir ir2
 eqInstRule _ _ _ = False
 
