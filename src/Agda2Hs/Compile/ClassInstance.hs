@@ -36,7 +36,7 @@ import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
-  ( pp, replaceName, unQual, eApp, patToExp )
+  ( alphaEq, pp, replaceName, unQual, eApp, patToExp )
 
 enableCopatterns :: C a -> C a
 enableCopatterns = local $ \e -> e { copatternsEnabled = True }
@@ -157,7 +157,7 @@ checkCompileToInstancePragma def s = noCheckNames $ noWriteExports $ do
 -- compiled to.
 consistentInstances :: Hs.Decl () -> Hs.Decl () -> Bool
 consistentInstances d rd =
-  d == rd || (instanceHead d == instanceHead rd && all identityClause (instanceClauses d))
+  alphaEq d rd || (alphaEq (instanceHead d) (instanceHead rd) && all identityClause (instanceClauses d))
 
 -- | The overlap and instance rule of an instance declaration.
 instanceHead :: Hs.Decl () -> Maybe (Maybe (Hs.Overlap ()), Hs.InstRule ())

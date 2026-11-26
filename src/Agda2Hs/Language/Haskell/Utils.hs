@@ -5,9 +5,10 @@ import Prelude hiding ( foldl' )
 
 import Control.Monad ( guard )
 
-import Data.Data ( Data )
-import Data.Generics ( listify, everywhere, mkT, extT )
-import Data.List ( foldl' )
+import Data.Data ( Data, cast, toConstr )
+import Data.Generics ( listify, everywhere, everything, everythingWithContext, mkQ, mkT, extQ, extT )
+import Data.Generics.Twins ( gzipWithQ )
+import Data.List ( find, foldl' )
 import Data.Map ( Map )
 
 import qualified Data.Map as Map
@@ -130,6 +131,218 @@ declaredNames = \case
   FunBind _ ms             -> take 1 (map definedName ms)
   PatBind _ p _ _          -> [n | PVar _ n <- [p]]
   _                        -> []
+
+-- Alpha-equivalence --------------------------------------------------------
+
+-- | A renaming pairing names bound in the left term with the corresponding
+-- names bound in the right term.
+type AlphaRenaming = [(Name (), Name ())]
+
+-- | Compare two Haskell terms up to alpha-equivalence of locally bound names.
+--
+-- Local variables (pattern variables, type variables, lambda and @let@ bound
+-- variables, and names bound in a @do@ block) and the names of auxiliary
+-- definitions from a @where@ block may differ between the two terms.
+alphaEq :: Data a => a -> a -> Bool
+alphaEq = eqAlpha []
+
+-- | Like 'alphaEq', but the names in the given renaming are treated as bound
+-- and are matched according to the renaming rather than being implicitly
+-- universally quantified. This is needed when comparing Haskell code in which
+-- the names in question are bound by, for example, a datatype's type
+-- parameters.
+alphaEqWith :: Data a => AlphaRenaming -> a -> a -> Bool
+alphaEqWith = eqAlpha
+
+eqAlpha :: forall d e. (Data d, Data e) => AlphaRenaming -> d -> e -> Bool
+eqAlpha ren x y
+  | Just (x' :: Match ())    <- cast x, Just (y' :: Match ())    <- cast y = eqMatch ren x' y'
+  | Just (x' :: Alt ())      <- cast x, Just (y' :: Alt ())      <- cast y = eqAlt ren x' y'
+  | Just (x' :: Exp ())      <- cast x, Just (y' :: Exp ())      <- cast y = eqExp ren x' y'
+  | Just (x' :: Type ())     <- cast x, Just (y' :: Type ())     <- cast y = eqType ren x' y'
+  | Just (x' :: Decl ())     <- cast x, Just (y' :: Decl ())     <- cast y = eqDecl ren x' y'
+  | Just (x' :: InstRule ()) <- cast x, Just (y' :: InstRule ()) <- cast y = eqInstRule ren x' y'
+  | Just (x' :: QName ())    <- cast x, Just (y' :: QName ())    <- cast y = eqQName ren x' y'
+  | Just (x' :: Name ())     <- cast x, Just (y' :: Name ())     <- cast y = eqName ren x' y'
+  | otherwise = eqStruct ren x y
+
+-- | Compare two values structurally, assuming they have the same constructor.
+eqStruct :: forall d e. (Data d, Data e) => AlphaRenaming -> d -> e -> Bool
+eqStruct ren x y = toConstr x == toConstr y && and (gzipWithQ (eqAlpha ren) x y)
+
+-- | Compare two names under the given renaming. The renaming is ordered from
+-- innermost to outermost binding. The first entry that mentions either name
+-- determines which binder each of them refers to; if they refer to different
+-- binders (or one is free and the other bound) the names are not equal.
+eqName :: AlphaRenaming -> Name () -> Name () -> Bool
+eqName ren x y = case find (\(x', y') -> x' == x || y' == y) ren of
+  Just (x', y') -> x' == x && y' == y
+  Nothing -> x == y
+
+eqQName :: AlphaRenaming -> QName () -> QName () -> Bool
+eqQName ren (UnQual _ x) (UnQual _ y) = eqName ren x y
+eqQName _ x y = x == y
+
+-- Clauses
+
+eqMatch :: AlphaRenaming -> Match () -> Match () -> Bool
+eqMatch ren (Match _ f ps rhs bnds) (Match _ g qs rhs2 bnds2) =
+      eqAlpha ren f g
+   && eqAlpha ren' ps qs
+   && eqAlpha ren' rhs rhs2
+   && eqAlpha ren' bnds bnds2
+  where ren' = localBinders ps bnds qs bnds2 ++ ren
+eqMatch ren (InfixMatch _ p f ps rhs bnds) (InfixMatch _ q g qs rhs2 bnds2) =
+      eqAlpha ren f g
+   && eqAlpha ren' (p : ps) (q : qs)
+   && eqAlpha ren' rhs rhs2
+   && eqAlpha ren' bnds bnds2
+  where ren' = localBinders (p : ps) bnds (q : qs) bnds2 ++ ren
+eqMatch _ _ _ = False
+
+eqAlt :: AlphaRenaming -> Alt () -> Alt () -> Bool
+eqAlt ren (Alt _ p rhs bnds) (Alt _ q rhs2 bnds2) =
+      eqAlpha ren' p q
+   && eqAlpha ren' rhs rhs2
+   && eqAlpha ren' bnds bnds2
+  where ren' = localBinders [p] bnds [q] bnds2 ++ ren
+
+-- | Extend a renaming with the pattern variables of some patterns and the
+-- names declared by a @where@ block.
+localBinders :: [Pat ()] -> Maybe (Binds ()) -> [Pat ()] -> Maybe (Binds ()) -> AlphaRenaming
+localBinders ps bnds qs bnds2 =
+  zip (patBinders ps) (patBinders qs) ++ zip (bindsBinders bnds) (bindsBinders bnds2)
+
+-- Expressions
+
+eqExp :: AlphaRenaming -> Exp () -> Exp () -> Bool
+eqExp ren (Lambda _ ps e) (Lambda _ qs f) =
+      eqAlpha ren' ps qs && eqAlpha ren' e f
+  where ren' = zip (patBinders ps) (patBinders qs) ++ ren
+eqExp ren (Let _ bnds e) (Let _ bnds2 f) =
+      eqAlpha ren' bnds bnds2 && eqAlpha ren' e f
+  where ren' = zip (bindsBinders (Just bnds)) (bindsBinders (Just bnds2)) ++ ren
+eqExp ren (Do _ ss) (Do _ ts) = eqDo ren ss ts
+eqExp ren (MDo _ ss) (MDo _ ts) = eqDo ren ss ts
+eqExp ren x y = eqStruct ren x y
+
+eqDo :: AlphaRenaming -> [Stmt ()] -> [Stmt ()] -> Bool
+eqDo ren (s : ss) (t : ts) = eqStmt ren s t && eqDo (stmtBinders s t ren) ss ts
+eqDo _ [] [] = True
+eqDo _ _ _ = False
+
+eqStmt :: AlphaRenaming -> Stmt () -> Stmt () -> Bool
+eqStmt ren (Generator _ p e) (Generator _ q f) =
+      eqAlpha ren' p q && eqAlpha ren e f
+  where ren' = zip (patBinders p) (patBinders q) ++ ren
+eqStmt ren (Qualifier _ e) (Qualifier _ f) = eqAlpha ren e f
+eqStmt ren (LetStmt _ bnds) (LetStmt _ bnds2) =
+      eqAlpha ren' bnds bnds2
+  where ren' = zip (bindsBinders (Just bnds)) (bindsBinders (Just bnds2)) ++ ren
+eqStmt _ _ _ = False
+
+-- | Extend a renaming with the names bound by a statement, for the statements
+-- that follow it.
+stmtBinders :: Stmt () -> Stmt () -> AlphaRenaming -> AlphaRenaming
+stmtBinders (Generator _ p _) (Generator _ q _) ren =
+  zip (patBinders p) (patBinders q) ++ ren
+stmtBinders (LetStmt _ bnds) (LetStmt _ bnds2) ren =
+  zip (bindsBinders (Just bnds)) (bindsBinders (Just bnds2)) ++ ren
+stmtBinders _ _ ren = ren
+
+-- Types
+
+eqType :: AlphaRenaming -> Type () -> Type () -> Bool
+eqType ren (TyForall _ mvs mctx t) (TyForall _ mvs2 mctx2 t2) =
+      eqAlpha ren' mvs mvs2
+   && eqAlpha ren' mctx mctx2
+   && eqAlpha ren' t t2
+  where ren' = zip (tyVarBinders mvs) (tyVarBinders mvs2) ++ freeTyVars ren x y
+        x = TyForall () mvs mctx t
+        y = TyForall () mvs2 mctx2 t2
+eqType ren x y = eqStruct (freeTyVars ren x y) x y
+
+-- | Extend a renaming with the free variables of two terms, which are
+-- implicitly universally quantified.
+freeTyVars :: (Data a, Data b) => AlphaRenaming -> a -> b -> AlphaRenaming
+freeTyVars ren x y = zip (freeVars (map fst ren) x) (freeVars (map snd ren) y) ++ ren
+
+-- | The type variables of a term that are not in the given set of bound names,
+-- in order of first occurrence. Explicitly quantified variables are excluded.
+freeVars :: Data a => [Name ()] -> a -> [Name ()]
+freeVars bound0 = everythingWithContext bound0 (++) collect
+  where
+    collect :: forall a. Data a => a -> [Name ()] -> ([Name ()], [Name ()])
+    collect = mkQ (\bound -> ([], bound)) collectType `extQ` collectInst
+
+    collectType :: Type () -> [Name ()] -> ([Name ()], [Name ()])
+    collectType = \case
+      TyForall _ mvs _ _ -> \bound -> ([], tyVarBinders mvs ++ bound)
+      TyVar _ n          -> \bound -> ([n | n `notElem` bound], bound)
+      _                  -> \bound -> ([], bound)
+
+    collectInst :: InstRule () -> [Name ()] -> ([Name ()], [Name ()])
+    collectInst = \case
+      IRule _ mvs _ _ -> \bound -> ([], tyVarBinders mvs ++ bound)
+      _               -> \bound -> ([], bound)
+
+-- Declarations
+
+eqDecl :: AlphaRenaming -> Decl () -> Decl () -> Bool
+eqDecl ren (PatBind _ p rhs bnds) (PatBind _ q rhs2 bnds2) =
+      eqAlpha ren' p q
+   && eqAlpha ren' rhs rhs2
+   && eqAlpha ren' bnds bnds2
+  where ren' = localBinders [p] bnds [q] bnds2 ++ ren
+eqDecl ren (InstDecl _ ov ir mds) (InstDecl _ ov2 ir2 mds2) =
+      eqAlpha ren' ov ov2
+   && eqAlpha ren' ir ir2
+   && eqAlpha ren' mds mds2
+  where ren' = zip (instRuleBinders ir) (instRuleBinders ir2) ++ ren
+eqDecl ren x y = eqStruct ren x y
+
+-- Instances
+
+eqInstRule :: AlphaRenaming -> InstRule () -> InstRule () -> Bool
+eqInstRule ren (IRule _ mvs mctx ih) (IRule _ mvs2 mctx2 ih2) =
+      eqAlpha ren' mvs mvs2
+   && eqAlpha ren' mctx mctx2
+   && eqAlpha ren' ih ih2
+  where ren' = zip (tyVarBinders mvs) (tyVarBinders mvs2) ++ freeTyVars ren x y
+        x = IRule () mvs mctx ih
+        y = IRule () mvs2 mctx2 ih2
+eqInstRule ren (IParen _ ir) (IParen _ ir2) = eqInstRule ren ir ir2
+eqInstRule _ _ _ = False
+
+instRuleBinders :: InstRule () -> [Name ()]
+instRuleBinders (IRule _ mvs _ _) = tyVarBinders mvs
+instRuleBinders (IParen _ ir) = instRuleBinders ir
+
+-- Binders
+
+patBinders :: Data a => a -> [Name ()]
+patBinders = everything (++) (mkQ [] go)
+  where
+    go :: Pat () -> [Name ()]
+    go (PVar _ n) = [n]
+    go (PAsPat _ n _) = [n]
+    go _ = []
+
+tyVarBinders :: Maybe [TyVarBind ()] -> [Name ()]
+tyVarBinders Nothing = []
+tyVarBinders (Just vs) = concatMap go vs
+  where
+    go (KindedVar _ n _) = [n]
+    go (UnkindedVar _ n) = [n]
+
+bindsBinders :: Maybe (Binds ()) -> [Name ()]
+bindsBinders Nothing = []
+bindsBinders (Just (BDecls _ ds)) = concatMap declBinders ds
+bindsBinders (Just (IPBinds _ _)) = []
+
+declBinders :: Decl () -> [Name ()]
+declBinders (PatBind _ p _ _) = patBinders p
+declBinders d = declaredNames d
 
 replaceName :: Data a => Name () -> Name () -> a -> a
 replaceName pre post = everywhere (mkT go `extT` go')

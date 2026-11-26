@@ -101,6 +101,11 @@ Changes to agda2hs
   This covers both instantiating a type variable with `Set` and datatypes
   indexed by `Set`, which previously produced invalid Haskell (see issues
   #437 and #449).
+- The check performed for a `to` pragma now compares the translated Haskell code
+  up to alpha-equivalence, so the names of local variables (pattern variables,
+  type variables, and lambda, `let`, and `do` bound variables) and of auxiliary
+  definitions from a `where` block may differ between the source and the target
+  (see issue #479).
 
 See https://github.com/agda/agda2hs/issues?q=milestone%3A1.5+is%3Apr for the full list of changes.
 

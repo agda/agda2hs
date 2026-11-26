@@ -8,3 +8,12 @@ test/Warn/CompileToFunctionClause.agda:15.1-7: warning: -W[no]CustomBackendWarni
 agda2hs:
   The function source is annotated with a `to` pragma targeting target,
     but the clause target True = False does not match the clause target True = True
+
+test/Warn/CompileToFunctionClause.agda:30.1-13: warning: -W[no]CustomBackendWarning
+agda2hs:
+  The function sourceShadow is annotated with a `to` pragma targeting targetShadow,
+    but the clause targetShadow x = go 0
+  where
+    go y = x does not match the clause targetShadow x = go 0
+  where
+    go x = x

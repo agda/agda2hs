@@ -1,3 +1,5 @@
+{-# OPTIONS --warning=noUnreachableClauses #-}
+
 open import Haskell.Prelude
 open import CompileToInstanceTarget
 

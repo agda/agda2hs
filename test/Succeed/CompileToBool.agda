@@ -1,4 +1,4 @@
-open import Haskell.Prelude hiding (false; true)
+open import Haskell.Prelude
 
 -- A datatype from a primitive module can be the target of a compile-to pragma
 -- even though it has no COMPILE pragma of its own.

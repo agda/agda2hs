@@ -39,7 +39,7 @@ import Agda2Hs.Compile.Var ( compileDBVar )
 
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
-  ( hsName, pApp, patToExp, constrainType, qualifyType )
+  ( alphaEq, hsName, pApp, patToExp, constrainType, qualifyType )
 import Agda2Hs.Pragma
 
 -- | Compilation rules for specific constructors in patterns.
@@ -494,7 +494,7 @@ checkCompileToFunctionPragma def s = noCheckNames $ noWriteExports $ do
   reportSDoc "agda2hs.compileto" 20 $ "Checking that type of" <+> ppd <+> "matches that of" <+> ppr
   dtype <- compileType $ unEl $ defType def
   rtype <- compileType $ unEl $ defType rdef
-  unless (dtype == rtype) $ fail $
+  unless (alphaEq dtype rtype) $ fail $
     "the type" <+> text (Hs.pp dtype) <+> "of" <+> prettyTCM (defName def) <+>
     "does not match the type" <+> text (Hs.pp rtype) <+> "of" <+> prettyTCM r
   -- Check that clauses match
@@ -505,6 +505,6 @@ checkCompileToFunctionPragma def s = noCheckNames $ noWriteExports $ do
   unless (length dcls == length rcls) $ warn $
     "it has a different number of clauses than the target"
   forM_ (zip dcls rcls) $ \(dcl , rcl) -> do
-    unless (dcl == rcl) $ warn $
+    unless (alphaEq dcl rcl) $ warn $
       "the clause" <+> text (Hs.pp dcl) <+>
       "does not match the clause" <+> text (Hs.pp rcl)

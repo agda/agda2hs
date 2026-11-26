@@ -88,6 +88,9 @@ After updating golden values, review the changes with `git diff` to ensure they 
 3. Verify the generated Haskell code is correct
 4. Commit both the `.agda` and `.hs` files
 
+Succeed tests must not produce any warnings. If a test intentionally produces a
+warning, it belongs in the `Warn` directory instead.
+
 ### Adding a Fail Test
 
 1. Create a new `.agda` file in `test/Fail/`

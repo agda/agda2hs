@@ -18,3 +18,14 @@ agda2hs:
             eqList [] [] = True
             eqList (x : xs) (y : ys) = x == y && eqList xs ys
             eqList _ _ = False
+
+test/Warn/CompileToInstanceInconsistent.agda:40.3-7: warning: -W[no]CustomBackendWarning
+agda2hs:
+  The instance iEqR is annotated with a `to` pragma targeting iEqPair,
+    but the two instances do not compile to the same Haskell declaration:
+  compiled instance iEqR:
+    instance (Eq c, Eq d) => Eq (Pair d c) where
+        x == y = x == y
+  compiled instance iEqPair:
+    instance (Eq a, Eq b) => Eq (Pair a b) where
+        MkPair x y == MkPair u v = x == u && y == v
