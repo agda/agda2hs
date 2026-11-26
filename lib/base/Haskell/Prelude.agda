@@ -59,23 +59,20 @@ open import Haskell.Control.Exception
 
 -- Missing from the Haskell Prelude:
 --
---     Float        [Float]
+--     Float        [Float] (#30)
 --
 --     subtract, even, odd, gcd, lcm, (^), (^^),
---     fromIntegral, realToFrac,
+--     fromIntegral, realToFrac (#512)
 --
---     foldr1, foldl1, maximum, minimum      [Partial]
+--     foldr1, foldl1, maximum, minimum      [Partial] (#516)
 --
---     until [Partial]
+--     until [Partial] (#515)
 --
---     iterate, repeat, cycle          [Infinite]
+--     iterate, repeat, cycle          [Infinite] (#510)
 --
 --     ReadS, Read(readsPrec, readList),
 --     reads, readParen, read, lex,
---
---     IO, putChar, putStr, putStrLn, print,
---     getChar, getLine, getContents, interact,
---     FilePath, readFile, writeFile, appendFile, readIO, readLn,
+--     readIO, readLn (#511)
 
 
 --------------------------------------------------
