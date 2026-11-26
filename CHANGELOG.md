@@ -101,6 +101,11 @@ Changes to agda2hs
   This covers both instantiating a type variable with `Set` and datatypes
   indexed by `Set`, which previously produced invalid Haskell (see issues
   #437 and #449).
+- `open import M public` is now compiled to `import M` and `module M` in the
+  export list, if the Haskell module of `M` exports something (see issue #483).
+- Modules under `Haskell.` are never written, and may not contain
+  `FOREIGN AGDA2HS` blocks.
+- Items of modules under `Haskell.` must be marked `existing` or `existing-class` to be used in compiled code.
 
 See https://github.com/agda/agda2hs/issues?q=milestone%3A1.5+is%3Apr for the full list of changes.
 
@@ -161,6 +166,7 @@ Changes to the agda2hs Prelude
 - Removed the unsound `IsLawfulOrd Double` instance. It was refuted by NaN
   (`NaN <= NaN` and `NaN == NaN` are both `False`) and could be used to prove
   `⊥` (see issue #488).
+- Bindings to existing Haskell definitions are now marked `existing`.
 
 Changes to agda2hs-containers
 -----------------------------
@@ -169,6 +175,7 @@ Changes to agda2hs-containers
   `member x s ≡ True` implies `member (f x) (map f s) ≡ True`. The previous
   equation does not hold for non-injective `f` and could be used to prove
   `⊥` (see issue #487).
+- Bindings to `Data.Set` and `Data.Map` are now marked `existing`.
 
 Fixed issues
 ------------

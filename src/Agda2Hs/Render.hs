@@ -1,11 +1,12 @@
 module Agda2Hs.Render where
 
-import Control.Monad ( unless )
+import Control.Monad ( when )
 import Control.Monad.IO.Class ( MonadIO(liftIO) )
 
+import Data.Bifunctor ( bimap )
 import Data.Function ( on )
 import Data.List ( sortBy, nub, unzip4 )
-import Data.Maybe ( fromMaybe, isNothing )
+import Data.Maybe ( fromMaybe )
 
 import System.FilePath ( takeDirectory )
 import System.Directory ( createDirectoryIfMissing )
@@ -14,11 +15,11 @@ import Agda.Compiler.Backend
 
 import Agda.Syntax.Position
 import Agda.Syntax.Common.Pretty ( prettyShow )
+import Agda.Utils.Monad ( and2M, orM )
 
 import Agda2Hs.Compile.Types
-import Agda2Hs.Compile.Imports
-import Agda2Hs.Compile.Exports
-import Agda2Hs.Compile.Utils ( moduleFileName )
+import Agda2Hs.Compile.Ports
+import Agda2Hs.Compile.Utils ( moduleFileName, hsModuleKind, HsModuleKind(..) )
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
   ( extToName, pp, moveToTop, insertParens )
@@ -60,30 +61,10 @@ codeBlocks code = [(r, [uncurry Hs.exactPrint $ moveToTop $ noPragmas mcs]) | (r
 ensureDirectory :: FilePath -> IO ()
 ensureDirectory = createDirectoryIfMissing True . takeDirectory
 
--- | Compile the full import list,
--- with special handling for the @Prelude@ as prescribed by 'Options'.
-compileImportsWithPrelude
-  :: Options -> String -> Imports -> TCM [Hs.ImportDecl ()]
-compileImportsWithPrelude opts mod imps = do
-    -- if the prelude is supposed to be implicit,
-    -- or the prelude imports have been fixed in the config file,
-    -- we remove it from the list of imports
-    let filteredImps =
-          if not preludeImplicit && isNothing preludeImports
-            then imps
-            else filter ((/= Hs.prelude_mod ()) . importModule) imps
-
-    -- then we try to add it back
-    if (not preludeImplicit && isNothing preludeImports) || null preludeHiding
-      then compileImports mod filteredImps
-      else (preludeImportDecl preOpts:) <$> compileImports mod filteredImps
-  where
-    preOpts@PreludeOpts{..} = optPrelude opts
-
 -- | Render the @.hs@ module as a 'String' and write it to a file.
 writeModule :: GlobalEnv -> ModuleEnv -> IsMain -> TopLevelModuleName
             -> [(CompiledDef, CompileOutput)] -> TCM ModuleRes
-writeModule genv _ isMain m outs = do
+writeModule genv menv isMain m outs = do
   let opts = globalOptions genv
   code <- getForeignPragmas (optExtensions opts)
   let mod  = prettyShow m
@@ -93,18 +74,21 @@ writeModule genv _ isMain m outs = do
       imps = concat impss
       exps = concat expss
       exts = concat extss
-  unless (null code && null defs && isMain == NotMain) $ do
+
+  write <- pure (hsModuleKind m == AgdaModule) `and2M`
+    orM [pure $ not (null code && null defs), pure $ isMain == IsMain, hasHaskellExports m]
+  when write $ do
 
     let unlines' [] = []
         unlines' ss = unlines ss ++ "\n"
 
-    autoImports <- unlines' . map Hs.prettyShowImportDecl
-      <$> compileImportsWithPrelude opts mod imps
+        prettyImps = unlines' . map Hs.prettyShowImportDecl
+        prettyExps = Hs.prettyShowExportSpecList
+
+    (autoImports, autoExports) <- bimap prettyImps prettyExps <$> compilePorts (optPrelude opts) mod menv imps exps
 
     -- The comments make it hard to generate and pretty print a full module
     hsFile <- moduleFileName opts m
-
-    exportList <- Hs.prettyShowExportSpecList <$> compileExports exps
 
     -- We do pretty-printing manually because haskell-src-exts has an issue that produces invalid Haskell code.
     -- Wait until the following PR gets merged https://github.com/haskell-suite/haskell-src-exts/pull/485
@@ -112,7 +96,7 @@ writeModule genv _ isMain m outs = do
           [ renderLangExts exts
           , renderBlocks $ codePragmas code
           , "module " ++ mod ++ "\n  "
-          , exportList
+          , autoExports
           , "\nwhere\n\n"
           , autoImports
           , renderBlocks defs

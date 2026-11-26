@@ -12,22 +12,27 @@ import Data.List ( isPrefixOf, group, sort )
 import qualified Data.Map as M
 import qualified Data.Set as S
 
+import qualified Agda.Interaction.Imports as Imp
+import Agda.Interaction.FindFile ( findFile )
 import Agda.Compiler.Backend
 import Agda.Compiler.Common ( curIF, curDefs, sortDefs )
 import Agda.Utils.FileName ( isNewerThan )
+import Agda.Syntax.Scope.Base ( emptyScopeInfo )
 import Agda.Syntax.Common.Pretty ( prettyShow )
+import Agda.Syntax.Translation.ConcreteToAbstract
 import Agda.TypeChecking.Pretty
+import qualified Agda.Syntax.Concrete as C
 import Agda.Utils.Impossible
+import Agda.Utils.Maybe
 import Agda.Utils.List
 import Agda.Utils.Null
-import Agda.Utils.Monad ( whenM, anyM, when, unless )
+import Agda.Utils.Monad ( whenM, anyM, when )
 
 import Agda2Hs.AgdaUtils ( resolveStringName )
 import Agda2Hs.Compile.ClassInstance ( compileInstance, checkCompileToInstancePragma )
 import Agda2Hs.Compile.Data ( compileData, checkCompileToDataPragma )
-import Agda2Hs.Compile.Exports ( tellDefinitionExport )
+import Agda2Hs.Compile.Ports ( tellDefinitionExport )
 import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkCompileToFunctionPragma, recordInlineSymbols )
-import Agda2Hs.Compile.Name ( hsTopLevelModuleName )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
 import Agda2Hs.Compile.Types
@@ -45,28 +50,29 @@ globalSetup opts = do
   ilMap <- liftIO $ newIORef S.empty
   return $ GlobalEnv opts ctMap ilMap
 
-initCompileEnv :: GlobalEnv -> TopLevelModuleName -> SpecialRules -> CompileEnv
-initCompileEnv genv tlm rewrites = CompileEnv
-  { globalEnv         = genv
-  , currModule        = tlm
-  , minRecordName     = Nothing
-  , isNestedInType    = False
-  , locals            = []
-  , compilingLocal    = False
-  , whereModules      = []
-  , copatternsEnabled = False
-  , rewrites          = rewrites
-  , writeImports      = True
-  , writeExports      = True
-  , checkNames        = True
-  , genSignature      = True
+initCompileEnv :: GlobalEnv -> ModuleEnv -> SpecialRules -> CompileEnv
+initCompileEnv genv menv rewrites = CompileEnv
+  { globalEnv          = genv
+  , currModule         = moduleName menv
+  , currModuleAbstrSyn = moduleAbstrSyn menv
+  , minRecordName      = Nothing
+  , isNestedInType     = False
+  , locals             = []
+  , compilingLocal     = False
+  , whereModules       = []
+  , copatternsEnabled  = False
+  , rewrites           = rewrites
+  , writeImports       = True
+  , writeExports       = True
+  , checkNames         = True
+  , genSignature       = True
   }
 
 initCompileState :: CompileState
 initCompileState = CompileState { lcaseUsed = 0 }
 
-runC :: GlobalEnv -> TopLevelModuleName -> SpecialRules -> C a -> TCM (a, CompileOutput)
-runC genv tlm rewrites c = evalRWST c (initCompileEnv genv tlm rewrites) initCompileState
+runC :: GlobalEnv -> ModuleEnv -> SpecialRules -> C a -> TCM (a, CompileOutput)
+runC genv menv rewrites c = evalRWST c (initCompileEnv genv menv rewrites) initCompileState
 
 moduleSetup :: GlobalEnv -> IsMain -> TopLevelModuleName -> Maybe FilePath -> TCM (Recompile ModuleEnv ModuleRes)
 moduleSetup genv _ m mifile = do
@@ -86,14 +92,38 @@ moduleSetup genv _ m mifile = do
       -- (see Issue #486).
       setScope . iInsideScope =<< curIF
       defs <- map snd . sortDefs <$> curDefs
-      mapM_ (runC genv m (optRewrites opts) . recordPragma) defs
+      -- recording pragmas does not need the abstract syntax of the module
+      let menv = ModuleEnv { moduleName = m, moduleAbstrSyn = __IMPOSSIBLE__ }
+      mapM_ (runC genv menv (optRewrites opts) . recordPragma) defs
       return $ Skip ()
     else do
       reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
+      recover <- recoverAbstrSynAction m
       setScope . iInsideScope =<< curIF
       -- Agda 2.9 no longer recomputes inverse-scope maps in setScope.
       recomputeInverseScope
-      return $ Recompile m
+      return $ Recompile ModuleEnv {moduleName = m, moduleAbstrSyn = recover}
+
+-- | Returns an action that computes the abstract syntax for a module.
+-- The way this works is not great: re-parsing and re-scope-checking the module (in a suitable environment).
+
+-- FIXME(satoshi): better way?
+-- TODO(satoshi): preprocess syntax so it's easier to use in later phases
+recoverAbstrSynAction :: TopLevelModuleName -> TCM (TCM TopLevelInfo)
+recoverAbstrSynAction m = do
+  env <- askTC
+  ref <- liftIO $ newIORef Nothing
+  pure $
+    ifJustM (liftIO $ readIORef ref) pure $ localTC (const env) $ do
+      srcFile <- findFile m
+      src <- Imp.parseSource srcFile
+      let srcOrigin = Imp.srcOrigin src
+          topDecls = C.modDecls (Imp.srcModule src)
+      info <- localTCState $ localTC (set eCurrentPath (Just (srcFileId srcFile))) $ do
+        setScope emptyScopeInfo
+        concreteToAbstract_ (TopLevel srcOrigin m topDecls)
+      liftIO $ writeIORef ref (Just info)
+      return info
 
 -- | Record the side effects of a definition's pragma without compiling it.
 -- Used for up-to-date modules that are skipped during compilation (Issue #486).
@@ -212,17 +242,21 @@ verifyOutput _ _ _ m ls = do
       when (length duplicateNames > 0) $
         agda2hsErrorM $ vcat (map (\x -> text $ "Cannot generate multiple definitions with the same name: " <> Hs.prettyPrint (headWithDefault __IMPOSSIBLE__ x)) duplicateNames)
 
-    ensureNoOutputFromHsModules = unless (null $ concat $ map fst ls) $ do
-      let hsModName = hsTopLevelModuleName m
-      case hsModuleKind hsModName of
-        HsModule -> do
+    -- Haskell modules bind existing Haskell modules, so they must not produce any code.
+    ensureNoOutputFromHsModules = when (hsModuleKind m == HsModule) $ do
+      case [ r | (cdef, _) <- ls, (r, ds) <- cdef, not (null ds) ] of
+        r : _ -> setCurrentRange r $ do
           reportSDoc "agda2hs.compile" 10 $ text "Haskell module" <+> prettyTCM m <+> text "has non-null output."
-          agda2hsErrorM $ hsep
-            (  pwords "The `Haskell.` namespace are reserved for binding existing Haskell modules, so the module"
-            ++ [text "`" <> prettyTCM m <> text "`"]
-            ++ pwords "should not contain any"
-            ++ [text "`{-# COMPILE AGDA2HS ... #-}`"]
-            ++ pwords "pragmas that produce Haskell code."
-            )
-        PrimModule -> __IMPOSSIBLE__
-        AgdaModule -> return ()
+          rejectInHsModule "`{-# COMPILE AGDA2HS ... #-}` pragmas that produce Haskell code."
+        [] -> return ()
+      getForeignCode >>= \case
+        ForeignCode r _ : _ -> setCurrentRange r $
+          rejectInHsModule "`{-# FOREIGN AGDA2HS ... #-}` pragmas."
+        [] -> return ()
+
+    rejectInHsModule what = agda2hsErrorM $ hsep
+      (  pwords "The `Haskell.` namespace is reserved for binding existing Haskell modules, so the module"
+      ++ [text "`" <> prettyTCM m <> text "`"]
+      ++ pwords "should not contain any"
+      ++ pwords what
+      )

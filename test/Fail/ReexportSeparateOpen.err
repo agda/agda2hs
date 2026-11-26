@@ -1,0 +1,3 @@
+test/Fail/ReexportSeparateOpen.agda:4.1-21: error: [CustomBackendError]
+agda2hs:
+  Cannot compile reexport of Importee: reexporting with a separate 'open ... public' is not supported

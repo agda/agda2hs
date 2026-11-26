@@ -7,7 +7,7 @@ import Agda.Syntax.Internal
 import Agda2Hs.Compile.Type ( compileType )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
-import Agda2Hs.Compile.Exports ( tellDefinitionExport )
+import Agda2Hs.Compile.Ports ( tellDefinitionExport )
 
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils ( pp, hsError )

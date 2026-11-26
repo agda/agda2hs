@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
 module Agda2Hs.Compile.Types where
 
-import Control.Monad ( join )
 import Control.Monad.Trans ( MonadTrans(lift) )
 import Control.Monad.Trans.RWS.CPS (RWST(..), runRWST, rwsT )
 import Control.Monad.Trans.Control (MonadTransControl(..))
@@ -9,13 +8,13 @@ import Control.Monad.State ( StateT(..) )
 import Control.DeepSeq ( NFData(..) )
 
 import Data.IORef
-import Data.Maybe ( isJust )
 import Data.Set ( Set )
 import Data.Map ( Map )
 import Data.String ( IsString(..) )
 
 import Agda.Compiler.Backend hiding ( Strictness )
 import Agda.Syntax.Position ( Range )
+import Agda.Syntax.Translation.ConcreteToAbstract ( TopLevelInfo )
 import Agda.TypeChecking.Warnings ( MonadWarning )
 import Agda.Utils.Haskell.Syntax ( Strictness )
 import Agda.Utils.Monad ( bracket_ )
@@ -32,7 +31,12 @@ data GlobalEnv = GlobalEnv
   -- ^ names of functions that should be inlined
   }
 
-type ModuleEnv   = TopLevelModuleName
+data ModuleEnv = ModuleEnv
+  { moduleName :: TopLevelModuleName
+  , moduleAbstrSyn :: TCM TopLevelInfo
+  -- ^ recovers the abstract syntax of the current module on first use
+  }
+
 type ModuleRes   = ()
 type CompiledDef = [Ranged [Hs.Decl ()]]
 type Ranged a    = (Range, a)
@@ -83,6 +87,8 @@ data CompileEnv = CompileEnv
   -- ^ global environment
   , currModule :: TopLevelModuleName
   -- ^ the current module we are compiling
+  , currModuleAbstrSyn :: TCM TopLevelInfo
+  -- ^ recovers the abstract syntax of the current module on first use
   , minRecordName :: Maybe ModuleName
   -- ^ keeps track of the current minimal record we are compiling
   , isNestedInType :: Bool
@@ -107,16 +113,27 @@ data CompileEnv = CompileEnv
   -- ^ whether we should generate type signatures for functions
   }
 
-type Qualifier = Maybe (Maybe (Hs.ModuleName ()))
-
-pattern Unqualified   = Nothing
-pattern QualifiedAs m = Just m
+data Qualifier
+  = Unqualified (Maybe (Hs.ModuleName ()))
+  | QualifiedAs (Maybe (Hs.ModuleName ()))
+  deriving (Eq, Ord)
 
 isQualified :: Qualifier -> Bool
-isQualified = isJust
+isQualified QualifiedAs{} = True
+isQualified _             = False
 
-qualifiedAs :: Qualifier -> Maybe (Hs.ModuleName ())
-qualifiedAs = join
+-- | The @as@ part of the import, if any.
+importAlias :: Qualifier -> Maybe (Hs.ModuleName ())
+importAlias = \case
+  Unqualified m   -> m
+  QualifiedAs m   -> m
+
+prettyQualifier :: Qualifier -> String
+prettyQualifier = \case
+  Unqualified Nothing    -> "unqualified"
+  Unqualified (Just m)   -> "as " ++ Hs.pp m
+  QualifiedAs Nothing    -> "qualified"
+  QualifiedAs (Just m)   -> "qualified as " ++ Hs.pp m
 
 -- | Encoding of a Haskell module import statement.
 data Import = Import
@@ -129,10 +146,12 @@ data Import = Import
                     -- ^^ source range of the definition that triggered this import
   }
   | ImportInstances (Hs.ModuleName ())
+  | ImportModule (Hs.ModuleName ()) (Maybe (Hs.ModuleName ())) -- for reexport
 
 importModule :: Import -> Hs.ModuleName ()
 importModule (Import{ _importModule = mod }) = mod
 importModule (ImportInstances mod) = mod
+importModule (ImportModule mod _) = mod
 
 type Imports = [Import]
 
@@ -143,6 +162,8 @@ data Export
   | ExportData (Hs.Name ())
   | ExportDataCons (Hs.Name ()) [Hs.Name ()]
   | ExportClass (Hs.Name ())
+  | ExportModule (Hs.ModuleName ())
+  deriving (Eq, Ord)
 
 type Exports = [Export]
 

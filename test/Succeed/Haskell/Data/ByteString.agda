@@ -7,3 +7,4 @@ postulate
 
   instance
     iEqByteString : Eq ByteString
+{-# COMPILE AGDA2HS ByteString existing #-}
