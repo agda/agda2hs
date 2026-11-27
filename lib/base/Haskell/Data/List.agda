@@ -295,8 +295,8 @@ sort = sortBy compare
 sortOn : ⦃ Ord b ⦄ → (a → b) → List a → List a
 sortOn f =
     map snd
-    ∘ sortBy (comparing fst)
-    ∘ map (λ x → let y = f x in seq y (y , x))
+    ∘ sortBy (λ p p' → compare (fst p) (fst p'))
+    ∘ map (λ x → (f x , x))
 {-# COMPILE AGDA2HS sortOn existing #-}
 
 -- Omitted for now:
