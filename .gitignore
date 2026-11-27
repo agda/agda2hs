@@ -7,6 +7,10 @@ html/
 docs/build/
 *.hi
 *.o
+.stack-work
+hie.yaml
+stack.yaml
+stack.yaml.lock
 
 # Agda
 *.agdai
