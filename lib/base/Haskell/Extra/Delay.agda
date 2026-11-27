@@ -30,11 +30,11 @@ instance
       iDefaultFunctorDelay .DefaultFunctor.fmap f m = bindDelay m (now ∘ f)
 
   iApplicativeDelay : ∀ {i} → Applicative (λ a → Delay a i)
-  iApplicativeDelay {i} = record {DefaultApplicative iDefaultApplicativeDelay}
+  iApplicativeDelay {i} = record {ApplicativeFrom<*> iDefaultApplicativeDelay}
     where
-      iDefaultApplicativeDelay : DefaultApplicative (λ a → Delay a i)
-      iDefaultApplicativeDelay .DefaultApplicative.pure = now
-      iDefaultApplicativeDelay .DefaultApplicative._<*>_ mf mx =
+      iDefaultApplicativeDelay : ApplicativeFrom<*> (λ a → Delay a i)
+      iDefaultApplicativeDelay .ApplicativeFrom<*>.pure = now
+      iDefaultApplicativeDelay .ApplicativeFrom<*>._<*>_ mf mx =
         bindDelay mf λ f → bindDelay mx λ x → now (f x)
 
   iMonadDelay : ∀ {i} → Monad (λ a → Delay a i)

@@ -45,6 +45,7 @@ open import Haskell.Prim.Semigroup      public
 open import Haskell.Prim.Monoid         public
   renaming (module Instances to MonoidInstances)
 
+
 -- Explicitly reexport definitions from Haskell.Data.Functor (update these
 -- to use Agda's builtin reexport mechanism as soon as issue #126 is fixed):
 import Haskell.Data.Functor
@@ -65,6 +66,8 @@ infixl 4 _<$>_
 _<$>_ : ⦃ Haskell.Data.Functor.Functor f ⦄ → (a → b) → f a → f b
 _<$>_ = Haskell.Data.Functor._<$>_
 
+-------------------------------------------------
+
 -- Explicitly reexport definitions from Haskell.Control.Applicative (update these
 -- to use Agda's builtin reexport mechanism as soon as issue #126 is fixed):
 import Haskell.Control.Applicative
@@ -84,6 +87,8 @@ ApplicativeFrom<*> = Haskell.Control.Applicative.ApplicativeFrom<*>
 
 ApplicativeFromLiftA2 : (f : Type → Type) → Type₁
 ApplicativeFromLiftA2 = Haskell.Control.Applicative.ApplicativeFromLiftA2
+
+-------------------------------------------------
 
 -- Explicitly reexport definitions from Haskell.Control.Monad (update these
 -- to use Agda's builtin reexport mechanism as soon as issue #126 is fixed):
@@ -113,6 +118,8 @@ infixr 1 _=<<_
 _=<<_ : ⦃ Monad m ⦄ → (a → m b) → m a → m b
 _=<<_ = Haskell.Control.Monad._=<<_
 
+-------------------------------------------------
+
 -- Explicitly reexport definitions from Haskell.Data.Foldable (update these
 -- to use Agda's builtin reexport mechanism as soon as issue #126 is fixed):
 import Haskell.Data.Foldable
@@ -136,6 +143,8 @@ mapM₋ = Haskell.Data.Foldable.mapM₋
 sequence₋ : ⦃ Foldable t ⦄ → ⦃ Monad m ⦄ → t (m a) → m ⊤
 sequence₋ = Haskell.Data.Foldable.sequence₋
 
+-------------------------------------------------
+
 -- Explicitly reexport definitions from Haskell.Data.Traversable (update these
 -- to use Agda's builtin reexport mechanism as soon as issue #126 is fixed):
 import Haskell.Data.Traversable
@@ -148,6 +157,8 @@ open Traversable ⦃ ... ⦄ public
 
 Traversable : (t : Type → Type) → Type₁
 Traversable = Haskell.Data.Traversable.Traversable
+
+-------------------------------------------------
 
 -- Explicitly reexport definitions from Haskell.Data.String (update these
 -- to use Agda's builtin reexport mechanism as soon as issue #126 is fixed):
@@ -170,6 +181,8 @@ unlines = Haskell.Data.String.unlines
 
 unwords : List String → String
 unwords = Haskell.Data.String.unwords
+
+-------------------------------------------------
 
 -- Explicitly reexport definitions from Haskell.Data.List (update these
 -- to use Agda's builtin reexport mechanism as soon as issue #126 is fixed):
@@ -309,6 +322,53 @@ concatMap = Haskell.Data.List.concatMap
 notElem : ⦃ Foldable t ⦄ → ⦃ Eq a ⦄ → a → t a → Bool
 notElem = Haskell.Data.List.notElem
 
+-------------------------------------------------
+-- Exception handling in the I/O monad
+
+-- Explicitly reexport definitions from Haskell.Control.Applicative (update these
+-- to use Agda's builtin reexport mechanism as soon as issue #126 is fixed):
+import Haskell.Control.Exception renaming (IOException to IOError; throwIO to ioError)
+
+IOError = Haskell.Control.Exception.IOError
+
+ioError : IOError → IO a
+ioError = Haskell.Control.Exception.ioError
+
+postulate
+  userError : String → IOError
+
+-------------------------------------------------
+
+infixr 0 _$!_
+_$!_ : (a → b) → a → b
+_$!_ = _$_
+
+seq : a → b → b
+seq = const id
+
+asTypeOf : a → a → a
+asTypeOf x _ = x
+
+undefined : {@0 @(tactic absurd) i : ⊥} → a
+undefined {i = ()}
+
+error : {@0 @(tactic absurd) i : ⊥} → String → a
+error {i = ()} err
+
+errorWithoutStackTrace : {@0 @(tactic absurd) i : ⊥} → String → a
+errorWithoutStackTrace {i = ()} err
+
+-------------------------------------------------
+-- Unsafe functions
+
+coerce : @0 a ≡ b → a → b
+coerce refl x = x
+
+IsJust : Maybe a → Type
+IsJust Nothing  = ⊥
+IsJust (Just _) = ⊤
+
+-------------------------------------------------
 
 -- Problematic features:
 --  - [Partial]:  Could pass implicit/instance arguments to prove totality.
@@ -341,45 +401,3 @@ notElem = Haskell.Data.List.notElem
 --     ReadS, Read(readsPrec, readList),
 --     reads, readParen, read, lex,
 --     readIO, readLn (#511)
-
-
-infixr 0 _$!_
-_$!_ : (a → b) → a → b
-_$!_ = _$_
-
-seq : a → b → b
-seq = const id
-
-asTypeOf : a → a → a
-asTypeOf x _ = x
-
-undefined : {@0 @(tactic absurd) i : ⊥} → a
-undefined {i = ()}
-
-error : {@0 @(tactic absurd) i : ⊥} → String → a
-error {i = ()} err
-
-errorWithoutStackTrace : {@0 @(tactic absurd) i : ⊥} → String → a
-errorWithoutStackTrace {i = ()} err
-
-
--------------------------------------------------
--- Exception handling in the I/O monad
-
-IOError = IOException
-
-ioError : IOError → IO a
-ioError = throwIO
-
-postulate
-  userError : String → IOError
-
--------------------------------------------------
--- Unsafe functions
-
-coerce : @0 a ≡ b → a → b
-coerce refl x = x
-
-IsJust : Maybe a → Type
-IsJust Nothing  = ⊥
-IsJust (Just _) = ⊤

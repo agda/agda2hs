@@ -67,7 +67,7 @@ module Instances where
     iDefaultTraversableMaybe : DefaultTraversable Maybe
     iDefaultTraversableMaybe .DefaultTraversable.traverse = λ where
       f Nothing  → pure Nothing
-      f (Just x) → Just <$> f x
+      f (Just x) → fmap Just (f x)
 
     iTraversableMaybe : Traversable Maybe
     iTraversableMaybe = record {DefaultTraversable iDefaultTraversableMaybe}
@@ -75,14 +75,14 @@ module Instances where
     iDefaultTraversableEither : DefaultTraversable (Either a)
     iDefaultTraversableEither .DefaultTraversable.traverse = λ where
       f (Left  x) → pure (Left x)
-      f (Right y) → Right <$> f y
+      f (Right y) → fmap Right (f y)
 
     iTraversableEither : Traversable (Either a)
     iTraversableEither = record {DefaultTraversable iDefaultTraversableEither}
 
     iDefaultTraversablePair : DefaultTraversable (a ×_)
     iDefaultTraversablePair .DefaultTraversable.traverse = λ
-      f (x , y) → (x ,_) <$> f y
+      f (x , y) → fmap (x ,_) (f y)
 
     iTraversablePair : Traversable (a ×_)
     iTraversablePair = record {DefaultTraversable iDefaultTraversablePair}

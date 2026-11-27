@@ -148,11 +148,11 @@ instance
       iDefaultFunctorMayThrow .DefaultFunctor.fmap f m = bindMayThrow m (ok ∘ f)
 
   iApplicativeMayThrow : Applicative (MayThrow e)
-  iApplicativeMayThrow = record {DefaultApplicative iDefaultApplicativeMayThrow}
+  iApplicativeMayThrow = record {ApplicativeFrom<*> iDefaultApplicativeMayThrow}
     where
-      iDefaultApplicativeMayThrow : DefaultApplicative (MayThrow e)
-      iDefaultApplicativeMayThrow .DefaultApplicative.pure = ok
-      iDefaultApplicativeMayThrow .DefaultApplicative._<*>_ mf mx =
+      iDefaultApplicativeMayThrow : ApplicativeFrom<*> (MayThrow e)
+      iDefaultApplicativeMayThrow .ApplicativeFrom<*>.pure = ok
+      iDefaultApplicativeMayThrow .ApplicativeFrom<*>._<*>_ mf mx =
         bindMayThrow mf λ f → bindMayThrow mx λ x → ok (f x)
 
   iMonadMayThrow : Monad (MayThrow e)
@@ -189,16 +189,16 @@ instance
   iFunctorMayThrowT = record {DefaultFunctor iDefaultFunctorMayThrowT}
 
   iDefaultApplicativeMayThrowT : ⦃ Applicative m ⦄
-                              → DefaultApplicative (MayThrowT e m)
-  iDefaultApplicativeMayThrowT .DefaultApplicative.pure x =
+                              → ApplicativeFrom<*> (MayThrowT e m)
+  iDefaultApplicativeMayThrowT .ApplicativeFrom<*>.pure x =
     mkMayThrowT (pure (ok x))
-  iDefaultApplicativeMayThrowT .DefaultApplicative._<*>_ mf mx =
+  iDefaultApplicativeMayThrowT .ApplicativeFrom<*>._<*>_ mf mx =
     mkMayThrowT (_<*>_ (fmap (_<*>_ ⦃ iApplicativeMayThrow ⦄)
                               (runMayThrowT mf))
                        (runMayThrowT mx))
 
   iApplicativeMayThrowT : ⦃ Applicative m ⦄ → Applicative (MayThrowT e m)
-  iApplicativeMayThrowT = record {DefaultApplicative iDefaultApplicativeMayThrowT}
+  iApplicativeMayThrowT = record {ApplicativeFrom<*> iDefaultApplicativeMayThrowT}
 
   iDefaultMonadMayThrowT : ⦃ Monad m ⦄ → DefaultMonad (MayThrowT e m)
   iDefaultMonadMayThrowT .DefaultMonad._>>=_ x k =
