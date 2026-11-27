@@ -40,6 +40,12 @@ source-repository head
   type:     git
   location: https://github.com/agda/agda2hs.git
 
+flag version-with-git-hash
+  default: False
+  manual: True
+  description:
+    Append "dev" to backend-name and Git commit hash to the version string.
+
 executable agda2hs
   hs-source-dirs:      src
   main-is:             Main.hs
@@ -65,6 +71,7 @@ executable agda2hs
                        Agda2Hs.Language.Haskell.Utils,
                        Agda2Hs.Pragma,
                        Agda2Hs.Render,
+                       Agda2Hs.VersionCommitSuffix,
                        AgdaInternals,
                        Paths_agda2hs
   autogen-modules:     Paths_agda2hs
@@ -85,6 +92,9 @@ executable agda2hs
                        deepseq              >= 1.4.4   && < 1.6,
                        yaml                 >= 0.11    && < 0.12,
                        aeson                >= 2.0.3   && < 2.4,
+  if flag(version-with-git-hash)
+    build-depends:     template-haskell     >= 2.18.0.0  && < 2.26,
+                       gitrev               >= 1.3.1     && < 2,
   default-language:    Haskell2010
   default-extensions:  LambdaCase
                        RecordWildCards
@@ -97,7 +107,13 @@ executable agda2hs
                        PatternSynonyms
                        NondecreasingIndentation
                        OverloadedStrings
+  other-extensions:    CPP
+  if flag(version-with-git-hash)
+    other-extensions:  TemplateHaskell
   ghc-options:         -Werror -Werror=unused-imports -rtsopts
+  if flag(version-with-git-hash)
+    cpp-options:
+      -DVERSION_WITH_GIT_HASH
 
 test-suite agda2hs-test
   type:                exitcode-stdio-1.0

@@ -14,6 +14,7 @@ import Agda2Hs.Compile.Name ( defaultSpecialRules )
 import Agda2Hs.Compile
 import Agda2Hs.Compile.Types
 import Agda2Hs.Render
+import Agda2Hs.VersionCommitSuffix ( nameSuffix, versionSuffix )
 
 import qualified Agda2Hs.Language.Haskell as Hs
 
@@ -48,8 +49,8 @@ extensionOpt ext opts = return opts { optExtensions = Hs.parseExtension ext : op
 
 backend :: Backend' Options GlobalEnv ModuleEnv ModuleRes (CompiledDef, CompileOutput)
 backend = Backend'
-  { backendName           = "agda2hs"
-  , backendVersion        = Just $ Text.pack $ showVersion version
+  { backendName           = Text.pack $ "agda2hs" ++ nameSuffix
+  , backendVersion        = Just $ Text.pack $ showVersion version ++ versionSuffix
   , options               = defaultOptions
   , commandLineFlags      =
       [ Option ['d'] ["disable-backend"] (NoArg disableOpt)
