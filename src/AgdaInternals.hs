@@ -11,9 +11,12 @@ import Control.Monad.State
 import Data.Maybe ( mapMaybe )
 
 import Agda.Syntax.Internal
+import Agda.Syntax.Common.Pretty
 import Agda.TypeChecking.Monad
+import Agda.TypeChecking.Pretty hiding ( pretty )
 import Agda.TypeChecking.Substitute
 import Agda.Utils.Size
+import qualified Agda.Utils.Set1 as Set1
 
 instance Subst Clause where
   type SubstArg Clause = DeBruijnPattern
@@ -52,3 +55,11 @@ defWhereModules = mapMaybe clauseWhereModule . defClauses
 -- | Check whether a name is declared inside a where-block of a given function.
 inWhereBlockOf :: QName -> Definition -> Bool
 inWhereBlockOf q = any (qnameModule q `isLeChildModuleOf`) . defWhereModules
+
+-- ** Pretty
+
+instance Pretty a => Pretty (Set1.Set1 a) where
+  pretty xs = pretty (Set1.toSet xs)
+
+instance PrettyTCM a => PrettyTCM (Set1.Set1 a) where
+  prettyTCM xs = prettyTCM (Set1.toSet xs)

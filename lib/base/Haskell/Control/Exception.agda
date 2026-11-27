@@ -32,10 +32,12 @@ postulate
   instance
     iEqIOException : Eq IOException
     iExceptionIOException : Exception IOException
+{-# COMPILE AGDA2HS IOException existing #-}
 
 data ArithException : Set where
   Overflow Underflow LossOfPrecision DivideByZero Denormal : ArithException
   RatioZeroDenominator : ArithException
+{-# COMPILE AGDA2HS ArithException existing #-}
 
 postulate instance
   iOrdArithException : Ord ArithException
@@ -43,6 +45,7 @@ postulate instance
 
 data ArrayException : Set where
   IndexOutOfBounds UndefinedElement : String → ArrayException
+{-# COMPILE AGDA2HS ArrayException existing #-}
 
 postulate instance
   iOrdArrayException : Ord ArrayException
@@ -148,11 +151,11 @@ instance
       iDefaultFunctorMayThrow .DefaultFunctor.fmap f m = bindMayThrow m (ok ∘ f)
 
   iApplicativeMayThrow : Applicative (MayThrow e)
-  iApplicativeMayThrow = record {DefaultApplicative iDefaultApplicativeMayThrow}
+  iApplicativeMayThrow = record {ApplicativeFrom<*> iDefaultApplicativeMayThrow}
     where
-      iDefaultApplicativeMayThrow : DefaultApplicative (MayThrow e)
-      iDefaultApplicativeMayThrow .DefaultApplicative.pure = ok
-      iDefaultApplicativeMayThrow .DefaultApplicative._<*>_ mf mx =
+      iDefaultApplicativeMayThrow : ApplicativeFrom<*> (MayThrow e)
+      iDefaultApplicativeMayThrow .ApplicativeFrom<*>.pure = ok
+      iDefaultApplicativeMayThrow .ApplicativeFrom<*>._<*>_ mf mx =
         bindMayThrow mf λ f → bindMayThrow mx λ x → ok (f x)
 
   iMonadMayThrow : Monad (MayThrow e)
@@ -189,16 +192,16 @@ instance
   iFunctorMayThrowT = record {DefaultFunctor iDefaultFunctorMayThrowT}
 
   iDefaultApplicativeMayThrowT : ⦃ Applicative m ⦄
-                              → DefaultApplicative (MayThrowT e m)
-  iDefaultApplicativeMayThrowT .DefaultApplicative.pure x =
+                              → ApplicativeFrom<*> (MayThrowT e m)
+  iDefaultApplicativeMayThrowT .ApplicativeFrom<*>.pure x =
     mkMayThrowT (pure (ok x))
-  iDefaultApplicativeMayThrowT .DefaultApplicative._<*>_ mf mx =
+  iDefaultApplicativeMayThrowT .ApplicativeFrom<*>._<*>_ mf mx =
     mkMayThrowT (_<*>_ (fmap (_<*>_ ⦃ iApplicativeMayThrow ⦄)
                               (runMayThrowT mf))
                        (runMayThrowT mx))
 
   iApplicativeMayThrowT : ⦃ Applicative m ⦄ → Applicative (MayThrowT e m)
-  iApplicativeMayThrowT = record {DefaultApplicative iDefaultApplicativeMayThrowT}
+  iApplicativeMayThrowT = record {ApplicativeFrom<*> iDefaultApplicativeMayThrowT}
 
   iDefaultMonadMayThrowT : ⦃ Monad m ⦄ → DefaultMonad (MayThrowT e m)
   iDefaultMonadMayThrowT .DefaultMonad._>>=_ x k =
@@ -211,26 +214,35 @@ instance
 
 postulate
   throwIO : {{Exception e}} → e → IO a
+{-# COMPILE AGDA2HS throwIO existing #-}
 
 postulate
   catch : {{Exception e}} → IO a → (e → IO a) → IO a
   catchJust : {{Exception e}} → (e → Maybe b) → IO a → (b → IO a) → IO a
+{-# COMPILE AGDA2HS catch existing #-}
+{-# COMPILE AGDA2HS catchJust existing #-}
 
 handle : {{Exception e}} → (e → IO a) → IO a → IO a
 handle = flip catch
+{-# COMPILE AGDA2HS handle existing #-}
 
 handleJust : {{Exception e}} → (e → Maybe b) → (b → IO a) → IO a → IO a
 handleJust f = flip (catchJust f)
+{-# COMPILE AGDA2HS handleJust existing #-}
 
 try : {{Exception e}} → IO a → IO (Either e a)
 try a = catch (fmap Right a) (pure ∘ Left)
+{-# COMPILE AGDA2HS try existing #-}
 
 tryJust : {{Exception e}} → (e → Maybe b) → IO a → IO (Either b a)
 tryJust p a = catchJust p (fmap Right a) (pure ∘ Left)
+{-# COMPILE AGDA2HS tryJust existing #-}
 
 postulate
   evaluate : a → IO a
   mapException : {{Exception e1}} → {{Exception e2}} → (e1 → e2) → a → a
+{-# COMPILE AGDA2HS evaluate existing #-}
+{-# COMPILE AGDA2HS mapException existing #-}
 
 -- | The monad morphism from @MayThrow@ to @IO@. Since @MayThrow e a@ is
 -- compiled to @a@, this is compiled to @return@.
@@ -241,6 +253,7 @@ assert : (@0 b : Type ℓ) → {{Dec b}} → (@0 {{b}} → a) → MayThrow Asser
 assert _ {{True  ⟨ p ⟩}} x = ok (x {{p}})
 assert _ {{False ⟨ _ ⟩}} x = throw oops
   where postulate oops : AssertionFailed
+{-# COMPILE AGDA2HS assert existing #-}
 
 postulate
   bracket : IO a → (a → IO b) → (a → IO c) → IO c
@@ -248,3 +261,8 @@ postulate
   bracketOnError : IO a → (a → IO b) → (a → IO c) → IO c
   finally : IO a → IO b → IO a
   onException : IO a → IO b → IO a
+{-# COMPILE AGDA2HS bracket existing #-}
+{-# COMPILE AGDA2HS bracket_ existing #-}
+{-# COMPILE AGDA2HS bracketOnError existing #-}
+{-# COMPILE AGDA2HS finally existing #-}
+{-# COMPILE AGDA2HS onException existing #-}

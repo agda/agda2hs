@@ -127,3 +127,23 @@ instance
 
   iSetMonoid : {{Ord a}} → Monoid (Set a)
   iSetMonoid = record {DefaultMonoid (record {mempty = empty})}
+
+{-----------------------------------------------------------------------------
+    Bindings to existing Haskell definitions
+------------------------------------------------------------------------------}
+{-# COMPILE AGDA2HS Set existing #-}
+{-# COMPILE AGDA2HS toAscList existing #-}
+{-# COMPILE AGDA2HS null existing #-}
+{-# COMPILE AGDA2HS member existing #-}
+{-# COMPILE AGDA2HS empty existing #-}
+{-# COMPILE AGDA2HS insert existing #-}
+{-# COMPILE AGDA2HS delete existing #-}
+{-# COMPILE AGDA2HS fromList existing #-}
+{-# COMPILE AGDA2HS map existing #-}
+{-# COMPILE AGDA2HS union existing #-}
+{-# COMPILE AGDA2HS intersection existing #-}
+{-# COMPILE AGDA2HS difference existing #-}
+{-# COMPILE AGDA2HS filter existing #-}
+{-# COMPILE AGDA2HS isSubsetOf existing #-}
+{-# COMPILE AGDA2HS singleton existing #-}
+{-# COMPILE AGDA2HS disjoint existing #-}

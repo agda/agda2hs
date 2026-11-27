@@ -13,8 +13,8 @@ open import Haskell.Data.Maybe using
 import Data.Map.Maybe as Maybe
 import Haskell.Prelude as List using (map)
 
-open import Data.Set using (Set)
-import Data.Set as Set
+open import Haskell.Data.Set using (Set)
+import Haskell.Data.Set as Set
 
 {-----------------------------------------------------------------------------
     Helper predicates
@@ -231,3 +231,40 @@ module _ {k a b c : Type} {{_ : Ord k}} where
           (f : a → b → c)
       → lookup key (intersectionWith f ma mb)
         ≡ Maybe.intersectionWith f (lookup key ma) (lookup key mb)
+
+{-----------------------------------------------------------------------------
+    Bindings to existing Haskell definitions
+------------------------------------------------------------------------------}
+{-# COMPILE AGDA2HS Map existing #-}
+{-# COMPILE AGDA2HS lookup existing #-}
+{-# COMPILE AGDA2HS null existing #-}
+{-# COMPILE AGDA2HS toAscList existing #-}
+{-# COMPILE AGDA2HS member existing #-}
+{-# COMPILE AGDA2HS elems existing #-}
+{-# COMPILE AGDA2HS keys existing #-}
+{-# COMPILE AGDA2HS keysSet existing #-}
+{-# COMPILE AGDA2HS size existing #-}
+{-# COMPILE AGDA2HS empty existing #-}
+{-# COMPILE AGDA2HS insert existing #-}
+{-# COMPILE AGDA2HS delete existing #-}
+{-# COMPILE AGDA2HS update existing #-}
+{-# COMPILE AGDA2HS fromList existing #-}
+{-# COMPILE AGDA2HS fromListWith existing #-}
+{-# COMPILE AGDA2HS unionWith existing #-}
+{-# COMPILE AGDA2HS filterWithKey existing #-}
+{-# COMPILE AGDA2HS takeWhileAntitone existing #-}
+{-# COMPILE AGDA2HS dropWhileAntitone existing #-}
+{-# COMPILE AGDA2HS singleton existing #-}
+{-# COMPILE AGDA2HS alter existing #-}
+{-# COMPILE AGDA2HS insertWith existing #-}
+{-# COMPILE AGDA2HS withoutKeys existing #-}
+{-# COMPILE AGDA2HS restrictKeys existing #-}
+{-# COMPILE AGDA2HS filter existing #-}
+{-# COMPILE AGDA2HS union existing #-}
+{-# COMPILE AGDA2HS spanAntitone existing #-}
+{-# COMPILE AGDA2HS mapWithKey existing #-}
+{-# COMPILE AGDA2HS mapMaybeWithKey existing #-}
+{-# COMPILE AGDA2HS intersection existing #-}
+{-# COMPILE AGDA2HS map existing #-}
+{-# COMPILE AGDA2HS disjoint existing #-}
+{-# COMPILE AGDA2HS intersectionWith existing #-}

@@ -2,9 +2,11 @@ module Haskell.Law.List where
 
 open import Haskell.Law.Equality
 open import Haskell.Prim renaming (addNat to _+ₙ_)
-open import Haskell.Prim.Foldable
 open import Haskell.Prim.List
 open import Haskell.Prim.Applicative
+open import Haskell.Prim.Foldable
+open import Haskell.Data.Foldable
+
 
 []≠∷ : ∀ x (xs : List a) → [] ≠ x ∷ xs
 []≠∷ x xs ()

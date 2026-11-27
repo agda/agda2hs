@@ -4,6 +4,7 @@ open import Haskell.Prim
 open import Haskell.Prim.Show
 open import Haskell.Prim.String
 
+
 postulate IO : ∀{a} → Type a → Type a
 
 FilePath = String
@@ -25,3 +26,9 @@ postulate
   readFile       : FilePath → IO String
   writeFile      : FilePath → String → IO ⊤
   appendFile     : FilePath → String → IO ⊤
+
+  -- For instance definitions
+  returnIO       : a → IO a
+  bindIO         : IO a → (a → IO b) → IO b
+  failIO         : String → IO a
+  mplusIO        : IO a → IO a → IO a

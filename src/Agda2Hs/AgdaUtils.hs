@@ -13,11 +13,14 @@ import Agda.Interaction.FindFile ( findFile' )
 import Agda.Syntax.Common ( defaultArg )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import qualified Agda.Syntax.Concrete as C
+import qualified Agda.Syntax.Abstract as A
+import qualified Agda.Syntax.Abstract.Views as A
 import Agda.Syntax.Internal
 import Agda.Syntax.Position ( noRange )
 import Agda.Syntax.Scope.Base
 import Agda.Syntax.Scope.Monad
 import Agda.Syntax.TopLevelModuleName
+import Agda.Syntax.Translation.ConcreteToAbstract ( TopLevelInfo, topLevelDecls )
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Sort
@@ -28,7 +31,7 @@ import Agda.TypeChecking.Reduce ( reduceDefCopy )
 import Agda.Utils.Either ( isRight )
 import Agda.Utils.GetOpt ( OptDescr(..) , ArgDescr(..) )
 import qualified Agda.Utils.List1 as List1
-import Agda.Utils.Monad ( ifM )
+import Agda.Utils.Monad ( ifM, foldM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import AgdaInternals ()
@@ -90,6 +93,12 @@ getTopLevelModuleForModuleName = loop . mnameToList
 -- | Get the toplevel module parent to a given a name.
 getTopLevelModuleForQName :: QName -> TCM TopLevelModuleName
 getTopLevelModuleForQName = getTopLevelModuleForModuleName . qnameModule
+
+-- | Group names by their defining toplevel module.
+groupByTopLevelModule :: (Foldable t) => t QName -> TCM (Map.Map TopLevelModuleName (Set.Set QName))
+groupByTopLevelModule = flip foldM Map.empty $ \acc name -> do
+  mod <- getTopLevelModuleForQName name
+  pure $! Map.insertWith (<>) mod (Set.singleton name) acc
 
 -- | Make the active module parameters visible to Agda's instance canonicity
 -- checks. The checker reconstructs the module context from its checkpoint;
@@ -190,3 +199,17 @@ isExportedFromDefiningModule qname = do
   scopeInfo  <- if tlm == currentTLM then pure (Just current) else
     fmap (fmap (iInsideScope . miInterface)) (getVisitedModule tlm)
   pure $! maybe False (Set.member qname . moduleExports) scopeInfo
+
+isPatternSyn :: (MonadTCM m) => QName -> m Bool
+isPatternSyn qname = liftTCM $ Map.member qname <$> getAllPatternSyns
+
+currentScope :: ScopeInfo -> Scope
+currentScope info = fromMaybe __IMPOSSIBLE__ $ Map.lookup (_scopeCurrent info) (_scopeModules info)
+
+insideDecls :: TopLevelInfo -> [A.Declaration]
+insideDecls = A.deepUnscopeDecls . go . topLevelDecls
+  where
+    go = \case
+      [A.Section _ _ _ _ decls] -> decls
+      (_ : decls) -> go decls
+      [] -> []

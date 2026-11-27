@@ -4,7 +4,10 @@ open import Haskell.Prim
 open import Haskell.Prim.Tuple
 
 open import Haskell.Prim.Foldable
+open import Haskell.Prim.Semigroup
+  renaming (module Instances to SemigroupInstances)
 open import Haskell.Prim.Monoid
+  renaming (module Instances to MonoidInstances)
 
 open import Haskell.Law.Semigroup.Def
 
