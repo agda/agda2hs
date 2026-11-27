@@ -1,5 +1,5 @@
 -- c.f. Issue #145, this is the record variant
-module Fail.ErasedRecordParameter where
+module ErasedRecordParameter where
 
 open import Haskell.Prim using (Type)
 

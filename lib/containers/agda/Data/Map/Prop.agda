@@ -133,6 +133,7 @@ module _ {k a : Type} {{_ : Ord k}} where
       lem1 : intersection ma mb ≡ empty
       lem1 = prop-null→empty (intersection ma mb) cond
 
+      lem-disjoint : (key : k) → Maybe.disjoint (lookup key ma) (lookup key mb) ≡ True
       lem-disjoint = λ key →
         begin
           Maybe.disjoint (lookup key ma) (lookup key mb)
@@ -146,6 +147,7 @@ module _ {k a : Type} {{_ : Ord k}} where
           True
         ∎
 
+      eq-key : (key : k) → lookup key (union ma mb) ≡ lookup key (unionWith const mb ma)
       eq-key = λ key →
         begin
           lookup key (union ma mb)

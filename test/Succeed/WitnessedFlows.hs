@@ -1,4 +1,6 @@
-module WitnessedFlows where
+module WitnessedFlows
+  (Range(..), createRange, createRange', createRangeCase, createRangeGuardSeq, createRangeGuardFmap)
+where
 
 import Control.Monad (guard)
 

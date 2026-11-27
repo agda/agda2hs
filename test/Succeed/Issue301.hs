@@ -1,4 +1,6 @@
-module Issue301 where
+module Issue301
+  (MyData(..), (><))
+where
 
 data MyData a = Nuttin'
 

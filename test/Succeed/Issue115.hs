@@ -1,4 +1,6 @@
-module Issue115 where
+module Issue115
+  (Pointed(..), A(..), Delay(..), test)
+where
 
 class Pointed a where
     it :: a

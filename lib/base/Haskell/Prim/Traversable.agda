@@ -51,37 +51,39 @@ open Traversable ⦃...⦄ public
 
 -- ** instances
 module Instances where
-  private
-    mkTraversable : DefaultTraversable t → Traversable t
-    mkTraversable x = record {DefaultTraversable x}
-
-    infix 0 traverse=_
-    traverse=_ : ⦃ Functor t ⦄ → ⦃ Foldable t ⦄
-              → (∀ {f a b} → ⦃ Applicative f ⦄ → (a → f b) → t a → f (t b))
-              → Traversable t
-    traverse= x = record {DefaultTraversable (record {traverse = x})}
-
   instance
     open DefaultTraversable
 
-    iTraversableList : Traversable List
-    iTraversableList = traverse= traverseList
+    iDefaultTraversableList : DefaultTraversable List
+    iDefaultTraversableList .DefaultTraversable.traverse = traverseList
       where
         traverseList : ⦃ Applicative f ⦄ → (a → f b) → List a → f (List b)
         traverseList f []       = pure []
         traverseList f (x ∷ xs) = ⦇ f x ∷ traverseList f xs ⦈
 
-    iTraversableMaybe : Traversable Maybe
-    iTraversableMaybe = traverse= λ where
+    iTraversableList : Traversable List
+    iTraversableList = record {DefaultTraversable iDefaultTraversableList}
+
+    iDefaultTraversableMaybe : DefaultTraversable Maybe
+    iDefaultTraversableMaybe .DefaultTraversable.traverse = λ where
       f Nothing  → pure Nothing
-      f (Just x) → fmap Just (f x)
+      f (Just x) → Just <$> f x
+
+    iTraversableMaybe : Traversable Maybe
+    iTraversableMaybe = record {DefaultTraversable iDefaultTraversableMaybe}
+
+    iDefaultTraversableEither : DefaultTraversable (Either a)
+    iDefaultTraversableEither .DefaultTraversable.traverse = λ where
+      f (Left  x) → pure (Left x)
+      f (Right y) → Right <$> f y
 
     iTraversableEither : Traversable (Either a)
-    iTraversableEither = traverse= λ where
-      f (Left  x) → pure (Left x)
-      f (Right y) → fmap Right (f y)
+    iTraversableEither = record {DefaultTraversable iDefaultTraversableEither}
+
+    iDefaultTraversablePair : DefaultTraversable (a ×_)
+    iDefaultTraversablePair .DefaultTraversable.traverse = λ
+      f (x , y) → (x ,_) <$> f y
 
     iTraversablePair : Traversable (a ×_)
-    iTraversablePair = traverse= λ
-      f (x , y) → fmap (x ,_) (f y)
+    iTraversablePair = record {DefaultTraversable iDefaultTraversablePair}
 open Instances public

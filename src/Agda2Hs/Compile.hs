@@ -4,9 +4,8 @@ import Prelude hiding (null)
 
 import Control.Monad.IO.Class
 import Control.Monad.Trans.RWS.CPS ( evalRWST )
-import Control.Monad.State ( gets, liftIO )
+import Control.Monad.State ( gets )
 import Control.Arrow ((>>>))
-import Data.Functor
 import Data.IORef
 import Data.List ( isPrefixOf, group, sort )
 
@@ -14,20 +13,20 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 
 import Agda.Compiler.Backend
-import Agda.Compiler.Common ( curIF )
+import Agda.Compiler.Common ( curIF, curDefs, sortDefs )
 import Agda.Utils.FileName ( isNewerThan )
-import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Monad.Signature ( isInlineFun )
 import Agda.Utils.Impossible
 import Agda.Utils.List
 import Agda.Utils.Null
 import Agda.Utils.Monad ( whenM, anyM, when, unless )
 
-import Agda2Hs.Compile.ClassInstance ( compileInstance )
+import Agda2Hs.AgdaUtils ( resolveStringName )
+import Agda2Hs.Compile.ClassInstance ( compileInstance, checkCompileToInstancePragma )
 import Agda2Hs.Compile.Data ( compileData, checkCompileToDataPragma )
-import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkInlinePragma, checkCompileToFunctionPragma )
+import Agda2Hs.Compile.Exports ( tellDefinitionExport )
+import Agda2Hs.Compile.Function ( compileFun, checkTransparentPragma, checkCompileToFunctionPragma, recordInlineSymbols )
 import Agda2Hs.Compile.Name ( hsTopLevelModuleName )
 import Agda2Hs.Compile.Postulate ( compilePostulate )
 import Agda2Hs.Compile.Record ( compileRecord, checkUnboxPragma )
@@ -35,6 +34,7 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 import Agda2Hs.Config
 import Agda2Hs.Pragma
+import Agda2Hs.Language.Haskell.Utils ( declaredNames )
 
 import qualified Agda2Hs.Language.Haskell as Hs
 
@@ -57,7 +57,9 @@ initCompileEnv genv tlm rewrites = CompileEnv
   , copatternsEnabled = False
   , rewrites          = rewrites
   , writeImports      = True
+  , writeExports      = True
   , checkNames        = True
+  , genSignature      = True
   }
 
 initCompileState :: CompileState
@@ -79,11 +81,31 @@ moduleSetup genv _ m mifile = do
         liftIO =<< isNewerThan <$> ofile <*> pure ifile
     if uptodate then do
       reportSDoc "agda2hs.compile" 3 $ text "Module " <+> prettyTCM m <+> text " is already up-to-date"
+      -- Even though we skip compilation, we still need to record the pragmas
+      -- of this module so that modules depending on it are compiled correctly
+      -- (see Issue #486).
+      setScope . iInsideScope =<< curIF
+      defs <- map snd . sortDefs <$> curDefs
+      mapM_ (runC genv m (optRewrites opts) . recordPragma) defs
       return $ Skip ()
     else do
       reportSDoc "agda2hs.compile" 3 $ text "Compiling module: " <+> prettyTCM m
       setScope . iInsideScope =<< curIF
+      -- Agda 2.9 no longer recomputes inverse-scope maps in setScope.
+      recomputeInverseScope
       return $ Recompile m
+
+-- | Record the side effects of a definition's pragma without compiling it.
+-- Used for up-to-date modules that are skipped during compilation (Issue #486).
+recordPragma :: Definition -> C ()
+recordPragma def = processPragma (defName def) >>= \case
+  InlinePragma      -> recordInlineSymbols def
+  CompileToPragma s -> do
+    r <- resolveStringName s
+    case theDef def of
+      Datatype{} -> recordCompileToData (defName def) r
+      _          -> addCompileToName (defName def) r
+  _                 -> return ()
 
 -- Main compile function
 ------------------------
@@ -117,29 +139,46 @@ compile genv tlm _ def =
 
       case (p , theDef def) of
         (NoPragma            , _         ) -> return []
-        (ExistingClassPragma , _         ) -> return []
+        (ExistingPragma      , _         ) -> [] <$ tellDefinitionExport def
+        (ExistingClassPragma , Record{}  ) -> [] <$ tellDefinitionExport def
+        (ExistingClassPragma , _         ) -> agda2hsErrorM $
+          text "The `existing-class` keyword can only be applied to a record, but"
+            <+> prettyTCM (defName def) <+> text "is not a record"
         (UnboxPragma s       , Record{}  ) -> [] <$ checkUnboxPragma def
         (TransparentPragma   , Function{}) -> [] <$ checkTransparentPragma def
-        (InlinePragma        , Function{}) -> [] <$ checkInlinePragma def
+        (InlinePragma        , Function{}) -> [] <$ recordInlineSymbols def
         (TuplePragma b       , Record{}  ) -> return []
+        (CompileToPragma s   , _         ) | isInstance -> [] <$ checkCompileToInstancePragma def s
         (CompileToPragma s   , Datatype{}) -> [] <$ checkCompileToDataPragma def s
         (CompileToPragma s   , Function{}) -> [] <$ checkCompileToFunctionPragma def s
 
         (ClassPragma ms      , Record{}  ) -> pure <$> compileRecord (ToClass ms) def
-        (NewTypePragma ds    , Record{}  ) -> pure <$> compileRecord (ToRecord True ds) def
-        (NewTypePragma ds    , Datatype{}) -> compileData True ds def
-        (DefaultPragma ds    , Datatype{}) -> compileData False ds def
-        (DerivePragma s      , _         ) | isInstance -> pure <$> compileInstance (ToDerivation s) def
-        (DefaultPragma _     , Axiom{}   ) | isInstance -> pure <$> compileInstance (ToDerivation Nothing) def
-        (DefaultPragma _     , _         ) | isInstance -> pure <$> compileInstance ToDefinition def
+        (NewTypePragma ds    , Record{}  ) -> pure <$> compileRecord (ToRecord ToNewType ds) def
+        (NewTypePragma ds    , Datatype{}) -> compileData ToNewType ds def
+        (GadtPragma ds       , Datatype{}) -> compileData ToGadt ds def
+        (GadtPragma _        , _         ) -> agda2hsErrorM $
+          text "The `gadt` keyword can only be applied to a datatype, but"
+            <+> prettyTCM (defName def) <+> text "is not a datatype"
+        (DefaultPragma ds    , Datatype{}) -> compileData ToData ds def
+        (DerivePragma s      , _         ) | isInstance -> compileInstanceChecked (ToDerivation s)
+        (DefaultPragma _     , Axiom{}   ) | isInstance -> compileInstanceChecked (ToDerivation Nothing)
+        (DefaultPragma _     , _         ) | isInstance -> compileInstanceChecked ToDefinition
         (DefaultPragma _     , Axiom{}   ) -> compilePostulate def
-        (DefaultPragma _     , Function{}) -> compileFun True def
-        (DefaultPragma ds    , Record{}  ) -> pure <$> compileRecord (ToRecord False ds) def
+        (DefaultPragma _     , Function{}) -> compileFun def
+        (DefaultPragma ds    , Record{}  ) -> pure <$> compileRecord (ToRecord ToData ds) def
 
         _ -> agda2hsErrorM $ text "Don't know how to compile" <+> prettyTCM (defName def)
 
     postCompile :: C ()
     postCompile = whenM (gets $ lcaseUsed >>> (> 0)) $ tellExtension Hs.LambdaCase
+
+    -- Compile an instance, first checking that it is not for a type that is
+    -- itself compiled to another Haskell type (in which case it must have a
+    -- compile-to pragma instead).
+    compileInstanceChecked :: InstanceTarget -> C [Hs.Decl ()]
+    compileInstanceChecked target = do
+      requireCompileToInstancePragma def
+      pure <$> compileInstance target def
 
 verifyOutput ::
   GlobalEnv -> ModuleEnv -> IsMain -> TopLevelModuleName
@@ -147,6 +186,7 @@ verifyOutput ::
 verifyOutput _ _ _ m ls = do
   reportSDoc "agda2hs.compile" 5 $ text "Checking generated output before rendering: " <+> prettyTCM m
   ensureUniqueConstructors
+  ensureUniqueTopLevelNames
   ensureNoOutputFromHsModules
   where
     ensureUniqueConstructors = do
@@ -162,6 +202,15 @@ verifyOutput _ _ _ m ls = do
           duplicateCons = filter ((> 1) . length) . group . sort  $ allCons
       when (length duplicateCons > 0) $
         agda2hsErrorM $ vcat (map (\x -> text $ "Cannot generate multiple constructors with the same identifier: " <> Hs.prettyPrint (headWithDefault __IMPOSSIBLE__ x)) duplicateCons)
+
+    -- Haskell does not have local modules, so definitions from different
+    -- modules are all compiled to the top level and must have distinct names
+    -- (see Issue #122).
+    ensureUniqueTopLevelNames = do
+      let allNames = [ n | (cdef, _) <- ls, (_, ds) <- cdef, d <- ds, n <- declaredNames d ]
+          duplicateNames = filter ((> 1) . length) . group . sort $ allNames
+      when (length duplicateNames > 0) $
+        agda2hsErrorM $ vcat (map (\x -> text $ "Cannot generate multiple definitions with the same name: " <> Hs.prettyPrint (headWithDefault __IMPOSSIBLE__ x)) duplicateNames)
 
     ensureNoOutputFromHsModules = unless (null $ concat $ map fst ls) $ do
       let hsModName = hsTopLevelModuleName m

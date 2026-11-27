@@ -1,4 +1,6 @@
-module NonClassInstance where
+module NonClassInstance
+  (foo, bar)
+where
 
 foo :: Bool -> Bool -> Bool
 foo _ b = not b

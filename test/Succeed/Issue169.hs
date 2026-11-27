@@ -1,4 +1,6 @@
-module Issue169 where
+module Issue169
+  (Identity(..), showIdentity)
+where
 
 newtype Identity a = Identity{runIdentity :: a}
 

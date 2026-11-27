@@ -1,5 +1,5 @@
 
-module Fail.TypeLambda where
+module TypeLambda where
 
 open import Haskell.Prelude
 

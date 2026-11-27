@@ -1,4 +1,6 @@
-module CompileTo where
+module CompileTo
+  (test1, test2, llength, test3, lfoldl, vreverse, test4)
+where
 
 import Numeric.Natural (Natural)
 
@@ -21,4 +23,7 @@ lfoldl f v (x : xs) = lfoldl f (f v x) xs
 
 vreverse :: [a] -> [a]
 vreverse = lfoldl (\ xs x -> x : xs) []
+
+test4 :: [Int]
+test4 = [4, 5, 6]
 

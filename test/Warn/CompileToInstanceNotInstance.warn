@@ -1,0 +1,5 @@
+
+test/Warn/CompileToInstanceNotInstance.agda:8.3-9: warning: -W[no]CustomBackendWarning
+agda2hs:
+  The instance iEqVec is annotated with a `to` pragma targeting map,
+    but its consistency could not be checked: the target is not an instance

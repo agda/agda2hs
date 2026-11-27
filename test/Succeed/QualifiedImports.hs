@@ -1,4 +1,6 @@
-module QualifiedImports where
+module QualifiedImports
+  (simpqualBar, simpfoo, qualBar, qualBaz, qualFooable, qualDefaultBar, Foo)
+where
 
 import qualified Importee (Foo(MkFoo), foo)
 import QualifiedImportee ()

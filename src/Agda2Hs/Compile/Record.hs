@@ -10,26 +10,25 @@ import qualified Data.Map as Map
 
 import Agda.Compiler.Backend
 
-import Agda.Syntax.Common ( Arg(unArg), defaultArg, HasEta'(..) )
+import Agda.Syntax.Common ( HasEta'(..) )
 import Agda.Syntax.Internal
-import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty ( ($$), (<+>), text, vcat, prettyTCM, pretty, prettyList_ )
 import Agda.TypeChecking.Substitute ( TelV(TelV), Apply(apply) )
 import Agda.TypeChecking.Telescope
 
-import Agda.Utils.Singleton
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.ClassInstance
+import Agda2Hs.Compile.Exports ( tellDefinitionExport )
 import Agda2Hs.Compile.Function ( compileFun )
-import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds, compileDom, DomOutput(..) )
+import Agda2Hs.Compile.Type ( compileDomType, compileTeleBinds, compileDom )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( hsName, definedName, pp, isQuantifiedAsst )
+import Agda2Hs.Language.Haskell.Utils ( definedName, pp, isQuantifiedAsst )
 
 -- | Primitive fields and default implementations
 type MinRecord = ([Hs.Name ()], Map (Hs.Name ()) (Hs.Decl ()))
@@ -51,8 +50,8 @@ compileMinRecord fieldNames m = withMinRecord m $ do
   -- We can't simply compileFun here for two reasons:
   -- * it has an explicit dictionary argument
   -- * it's using the fields and definitions from the minimal record and not the parent record
-  compiled <- addContext (defaultDom rtype) $ compileLocal $
-    fmap concat $ traverse (compileFun False) defaults
+  compiled <- addContext (defaultDom rtype) $ compileLocal $ withoutSignature $
+    fmap concat $ traverse compileFun defaults
   let declMap = Map.fromList [ (definedName c, def) | def@(Hs.FunBind _ (c : _)) <- compiled ]
   reportSDoc "agda2hs.record.min" 20 $
     text "Done compiling minimal record" <+> pretty m <+>
@@ -101,11 +100,13 @@ compileRecord target def = do
   TelV tel _ <- telViewUpTo recPars (defType def)
   addContext tel $ do
     checkValidTypeName rName
+    tellTypeOperators rName
     binds <- compileTeleBinds False tel -- TODO: add kind annotations?
     let hd = foldl (Hs.DHApp ()) (Hs.DHead () rName) binds
     let fieldTel = snd $ splitTelescopeAt recPars recTel
     case target of
       ToClass ms -> do
+        tellDefinitionExport def
         when (length binds > 1) $ tellExtension Hs.MultiParamTypeClasses
         (classConstraints, classDecls) <- compileRecFields classDecl recFields fieldTel
         let context = case classConstraints of
@@ -114,29 +115,21 @@ compileRecord target def = do
               assts  -> Just (Hs.CxTuple () assts)
         defaultDecls <- compileMinRecords def ms
         return $ Hs.ClassDecl () context hd [] (Just (classDecls ++ map (Hs.ClsDecl ()) defaultDecls))
-      ToRecord newtyp ds -> do
+      ToRecord dtarget ds -> do
         checkValidConName cName
+        tellDefinitionExport def
         when (theEtaEquality recEtaEquality' == YesEta) $ agda2hsErrorM $
           "Agda records compiled to Haskell should have eta-equality disabled." <+>
           "Add no-eta-equality to the definition of" <+> (text (pp rName) <> ".")
         (constraints, fieldDecls) <- compileRecFields fieldDecl recFields fieldTel
-        when newtyp $ checkNewtypeCon cName fieldDecls
-        let target = if newtyp then Hs.NewType () else Hs.DataType ()
+        when (dtarget == ToNewType) $ checkNewtypeCon cName fieldDecls
+        let target = toDataTarget dtarget
         compileDataRecord constraints fieldDecls target hd ds
 
   where
-    rName = hsName $ prettyShow $ qnameName $ defName def
-    cName | recNamedCon = hsName $ prettyShow $ qnameName $ conName recConHead
+    rName = compileName (qnameName $ defName def)
+    cName | recNamedCon = compileName (qnameName $ conName recConHead)
           | otherwise   = rName   -- Reuse record name for constructor if no given name
-
-    -- In Haskell, projections live in the same scope as the record type, so check here that the
-    -- record module has been opened.
-    checkFieldInScope f = isInScopeUnqualified f >>= \case
-      True  -> return ()
-      False -> setCurrentRangeQ f $ agda2hsErrorM $
-        ("Record projections (`" <> prettyTCM (qnameName f) <>"` in this case)") <+>
-        "must be brought into scope when compiling to Haskell record types." <+>
-        "Add `open" <+> text (Hs.prettyPrint rName) <+> "public` after the record declaration to fix this."
 
     Record{..} = theDef def
 
@@ -155,7 +148,7 @@ compileRecord target def = do
         (hsAssts, hsFields) <- underAbstraction dom tel' $ compileRecFields decl ns
         case hsDom of
           DomType s hsA -> do
-            let fieldName = hsName $ prettyShow $ qnameName $ unDom n
+            let fieldName = compileName (qnameName $ unDom n)
             fieldType <- addTyBang s hsA
             checkValidFunName fieldName
             return (hsAssts, decl fieldName fieldType : hsFields)
@@ -179,7 +172,6 @@ compileRecord target def = do
       -> C (Hs.Decl ())
     compileDataRecord constraints fieldDecls don hd ds = do
       unless (null constraints) __IMPOSSIBLE__ -- no constraints for records
-      mapM_ checkFieldInScope (map unDom recFields)
       let conDecl = Hs.QualConDecl () Nothing Nothing $ Hs.RecDecl () cName fieldDecls
       return $ Hs.DataDecl () don Nothing hd [conDecl] ds
 

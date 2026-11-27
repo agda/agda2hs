@@ -1,4 +1,4 @@
-module Fail.NonCanonicalSpecialFunction where
+module NonCanonicalSpecialFunction where
 
 open import Haskell.Prelude
 

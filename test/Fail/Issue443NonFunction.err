@@ -1,0 +1,2 @@
+test/Fail/Issue443NonFunction.agda:7.1-5: error: [CustomBackendError]
+agda2hs: Cannot compile Issue443NonFunction.Foo in a `where` block

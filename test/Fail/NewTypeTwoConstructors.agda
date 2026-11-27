@@ -1,4 +1,4 @@
-module Fail.NewTypeTwoConstructors where
+module NewTypeTwoConstructors where
 
 open import Haskell.Prelude
 

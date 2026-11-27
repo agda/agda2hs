@@ -1,4 +1,6 @@
-module TypeDirected where
+module TypeDirected
+  (myconst, fn, test1, test2)
+where
 
 myconst :: a -> a -> a
 myconst x y = x

@@ -1,5 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module ModuleParameters where
+module ModuleParameters
+  (Scope(..), unbind, thing, stuff, more)
+where
 
 data Scope p = Empty
              | Bind p (Scope p)

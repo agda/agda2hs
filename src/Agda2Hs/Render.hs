@@ -4,28 +4,21 @@ import Control.Monad ( unless )
 import Control.Monad.IO.Class ( MonadIO(liftIO) )
 
 import Data.Function ( on )
-import Data.List ( sortBy, nub )
+import Data.List ( sortBy, nub, unzip4 )
 import Data.Maybe ( fromMaybe, isNothing )
-import Data.Set ( Set )
-import qualified Data.Set as Set
 
 import System.FilePath ( takeDirectory )
 import System.Directory ( createDirectoryIfMissing )
 
 import Agda.Compiler.Backend
 
-import Agda.TypeChecking.Pretty
-import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Position
-import Agda.Syntax.TopLevelModuleName
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
-import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
-
-import Agda2Hs.Compile
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Imports
-import Agda2Hs.Compile.Utils ( primModules, moduleFileName )
+import Agda2Hs.Compile.Exports
+import Agda2Hs.Compile.Utils ( moduleFileName )
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
   ( extToName, pp, moveToTop, insertParens )
@@ -94,10 +87,11 @@ writeModule genv _ isMain m outs = do
   let opts = globalOptions genv
   code <- getForeignPragmas (optExtensions opts)
   let mod  = prettyShow m
-      (cdefs, impss, extss) = unzip3 $ flip map outs $
-        \(cdef, CompileOutput imps exts) -> (cdef, imps, exts)
+      (cdefs, impss, expss, extss) = unzip4 $ flip map outs $
+        \(cdef, CompileOutput imps exps exts) -> (cdef, imps, exps, exts)
       defs = concatMap defBlock cdefs ++ codeBlocks code
       imps = concat impss
+      exps = concat expss
       exts = concat extss
   unless (null code && null defs && isMain == NotMain) $ do
 
@@ -110,10 +104,16 @@ writeModule genv _ isMain m outs = do
     -- The comments make it hard to generate and pretty print a full module
     hsFile <- moduleFileName opts m
 
+    exportList <- Hs.prettyShowExportSpecList <$> compileExports exps
+
+    -- We do pretty-printing manually because haskell-src-exts has an issue that produces invalid Haskell code.
+    -- Wait until the following PR gets merged https://github.com/haskell-suite/haskell-src-exts/pull/485
     let output = concat
           [ renderLangExts exts
           , renderBlocks $ codePragmas code
-          , "module " ++ mod ++ " where\n\n"
+          , "module " ++ mod ++ "\n  "
+          , exportList
+          , "\nwhere\n\n"
           , autoImports
           , renderBlocks defs
           ]

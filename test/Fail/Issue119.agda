@@ -1,4 +1,4 @@
-module Fail.Issue119 where
+module Issue119 where
 
 open import Haskell.Prelude
 

@@ -1,4 +1,6 @@
-module Issue421 where
+module Issue421
+  (Identity(..))
+where
 
 newtype Identity a = MkIdentity{runIdentity :: a}
 

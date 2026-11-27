@@ -24,7 +24,7 @@ open import Agda.Builtin.List       public
 
 
 variable
-  @0 ℓ : Level
+  @0 ℓ ℓ′ : Level
   a b c d e : Type
   f m s t : Type → Type
 
@@ -118,7 +118,7 @@ data IsFalse : Bool → Type where
 data NonEmpty {a : Type} : List a → Type where
   instance itsNonEmpty : ∀ {x xs} → NonEmpty (x ∷ xs)
 
-data TypeError (err : AgdaString) : Type where
+data UnsatisfiedConstraint (err : AgdaString) : Type where
 
 it : ∀ {@0 ℓ} {@0 a : Type ℓ} → ⦃ a ⦄ → a
 it ⦃ x ⦄ = x

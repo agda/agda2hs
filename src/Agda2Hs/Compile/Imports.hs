@@ -1,7 +1,6 @@
 module Agda2Hs.Compile.Imports ( compileImports, preludeImportDecl ) where
 
 import Data.Char ( isUpper )
-import Data.List ( isPrefixOf )
 import qualified Data.List as L
 import Data.Map ( Map )
 import qualified Data.Map as Map
@@ -12,11 +11,8 @@ import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils ( validVarId, validConId, pp )
 
 import Agda.Compiler.Backend
-import Agda.TypeChecking.Pretty ( text )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
-import Agda2Hs.AgdaUtils
-import Agda2Hs.Compile.Name
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
@@ -41,19 +37,10 @@ compileImports top is0 = do
 
     groupModules :: [Import] -> ImportDeclMap
     groupModules = flip foldr Map.empty $ \case
-        (Import mod as p q ns) ->
-          Map.insertWith mergeChildren (mod,as)
-                         (makeSingle (parentNN p) (NamespacedName ns q))
+        (Import mod as parent name _) ->
+          Map.insertWith mergeChildren (mod,as) (makeSingle parent name)
         (ImportInstances mod) ->
           Map.insertWith mergeChildren (mod,Unqualified) Map.empty
-      where
-        parentNN :: Maybe (Hs.Name ()) -> Maybe NamespacedName
-        parentNN (Just name@(Hs.Symbol _ _)) = Just $ NamespacedName (Hs.TypeNamespace ()) name
-                                                                      -- ^ for parents, if they are operators, we assume they are type operators
-                                                                      -- but actually, this will get lost anyway because of the structure of ImportSpec
-                                                                      -- the point is that there should not be two tuples with the same name and diffenrent namespaces
-        parentNN (Just name)                 = Just $ NamespacedName (Hs.NoNamespace ())   name
-        parentNN Nothing                     = Nothing
 
     -- TODO: avoid having to do this by having a CName instead of a
     -- Name in the Import datatype
@@ -79,18 +66,26 @@ compileImports top is0 = do
 
     checkClashingImports :: Imports -> TCM ()
     checkClashingImports [] = return ()
-    checkClashingImports (Import mod as p q _ : is) =
+    checkClashingImports (Import mod as p (NamespacedName _ q) r : is) =
       case filter isClashing is of
-        (i : _) -> agda2hsStringError $ mkErrorMsg i
+        (i : _) -> setCurrentRange r $ agda2hsStringError $ mkErrorMsg i
         []      -> checkClashingImports is
      where
-        isClashing (Import _ as' p' q' _) = (as' == as) && (p' /= p) && (q' == q)
+        isClashing (Import _ as' p' (NamespacedName _ q') _) =
+          (as' == as) && (p' /= p) && (q' == q) && not (bareWithSelfParent p p')
+          where
+            -- An unnamed record constructor is imported under the record
+            -- name, which is also the name of the constructor itself
+            -- (e.g. @Example(Example)@). Importing it together with the bare
+            -- record name is not a clash: both refer to the same entity.
+            bareWithSelfParent Nothing  (Just p) = nnName p == q
+            bareWithSelfParent (Just p) Nothing  = nnName p == q
+            bareWithSelfParent _        _        = False
         isClashing ImportInstances{} = False
-        mkErrorMsg (Import _ _ p' q' _) =
+        mkErrorMsg (Import _ _ p' (NamespacedName _ q') _) =
              "Clashing import: " ++ pp q ++ " (both from "
-          ++ prettyShow (pp <$> p) ++ " and "
-          ++ prettyShow (pp <$> p') ++ ")"
-        -- TODO: no range information as we only have Haskell names at this point
+          ++ prettyShow (pp . nnName <$> p) ++ " and "
+          ++ prettyShow (pp . nnName <$> p') ++ ")"
     checkClashingImports (ImportInstances mod : is) = checkClashingImports is
 
 

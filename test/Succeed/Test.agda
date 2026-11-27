@@ -2,7 +2,7 @@
 
 module _ where
 
-open import Haskell.Prelude
+open import Haskell.Prelude hiding (toInteger)
 open import Agda.Builtin.Equality
 
 -- ** Foreign HS code
@@ -223,5 +223,5 @@ ex_if = if True then 1 else 0
 {-# COMPILE AGDA2HS ex_if #-}
 
 if_over : Nat
-if_over = (if True then (λ x → x) else (λ x → x + 1)) 0
+if_over = (if_then_else_ {a = Nat → Nat} True (λ (x : Nat) → x) (λ (x : Nat) → x + 1)) 0
 {-# COMPILE AGDA2HS if_over #-}

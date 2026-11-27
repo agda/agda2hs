@@ -1,6 +1,6 @@
 {-# OPTIONS --guardedness #-}
 
-module Fail.Issue113b where
+module Issue113b where
 
 open import Haskell.Prim using (Type)
 

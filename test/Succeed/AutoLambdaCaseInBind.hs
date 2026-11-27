@@ -1,5 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
-module AutoLambdaCaseInBind where
+module AutoLambdaCaseInBind
+  (lcaseInsideBind)
+where
 
 lcaseInsideBind :: Maybe (Maybe a) -> Maybe a
 lcaseInsideBind mx

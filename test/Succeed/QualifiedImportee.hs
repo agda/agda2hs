@@ -1,4 +1,6 @@
-module QualifiedImportee where
+module QualifiedImportee
+  (foo, (!#), Foo(..), Fooable(..))
+where
 
 foo :: Int
 foo = 43

@@ -1,4 +1,6 @@
-module Importee where
+module Importee
+  (foo, (!#), Foo(..), Fooable(..))
+where
 
 foo :: Int
 foo = 42

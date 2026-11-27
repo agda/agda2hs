@@ -1,5 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Issue92 where
+module Issue92
+  (foo)
+where
 
 foo :: forall a . a -> a
 foo x = bar

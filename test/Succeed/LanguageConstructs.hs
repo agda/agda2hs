@@ -1,5 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
-module LanguageConstructs where
+module LanguageConstructs
+  (oneTwoThree, exactlyTwo, ifThenElse, maybeToList, mhead, plus5minus5, enum₁, enum₂, enum₃, enum₄, underappliedEnum)
+where
 
 oneTwoThree :: [Int]
 oneTwoThree = [1, 2, 3]

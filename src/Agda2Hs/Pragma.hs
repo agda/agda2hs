@@ -5,7 +5,7 @@ import Data.Maybe ( fromMaybe )
 import qualified Data.Map as Map
 import qualified Data.Text as Text
 
-import Agda.Compiler.Backend
+import Agda.Compiler.Backend hiding ( Strictness )
 import Agda.Compiler.Common ( curIF )
 
 import Agda.Syntax.Position
@@ -17,7 +17,7 @@ import Agda.Utils.Maybe.Strict ( toLazy )
 import Agda2Hs.Compile.Types
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( Strictness(..), srcLocToRange )
+import Agda2Hs.Language.Haskell.Utils ( srcLocToRange )
 
 pragmaName :: Text.Text
 pragmaName = "AGDA2HS"
@@ -51,13 +51,18 @@ data ParsedPragma
   | InlinePragma
   | DefaultPragma [Hs.Deriving ()]
   | ClassPragma [String]
+  | ExistingPragma
   | ExistingClassPragma
-  | UnboxPragma Strictness
+  | UnboxPragma UnboxMode
   | TransparentPragma
   | NewTypePragma [Hs.Deriving ()]
   | TuplePragma Hs.Boxed
+  | GadtPragma [Hs.Deriving ()]
   | CompileToPragma String
   | DerivePragma (Maybe (Hs.DerivStrategy ()))
+  deriving (Eq, Show)
+
+data UnboxMode = UnboxLazy | UnboxStrict
   deriving (Eq, Show)
 
 derivePragma :: String
@@ -71,6 +76,9 @@ parseStrategy _          = Nothing
 
 newtypePragma :: String
 newtypePragma = "newtype"
+
+gadtPragma :: String
+gadtPragma = "gadt"
 
 processDeriving :: Range -> String -> ([Hs.Deriving ()] -> ParsedPragma) -> C ParsedPragma
 processDeriving r d pragma = do
@@ -89,16 +97,19 @@ processPragma qn = liftTCM (getUniqueCompilerPragma pragmaName qn) >>= \case
   Just (CompilerPragma r s)
     | "class" `isPrefixOf` s      -> return $ ClassPragma (words $ drop 5 s)
     | s == "inline"               -> return InlinePragma
+    | s == "existing"             -> return ExistingPragma
     | s == "existing-class"       -> return ExistingClassPragma
-    | s == "unboxed"              -> return $ UnboxPragma Lazy
-    | s == "unboxed-strict"       -> return $ UnboxPragma Strict
+    | s == "unboxed"              -> return $ UnboxPragma UnboxLazy
+    | s == "unboxed-strict"       -> return $ UnboxPragma UnboxStrict
     | s == "transparent"          -> return TransparentPragma
     | s == "tuple"                -> return $ TuplePragma Hs.Boxed
     | s == "unboxed-tuple"        -> return $ TuplePragma Hs.Unboxed
+    | s == "gadt"                 -> return $ GadtPragma []
     | "to" `isPrefixOf` s         -> return $ CompileToPragma (drop 3 s)
     | s == newtypePragma          -> return $ NewTypePragma []
     | s == derivePragma           -> return $ DerivePragma Nothing
     | derivePragma `isPrefixOf` s -> return $ DerivePragma (parseStrategy (drop (length derivePragma + 1) s))
     | "deriving"   `isPrefixOf` s -> processDeriving r s DefaultPragma
     | (newtypePragma ++ " deriving") `isPrefixOf` s -> processDeriving r (drop (length newtypePragma + 1) s) NewTypePragma
+    | (gadtPragma ++ " deriving") `isPrefixOf` s -> processDeriving r (drop (length gadtPragma + 1) s) GadtPragma
   _ -> return $ DefaultPragma []

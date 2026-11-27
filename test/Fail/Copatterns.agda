@@ -1,6 +1,6 @@
 -- Copatterns are not supported, except in specific cases
 
-module Fail.Copatterns where
+module Copatterns where
 
 open import Haskell.Prelude
 

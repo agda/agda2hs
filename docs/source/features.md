@@ -168,6 +168,65 @@ createDuo :: a -> a -> Duo a
 createDuo a b = Duo (a, b)
 ```
 
+### GADT Syntax
+
+Adding the `gadt` keyword to the compile pragma compiles a datatype using
+Haskell GADT syntax, in which each constructor carries an explicit result type.
+
+Agda:
+```agda
+data Bol : Type where Tru Fls : Bol
+
+{-# COMPILE AGDA2HS Bol gadt #-}
+```
+
+Haskell:
+```hs
+data Bol where
+    Tru :: Bol
+    Fls :: Bol
+```
+
+For a datatype with parameters, the parameters appear before the `where` and
+every constructor's full result type is written out:
+
+Agda:
+```agda
+data Free (f : @++ Type → Type) (a : Type) : Type where
+  Return : a → Free f a
+  Roll : f (Free f a) → Free f a
+
+{-# COMPILE AGDA2HS Free gadt #-}
+```
+
+Haskell:
+```hs
+data Free f a where
+    Return :: a -> Free f a
+    Roll :: f (Free f a) -> Free f a
+```
+
+As with `newtype`, the `gadt` keyword can be combined with a `deriving` clause:
+
+Agda:
+```agda
+data Bol : Type where Tru Fls : Bol
+
+{-# COMPILE AGDA2HS Bol gadt deriving ( Show ) #-}
+```
+
+Haskell:
+```hs
+data Bol where
+    Tru :: Bol
+    Fls :: Bol
+    deriving (Show)
+```
+
+At the moment `gadt` only changes the syntax of the generated declaration.
+Indexed datatypes (such as `Vec a n`) are still rejected, with or without the
+keyword.
+
 ## Pattern Matching on Datatype Values
 
 Agda:
@@ -911,6 +970,81 @@ import qualified MyModule as A (foo)
 testC = A.foo
 testA = A.foo
 testB = A.foo
+```
+
+# Existing Haskell definitions
+
+Some Agda definitions should not be translated to Haskell because an equivalent
+Haskell definition already exists. This happens for example when the Haskell
+code is supplied through a `FOREIGN` pragma, either as an inline definition or
+through an import. Adding the `existing` keyword to the compile pragma tells
+agda2hs to skip the definition while still treating its name as defined in
+Haskell.
+
+Agda
+```agda
+{-# FOREIGN AGDA2HS
+import Data.Char (ord)
+
+existingFun :: Int
+existingFun = 42
+#-}
+
+existingFun : Int
+existingFun = 0
+{-# COMPILE AGDA2HS existingFun existing #-}
+
+postulate
+  ord : Char → Int
+{-# COMPILE AGDA2HS ord existing #-}
+```
+
+Haskell
+```hs
+import Data.Char (ord)
+
+existingFun :: Int
+existingFun = 42
+```
+
+The Agda definitions of `existingFun` and `ord` are only used inside Agda;
+agda2hs leaves them out of the generated code. As with any other definition,
+public `existing` names are added to the module's export list, so they can be
+used from other modules.
+
+The Haskell selectors of a record are only exported if the record module is
+opened publicly (`open R public`) in the module that defines the record.
+Without it, the record is still exported and its constructor can be used to
+construct and pattern match on values, but projecting a field is rejected.
+This applies to records marked `existing` as well: since agda2hs does not know
+the Haskell definition, `open R public` is what tells it that the Haskell type
+exports a selector for the field.
+
+Note that `open R public` should only be used in the module that defines the
+record `R`: the selector always belongs to that module, and agda2hs currently
+does not follow re-exports.
+
+The `existing-class` keyword is a variant of `existing` for records that stand
+for an existing Haskell type class. Unlike `existing`, it can only be applied
+to a record.
+
+Agda
+```agda
+{-# FOREIGN AGDA2HS
+class ExistingClass a where
+  existingMethod :: a -> Int
+#-}
+
+record ExistingClass (a : Type) : Type where
+  field
+    existingMethod : a → Int
+{-# COMPILE AGDA2HS ExistingClass existing-class #-}
+```
+
+Haskell
+```hs
+class ExistingClass a where
+  existingMethod :: a -> Int
 ```
 
 # Rewrite rules and Prelude imports

@@ -1,5 +1,5 @@
 
-module Fail.NonCanonicalSuperclass where
+module NonCanonicalSuperclass where
 
 open import Haskell.Prelude
 

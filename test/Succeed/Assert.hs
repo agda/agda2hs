@@ -1,4 +1,6 @@
-module Assert where
+module Assert
+  (subtractChecked)
+where
 
 import Control.Exception (assert)
 import Numeric.Natural (Natural)

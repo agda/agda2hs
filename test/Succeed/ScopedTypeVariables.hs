@@ -1,5 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module ScopedTypeVariables where
+module ScopedTypeVariables
+  (foo, bar, D(..), mybool)
+where
 
 foo :: forall a . Eq a => a -> Bool
 foo x = it x == x

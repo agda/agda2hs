@@ -6,7 +6,7 @@ open import Haskell.Prim                public
   using (Type;
          Bool; True; False; Char; Integer;
          List; []; _∷_; Nat; zero; suc; ⊤; tt;
-         TypeError; ⊥; iNumberNat;
+         UnsatisfiedConstraint; ⊥; iNumberNat;
          IsTrue; IsFalse; NonEmpty;
          All; allNil; allCons;
          Any; anyHere; anyThere;
@@ -317,7 +317,7 @@ notElem = Haskell.Data.List.notElem
 
 -- Missing from the Haskell Prelude:
 --
---     Float        [Float]
+--     Float        [Float] (#30)
 --
 --     Rational
 --
@@ -332,17 +332,15 @@ notElem = Haskell.Data.List.notElem
 --               isInfinite, isDenormalized, isIEEE, isNegativeZero, atan2)
 --
 --     subtract, even, odd, gcd, lcm, (^), (^^),
---     fromIntegral, realToFrac
+--     fromIntegral, realToFrac (#512)
 --
---     until [Partial]
+--     until [Partial] (#515)
 --
---     iterate, repeat, cycle          [Infinite]
+--     iterate, repeat, cycle          [Infinite] (#510)
 --
 --     ReadS, Read(readsPrec, readList),
---     reads, readParen, read, lex
---
---     readIO, readLn,
---     IOError, ioError, userError
+--     reads, readParen, read, lex,
+--     readIO, readLn (#511)
 
 
 infixr 0 _$!_
@@ -364,6 +362,20 @@ error {i = ()} err
 errorWithoutStackTrace : {@0 @(tactic absurd) i : ⊥} → String → a
 errorWithoutStackTrace {i = ()} err
 
+
+-------------------------------------------------
+-- Exception handling in the I/O monad
+
+IOError = IOException
+
+ioError : IOError → IO a
+ioError = throwIO
+
+postulate
+  userError : String → IOError
+
+-------------------------------------------------
+-- Unsafe functions
 
 coerce : @0 a ≡ b → a → b
 coerce refl x = x

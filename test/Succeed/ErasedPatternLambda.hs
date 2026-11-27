@@ -1,4 +1,6 @@
-module ErasedPatternLambda where
+module ErasedPatternLambda
+  (Telescope(..), caseTelBind, checkSubst)
+where
 
 data Telescope = ExtendTel Bool Telescope
 

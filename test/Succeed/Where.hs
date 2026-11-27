@@ -1,4 +1,6 @@
-module Where where
+module Where
+  (bool2nat, ex1, ex2, ex3, ex4, ex4', ex5, ex6, ex7, ex7', ex8)
+where
 
 import Numeric.Natural (Natural)
 

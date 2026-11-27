@@ -6,7 +6,6 @@ open import Haskell.Prim.Bool
 open import Haskell.Prim.Int
 open import Haskell.Prim.Word
 open import Haskell.Prim.Integer
-open import Haskell.Prim.Double
 open import Haskell.Prim.Tuple
 open import Haskell.Prim.Monoid
 open import Haskell.Prim.List
@@ -183,8 +182,6 @@ postulate instance
   iLawfulOrdInt : IsLawfulOrd Int
 
   iLawfulOrdWord : IsLawfulOrd Word
-
-  iLawfulOrdDouble : IsLawfulOrd Double
 
   iLawfulOrdChar : IsLawfulOrd Char
 

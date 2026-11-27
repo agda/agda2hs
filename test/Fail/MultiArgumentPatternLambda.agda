@@ -1,5 +1,5 @@
 
-module Fail.MultiArgumentPatternLambda where
+module MultiArgumentPatternLambda where
 
 open import Agda.Builtin.Bool
 

@@ -1,7 +1,5 @@
 module TypeOperatorImport where
 
-{-# FOREIGN AGDA2HS {-# LANGUAGE TypeOperators #-} #-}
-
 open import Haskell.Prelude hiding (_<_)
 open import TypeOperatorExport
 

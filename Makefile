@@ -1,4 +1,4 @@
-.PHONY : build install agda repl libHtml testContainers test succeed fail golden golden-succeed golden-fail clean docs fixWhitespace checkWhitespace have-bin-%
+.PHONY : build install agda repl libHtml testContainers test succeed fail warn custom golden golden-succeed golden-fail golden-warn golden-custom clean docs fixWhitespace checkWhitespace have-bin-%
 
 FILES = $(shell find src -type f)
 
@@ -25,26 +25,46 @@ testContainers:
 test : checkWhitespace test-on-CI
 
 # Run all tests except for fix-whitespace
-test-on-CI : succeed fail testContainers
+test-on-CI : succeed fail warn custom testContainers
+
+# The trailing dot in the test patterns selects a test group exactly, so that
+# e.g. a "SucceedFoo" test in another group is not matched. --no-create makes
+# missing goldens fail validation.
 
 # Run only successful tests
 succeed :
-	cabal test agda2hs-test --test-options='-p Succeed'
+	cabal test agda2hs-test --test-options='-p Succeed. --no-create'
 
 # Run only failing tests
 fail :
-	cabal test agda2hs-test --test-options='-p Fail'
+	cabal test agda2hs-test --test-options='-p Fail. --no-create'
+
+# Run only warning tests
+warn :
+	cabal test agda2hs-test --test-options='-p Warn. --no-create'
+
+# Run only custom tests
+custom :
+	cabal test agda2hs-test --test-options='-p Custom. --no-create'
 
 # Update all golden values
-golden : golden-succeed golden-fail
+golden : golden-succeed golden-fail golden-warn golden-custom
 
 # Update golden values for successful tests
 golden-succeed :
-	cabal test agda2hs-test --test-options='-p Succeed --accept'
+	cabal test agda2hs-test --test-options='-p Succeed. --accept'
 
 # Update golden values for failing tests
 golden-fail :
-	cabal test agda2hs-test --test-options='-p Fail --accept'
+	cabal test agda2hs-test --test-options='-p Fail. --accept'
+
+# Update golden values for warning tests
+golden-warn :
+	cabal test agda2hs-test --test-options='-p Warn. --accept'
+
+# Update golden values for custom tests
+golden-custom :
+	cabal test agda2hs-test --test-options='-p Custom. --accept'
 
 clean :
 	cabal clean

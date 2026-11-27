@@ -1,5 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
-module Issue200 where
+module Issue200
+  (Void(..), test)
+where
 
 data Void
 

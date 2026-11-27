@@ -1,4 +1,6 @@
-module Coinduction where
+module Coinduction
+  (Colist(..), repeater)
+where
 
 data Colist a = Nil
               | Cons a (Colist a)

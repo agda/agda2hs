@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
 module Agda2Hs.Compile.Types where
 
-import Control.Applicative ( liftA2 )
 import Control.Monad ( join )
 import Control.Monad.Trans ( MonadTrans(lift) )
 import Control.Monad.Trans.RWS.CPS (RWST(..), runRWST, rwsT )
@@ -15,15 +14,15 @@ import Data.Set ( Set )
 import Data.Map ( Map )
 import Data.String ( IsString(..) )
 
-import Agda.Compiler.Backend
+import Agda.Compiler.Backend hiding ( Strictness )
 import Agda.Syntax.Position ( Range )
-import Agda.Syntax.TopLevelModuleName ( TopLevelModuleName )
 import Agda.TypeChecking.Warnings ( MonadWarning )
+import Agda.Utils.Haskell.Syntax ( Strictness )
+import Agda.Utils.Monad ( bracket_ )
 import Agda.Utils.Null
 import Agda.Utils.Impossible
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( Strictness )
 
 data GlobalEnv = GlobalEnv
   { globalOptions :: Options
@@ -93,15 +92,19 @@ data CompileEnv = CompileEnv
   , compilingLocal :: Bool
   -- ^ whether we are currently compiling a where clause or pattern-matching lambda
   , whereModules :: [ModuleName]
-  -- ^ the where-blocks currently in scope. Hack until Agda adds where-prominence
+  -- ^ the where-blocks currently in scope
   , copatternsEnabled :: Bool
   -- ^ whether copatterns should be allowed when compiling patterns
   , rewrites :: SpecialRules
   -- ^ Special compilation rules.
   , writeImports :: Bool
   -- ^ whether we should add imports of compiled names
+  , writeExports :: Bool
+  -- ^ whether we should add exports of compiled names
   , checkNames :: Bool
   -- ^ whether we should check validity of compiled names
+  , genSignature :: Bool
+  -- ^ whether we should generate type signatures for functions
   }
 
 type Qualifier = Maybe (Maybe (Hs.ModuleName ()))
@@ -119,12 +122,11 @@ qualifiedAs = join
 data Import = Import
   { _importModule    :: Hs.ModuleName ()
   , _importQualified :: Qualifier
-  , _importParent    :: Maybe (Hs.Name ())
-  , _importName      :: Hs.Name ()
-  , _importNamespace :: Hs.Namespace ()
-                    -- ^^ if this is a type or something like that, we can add a namespace qualifier to the import spec
-                    -- now it's only useful for differentiating type operators; so for others we always put Hs.NoNamespace () here
-                    -- (we don't calculate it if it's not necessary)
+  , _importParent    :: Maybe NamespacedName
+  , _importName      :: NamespacedName
+                    -- ^^ the namespace part is 'Hs.TypeNamespace' when the name is type operator
+  , _importRange     :: Range
+                    -- ^^ source range of the definition that triggered this import
   }
   | ImportInstances (Hs.ModuleName ())
 
@@ -134,20 +136,32 @@ importModule (ImportInstances mod) = mod
 
 type Imports = [Import]
 
+-- | Encoding of a Haskell module export list.
+data Export
+  = ExportFun (Hs.Name ())
+  | ExportType (Hs.Name ())
+  | ExportData (Hs.Name ())
+  | ExportDataCons (Hs.Name ()) [Hs.Name ()]
+  | ExportClass (Hs.Name ())
+
+type Exports = [Export]
+
 -- | Output produced during the compilation of a module
 data CompileOutput = CompileOutput
   { imports :: Imports
   -- ^ Haskell import statements.
+  , exports :: Exports
+  -- ^ Haskell export list.
   , haskellExtensions :: [Hs.KnownExtension]
   -- ^ Required language extensions.
   }
 
 instance Semigroup CompileOutput where
-  CompileOutput imps exts <> CompileOutput imps' exts' =
-    CompileOutput (imps <> imps') (exts <> exts')
+  CompileOutput imps exps exts <> CompileOutput imps' exps' exts' =
+    CompileOutput (imps <> imps') (exps <> exps') (exts <> exts')
 
 instance Monoid CompileOutput where
-  mempty = CompileOutput mempty mempty
+  mempty = CompileOutput mempty mempty mempty
 
 -- | State used while compiling a single module.
 newtype CompileState = CompileState
@@ -166,6 +180,7 @@ type C = RWST CompileEnv CompileOutput CompileState TCM
 -- some missing instances from the Agda side
 instance HasFresh i => MonadFresh i C
 instance MonadTCState C
+instance MonadFileId C
 instance Monoid w => MonadTransControl (RWST r w s) where
   type StT (RWST r w s) a = (a, s, w)
   liftWith f = rwsT $ \r s -> fmap (, s, mempty) (f $ \t -> runRWST t r s)
@@ -197,7 +212,13 @@ instance Null a => Null (C a) where
   null = __IMPOSSIBLE__
 instance Semigroup a => Semigroup (C a) where (<>) = liftA2 (<>)
 
+-- | Run a computation with the type checking state restored afterwards, like
+--   'Agda.TypeChecking.Monad.localTCState' but for the compilation monad.
+localCState :: C a -> C a
+localCState = bracket_ getTC (liftTCM . putTCPreservingStats)
 
+-- | Determines how a 'Dom Type' is treated during compilation.
+data DomOutput = DODropped | DOInstance | DOType | DOTerm
 
 -- | Agda @Dom Type@ can get compiled in three ways.
 data CompiledDom
@@ -210,12 +231,17 @@ data CompiledDom
   | DomDropped
     -- ^ To nothing (e.g. erased proofs)
 
--- | Whether a datatype/record should be compiled as a @newtype@ haskell definition.
-type AsNewType = Bool
+-- | Whether a datatype/record should be compiled as a @newtype@ haskell definition,
+--   a gadt-style datatype, or a regular datatype.
+data DataTarget
+  = ToNewType
+  | ToGadt
+  | ToData
+  deriving (Eq)
 
 -- | Compilation target for an Agda record definition.
 data RecordTarget
-  = ToRecord AsNewType [Hs.Deriving ()]
+  = ToRecord DataTarget [Hs.Deriving ()]
   | ToClass [String]
 
 -- | Compilation target for an Agda instance declaration.

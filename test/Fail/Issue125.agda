@@ -1,4 +1,4 @@
-module Fail.Issue125 where
+module Issue125 where
 
 open import Haskell.Prim using (Type)
 

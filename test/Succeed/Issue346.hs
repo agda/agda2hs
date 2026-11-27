@@ -1,4 +1,11 @@
-module Issue346 where
+module Issue346
+  (D(..), R(..), f)
+where
 
-data Dummy = Dum
+data D = DC
+
+data R = RC{}
+
+f :: D -> R
+f DC = RC
 

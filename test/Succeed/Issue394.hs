@@ -1,4 +1,6 @@
-module Issue394 where
+module Issue394
+  (test)
+where
 
 import Data.ByteString (ByteString)
 

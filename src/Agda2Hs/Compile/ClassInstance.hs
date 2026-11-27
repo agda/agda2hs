@@ -1,31 +1,29 @@
 module Agda2Hs.Compile.ClassInstance where
 
-import Control.Monad ( when, filterM, unless )
+import Control.Monad ( filterM, unless, void, when )
+import Control.Monad.Except ( catchError )
 import Control.Monad.Reader ( asks, local )
 
 import Data.Foldable ( toList )
 import Data.List ( nub )
-import Data.Maybe ( isNothing, mapMaybe )
+import Data.Maybe ( isJust, isNothing, mapMaybe )
 import qualified Data.HashMap.Strict as HMap
 
 import Agda.Compiler.Backend
-import Agda.Compiler.Common ( curDefs, sortDefs )
 
 import Agda.Syntax.Common hiding ( Ranged )
 import Agda.Syntax.Internal
 import Agda.Syntax.Internal.Pattern ( patternToTerm )
-import Agda.Syntax.Scope.Base
-import Agda.Syntax.Scope.Monad ( resolveName )
 import Agda.Syntax.Common.Pretty ( prettyShow )
 
 import Agda.TypeChecking.Pretty
-import Agda.TypeChecking.Substitute ( Apply(applyE), absBody, absApp, apply )
+import Agda.TypeChecking.Errors ( prettyError )
+import Agda.TypeChecking.Substitute ( Apply(applyE), absApp )
 import Agda.TypeChecking.Records
-import Agda.TypeChecking.Telescope ( mustBePi, piApplyM )
+import Agda.TypeChecking.Telescope ( mustBePi )
+import Agda.TypeChecking.Warnings ( warning )
 
-import Agda.Utils.Lens
-import Agda.Utils.List ( headWithDefault )
-import Agda.Utils.Monad ( ifNotM )
+import Agda.Utils.Monad ( ifNotM, whenM )
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
 import Agda2Hs.AgdaUtils
@@ -37,7 +35,8 @@ import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
 
 import qualified Agda2Hs.Language.Haskell as Hs
-import Agda2Hs.Language.Haskell.Utils ( hsName, pp, replaceName, unQual )
+import Agda2Hs.Language.Haskell.Utils
+  ( pp, replaceName, unQual, eApp, patToExp )
 
 enableCopatterns :: C a -> C a
 enableCopatterns = local $ \e -> e { copatternsEnabled = True }
@@ -82,12 +81,12 @@ compileInstance ToDefinition def@Defn{..} =
       reportSDoc "agda2hs.compile.instance" 25 $ text "compileInstance module: " <+> prettyTCM mod
       tel <- lookupSection mod
       addContext tel $ do
-        liftTCM $ setModuleCheckpoint mod
+        liftTCM $ setModuleCheckpointForInstanceChecking mod
         -- We intentionally do not apply getContextArgs eagerly here so dotted
         -- patterns corresponding to module parameters are correctly detected
-        -- (https://github.com/agda/agda2hs/issues/306)
+        -- (see #306)
         (ds, rs) <- concatUnzip
-                <$> mapM (\c -> withClauseLocals mod c $ compileInstanceClause mod defType c) funClauses
+                <$> mapM (\c -> withClauseLocals c $ compileInstanceClause mod defType c) funClauses
         reportSDoc "agda2hs.compile.instance" 20 $ vcat $
           text "compileInstance compiled clauses: " :
           map (nest 2 . text . pp) ds
@@ -95,6 +94,91 @@ compileInstance ToDefinition def@Defn{..} =
           agda2hsErrorM $ fsep (pwords "More than one minimal record used.")
         return $ Hs.InstDecl () Nothing ir (Just ds)
     where Function{..} = theDef
+
+
+-- | Check a @COMPILE AGDA2HS <instance> to <target>@ pragma: the target must be
+-- an instance whose compiled Haskell declaration matches that of the source
+-- instance. Comparing the compiled declarations means that the source instance
+-- must be written in the same way as the target, including the names of any
+-- local @where@ definitions.
+--
+-- The check is best-effort: if the two instances cannot be shown to match, a
+-- warning is emitted instead of an error, since the target instance is the one
+-- that is used in the generated code.
+checkCompileToInstancePragma :: Definition -> String -> C ()
+checkCompileToInstancePragma def s = noCheckNames $ noWriteExports $ do
+  r <- resolveStringName s
+  -- Start by adding the compile-to rule, so that the instance of `def` is
+  -- compiled to the instance of `r` even if the check below fails.
+  addCompileToName (defName def) r
+  let header =
+        [ "The instance" <+> prettyTCM (defName def) <+> "is annotated with a"
+            <+> "`to` pragma targeting" <+> (prettyTCM r <> text ",") ]
+      warn docs = warning =<< (CustomBackendWarning "agda2hs" <$> vcat (header ++ docs))
+      unchecked reason = warn
+        [ nest 2 $ "but its consistency could not be checked:" <+> reason ]
+  -- An instance without a definition cannot be checked.
+  case theDef def of
+    Axiom{} -> unchecked "it is postulated"
+    _       -> do
+      rdef <- getConstInfo r
+      if not (isJust $ defInstance rdef)
+        then unchecked "the target is not an instance"
+        else
+          -- Compare the compiled instances. The target is compiled in the
+          -- context of the module where it is defined, so that its local
+          -- definitions are available. Neither instance is written to the
+          -- current module, so no imports are recorded for them either.
+          catchError
+            (do d  <- noWriteImports $ compileInstance ToDefinition def
+                rd <- withModuleOf r $ noWriteImports $ compileInstance ToDefinition rdef
+                reportSDoc "agda2hs.compileto" 20 $ vcat
+                  [ text "compiled source instance:" <+> text (pp d)
+                  , text "compiled target instance:" <+> text (pp rd)
+                  ]
+                unless (consistentInstances d rd) $ warn $
+                  [ nest 2 "but the two instances do not compile to the same Haskell declaration:" ] ++
+                  concat
+                    [ ((text "compiled instance" <+> prettyTCM q) <> text ":") :
+                      map (nest 2 . text) (lines $ pp x)
+                    | (q, x) <- [(defName def, d), (r, rd)]
+                    ])
+            (\e -> do
+              msg <- prettyError e
+              unchecked $ vcat [ "the instances could not be compiled:", nest 2 (pure msg) ])
+
+
+-- | Whether the compiled source instance is consistent with the compiled
+-- target instance. Besides being syntactically equal, an instance with the same
+-- head is consistent if every one of its clauses is an identity clause, i.e. it
+-- just applies the method being defined to its arguments (for instance
+-- @x == y = x == y@). Such a clause is the identity function and hence defers
+-- to the instance that is in scope, which is the instance the source is
+-- compiled to.
+consistentInstances :: Hs.Decl () -> Hs.Decl () -> Bool
+consistentInstances d rd =
+  d == rd || (instanceHead d == instanceHead rd && all identityClause (instanceClauses d))
+
+-- | The overlap and instance rule of an instance declaration.
+instanceHead :: Hs.Decl () -> Maybe (Maybe (Hs.Overlap ()), Hs.InstRule ())
+instanceHead (Hs.InstDecl _ ov ir _) = Just (ov, ir)
+instanceHead _                       = Nothing
+
+-- | All clauses of the method definitions of a compiled instance declaration.
+instanceClauses :: Hs.Decl () -> [Hs.Match ()]
+instanceClauses (Hs.InstDecl _ _ _ (Just ds)) =
+  [ m | Hs.InsDecl _ (Hs.FunBind _ ms) <- ds, m <- ms ]
+instanceClauses _ = []
+
+-- | Whether a clause just applies the method being defined to its arguments,
+-- e.g. @x == y = x == y@.
+identityClause :: Hs.Match () -> Bool
+identityClause = \case
+  Hs.Match _ f ps (Hs.UnGuardedRhs _ e) _ ->
+    Just e == (eApp (Hs.Var () $ Hs.UnQual () f) <$> traverse patToExp ps)
+  Hs.InfixMatch _ p f qs (Hs.UnGuardedRhs _ e) _ ->
+    Just e == (eApp (Hs.Var () $ Hs.UnQual () f) <$> traverse patToExp (p : qs))
+  _ -> False
 
 
 compileInstRule :: [Hs.TyVarBind ()] -> [Hs.Asst ()] -> Term -> C (Hs.InstRule ())
@@ -167,7 +251,8 @@ compileInstanceClause curModule ty c = ifNotM (keepClause c) (return ([], [])) $
     concatUnzip <$> mapM (compileInstanceClause curModule ty) cs
 
   -- otherwise we seek the first projection pattern
-  else addContext (KeepNames $ clauseTel c) $
+  else addContext (KeepNames $ clauseTel c) $ do
+    checkForcedPatterns ty naps
     compileInstanceClause' curModule ty naps c { clauseTel = EmptyTel }
 
 -- abuse compileClause:
@@ -213,11 +298,23 @@ compileInstanceClause' curModule ty (p:ps) c
     ls <- asks locals
     reportSDoc "agda2hs.compile.instance" 18 $ text "Clause locals:" <+> prettyTCM ls
 
-    let uf = hsName $ prettyShow $ nameConcrete $ qnameName q
+    let uf = compileName (qnameName q)
+
+    -- Register the method in the import list (e.g. Default(def)) when it is a
+    -- field of a record that is compiled to a Haskell type class.
+    let registerMethodImport = whenM (isClassFunction q) $ void (compileQName q)
 
     let
       (.~) :: QName -> QName -> Bool
       x .~ y = nameConcrete (qnameName x) == nameConcrete (qnameName y)
+
+      -- Whether two names live in records of the same parent module. This is
+      -- used to tell a field of a superclass or minimal record apart from an
+      -- unrelated definition that happens to have the same concrete name, such
+      -- as a renamed builtin.
+      sameParentModule :: QName -> QName -> Bool
+      sameParentModule x y =
+        init (mnameToList $ qnameModule x) == init (mnameToList $ qnameModule y)
 
     if
       -- Instance field: check canonicity.
@@ -227,7 +324,7 @@ compileInstanceClause' curModule ty (p:ps) c
             Nothing -> agda2hsError "not allowed: absurd clause for superclass"
             Just b  -> return b
           addContext (clauseTel c) $ do
-            liftTCM $ setModuleCheckpoint curModule
+            liftTCM $ setModuleCheckpointForInstanceChecking curModule
             checkInstance body
           reportSDoc "agda2hs.compile.instance" 20 $ vcat
             [ text "compileInstanceClause dropping clause"
@@ -244,17 +341,24 @@ compileInstanceClause' curModule ty (p:ps) c
         reportSDoc "agda2hs.compile.instance" 40 $
           text $ "raw name: " ++ prettyShow (Def n [])
         d@Defn{..} <- getConstInfo n
-        let mod = if isExtendedLambdaName defName then curModule else qnameModule defName
+        let isExtLam = isExtendedLambdaName defName
+            mod = if isExtLam then curModule else qnameModule defName
+            -- The clauses of a pattern lambda in the right-hand side of the
+            -- instance clause see the where block of that clause.
+            inheritWhere cl
+              | isExtLam  = cl { clauseWhereModule = clauseWhereModule c }
+              | otherwise = cl
         let isMatchingProj [] = False
             isMatchingProj (p:ps) | ProjP _ g <- namedArg p = g .~ q
             isMatchingProj (p:ps) = isMatchingProj ps
         (fc, rs) <- withCurrentModule mod
             $ fmap concatUnzip
-            . mapM (compileInstanceClause mod defType)
+            . mapM (compileInstanceClause mod defType . inheritWhere)
             . filter (isMatchingProj . namedClausePats)
             $ funClauses theDef
-        let hd = hsName $ prettyShow $ nameConcrete $ qnameName defName
+        let hd = compileName (qnameName defName)
         let fc' = {- dropPatterns 1 $ -} replaceName hd uf fc
+        when (not (null fc')) registerMethodImport
         reportSDoc "agda2hs.compile.instance" 6 $ vcat $
           text "compileInstanceClause compiled clause: " :
           map (nest 2 . text . pp) fc'
@@ -263,7 +367,8 @@ compileInstanceClause' curModule ty (p:ps) c
        -- Projection of a default implementation: drop while making sure these are drawn from the
        -- same (minimal) dictionary as the primitive fields.
       | Clause {namedClausePats = [], clauseBody = Just (Def n es)} <- c'
-      , n .~ q -> do
+      , n .~ q
+      , sameParentModule n q -> do
         let err = agda2hsError $ "illegal instance declaration: instances using default methods should use a named definition or an anonymous `λ where`."
             filterArgs :: Type -> [Term] -> C [Term]
             filterArgs ty [] = return []
@@ -291,6 +396,7 @@ compileInstanceClause' curModule ty (p:ps) c
 
       -- No minimal dictionary used, proceed with compiling as a regular clause.
       | otherwise -> do
+        registerMethodImport
         reportSDoc "agda2hs.compile.instance" 20 $ text "Compiling instance clause" <+> prettyTCM c'
         ms <- disableCopatterns $ compileClause curModule [] Nothing uf ty' c'
         let cc = Hs.FunBind () (toList ms)
@@ -305,7 +411,6 @@ compileInstanceClause' curModule ty (p:ps) c
 --              if there is something other than erased parameters
 compileInstanceClause' curModule ty (p:ps) c = do
   (a, b) <- mustBePi ty
-  checkIllegalForced a (namedArg p)
   compileInstanceClause' curModule (absApp b (patternToTerm $ namedArg p)) ps c
 
 fieldArgInfo :: QName -> C ArgInfo
@@ -330,7 +435,7 @@ findDefinitions p m = do
 lookupDefaultImplementations :: QName -> [Hs.Name ()] -> C [Definition]
 lookupDefaultImplementations recName fields = do
   let modName = qnameToMName recName
-      isField f _ = (`elem` fields) <$> compileName (qnameName f)
+      isField f _ = pure $ compileName (qnameName f) `elem` fields
   findDefinitions isField modName
 
 classMemberNames :: Definition -> C [Hs.Name ()]

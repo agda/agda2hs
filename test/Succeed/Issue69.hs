@@ -1,4 +1,6 @@
-module Issue69 where
+module Issue69
+  (Map(..), size)
+where
 
 import Numeric.Natural (Natural)
 

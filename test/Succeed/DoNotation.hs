@@ -1,4 +1,6 @@
-module DoNotation where
+module DoNotation
+  (Birds, Pole, landLeft, landRight, routine, routineWithoutDo, swapPolesMaybe)
+where
 
 type Birds = Int
 

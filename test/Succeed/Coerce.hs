@@ -1,4 +1,6 @@
-module Coerce where
+module Coerce
+  (A(..), B(..), coerceExample)
+where
 
 import Numeric.Natural (Natural)
 import Unsafe.Coerce (unsafeCoerce)

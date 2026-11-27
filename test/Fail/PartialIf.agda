@@ -1,4 +1,4 @@
-module Fail.PartialIf where
+module PartialIf where
 
 open import Haskell.Prelude
 

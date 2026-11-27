@@ -1,4 +1,6 @@
-module Test.Agda2Hs.Data.Map where
+module Test.Agda2Hs.Data.Map
+  (test0, test1, test2, test3, test4, testLookup0)
+where
 
 import Data.Map (Map)
 import qualified Data.Map as Map (filter, fromList, intersectionWith, lookup, singleton, unionWith)

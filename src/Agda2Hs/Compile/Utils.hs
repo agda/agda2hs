@@ -1,15 +1,11 @@
 module Agda2Hs.Compile.Utils where
 
-import Control.Monad ( forM_ )
-import Control.Arrow ( Arrow((***)), (&&&) )
-import Control.Monad.Except
+import Control.Arrow ( Arrow((***)) )
 import Control.Monad.Reader
 import Control.Monad.Writer ( tell )
-import Control.Monad.State ( put, modify )
-
+import Control.Monad.State ( modify )
 import Data.IORef
 import Data.List ( isPrefixOf, stripPrefix )
-import Data.Maybe ( isJust )
 import qualified Data.Map as M
 import Data.String ( IsString(..) )
 import Data.Set ( Set )
@@ -21,47 +17,41 @@ import qualified Language.Haskell.Exts as Hs
 
 import System.FilePath ( (</>) )
 
-import Agda.Compiler.Backend hiding ( Args )
+import Agda.Compiler.Backend hiding ( Args, Strict, Strictness )
 import Agda.Compiler.Common ( compileDir )
 
 import Agda.Syntax.Common
 import qualified Agda.Syntax.Concrete.Name as C
 import Agda.Syntax.Internal
-import Agda.Syntax.Position ( noRange )
+import Agda.Syntax.Internal.Generic ( foldTerm )
+import Agda.Syntax.Position ( Range, noRange )
 import Agda.Syntax.Scope.Base
-import Agda.Syntax.Scope.Monad ( bindVariable, freshConcreteName, isDatatypeModule )
+import Agda.Syntax.Scope.Monad ( bindVariable )
 import Agda.Syntax.TopLevelModuleName
 import Agda.Syntax.Common.Pretty ( prettyShow )
-import qualified Agda.Syntax.Common.Pretty as P
 
-import Agda.TypeChecking.CheckInternal ( infer )
-import Agda.TypeChecking.Constraints ( noConstraints )
-import Agda.TypeChecking.Conversion ( equalTerm )
-import Agda.TypeChecking.InstanceArguments ( findInstance )
 import Agda.TypeChecking.Level ( isLevelType )
-import Agda.TypeChecking.MetaVars ( newInstanceMeta )
-import Agda.TypeChecking.Monad.SizedTypes ( isSizeType )
 import Agda.TypeChecking.Pretty ( Doc, (<+>), text, PrettyTCM(..), pretty )
 import Agda.TypeChecking.Records ( isRecordConstructor, getRecordOfField )
-import Agda.TypeChecking.Reduce ( instantiate, reduce )
-import Agda.TypeChecking.Substitute ( Subst, TelV(TelV), Apply(..) )
+import Agda.TypeChecking.Reduce ( reduce )
+import Agda.TypeChecking.Substitute ( Subst, TelV(TelV) )
 import Agda.TypeChecking.Telescope ( telView )
 
-import Agda.Utils.Lens ( (<&>) )
+import Agda.Utils.Haskell.Syntax ( Strictness(..) )
 import Agda.Utils.Maybe
+import qualified Agda.Utils.Maybe.Strict as Strict
 import Agda.Utils.Monad
 import Agda.Utils.Singleton
+import Agda.Utils.Tuple.Strict ( Pair(..) )
 
-import AgdaInternals
-import Agda2Hs.AgdaUtils ( (~~), resolveStringName )
+import Agda2Hs.AgdaUtils ( (~~), isPublicName, isExportedFromDefiningModule, topLevelModuleNameForModuleName )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Pragma
 import qualified Data.List as L
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
 
-import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
-  ( Strictness(..), validVarName, validTypeName, validConName, hsName, pp )
+  ( validVarName, validTypeName, validConName, hsName, hsModuleName, pp )
 
 agda2hsError :: (HasCallStack, MonadTCError m) => Doc -> m a
 agda2hsError msg = typeError $ CustomBackendError "agda2hs" msg
@@ -106,16 +96,16 @@ infixr 0 /\, \/
 f /\ g = \x -> f x && g x
 f \/ g = \x -> f x || g x
 
+toDataTarget :: DataTarget -> Hs.DataOrNew ()
+toDataTarget ToNewType = Hs.NewType ()
+toDataTarget ToData    = Hs.DataType ()
+toDataTarget ToGadt    = Hs.DataType ()
+
 showTCM :: PrettyTCM a => a -> C String
 showTCM x = liftTCM $ show <$> prettyTCM x
 
 setCurrentRangeQ :: QName -> C a -> C a
 setCurrentRangeQ = setCurrentRange . nameBindingSite . qnameName
-
-isInScopeUnqualified :: QName -> C Bool
-isInScopeUnqualified x = lift $ do
-  ys <- inverseScopeLookupName' AmbiguousAnything x <$> getScope
-  return $ any (not . C.isQualified) ys
 
 freshString :: String -> C String
 freshString s = liftTCM $ do
@@ -189,18 +179,18 @@ isErasedBaseType x = orM
   ]
   where b = El __DUMMY_SORT__ x
 
+-- | The Haskell name of an Agda name, ignoring module qualification.
+compileName :: Name -> Hs.Name ()
+compileName = hsName . prettyShow . nameConcrete
+
 hasCompilePragma :: QName -> C Bool
-hasCompilePragma q = processPragma q <&> \case
-  NoPragma{} -> False
-  InlinePragma{} -> True
-  DefaultPragma{} -> True
-  ClassPragma{} -> True
-  ExistingClassPragma{} -> True
-  UnboxPragma{} -> True
-  TransparentPragma{} -> True
-  CompileToPragma{} -> True
-  NewTypePragma{} -> True
-  DerivePragma{} -> True
+hasCompilePragma q = (/= NoPragma) <$> processPragma q
+
+-- | Check whether a record field is exported from the module that defines its
+-- record. Otherwise the Haskell selector, if generated at all, is not part of
+-- the module's interface and a projection of the field is rejected.
+isExportedProjection :: QName -> C Bool
+isExportedProjection = liftTCM . isExportedFromDefiningModule
 
 -- Exploits the fact that the name of the record type and the name of the record module are the
 -- same, including the unique name ids.
@@ -214,15 +204,19 @@ isClassModule m
     minRec <- asks minRecordName
     if Just m == minRec then return True else isClassName (mnameToQName m)
 
+-- | Check whether a pragma compiles a record to a Haskell type class.
+isClassPragma :: ParsedPragma -> Bool
+isClassPragma = \case
+  ClassPragma{}         -> True
+  ExistingClassPragma{} -> True
+  _                     -> False
+
 -- | Check if the given name corresponds to a type class in Haskell.
 isClassName :: QName -> C Bool
 isClassName q = getConstInfo' q >>= \case
   Right Defn{defName = r, theDef = Record{}} ->
     -- It would be nicer if we remembered this from when we looked at the record the first time.
-    processPragma r <&> \case
-      ClassPragma _       -> True
-      ExistingClassPragma -> True
-      _                   -> False
+    isClassPragma <$> processPragma r
   _                       -> return False
 
 -- | Check if the given type corresponds to a class constraint in Haskell.
@@ -232,6 +226,16 @@ isClassType a = do
   case unEl t of
     Def cl _ -> isClassName cl
     _        -> return False
+
+-- | Check if the given type corresponds to the Agda built-in equality.
+isBuiltinEqualityType :: Type -> C Bool
+isBuiltinEqualityType a = do
+  TelV _ t <- telView a
+  case unEl t of
+    Def f _ -> do
+      name <- getBuiltinName' builtinEquality
+      return $ Just f == name
+    _ -> return False
 
 -- Drops the last (record) module for typeclass methods
 dropClassModule :: ModuleName -> C ModuleName
@@ -254,18 +258,22 @@ getDefAndPragma q = do
 getPragma :: QName -> C ParsedPragma
 getPragma q = snd <$> getDefAndPragma q
 
-isUnboxRecord :: QName -> C (Maybe Strictness)
+isUnboxRecord :: QName -> C (Maybe UnboxMode)
 isUnboxRecord q = getPragma q <&> \case
-  UnboxPragma s -> Just s
+  UnboxPragma mode -> Just mode
   _ -> Nothing
 
-isUnboxConstructor :: QName -> C (Maybe Strictness)
+isUnboxConstructor :: QName -> C (Maybe UnboxMode)
 isUnboxConstructor q =
   caseMaybeM (isRecordConstructor q) (return Nothing) $ isUnboxRecord . fst
 
-isUnboxProjection :: QName -> C (Maybe Strictness)
+isUnboxProjection :: QName -> C (Maybe UnboxMode)
 isUnboxProjection q =
   caseMaybeM (liftTCM $ getRecordOfField q) (return Nothing) isUnboxRecord
+
+unboxModeStrictness :: UnboxMode -> Strictness
+unboxModeStrictness UnboxLazy   = Lazy
+unboxModeStrictness UnboxStrict = Strict
 
 isTupleRecord :: QName -> C (Maybe Hs.Boxed)
 isTupleRecord q = getPragma q <&> \case
@@ -318,8 +326,14 @@ getCompileToName q = do
   reportSDoc "agda2hs.compile.to" 35 $ text $
     "Checking if there is a compile-to rule for " <> prettyShow q
   debugCompileToMap
+  M.lookup q <$> getCompileToMap
+
+-- | The recorded compile-to rules, mapping a name to the name it is compiled
+--   to.
+getCompileToMap :: C (M.Map QName QName)
+getCompileToMap = do
   ctMapRef <- asks $ compileToMap . globalEnv
-  liftIO $ M.lookup q <$> readIORef ctMapRef
+  liftIO $ readIORef ctMapRef
 
 addCompileToName :: QName -> QName -> C ()
 addCompileToName q r = do
@@ -331,8 +345,75 @@ addCompileToName q r = do
   liftIO $ modifyIORef ctMapRef $ M.insert q r
   debugCompileToMap
 
+-- | Record the compile-to mapping for a datatype, including the mappings
+--   of its constructors to those of the target datatype.
+--   Assumes the two datatypes have already been validated to be compatible.
+recordCompileToData :: QName -> QName -> C ()
+recordCompileToData d r = do
+  addCompileToName d r
+  ddef <- getConstInfo d
+  rdef <- getConstInfo r
+  forM_ (zip (dataCons $ theDef ddef) (dataCons $ theDef rdef)) $ \(c1, c2) ->
+    addCompileToName c1 c2
+
+-- | If the type of an instance is compiled to another Haskell type, either
+--   because it has a compile-to pragma or because it is an unboxed or tuple
+--   record, return that type. Instances for such types must themselves have a
+--   compile-to pragma so that agda2hs can check that they are consistent with
+--   the instance of the target type.
+instanceCompileToType :: Definition -> C (Maybe QName)
+instanceCompileToType def = do
+  TelV _ t <- telView (defType def)
+  -- 'compiledAway' checks whether a name is compiled to another Haskell type,
+  -- either via a compile-to pragma or because it is an unboxed or tuple record.
+  let compiledAway q = orM
+        [ isJust <$> getCompileToName q
+        , isJust <$> isUnboxRecord q
+        , isJust <$> isTupleRecord q
+        ]
+      -- Keep the first name that is compiled away, in the order in which the
+      -- names occur in the type.
+      go []       = pure Nothing
+      go (q : qs) = ifM (compiledAway q) (pure $ Just q) (go qs)
+  go $ foldTerm (\case Def q _ -> [q]; _ -> []) t
+
+-- | Raise an error for an instance that is compiled to Haskell but is for a
+--   type that is itself compiled to another Haskell type. Such an instance must
+--   be given a compile-to pragma so that agda2hs can check that it is
+--   consistent with the instance of the target type.
+requireCompileToInstancePragma :: Definition -> C ()
+requireCompileToInstancePragma def =
+  -- Instances from primitive or Haskell modules are trusted to match the
+  -- Haskell definitions and are never compiled, so they do not need a pragma.
+  when (isCompiledModule (qnameModule $ defName def)) $
+    whenM (isNothing <$> getCompileToName (defName def)) $
+      whenJustM (instanceCompileToType def) $ \t -> agda2hsErrorM $
+        "The instance" <+> prettyTCM (defName def) <+> "is for the type" <+> prettyTCM t
+          <+> "which is compiled to another Haskell type, so it must also have a"
+          <+> "`to` pragma."
+
+-- | Whether agda2hs compiles code for the given module. Definitions in
+--   primitive or Haskell modules (such as the Prelude) are trusted instead.
+isCompiledModule :: ModuleName -> Bool
+isCompiledModule m = hsModuleKind (hsModuleName $ prettyShow m) == AgdaModule
+
 withNestedType :: C a -> C a
 withNestedType = local $ \e -> e { isNestedInType = True }
+
+-- | Run a computation in the context of the module where the given definition
+--   is defined, so that its local definitions and scope are available. The
+--   type-checking state is restored afterwards, so the module and scope do not
+--   leak out of the computation.
+withModuleOf :: QName -> C a -> C a
+withModuleOf q act = do
+  let m = qnameModule q
+  tlm <- liftTCM $ topLevelModuleNameForModuleName m
+  liftTCM (getVisitedModule tlm) >>= \case
+    Nothing -> act
+    Just mi -> localCState $ do
+      liftTCM $ setTCLens stCurrentModule (Strict.Just (m :!: tlm))
+      liftTCM $ setScope (iInsideScope $ miInterface mi)
+      local (\e -> e { currModule = tlm }) act
 
 compileLocal :: C a -> C a
 compileLocal = local $ \e -> e { compilingLocal = True }
@@ -377,20 +458,43 @@ checkValidConName :: Hs.Name () -> C ()
 checkValidConName x = whenM doNameCheck $ unless (validConName x) $ agda2hsErrorM $ do
   text "Invalid name for Haskell constructor: " <+> text (Hs.prettyPrint x)
 
+-- | Set the source range recorded on an import. Ranges are only recorded for
+--   ordinary imports since instance imports are never checked for clashes.
+setImportRange :: Range -> Import -> Import
+setImportRange r (Import mod qual parent name _) = Import mod qual parent name r
+setImportRange _ imp@ImportInstances{} = imp
+
 tellImport :: Import -> C ()
-tellImport imp = tell $ CompileOutput [imp] []
+tellImport imp = do
+  -- The internal syntax does not retain the range of the name that triggers
+  -- the import, but the range of the enclosing definition is still available.
+  r <- getCurrentRange
+  tell $ CompileOutput [setImportRange r imp] [] []
+
+tellExport :: Export -> C ()
+tellExport exp = tell $ CompileOutput [] [exp] []
 
 tellExtension :: Hs.KnownExtension -> C ()
-tellExtension pr = tell $ CompileOutput [] [pr]
+tellExtension pr = tell $ CompileOutput [] [] [pr]
 
 tellUnboxedTuples :: Hs.Boxed -> C ()
 tellUnboxedTuples Hs.Boxed = return ()
 tellUnboxedTuples Hs.Unboxed = tellExtension $ Hs.UnboxedTuples
 
-addPatBang :: Strictness -> Hs.Pat () -> C (Hs.Pat ())
-addPatBang Strict p = tellExtension Hs.BangPatterns >>
+tellTypeOperators :: Hs.Name () -> C ()
+tellTypeOperators (Hs.Symbol {}) = tellExtension Hs.TypeOperators
+tellTypeOperators _ = pure ()
+
+tellTypeOperatorsImport :: Import -> C ()
+tellTypeOperatorsImport (Import _ _ parent name _)
+  | Just (Hs.TypeNamespace {}) <- nnNamespace <$> parent = tellExtension Hs.TypeOperators
+  | Hs.TypeNamespace {} <- nnNamespace name = tellExtension Hs.TypeOperators
+tellTypeOperatorsImport _ = pure ()
+
+addPatBang :: UnboxMode -> Hs.Pat () -> C (Hs.Pat ())
+addPatBang UnboxStrict p = tellExtension Hs.BangPatterns >>
   return (Hs.PBangPat () p)
-addPatBang Lazy   p = return p
+addPatBang UnboxLazy   p = return p
 
 addTyBang :: Strictness -> Hs.Type () -> C (Hs.Type ())
 addTyBang Strict ty = tellExtension Hs.BangPatterns >>
@@ -416,7 +520,7 @@ checkFixityLevel name (Related lvl) =
 maybePrependFixity :: QName -> Fixity -> C [Hs.Decl ()] -> C [Hs.Decl ()]
 maybePrependFixity n f comp | f /= noFixity = do
   hsLvl <- checkFixityLevel n (fixityLevel f)
-  let x = hsName $ prettyShow $ qnameName n
+  let x = compileName (qnameName n)
   let hsAssoc = case fixityAssoc f of
         NonAssoc   -> Hs.AssocNone ()
         LeftAssoc  -> Hs.AssocLeft ()
@@ -432,7 +536,7 @@ checkNoAsPatterns = \case
     ConP _ cpi ps -> do
       checkPatternInfo $ conPInfo cpi
       forM_ ps $ checkNoAsPatterns . namedArg
-    LitP i _ -> checkPatternInfo i
+    LitP i _ -> checkPatternInfo $ litPInfo i
     ProjP{} -> return ()
     IApplyP i _ _ _ -> checkPatternInfo i
     DefP i _ ps -> do
@@ -446,8 +550,33 @@ checkNoAsPatterns = \case
 noWriteImports :: C a -> C a
 noWriteImports = local $ \e -> e { writeImports = False }
 
+-- | There are places we want to suppress adding exports e.g.) 'checkCompileToFunctionPragma'
+noWriteExports :: C a -> C a
+noWriteExports = local $ \e -> e { writeExports = False }
+
 noCheckNames :: C a -> C a
 noCheckNames = local $ \e -> e { checkNames = False }
 
 doNameCheck :: C Bool
 doNameCheck = reader checkNames
+
+shouldBeExported :: QName -> C Bool
+shouldBeExported name = andM
+  [ isPublicName name
+  , asks (not . compilingLocal)
+  , isNothing <$> isUnboxRecord name
+  , isNothing <$> isUnboxConstructor name
+  , isNothing <$> isUnboxProjection name
+  , isNothing <$> isTupleRecord name
+  , isNothing <$> isTupleConstructor name
+  , isNothing <$> isTupleProjection name
+  , not <$> isTransparentFunction name
+  , not <$> isInlinedFunction name
+  , isNothing <$> getCompileToName name
+  ]
+
+withoutSignature :: C a -> C a
+withoutSignature = local $ \e -> e { genSignature = False }
+
+shouldGenerateSignature :: C Bool
+shouldGenerateSignature = reader genSignature

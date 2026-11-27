@@ -1,15 +1,9 @@
 module Agda2Hs.Compile.Function where
 
 import Control.Arrow ( (***) )
-import Control.Monad ( (>=>), filterM, forM_ )
-import Control.Monad.Reader ( asks, local )
+import Control.Monad.Reader ( asks )
 
-import Data.Generics
-import Data.List
-import Data.Maybe ( fromMaybe, isJust )
-import qualified Data.Text as Text
-
-import Agda.Compiler.Backend hiding (Args)
+import Agda.Compiler.Backend hiding (Args, Strictness)
 import Agda.Compiler.Common
 
 import Agda.Syntax.Common
@@ -17,28 +11,27 @@ import Agda.Syntax.Internal
 import Agda.Syntax.Internal.Pattern ( patternToTerm )
 import Agda.Syntax.Literal
 import Agda.Syntax.Common.Pretty ( prettyShow )
-import Agda.Syntax.Scope.Monad ( isDatatypeModule )
 
 import Agda.TypeChecking.Pretty
 import Agda.TypeChecking.Substitute
-import Agda.TypeChecking.Telescope ( telView, mustBePi, piApplyM )
-import Agda.TypeChecking.Sort ( ifIsSort )
-import Agda.TypeChecking.Datatypes ( getConType, isDataOrRecord )
+import Agda.TypeChecking.Telescope ( mustBePi, piApplyM )
+import Agda.TypeChecking.Datatypes ( getConType )
 import Agda.TypeChecking.Records ( getDefType )
 import Agda.TypeChecking.Reduce ( reduce )
+import Agda.TypeChecking.Warnings ( warning )
 
-import Agda.Utils.Functor ( (<&>), dget)
 import Agda.Utils.Impossible ( __IMPOSSIBLE__ )
-import Agda.Utils.Lens ((^.))
-import Agda.Utils.List
 import Agda.Utils.Maybe
 import Agda.Utils.Monad
 import Agda.Utils.Size ( Sized(size) )
 
+import AgdaInternals ( inWhereBlockOf )
 import Agda2Hs.AgdaUtils
+import Agda2Hs.Compile.Exports ( tellDefinitionExport )
 import Agda2Hs.Compile.Name ( compileQName )
-import Agda2Hs.Compile.Term ( compileTerm, usableDom, dependentDom )
-import Agda2Hs.Compile.Type ( compileType, compileDom, DomOutput(..), compileDomType )
+import Agda2Hs.Compile.Postulate ( compilePostulate )
+import Agda2Hs.Compile.Term ( compileTerm, dependentDom )
+import Agda2Hs.Compile.Type ( compileType, compileDom, compileDomType )
 import Agda2Hs.Compile.TypeDefinition ( compileTypeDef )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Compile.Utils
@@ -46,7 +39,8 @@ import Agda2Hs.Compile.Var ( compileDBVar )
 
 import qualified Agda2Hs.Language.Haskell as Hs
 import Agda2Hs.Language.Haskell.Utils
-  ( Strictness, hsName, pApp, patToExp, constrainType, qualifyType )
+  ( hsName, pApp, patToExp, constrainType, qualifyType )
+import Agda2Hs.Pragma
 
 -- | Compilation rules for specific constructors in patterns.
 isSpecialCon :: QName -> Maybe (Type -> NAPs -> C (Hs.Pat ()))
@@ -61,6 +55,8 @@ isSpecialCon qn = case prettyShow qn of
       , "Agda.Builtin.Nat.Nat.suc"
       , "Haskell.Extra.Delay.Delay.now"
       , "Haskell.Extra.Delay.Delay.later"
+      , "Haskell.Control.Exception.MayThrow.ok"
+      , "Haskell.Control.Exception.MayThrow.throw"
       ]
 
     itsBad :: Type -> NAPs -> C (Hs.Pat ())
@@ -95,19 +91,20 @@ compileLitNatPat = \case
 
 
 compileFun, compileFun'
-  :: Bool -- ^ Whether the type signature should also be generated
-  -> Definition -> C [Hs.Decl ()]
+  :: Definition -> C [Hs.Decl ()]
 
-compileFun withSig def@Defn{..} =
+compileFun def@Defn{..} =
   setCurrentRangeQ defName
     $ maybePrependFixity defName (defName ^. lensFixity)
     -- initialize locals when first stepping into a function
     $ withFunctionLocals defName
-    $ compileFun' withSig def
+    $ compileFun' def
 
 -- inherit existing (instantiated) locals
-compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
+compileFun' def@Defn{..} = inTopContext $ withCurrentModule m $ do
   reportSDoc "agda2hs.compile" 6 $ "Compiling function: " <+> prettyTCM defName
+
+  withSig <- shouldGenerateSignature
 
   whenM ((withSig &&) <$> inRecordMod defName) $
     agda2hsError "not supported: functions inside a record module"
@@ -119,6 +116,8 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
     (ensureNoLocals err >> compileTypeDef x def)
     -- otherwise, we have to compile clauses.
     $ do
+    tellDefinitionExport def
+
     tel <- lookupSection m
 
     -- If this is a top-level function, we compile the module parameters so
@@ -129,13 +128,13 @@ compileFun' withSig def@Defn{..} = inTopContext $ withCurrentModule m $ do
 
       -- Jesper: we need to set the checkpoint for the current module so that
       -- the canonicity check for typeclass instances picks up the
-      -- module parameters (see https://github.com/agda/agda2hs/issues/305).
-      liftTCM $ setModuleCheckpoint m
+      -- module parameters (see #305).
+      liftTCM $ setModuleCheckpointForInstanceChecking m
 
       -- We apply the function clause to the module parameters from the context.
       -- In case of a projection-like function, the clause is already
       -- (partially or fully) applied so we should not apply again
-      -- (see https://github.com/agda/agda2hs/issues/359)
+      -- (see #359)
       let droppedPars = case funProjection of
             Left{} -> 0
             Right proj -> size $ getProjLams $ projLams proj
@@ -186,16 +185,14 @@ compileModuleParams (ExtendTel a tel) = do
   ((f .) *** (p++)) <$> underAbstraction a tel compileModuleParams
 
 compileClause :: ModuleName -> Args -> Maybe QName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
-compileClause curModule pars mproj x t c =
-  withClauseLocals curModule c $ do
-    compileClause' curModule pars mproj x t c
+compileClause curModule pars mproj x t c = withClauseLocals c $ do
+  compileClause' curModule pars mproj x t c
 
 compileClause' :: ModuleName -> Args -> Maybe QName -> Hs.Name () -> Type -> Clause -> C (Maybe (Hs.Match ()))
 compileClause' curModule pars projName x ty c = do
-  -- Check whether any parameters (including module parameters) are forced
-  -- See https://github.com/agda/agda2hs/issues/306
-  annPats <- annPats ty (namedClausePats c)
-  traverse (uncurry checkIllegalForced) annPats
+  -- Check whether any parameters (including module parameters) are forced.
+  -- See #306 and #494.
+  checkForcedPatterns ty (namedClausePats c)
   ty' <- piApplyM ty pars
   compileClause'' curModule projName x ty' (c `apply` pars)
 
@@ -227,15 +224,12 @@ compileClause'' curModule projName x ty c@Clause{..} = do
 
     ps <- compilePats ty namedClausePats
 
-    let isWhereDecl = not . isExtendedLambdaName
-          /\ (curModule `isFatherModuleOf`) . qnameModule
-
-    children   <- filter isWhereDecl <$> asks locals
-    -- TODO: remove this when Agda exposes where-provenance in 'Internal' syntax
-    let withWhereModule = case children of
-          []    -> id
-          (c:_) -> addWhereModule $ qnameModule c
-    whereDecls <- withWhereModule $ compileLocal $ mapM (getConstInfo >=> compileFun' True) children
+    -- Only consider this clause's where-block, and ignore any pattern-lambdas.
+    let isWhereDecl q = not (isExtendedLambdaName q)
+                     && Just (qnameModule q) == clauseWhereModule
+    children <- filter isWhereDecl <$> asks locals
+    let withWhereModule = maybe id addWhereModule clauseWhereModule
+    whereDecls <- withWhereModule $ compileLocal $ mapM compileWhereDef children
 
     let Just body            = clauseBody
         Just (unArg -> typ)  = clauseType
@@ -249,6 +243,14 @@ compileClause'' curModule projName x ty c@Clause{..} = do
           (Hs.Symbol{}, p : q : ps) -> Hs.InfixMatch () p x (q : ps) rhs whereBinds
           _                         -> Hs.Match () x ps rhs whereBinds
     return $ Just match
+  where
+    compileWhereDef f = do
+      def <- getConstInfo f
+      case theDef def of
+        Function{} -> compileFun' def
+        Axiom{}    -> compilePostulate def
+        _ -> agda2hsErrorM $
+          "Cannot compile" <+> prettyTCM f <+> "in a `where` block"
 
 keepClause :: Clause -> C Bool
 keepClause c@Clause{..} = case (clauseBody, clauseType) of
@@ -260,11 +262,59 @@ keepClause c@Clause{..} = case (clauseBody, clauseType) of
     DOType     -> __IMPOSSIBLE__
     DOTerm     -> True
 
+-- | Check that a clause does not use forced (dot) patterns in non-erased
+-- positions to fake an equality between arbitrary types.
+--
+-- See #142 and #306. A constructor pattern in an erased position is not
+-- available at runtime, so it can be used to refine the type of another,
+-- non-erased argument, introducing a forced pattern there. Following the
+-- proposal in #494, we only reject forced patterns in non-erased positions if
+-- the clause also matches a constructor in an erased position. This is an
+-- over-approximation: a clause is also rejected when it merely contains an
+-- unrelated erased constructor pattern, even if the dot pattern was introduced
+-- by a non-erased match (such as a match on an equality constraint). The user
+-- can work around this by introducing a helper function for the erased match.
+checkForcedPatterns :: Type -> NAPs -> C ()
+checkForcedPatterns ty ps = do
+  annPats <- annPats ty ps
+  erasedMatch <- or <$> mapM (uncurry hasErasedMatch) annPats
+  when erasedMatch $ mapM_ (uncurry checkIllegalForced) annPats
+
+-- | Check whether a pattern matches a constructor in an erased position,
+-- either directly or nested as an argument of another constructor.
+hasErasedMatch :: Dom Type -> DeBruijnPattern -> C Bool
+hasErasedMatch a pat = case pat of
+  ConP ch _ ps -> compileDom a >>= \case
+    DODropped -> pure True
+    _ -> do
+      annPats <- annConPats (unDom a) ch ps
+      or <$> mapM (uncurry hasErasedMatch) annPats
+  -- Only constructor patterns can match a constructor.
+  _ -> pure False
+
+-- | Annotate the arguments of a constructor pattern with the types of the
+-- constructor's arguments. Returns the empty list if the constructor type
+-- cannot be determined.
+annConPats :: Type -> ConHead -> NAPs -> C [(Dom Type, DeBruijnPattern)]
+annConPats ty ch ps = do
+  reduce ty >>= getConType ch >>= \case
+    Just ((_, _, _), cty) -> annPats cty ps
+    Nothing               -> pure []
+
 checkIllegalForced :: Dom Type -> DeBruijnPattern -> C ()
 checkIllegalForced a pat = do
   dep <- dependentDom a
   when (dep && isForcedPat pat) $ agda2hsError
     "not supported: forced (dot) patterns in non-erased positions"
+  case pat of
+    -- Check the arguments of a constructor pattern as well. A nested forced
+    -- pattern can only occur at a type-valued argument, which agda2hs currently
+    -- drops since existential and indexed datatypes are not supported, so this
+    -- is mainly defensive; it will matter once those are supported.
+    ConP ch _ ps -> do
+      annPats <- annConPats (unDom a) ch ps
+      mapM_ (uncurry checkIllegalForced) annPats
+    _ -> pure ()
 
 annPats :: Type -> NAPs -> C [(Dom Type, DeBruijnPattern)]
 annPats ty []       = pure []
@@ -346,7 +396,7 @@ compilePat _ (DotP (PatternInfo PatODot _) _) =
 compilePat _ p = agda2hsErrorM $ "bad pattern:" <?> prettyTCM p
 
 
-compileErasedConP :: Type -> Strictness -> NAPs -> C (Hs.Pat ())
+compileErasedConP :: Type -> UnboxMode -> NAPs -> C (Hs.Pat ())
 compileErasedConP ty s ps = compilePats ty ps >>= \case
   [p] -> addPatBang s p
   _   -> __IMPOSSIBLE__
@@ -361,53 +411,35 @@ compileTupleConP ty b ps = do
   ps <- compilePats ty ps
   return $ Hs.PTuple () b ps
 
--- Local (where) declarations ---------------------------------------------
+-- ** Local where-declarations
 
-
--- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
 -- | Run a computation with all the local declarations in the state.
 withFunctionLocals :: QName -> C a -> C a
 withFunctionLocals q k = do
-  ls <- takeWhile (isAnonymousModuleName . qnameModule)
-      . dropWhile (<= q)
-      . map fst
-      . filter (usableModality . getModality . snd) -- drop if it's an erased definition anyway
+  def <- getConstInfo q
+  ls <- map fst
+      . filter ((`inWhereBlockOf` def) . fst)
+      -- Agda 2.9 includes module-application copies in curDefs. They are
+      -- references to existing definitions, not local declarations to compile.
+      . filter (not . defCopy . snd)
+      . filter (usableModality . getModality . snd)
       . sortDefs <$> liftTCM curDefs
   reportSDoc "agda2hs.compile.locals" 17 $ "Function locals: "<+> prettyTCM ls
   withLocals ls k
 
-
--- | Filter local declarations that belong to the given module.
-zoomLocals :: ModuleName -> LocalDecls -> LocalDecls
-zoomLocals mname = filter ((mname `isLeParentModuleOf`) . qnameModule)
-
-
--- | Before checking a clause, grab all of its local declarations.
--- TODO: simplify this when Agda exposes where-provenance in 'Internal' syntax
-withClauseLocals :: ModuleName -> Clause -> C a -> C a
-withClauseLocals curModule c@Clause{..} k = do
+-- | Before checking a clause, restrict the local declarations to its where-blocks.
+withClauseLocals :: Clause -> C a -> C a
+withClauseLocals Clause{..} k = do
   ls <- asks locals
-  let
-    uses = filter
-      (  (curModule `isFatherModuleOf`) . qnameModule
-      \/ (`extLamUsedIn` c) )
-      (getLocalUses ls c)
-    nonExtLamUses = qnameModule <$> filter (not . isExtendedLambdaName) uses
-    whereModuleName
-      | null uses = Nothing
-      | otherwise = Just $ case nonExtLamUses ++ [curModule] of
-          (x:_) -> x
-          _ -> __IMPOSSIBLE__
-    ls' = case whereModuleName of
-      Nothing -> []
-      Just m  -> zoomLocals m ls
+  let ls' = case clauseWhereModule of
+              Nothing -> []
+              Just m  -> filter ((`isLeChildModuleOf` m) . qnameModule) ls
   reportSDoc "agda2hs.compile.locals" 18 $ "Clause locals: "<+> prettyTCM ls'
   withLocals ls' k
 
-
 -- | Ensure a definition can be defined as transparent.
 checkTransparentPragma :: Definition -> C ()
-checkTransparentPragma def = compileFun False def >>= \case
+checkTransparentPragma def = withoutSignature (compileFun def) >>= \case
     [Hs.FunBind _ cls] ->
       mapM_ checkTransparentClause cls
     [Hs.TypeDecl _ hd b] ->
@@ -427,21 +459,27 @@ checkTransparentPragma def = compileFun False def >>= \case
       "Cannot make function" <+> prettyTCM (defName def) <+> "transparent." <+>
       "A transparent function must have exactly one non-erased argument and return it unchanged."
 
-
--- | Mark a definition as one that should be inlined.
-checkInlinePragma :: Definition -> C ()
-checkInlinePragma def@(Defn { defName = q , theDef = df }) = do
+-- | Record the names that should be inlined for a definition with an @inline@ pragma.
+recordInlineSymbols :: Definition -> C ()
+recordInlineSymbols def@(Defn { defName = q , theDef = df }) = do
   let qs = fromMaybe [] $ getMutual_ df
   addInlineSymbols $ q : qs
 
 checkCompileToFunctionPragma :: Definition -> String -> C ()
-checkCompileToFunctionPragma def s = noCheckNames $ do
+checkCompileToFunctionPragma def s = noCheckNames $ noWriteExports $ do
   r <- resolveStringName s
   let ppd = prettyTCM (defName def)
       ppr = prettyTCM r
   let fail reason = agda2hsErrorM $
         "Cannot compile function" <+> liftTCM ppd <+>
         "to" <+> liftTCM ppr <+> "because" <+> reason
+      -- The clauses of a compile-to function are not generated, so a mismatch
+      -- only means that the generated code has different semantics, not that it
+      -- fails to compile. Emit a warning instead of an error in that case.
+      warn reason = warning =<< (CustomBackendWarning "agda2hs" <$> vcat
+        [ "The function" <+> liftTCM ppd <+> "is annotated with a `to` pragma"
+            <+> "targeting" <+> (liftTCM ppr <> text ",")
+        , nest 2 $ "but" <+> reason ])
   -- Start by adding the compile-to rule because it makes the check
   -- for matching clauses easier
   addCompileToName (defName def) r
@@ -461,11 +499,12 @@ checkCompileToFunctionPragma def s = noCheckNames $ do
     "does not match the type" <+> text (Hs.pp rtype) <+> "of" <+> prettyTCM r
   -- Check that clauses match
   reportSDoc "agda2hs.compileto" 20 $ "Checking that clauses of" <+> ppd <+> "matches those of" <+> ppr
-  [Hs.FunBind _ dcls] <- compileFun False def
-  [Hs.FunBind _ rcls] <- compileFun False rdef
-  unless (length dcls == length rcls) $ fail $
-    "they have a different number of clauses"
+  [Hs.FunBind _ dcls] <- withoutSignature $ compileFun def
+  [Hs.FunBind _ rcls] <- withoutSignature
+    $ withModuleOf r $ noWriteImports $ compileFun rdef
+  unless (length dcls == length rcls) $ warn $
+    "it has a different number of clauses than the target"
   forM_ (zip dcls rcls) $ \(dcl , rcl) -> do
-    unless (dcl == rcl) $ fail $
+    unless (dcl == rcl) $ warn $
       "the clause" <+> text (Hs.pp dcl) <+>
       "does not match the clause" <+> text (Hs.pp rcl)

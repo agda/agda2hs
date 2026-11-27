@@ -1,4 +1,6 @@
-module Fixities where
+module Fixities
+  (leftAssoc, rightAssoc, nonAssoc, mixedAssoc, (<+>), (<->))
+where
 
 leftAssoc :: Int -> [Int]
 leftAssoc n

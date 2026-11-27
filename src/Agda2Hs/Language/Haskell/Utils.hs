@@ -1,6 +1,8 @@
 
 module Agda2Hs.Language.Haskell.Utils where
 
+import Prelude hiding ( foldl' )
+
 import Control.Monad ( guard )
 
 import Data.Data ( Data )
@@ -32,6 +34,15 @@ validConId :: String -> Bool
 validConId s = case lexTokenStream s of
   ParseOk [Loc _ ConId{}] -> True
   _ -> False
+
+validModuleName :: ModuleName () -> Bool
+validModuleName (ModuleName _ name) = all validConId $ splitOnDot name
+  where
+    splitOnDot s =
+      let (part, rest) = break (== '.') s
+      in part : case rest of
+        []      -> []
+        _:parts -> splitOnDot parts
 
 validVarSym :: String -> Bool
 validVarSym s = case lexTokenStream s of
@@ -78,6 +89,10 @@ extToName = Ident () . show
 hsModuleName :: String -> ModuleName ()
 hsModuleName = ModuleName ()
 
+isOpName :: Name () -> Bool
+isOpName (Symbol {}) = True
+isOpName _ = False
+
 isOp :: QName () -> Bool
 isOp (UnQual _ Symbol{}) = True
 isOp (Special _ Cons{})  = True
@@ -95,6 +110,26 @@ unQual (Special _ _)  = error "Unexpected special con"
 definedName :: Match l -> Name l
 definedName (Match _ f _ _ _) = f
 definedName (InfixMatch _ _ f _ _ _) = f
+
+-- | The name declared by a declaration head.
+declHeadName :: DeclHead l -> Name l
+declHeadName = \case
+  DHead _ n     -> n
+  DHInfix _ _ n -> n
+  DHParen _ dh  -> declHeadName dh
+  DHApp _ dh _  -> declHeadName dh
+
+-- | The top-level names declared by a declaration. Type signatures, fixity
+--   declarations, and instances do not declare a new entity and are ignored.
+declaredNames :: Decl l -> [Name l]
+declaredNames = \case
+  TypeDecl _ dh _          -> [declHeadName dh]
+  DataDecl _ _ _ dh _ _    -> [declHeadName dh]
+  GDataDecl _ _ _ dh _ _ _ -> [declHeadName dh]
+  ClassDecl _ _ dh _ _     -> [declHeadName dh]
+  FunBind _ ms             -> take 1 (map definedName ms)
+  PatBind _ p _ _          -> [n | PVar _ n <- [p]]
+  _                        -> []
 
 replaceName :: Data a => Name () -> Name () -> a -> a
 replaceName pre post = everywhere (mkT go `extT` go')
@@ -223,7 +258,8 @@ uses ty = not . null . usedTypesOf ty
 
 -- Ideally, our pretty-printing library should insert parenthesis where needed.
 -- However, hs-src-exts does not insert adequate parenthesis for infix
--- operators so we need to insert some by hand (see issues #54 and #273 and #317).
+-- operators so we need to insert some by hand
+-- (see issues #54 and #273 and #317 and #460).
 
 -- | Properly parenthesize an expression with regards to the default fixities.
 insertParens :: Data a => a -> a
@@ -254,6 +290,7 @@ insertPars fixs = \case
 
     needParenExpr (InfixApp _ _ _ e2) = needParenExpr e2
     needParenExpr Lambda{} = True
+    needParenExpr If{} = True
     needParenExpr _ = False
 
     parL topOp e =
@@ -287,10 +324,6 @@ patToExp = \case
   PatTypeSig _ p _    -> patToExp p
   PBangPat _ p        -> patToExp p
   _                   -> Nothing
-
-
-data Strictness = Lazy | Strict
-  deriving (Eq, Show)
 
 
 -- | Add a class constraint to a Haskell type.

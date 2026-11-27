@@ -1,4 +1,6 @@
-module LawfulOrd where
+module LawfulOrd
+  (Ordered(..), order)
+where
 
 data Ordered a = Gt a a
                | Lt a a

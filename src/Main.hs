@@ -1,9 +1,7 @@
 module Main where
 
-import Data.Maybe ( fromMaybe )
 import qualified Data.Text as Text
 import Data.Version ( showVersion )
-import Control.Monad.IO.Class ( MonadIO(liftIO) )
 
 import System.Environment ( getArgs )
 
@@ -14,7 +12,6 @@ import Agda.Utils.GetOpt
 import Agda2Hs.AgdaUtils
 import Agda2Hs.Compile.Name ( defaultSpecialRules )
 import Agda2Hs.Compile
-import Agda2Hs.Config ( checkConfig )
 import Agda2Hs.Compile.Types
 import Agda2Hs.Render
 
@@ -80,13 +77,23 @@ backend = Backend'
   where
     verifyAndWriteModule opts env isM m out = verifyOutput opts env isM m out >> writeModule opts env isM m out
 
--- | Parse command-line arguments to check whether we are in interactive mode
---   or the user is just requesting information.
+-- | Check whether the command line requests interactive mode or information
+--   about Agda, in which case the backend is disabled (see Issue #201).
+--
+-- We deliberately avoid 'getOpt' here: it interprets the value of an
+-- unrecognised short option (such as the @-iDIR@ include path) as a bundle of
+-- short options, so a directory whose name contains an @I@ would spuriously
+-- match the @-I@ interactive flag and disable the backend.
 shouldDisable :: IO Bool
-shouldDisable = do
-  let interactionFlag = Option ['I'] ["interactive", "interaction", "interaction-json"] (NoArg ()) ""
-  (i , _ , _) <- getOpt Permute (interactionFlag:infoFlags) <$> getArgs
-  return $ not $ null i
+shouldDisable = any isDisablingFlag <$> getArgs
+  where
+    longFlags  = [ "interactive", "interaction", "interaction-json" ]
+              ++ [ n | Option _ ns _ _ <- infoFlags, n <- ns ]
+    shortFlags = 'I' : concat [ ss | Option ss _ _ _ <- infoFlags ]
+    isDisablingFlag arg = case arg of
+      ('-':'-':rest) -> takeWhile (/= '=') rest `elem` longFlags
+      ('-':c:_)      -> c `elem` shortFlags
+      _              -> False
 
 main = do
   args <- getArgs
@@ -98,4 +105,4 @@ main = do
     -- Issue #201: disable backend when run in interactive mode
     disable <- shouldDisable
 
-    runAgda [Backend backend{isEnabled = const $ not disable }]
+    runAgda [Backend backend{isEnabled = \opts -> not disable && isEnabled backend opts}]
