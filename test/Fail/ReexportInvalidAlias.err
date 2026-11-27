@@ -1,0 +1,3 @@
+test/Fail/ReexportInvalidAlias.agda:3.25-26: error: [CustomBackendError]
+agda2hs:
+  Cannot compile reexport of Importee: m is not a valid Haskell module name

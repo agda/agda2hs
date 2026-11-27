@@ -1,0 +1,3 @@
+test/Fail/ClashingReexport.agda:3.1-44: error: [CustomBackendError]
+agda2hs:
+  Cannot compile reexport of Haskell.ClashingReexport: name clash after dropping the 'Haskell.' prefix

@@ -1,0 +1,3 @@
+test/Fail/ReexportModuleApplication.agda:5.1-53: error: [CustomBackendError]
+agda2hs:
+  Cannot compile reexport of ModuleParameters: reexporting module applications is not supported

@@ -4,6 +4,8 @@ open import Haskell.Prelude
 
 comparing : ⦃ Ord a ⦄ → (b → a) → b → b → Ordering
 comparing p x y = compare (p x) (p y)
+{-# COMPILE AGDA2HS comparing existing #-}
 
 clamp : ⦃ Ord a ⦄ → (a × a) → a → a
 clamp (low , high) a = min high (max a low)
+{-# COMPILE AGDA2HS clamp existing #-}

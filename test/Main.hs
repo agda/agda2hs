@@ -19,7 +19,7 @@ import System.Directory
   , setCurrentDirectory
   )
 import System.Exit (ExitCode(..))
-import System.FilePath ((</>), dropExtension, makeRelative, takeDirectory)
+import System.FilePath ((</>), dropExtension, makeRelative, splitDirectories, takeDirectory)
 import System.Process
   ( CreateProcess(..)
   , proc
@@ -64,11 +64,12 @@ main = do
     ]
 
 -- | Discover all .agda files under the Succeed directory recursively.
+-- Modules under @Succeed/Haskell@ are bindings, so they have no golden value.
 -- Files are ordered by: modification date (newest first), then golden value
 -- modification date (newest first), then alphabetically.
 discoverSucceedTests :: FilePath -> FilePath -> IO [TestTree]
 discoverSucceedTests testDir buildDir =
-  discoverTests testDir buildDir "Succeed" ".hs" NoHelpers succeedTest
+  discoverTests testDir buildDir "Succeed" ".hs" (HelpersUnder "Haskell") succeedTest
 
 -- | Discover all .agda files under the Fail directory.
 -- Files are ordered by: modification date (newest first), then golden value
@@ -98,7 +99,9 @@ discoverIncrementalTests testDir buildDir =
 
 -- | Whether .agda files without a matching golden file are helper modules that
 -- are skipped, or tests for which a missing golden is an error.
-data Helpers = SkipHelpers | NoHelpers
+-- With @HelpersUnder dir@, the .agda files under the subdirectory @dir@ are
+-- helper modules and all others are tests.
+data Helpers = SkipHelpers | NoHelpers | HelpersUnder FilePath
 
 -- | Generic test discovery function.
 -- Takes the directory (relative to the test directory), golden file extension,
@@ -113,8 +116,10 @@ discoverTests testDir buildDir dirName goldenExt helpers testFn = do
       goldenOf f = dropExtension f ++ goldenExt
   agdaFiles <- findAgdaFiles dir
   files <- case helpers of
-    SkipHelpers -> filterM (doesFileExist . goldenOf) agdaFiles
-    NoHelpers   -> return agdaFiles
+    SkipHelpers      -> filterM (doesFileExist . goldenOf) agdaFiles
+    NoHelpers        -> return agdaFiles
+    HelpersUnder sub -> return $
+      filter ((/= [sub]) . take 1 . splitDirectories . makeRelative dir) agdaFiles
   sortedFiles <- sortByModTime files goldenOf
   forM sortedFiles $ \agdaFile -> do
     let testName = dropExtension (makeRelative dir agdaFile)

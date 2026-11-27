@@ -160,6 +160,7 @@ filter p (x ∷ xs) = if p x then x ∷ filter p xs else filter p xs
 
 partition : (a → Bool) → List a → (List a × List a)
 partition p xs = (filter p xs , filter (not ∘ p) xs)
+{-# COMPILE AGDA2HS partition existing #-}
 
 infixl 9 _!?_
 _!?_ : List a → Int → Maybe a
@@ -283,6 +284,21 @@ insert : ⦃ Ord a ⦄ → a → List a → List a
 insert = insertBy compare
 
 
+postulate
+  sortBy : (a → a → Ordering) → List a → List a
+{-# COMPILE AGDA2HS sortBy existing #-}
+
+sort : ⦃ Ord a ⦄ → List a → List a
+sort = sortBy compare
+{-# COMPILE AGDA2HS sort existing #-}
+
+sortOn : ⦃ Ord b ⦄ → (a → b) → List a → List a
+sortOn f =
+    map snd
+    ∘ sortBy (comparing fst)
+    ∘ map (λ x → let y = f x in seq y (y , x))
+{-# COMPILE AGDA2HS sortOn existing #-}
+
 -- Omitted for now:
 -- [obviously non-terminating]
 -- - 'iterate :: (a -> a) -> a -> [a]'
@@ -296,9 +312,9 @@ insert = insertBy compare
 -- - 'group :: Eq a => [a] -> [[a]]'
 -- - 'transpose :: [[a]] -> [[a]]'
 -- - 'permutations :: [a] -> [[a]]'
--- - 'sortBy :: (a -> a -> Ordering) -> [a] -> [a]'
--- - 'sort :: Ord a => [a] -> [a]'
--- - 'sortOn :: Ord b => (a -> b) -> [a] -> [a]
+-- - 'sortBy :: (a -> a -> Ordering) -> [a] -> [a]' (postulated)
+-- - 'sort :: Ord a => [a] -> [a]' (defined in terms of postulate)
+-- - 'sortOn :: Ord b => (a -> b) -> [a] -> [a] (defined in terms of postulate)
 
 -- [type signature includes currently not supported (?) `NonEmpty` type]
 -- - 'inits1 :: [a] -> [NonEmpty a]'
